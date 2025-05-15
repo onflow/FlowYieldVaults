@@ -1,42 +1,69 @@
 import "FungibleToken"
 import "Burner"
 
+import "MockOracle"
+
 import "DFB"
 import "SwapStack"
 
+///
+/// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
+/// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+///
 access(all) contract MockSwapper {
 
+    /// Mocked liquidity sources
+    access(self) let liquidityConnectors: {Type: {DFB.Sink, DFB.Source}}
+
+    /// Mock setter enabling the configuration of liquidity sources used by mock swappers
+    access(all) fun setLiquidityConnector(_ connector: {DFB.Sink, DFB.Source}) {
+        pre {
+            connector.getSinkType() == connector.getSourceType():
+            "Connector sink Type \(connector.getSinkType().identifier) != connector source Type \(connector.getSourceType().identifier)"
+        }
+        self.liquidityConnectors[connector.getSinkType()] = connector
+    }
+
+    // Swapper
+    //
+    /// Mocked DeFiBlocks Swapper implementation. Be sure to set connectors for Vaults you wish to handle via this mock
+    /// in MockSwapper.liquidityConnectors via .setLiquidityConnector before instantiating mocks
     access(all) struct Swapper : DFB.Swapper {
-        /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
-        /// specific Identifier to associated connectors on construction
         access(contract) let uniqueID: {DFB.UniqueIdentifier}?
-        access(self) let inVault: {DFB.Sink, DFB.Source}
-        access(self) let outVault: {DFB.Sink, DFB.Source}
+        access(self) let inVault: Type
+        access(self) let outVault: Type
         access(self) let oracle: {DFB.PriceOracle}
 
-        init(inVault: {DFB.Sink, DFB.Source}, outVault: {DFB.Sink, DFB.Source}, oracle: {DFB.PriceOracle}, uniqueID: {DFB.UniqueIdentifier}?) {
+        init(inVault: Type, outVault: Type, uniqueID: {DFB.UniqueIdentifier}?) {
+            pre {
+                MockSwapper.liquidityConnectors[inVault] != nil:
+                "Invalid inVault - \(inVault.identifier) does not have a MockSwapper connector to handle funds"
+                MockSwapper.liquidityConnectors[outVault] != nil:
+                "Invalid outVault - \(outVault.identifier) does not have a MockSwapper connector to handle funds"
+            }
             self.inVault = inVault
             self.outVault = outVault
-            self.oracle = oracle
+            self.oracle = MockOracle.PriceOracle()
             self.uniqueID = uniqueID
         }
 
         /// The type of Vault this Swapper accepts when performing a swap
         access(all) view fun inVaultType(): Type {
-            return self.inVault.getSinkType()
+            return self.inVault
         }
 
         /// The type of Vault this Swapper provides when performing a swap
         access(all) view fun outVaultType(): Type {
-            return self.outVault.getSourceType()
+            return self.outVault
         }
 
-        /// The estimated amount required to provide a Vault with the desired output balance
+        /// The estimated amount required to provide a Vault with the desired output balance, sourcing pricing from the
+        /// mocked oracle
         access(all) fun amountIn(forDesired: UFix64, reverse: Bool): {DFB.Quote} {
             return self._estimate(amount: forDesired, out: false, reverse: reverse)
         }
 
-        /// The estimated amount delivered out for a provided input balance
+        /// The estimated amount delivered out for a provided input balance, sourcing pricing from the mocked oracle
         access(all) fun amountOut(forProvided: UFix64, reverse: Bool): {DFB.Quote} {
             return self._estimate(amount: forProvided, out: true, reverse: reverse)
         }
@@ -44,6 +71,8 @@ access(all) contract MockSwapper {
         /// Performs a swap taking a Vault of type inVault, outputting a resulting outVault. Implementations may choose
         /// to swap along a pre-set path or an optimal path of a set of paths or even set of contained Swappers adapted
         /// to use multiple Flow swap protocols.
+        /// NOTE: This mock sources pricing data from the mocked oracle, allowing for pricing to be manually manipulated
+        /// for testing and demonstration purposes
         access(all) fun swap(quote: {DFB.Quote}?, inVault: @{FungibleToken.Vault}): @{FungibleToken.Vault} {
             return <- self._swap(<-inVault, reverse: false)
         }
@@ -51,6 +80,8 @@ access(all) contract MockSwapper {
         /// Performs a swap taking a Vault of type outVault, outputting a resulting inVault. Implementations may choose
         /// to swap along a pre-set path or an optimal path of a set of paths or even set of contained Swappers adapted
         /// to use multiple Flow swap protocols.
+        /// NOTE: This mock sources pricing data from the mocked oracle, allowing for pricing to be manually manipulated
+        /// for testing and demonstration purposes
         access(all) fun swapBack(quote: {DFB.Quote}?, residual: @{FungibleToken.Vault}): @{FungibleToken.Vault} {
             return <- self._swap(<-residual, reverse: true)
         }
@@ -70,25 +101,23 @@ access(all) contract MockSwapper {
 
         access(self) fun _swap(_ from: @{FungibleToken.Vault}, reverse: Bool): @{FungibleToken.Vault} {
             let inAmount = from.balance
-            if reverse {
-                self.outVault.depositCapacity(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
-            } else {
-                self.inVault.depositCapacity(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
-            }
+            var swapInVault = reverse ? MockSwapper.liquidityConnectors[from.getType()]! : MockSwapper.liquidityConnectors[self.inVaultType()]!
+            var swapOutVault = reverse ? MockSwapper.liquidityConnectors[self.inVaultType()]! : MockSwapper.liquidityConnectors[self.outVaultType()]!
+
+            swapInVault.depositCapacity(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})            
             Burner.burn(<-from)
 
             let outAmount = self.amountOut(forProvided: inAmount, reverse: reverse).outAmount
-            var outVault: @{FungibleToken.Vault}? <- nil
-            if reverse {
-                outVault <-! self.inVault.withdrawAvailable(maxAmount: outAmount)
-            } else {
-                outVault <-! self.outVault.withdrawAvailable(maxAmount: outAmount)
-            }
-            let withdrawn = (outVault?.balance)!
-            assert(withdrawn == outAmount,
-                message: "MockSwapper outVault returned invalid balance - expected \(outAmount), received \(withdrawn)")
-            return <- outVault!
+            var outVault <- swapOutVault.withdrawAvailable(maxAmount: outAmount)
+
+            assert(outVault.balance == outAmount,
+                message: "MockSwapper outVault returned invalid balance - expected \(outAmount), received \(outVault.balance)")
+
+            return <- outVault
         }
     }
-    
+
+    init() {
+        self.liquidityConnectors = {}
+    }    
 }
