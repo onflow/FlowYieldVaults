@@ -1,4 +1,3 @@
-import "EVM"
 import "FungibleToken"
 
 /// DeFiBlocks Interfaces
