@@ -137,7 +137,7 @@ access(all) contract FungibleTokenStack {
         ) {
             pre {
                 vault.check(): "Invalid Vault Capability provided"
-                FungibleTokenStack.definingContractIsFungibleToken(vault.getType()):
+                FungibleTokenStack.definingContractIsFungibleToken(vault.borrow()!.getType()):
                 "The contract defining Vault \(vault.borrow()!.getType().identifier) does not conform to FungibleToken contract interface"
                 min ?? 0.0 < max ?? UFix64.max:
                 "Minimum balance must be less than maximum balance if either is declared"
