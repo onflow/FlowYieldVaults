@@ -41,6 +41,12 @@
 			"aliases": {
 				"testing": "0000000000000007"
 			}
+		},
+		"YieldToken": {
+			"source": "cadence/contracts/internal-dependencies/tokens/YieldToken.cdc",
+			"aliases": {
+				"testing": "0000000000000007"
+			}
 		}
 	},
 	"dependencies": {
@@ -139,6 +145,15 @@
 				"FungibleTokenStack",
 				"SwapStack",
 				"USDA",
+				{
+					"name": "YieldToken",
+					"args": [
+						{
+							"value": "1000000.0",
+							"type": "UFix64"
+						}
+					]
+				},
 				{
 					"name": "MockOracle",
 					"args": [
