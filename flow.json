@@ -144,7 +144,15 @@
 				"DFB",
 				"FungibleTokenStack",
 				"SwapStack",
-				"USDA",
+				{
+					"name": "USDA",
+					"args": [
+						{
+							"value": "1000000.0",
+							"type": "UFix64"
+						}
+					]
+				},
 				{
 					"name": "YieldToken",
 					"args": [

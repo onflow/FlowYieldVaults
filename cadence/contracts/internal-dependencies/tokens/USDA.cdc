@@ -183,8 +183,7 @@ access(all) contract USDA : FungibleToken {
         }
     }
 
-    init() {
-        let initialMint = 1000.0
+    init(initialMint: UFix64) {
         
         self.totalSupply = 0.0
         
