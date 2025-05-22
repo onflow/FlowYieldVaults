@@ -193,4 +193,13 @@ access(all) contract DFB {
             }
         }
     }
+
+    /// An interface for a price oracle adapter. Implementations should adapt this interface to various price feed
+    /// oracles deployed on Flow
+    access(all) struct interface PriceOracle {
+        /// Returns the asset type serving as the price basis - e.g. USD in FLOW/USD
+        access(all) view fun unitOfAccount(): Type
+        /// Returns the latest price data for a given asset denominated in unitOfAccount()
+        access(all) fun price(ofToken: Type): UFix64
+    }
 }

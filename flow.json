@@ -12,6 +12,12 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"MockOracle": {
+			"source": "cadence/contracts/mocks/MockOracle.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
 		"SwapStack": {
 			"source": "cadence/contracts/internal-dependencies/connectors/SwapStack.cdc",
 			"aliases": {
@@ -22,6 +28,12 @@
 			"source": "cadence/contracts/Tidal.cdc",
 			"aliases": {
 				"testing": "0000000000000008"
+			}
+		},
+		"USDA": {
+			"source": "cadence/contracts/internal-dependencies/tokens/USDA.cdc",
+			"aliases": {
+				"testing": "0000000000000007"
 			}
 		}
 	},
@@ -117,6 +129,19 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
+				"DFB",
+				"FungibleTokenStack",
+				"SwapStack",
+				"USDA",
+				{
+					"name": "MockOracle",
+					"args": [
+						{
+							"value": "A.f8d6e0586b0a20c7.USDA.Vault",
+							"type": "String"
+						}
+					]
+				},
 				"Tidal"
 			]
 		}
