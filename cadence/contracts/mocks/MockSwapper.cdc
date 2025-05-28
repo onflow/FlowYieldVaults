@@ -29,12 +29,12 @@ access(all) contract MockSwapper {
     /// Mocked DeFiBlocks Swapper implementation. Be sure to set connectors for Vaults you wish to handle via this mock
     /// in MockSwapper.liquidityConnectors via .setLiquidityConnector before instantiating mocks
     access(all) struct Swapper : DFB.Swapper {
-        access(contract) let uniqueID: {DFB.UniqueIdentifier}?
+        access(contract) let uniqueID: DFB.UniqueIdentifier?
         access(self) let inVault: Type
         access(self) let outVault: Type
         access(self) let oracle: {DFB.PriceOracle}
 
-        init(inVault: Type, outVault: Type, uniqueID: {DFB.UniqueIdentifier}?) {
+        init(inVault: Type, outVault: Type, uniqueID: DFB.UniqueIdentifier?) {
             pre {
                 MockSwapper.liquidityConnectors[inVault] != nil:
                 "Invalid inVault - \(inVault.identifier) does not have a MockSwapper connector to handle funds"
@@ -48,23 +48,23 @@ access(all) contract MockSwapper {
         }
 
         /// The type of Vault this Swapper accepts when performing a swap
-        access(all) view fun inVaultType(): Type {
+        access(all) view fun inType(): Type {
             return self.inVault
         }
 
         /// The type of Vault this Swapper provides when performing a swap
-        access(all) view fun outVaultType(): Type {
+        access(all) view fun outType(): Type {
             return self.outVault
         }
 
         /// The estimated amount required to provide a Vault with the desired output balance, sourcing pricing from the
         /// mocked oracle
-        access(all) fun amountIn(forDesired: UFix64, reverse: Bool): {DFB.Quote} {
+        access(all) fun quoteIn(forDesired: UFix64, reverse: Bool): {DFB.Quote} {
             return self._estimate(amount: forDesired, out: false, reverse: reverse)
         }
 
         /// The estimated amount delivered out for a provided input balance, sourcing pricing from the mocked oracle
-        access(all) fun amountOut(forProvided: UFix64, reverse: Bool): {DFB.Quote} {
+        access(all) fun quoteOut(forProvided: UFix64, reverse: Bool): {DFB.Quote} {
             return self._estimate(amount: forProvided, out: true, reverse: reverse)
         }
 
@@ -88,12 +88,14 @@ access(all) contract MockSwapper {
 
         /// Internal estimator returning a quote for the amount in/out and in the desired direction
         access(self) fun _estimate(amount: UFix64, out: Bool, reverse: Bool): {DFB.Quote} {
-            let price = reverse 
-                ? self.oracle.price(ofToken: self.outVaultType()) / self.oracle.price(ofToken: self.inVaultType())
-                : self.oracle.price(ofToken: self.inVaultType()) / self.oracle.price(ofToken: self.outVaultType())
+            let outTokenPrice = self.oracle.price(ofToken: self.outType())
+                ?? panic("Price for token \(self.outType().identifier) is currently unavailable")
+            let inTokenPrice = self.oracle.price(ofToken: self.inType())
+                ?? panic("Price for token \(self.inType().identifier) is currently unavailable")
+            let price = reverse  ? outTokenPrice / inTokenPrice : inTokenPrice / outTokenPrice
             return SwapStack.BasicQuote(
-                inVault: reverse ? self.outVaultType() : self.inVaultType(),
-                outVault: reverse ? self.inVaultType() : self.outVaultType(),
+                inType: reverse ? self.outType() : self.inType(),
+                outType: reverse ? self.inType() : self.outType(),
                 inAmount: out ? amount : amount / price,
                 outAmount: out ? amount * price : amount
             )
@@ -101,13 +103,13 @@ access(all) contract MockSwapper {
 
         access(self) fun _swap(_ from: @{FungibleToken.Vault}, reverse: Bool): @{FungibleToken.Vault} {
             let inAmount = from.balance
-            var swapInVault = reverse ? MockSwapper.liquidityConnectors[from.getType()]! : MockSwapper.liquidityConnectors[self.inVaultType()]!
-            var swapOutVault = reverse ? MockSwapper.liquidityConnectors[self.inVaultType()]! : MockSwapper.liquidityConnectors[self.outVaultType()]!
+            var swapInVault = reverse ? MockSwapper.liquidityConnectors[from.getType()]! : MockSwapper.liquidityConnectors[self.inType()]!
+            var swapOutVault = reverse ? MockSwapper.liquidityConnectors[self.inType()]! : MockSwapper.liquidityConnectors[self.outType()]!
 
             swapInVault.depositCapacity(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})            
             Burner.burn(<-from)
 
-            let outAmount = self.amountOut(forProvided: inAmount, reverse: reverse).outAmount
+            let outAmount = self.quoteOut(forProvided: inAmount, reverse: reverse).outAmount
             var outVault <- swapOutVault.withdrawAvailable(maxAmount: outAmount)
 
             assert(outVault.balance == outAmount,
