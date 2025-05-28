@@ -6,6 +6,12 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"DFBUtils": {
+			"source": "cadence/contracts/internal-dependencies/utils/DFBUtils.cdc",
+			"aliases": {
+				"testing": "0000000000000007"
+			}
+		},
 		"FungibleTokenStack": {
 			"source": "cadence/contracts/internal-dependencies/connectors/FungibleTokenStack.cdc",
 			"aliases": {
@@ -135,6 +141,7 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
+				"DFBUtils",
 				"DFB",
 				"FungibleTokenStack",
 				"SwapStack",

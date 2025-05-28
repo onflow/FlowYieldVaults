@@ -5,28 +5,28 @@ import "DFB"
 
 /// SwapStack
 ///
-/// This contract defines StackFi Sink & Source connector implementations for use with DeFi protocols. These
-/// connectors can be used alone or in conjunction with other StackFi connectors to create complex DeFi workflows.
+/// This contract defines DeFiBlocks Sink & Source connector implementations for use with DeFi protocols. These
+/// connectors can be used alone or in conjunction with other DeFiBlocks connectors to create complex DeFi workflows.
 ///
 access(all) contract SwapStack {
 
-    /// A simple implementation of DFB.Quote allowing callers of Swapper.amountIn() and .amountOut() to cache quoted
+    /// A simple implementation of DFB.Quote allowing callers of Swapper.quoteIn() and .quoteOut() to cache quoted
     /// amount in and/or out.
     ///
     access(all) struct BasicQuote : DFB.Quote {
-        access(all) let inVault: Type
-        access(all) let outVault: Type
+        access(all) let inType: Type
+        access(all) let outType: Type
         access(all) let inAmount: UFix64
         access(all) let outAmount: UFix64
 
         init(
-            inVault: Type,
-            outVault: Type,
+            inType: Type,
+            outType: Type,
             inAmount: UFix64,
             outAmount: UFix64
         ) {
-            self.inVault = inVault
-            self.outVault = outVault
+            self.inType = inType
+            self.outType = outType
             self.inAmount = inAmount
             self.outAmount = outAmount
         }
@@ -36,15 +36,15 @@ access(all) contract SwapStack {
     /// that should fulfill the Swap
     ///
     access(all) struct MultiSwapperQuote : DFB.Quote {
-        access(all) let inVault: Type
-        access(all) let outVault: Type
+        access(all) let inType: Type
+        access(all) let outType: Type
         access(all) let inAmount: UFix64
         access(all) let outAmount: UFix64
         access(all) let swapperIndex: Int
 
         init(
-            inVault: Type,
-            outVault: Type,
+            inType: Type,
+            outType: Type,
             inAmount: UFix64,
             outAmount: UFix64,
             swapperIndex: Int
@@ -52,8 +52,8 @@ access(all) contract SwapStack {
             pre {
                 swapperIndex >= 0: "Invalid swapperIndex - provided \(swapperIndex) is less than 0"
             }
-            self.inVault = inVault
-            self.outVault = outVault
+            self.inType = inType
+            self.outType = outType
             self.inAmount = inAmount
             self.outAmount = outAmount
             self.swapperIndex = swapperIndex
@@ -66,7 +66,7 @@ access(all) contract SwapStack {
     ///
     access(all) struct MultiSwapper : DFB.Swapper {
         access(all) let swappers: [{DFB.Swapper}]
-        access(contract) let uniqueID: {DFB.UniqueIdentifier}?
+        access(contract) let uniqueID: DFB.UniqueIdentifier?
         access(self) let inVault: Type
         access(self) let outVault: Type
 
@@ -74,7 +74,7 @@ access(all) contract SwapStack {
             inVault: Type,
             outVault: Type,
             swappers: [{DFB.Swapper}],
-            uniqueID: {DFB.UniqueIdentifier}?
+            uniqueID: DFB.UniqueIdentifier?
         ) {
             pre {
                 inVault.getType().isSubtype(of: Type<@{FungibleToken.Vault}>()):
@@ -83,10 +83,10 @@ access(all) contract SwapStack {
                 "Invalid outVault type - \(outVault.identifier) is not a FungibleToken Vault implementation"
             }
             for swapper in swappers {
-                assert(swapper.inVaultType() == inVault,
-                    message: "Mismatched inVault \(inVault.identifier) - Swapper \(swapper.getType().identifier) accepts \(swapper.inVaultType().identifier)")
-                assert(swapper.outVaultType() == outVault,
-                    message: "Mismatched outVault \(outVault.identifier) - Swapper \(swapper.getType().identifier) accepts \(swapper.outVaultType().identifier)")
+                assert(swapper.inType() == inVault,
+                    message: "Mismatched inVault \(inVault.identifier) - Swapper \(swapper.getType().identifier) accepts \(swapper.inType().identifier)")
+                assert(swapper.outType() == outVault,
+                    message: "Mismatched outVault \(outVault.identifier) - Swapper \(swapper.getType().identifier) accepts \(swapper.outType().identifier)")
             }
             self.inVault = inVault
             self.outVault = outVault
@@ -95,21 +95,21 @@ access(all) contract SwapStack {
         }
 
         /// The type of Vault this Swapper accepts when performing a swap
-        access(all) view fun inVaultType(): Type {
+        access(all) view fun inType(): Type {
             return self.inVault
         }
 
         /// The type of Vault this Swapper provides when performing a swap
-        access(all) view fun outVaultType(): Type  {
+        access(all) view fun outType(): Type  {
             return self.outVault
         }
 
         /// The estimated amount required to provide a Vault with the desired output balance
-        access(all) fun amountIn(forDesired: UFix64, reverse: Bool): {DFB.Quote} {
+        access(all) fun quoteIn(forDesired: UFix64, reverse: Bool): {DFB.Quote} {
             let estimate = self._estimate(amount: forDesired, out: true, reverse: reverse)
             return MultiSwapperQuote(
-                inVault: reverse ? self.outVaultType() : self.inVaultType(),
-                outVault: reverse ? self.inVaultType() : self.outVaultType(),
+                inType: reverse ? self.outType() : self.inType(),
+                outType: reverse ? self.inType() : self.outType(),
                 inAmount: estimate[1],
                 outAmount: forDesired,
                 swapperIndex: Int(estimate[0])
@@ -117,11 +117,11 @@ access(all) contract SwapStack {
         }
 
         /// The estimated amount delivered out for a provided input balance
-        access(all) fun amountOut(forProvided: UFix64, reverse: Bool): {DFB.Quote} {
+        access(all) fun quoteOut(forProvided: UFix64, reverse: Bool): {DFB.Quote} {
             let estimate = self._estimate(amount: forProvided, out: true, reverse: reverse)
             return MultiSwapperQuote(
-                inVault: reverse ? self.outVaultType() : self.inVaultType(),
-                outVault: reverse ? self.inVaultType() : self.outVaultType(),
+                inType: reverse ? self.outType() : self.inType(),
+                outType: reverse ? self.inType() : self.outType(),
                 inAmount: forProvided,
                 outAmount: estimate[1],
                 swapperIndex: Int(estimate[0])
@@ -151,8 +151,8 @@ access(all) contract SwapStack {
             for i, swapper in self.swappers {
                 // call the appropriate estimator
                 let estimate = out
-                    ? swapper.amountOut(forProvided: amount, reverse: true).outAmount
-                    : swapper.amountIn(forDesired: amount, reverse: true).inAmount
+                    ? swapper.quoteOut(forProvided: amount, reverse: true).outAmount
+                    : swapper.quoteIn(forDesired: amount, reverse: true).inAmount
                 if (out ? res[1] < estimate : estimate < res[1]) {
                     // take minimum for in, maximum for out
                     res = [UFix64(i), estimate]
@@ -166,7 +166,7 @@ access(all) contract SwapStack {
         access(self) fun _swap(quote: {DFB.Quote}?, from: @{FungibleToken.Vault}, reverse: Bool): @{FungibleToken.Vault} {
             var multiQuote = quote as? MultiSwapperQuote
             if multiQuote != nil || multiQuote!.swapperIndex > self.swappers.length {
-                multiQuote = self.amountOut(forProvided: from.balance, reverse: reverse) as! MultiSwapperQuote
+                multiQuote = self.quoteOut(forProvided: from.balance, reverse: reverse) as! MultiSwapperQuote
             }
             let optimalSwapper = &self.swappers[multiQuote!.swapperIndex] as &{DFB.Swapper}
             if reverse {
@@ -177,18 +177,18 @@ access(all) contract SwapStack {
         }
     }
 
-    /// SwapSink StackFi connector that deposits the resulting post-conversion currency of a token swap to an inner
-    /// StackFi Sink, sourcing funds from a deposited Vault of a pre-set Type.
+    /// SwapSink DeFiBlocks connector that deposits the resulting post-conversion currency of a token swap to an inner
+    /// DeFiBlocks Sink, sourcing funds from a deposited Vault of a pre-set Type.
     ///
     access(all) struct SwapSink : DFB.Sink {
         access(self) let swapper: {DFB.Swapper}
         access(self) let sink: {DFB.Sink}
-        access(contract) let uniqueID: {DFB.UniqueIdentifier}?
+        access(contract) let uniqueID: DFB.UniqueIdentifier?
 
-        init(swapper: {DFB.Swapper}, sink: {DFB.Sink}, uniqueID: {DFB.UniqueIdentifier}?) {
+        init(swapper: {DFB.Swapper}, sink: {DFB.Sink}, uniqueID: DFB.UniqueIdentifier?) {
             pre {
-                swapper.outVaultType() == sink.getSinkType():
-                "Swapper outputs \(swapper.outVaultType().identifier) but Sink takes \(sink.getSinkType().identifier) - "
+                swapper.outType() == sink.getSinkType():
+                "Swapper outputs \(swapper.outType().identifier) but Sink takes \(sink.getSinkType().identifier) - "
                     .concat("Ensure the provided Swapper outputs a Vault Type compatible with the provided Sink")
             }
             self.swapper = swapper
@@ -197,11 +197,11 @@ access(all) contract SwapStack {
         }
 
         access(all) view fun getSinkType(): Type {
-            return self.swapper.inVaultType()
+            return self.swapper.inType()
         }
 
         access(all) fun minimumCapacity(): UFix64 {
-            return self.swapper.amountIn(forDesired: self.sink.minimumCapacity(), reverse: false).inAmount
+            return self.swapper.quoteIn(forDesired: self.sink.minimumCapacity(), reverse: false).inAmount
         }
 
         access(all) fun depositCapacity(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
@@ -210,7 +210,7 @@ access(all) contract SwapStack {
                 return // nothing to swap from, no capacity to ingest, invalid Vault type - do nothing
             }
 
-            let quote = self.swapper.amountIn(forDesired: from.balance, reverse: false)
+            let quote = self.swapper.quoteIn(forDesired: from.balance, reverse: false)
             let sinkLimit = quote.inAmount
             let swapVault <- from.createEmptyVault()
 
@@ -234,18 +234,18 @@ access(all) contract SwapStack {
         }
     }
 
-    /// SwapSource StackFi connector that deposits the resulting post-conversion currency of a token swap to an inner
-    /// StackFi Sink, sourcing funds from a deposited Vault of a pre-set Type.
+    /// SwapSource DeFiBlocks connector that returns post-conversion currency, sourcing pre-converted funds from an inner
+    /// DeFiBlocks Source
     ///
     access(all) struct SwapSource : DFB.Source {
         access(self) let swapper: {DFB.Swapper}
         access(self) let source: {DFB.Source}
-        access(contract) let uniqueID: {DFB.UniqueIdentifier}?
+        access(contract) let uniqueID: DFB.UniqueIdentifier?
 
-        init(swapper: {DFB.Swapper}, source: {DFB.Source}, uniqueID: {DFB.UniqueIdentifier}) {
+        init(swapper: {DFB.Swapper}, source: {DFB.Source}, uniqueID: DFB.UniqueIdentifier) {
             pre {
-                source.getSourceType() == swapper.inVaultType():
-                "Source outputs \(source.getSourceType().identifier) but Swapper takes \(swapper.inVaultType().identifier) - "
+                source.getSourceType() == swapper.inType():
+                "Source outputs \(source.getSourceType().identifier) but Swapper takes \(swapper.inType().identifier) - "
                     .concat("Ensure the provided Source outputs a Vault Type compatible with the provided Swapper")
             }
             self.swapper = swapper
@@ -254,14 +254,14 @@ access(all) contract SwapStack {
         }
 
         access(all) view fun getSourceType(): Type {
-            return self.swapper.outVaultType()
+            return self.swapper.outType()
         }
 
         access(all) fun minimumAvailable(): UFix64 {
             // estimate post-conversion currency based on the source's pre-conversion balance available
             let availableIn = self.source.minimumAvailable()
             return availableIn > 0.0
-                ? self.swapper.amountOut(forProvided: availableIn, reverse: false).outAmount
+                ? self.swapper.quoteOut(forProvided: availableIn, reverse: false).outAmount
                 : 0.0
         }
 
@@ -276,7 +276,7 @@ access(all) contract SwapStack {
 
             // find out how much liquidity to gather from the inner Source
             let availableIn = self.source.minimumAvailable()
-            let quote = self.swapper.amountIn(forDesired: amountOut, reverse: false)
+            let quote = self.swapper.quoteIn(forDesired: amountOut, reverse: false)
             let quoteIn = availableIn < quote.inAmount ? availableIn : quote.inAmount
 
             let sourceLiquidity <- self.source.withdrawAvailable(maxAmount: quoteIn)
