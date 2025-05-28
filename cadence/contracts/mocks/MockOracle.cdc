@@ -23,11 +23,11 @@ access(all) contract MockOracle {
         }
 
         /// Returns the latest price data for a given asset denominated in unitOfAccount()
-        access(all) fun price(ofToken: Type): UFix64 {
+        access(all) fun price(ofToken: Type): UFix64? {
             if ofToken == self.unitOfAccount() {
                 return 1.0
             }
-            return MockOracle.mockedPrices[ofToken] ?? panic("Unsupported token type \(ofToken.identifier)")
+            return MockOracle.mockedPrices[ofToken]
         }
     }
 
