@@ -19,29 +19,19 @@ access(all) contract Tidal {
     access(all) event AddedToManager(id: UInt64, idType: String, owner: Address?, managerUUID: UInt64)
     access(all) event BurnedTide(id: UInt64, idType: String, remainingBalance: UFix64)
 
-    access(self) var currentIdentifier: UInt64
-
     access(all) fun createTideManager(): @TideManager {
         return <-create TideManager()
     }
 
     /* --- CONSTRUCTS --- */
 
-    access(all) struct UniqueID : DFB.UniqueIdentifier {
-        access(all) let id: UInt64
-        init() {
-            self.id = Tidal.currentIdentifier
-            Tidal.currentIdentifier = Tidal.currentIdentifier + 1
-        }
-    }
-
     access(all) resource Tide : Burner.Burnable, FungibleToken.Receiver, FungibleToken.Provider, ViewResolver.Resolver {
-        access(contract) let uniqueID: {DFB.UniqueIdentifier}
+        access(contract) let uniqueID: DFB.UniqueIdentifier
         access(self) let vault: @{FungibleToken.Vault}
 
         init(_ vault: @{FungibleToken.Vault}) {
             self.vault <- vault
-            self.uniqueID = UniqueID()
+            self.uniqueID = DFB.UniqueIdentifier()
         }
 
         access(all) view fun id(): UInt64 {
@@ -182,7 +172,5 @@ access(all) contract Tidal {
         let pathIdentifier = "TidalTideManager_\(self.account.address)"
         self.TideManagerStoragePath = StoragePath(identifier: pathIdentifier)!
         self.TideManagerPublicPath = PublicPath(identifier: pathIdentifier)!
-
-        self.currentIdentifier = 0
     }
 }
