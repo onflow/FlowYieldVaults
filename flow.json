@@ -42,6 +42,12 @@
 				"testing": "0000000000000008"
 			}
 		},
+		"TidalStrategies": {
+			"source": "cadence/contracts/TidalStrategies.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
 		"USDA": {
 			"source": "cadence/contracts/internal-dependencies/tokens/USDA.cdc",
 			"aliases": {
@@ -164,6 +170,7 @@
 					]
 				},
 				"MockSwapper",
+				"TidalStrategies",
 				"Tidal"
 			]
 		}

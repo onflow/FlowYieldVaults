@@ -3,6 +3,7 @@ import "Burner"
 import "ViewResolver"
 
 import "DFB"
+import "TidalStrategies"
 
 ///
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
@@ -25,25 +26,32 @@ access(all) contract Tidal {
 
     /* --- CONSTRUCTS --- */
 
-    access(all) resource Tide : Burner.Burnable, FungibleToken.Receiver, FungibleToken.Provider, ViewResolver.Resolver {
+    access(all) resource Tide : Burner.Burnable, FungibleToken.Receiver, ViewResolver.Resolver {
         access(contract) let uniqueID: DFB.UniqueIdentifier
-        access(self) let vault: @{FungibleToken.Vault}
+        access(self) let strategy: {TidalStrategies.Strategy}
 
-        init(_ vault: @{FungibleToken.Vault}) {
-            self.vault <- vault
+        init(strategyNumber: UInt64, withVault: @{FungibleToken.Vault}) {
+            pre {
+                TidalStrategies.isSupportedCollateralType(withVault.getType(), forStrategy: strategyNumber) == true:
+                "Provided vault of type \(withVault.getType().identifier) is unsupported collateral Type for strategy \(strategyNumber)"
+            }
             self.uniqueID = DFB.UniqueIdentifier()
+            let vaultType = withVault.getType()
+            self.strategy = TidalStrategies.createStrategy(number: strategyNumber, vault: <-withVault)
+            assert(self.strategy.getSinkType() == vaultType, message: "TODO")
+            assert(self.strategy.getSourceType() == vaultType, message: "TODO")
         }
 
         access(all) view fun id(): UInt64 {
             return self.uniqueID.id
         }
 
-        access(all) view fun getTideBalance(): UFix64 {
-            return self.vault.balance
+        access(all) fun getTideBalance(): UFix64 {
+            return self.strategy.minimumAvailable()
         }
 
         access(contract) fun burnCallback() {
-            emit BurnedTide(id: self.uniqueID.id, idType: self.uniqueID.getType().identifier,remainingBalance: self.vault.balance)
+            emit BurnedTide(id: self.uniqueID.id, idType: self.uniqueID.getType().identifier, remainingBalance: self.getTideBalance())
         }
 
         access(all) view fun getViews(): [Type] {
@@ -60,28 +68,29 @@ access(all) contract Tidal {
                 "Deposited vault of type \(from.getType().identifier) is not supported by this Tide"
             }
             emit DepositedToTide(id: self.uniqueID.id, idType: self.uniqueID.getType().identifier, amount: from.balance, owner: self.owner?.address, fromUUID: from.uuid)
-            self.vault.deposit(from: <-from)
+            self.strategy.depositCapacity(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
+            assert(from.balance == 0.0, message: "TODO")
+            Burner.burn(<-from)
         }
 
         access(all) view fun getSupportedVaultTypes(): {Type: Bool} {
-            return { self.vault.getType() : true }
+            return { self.strategy.getSinkType(): true }
         }
-
 
         access(all) view fun isSupportedVaultType(type: Type): Bool {
             return self.getSupportedVaultTypes()[type] ?? false
         }
 
-        access(all) view fun isAvailableToWithdraw(amount: UFix64): Bool {
-            return amount <= self.vault.balance
-        }
-
         access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @{FungibleToken.Vault} {
-            pre {
-                self.isAvailableToWithdraw(amount: amount):
-                "Requested amount \(amount) is greater than withdrawable balance of \(self.vault.balance)"
+            post {
+                result.balance == amount: "TODO"
             }
-            let res <- self.vault.withdraw(amount: amount)
+            let available = self.strategy.minimumAvailable()
+            assert(
+                amount <= available,
+                message: "Requested amount \(amount) is greater than withdrawable balance of \(available)"
+            )
+            let res <- self.strategy.withdrawAvailable(maxAmount: amount)
             emit WithdrawnFromTide(id: self.uniqueID.id, idType: self.uniqueID.getType().identifier, amount: amount, owner: self.owner?.address, toUUID: res.uuid)
             return <- res
         }
@@ -172,5 +181,6 @@ access(all) contract Tidal {
         let pathIdentifier = "TidalTideManager_\(self.account.address)"
         self.TideManagerStoragePath = StoragePath(identifier: pathIdentifier)!
         self.TideManagerPublicPath = PublicPath(identifier: pathIdentifier)!
+
     }
 }
