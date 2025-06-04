@@ -18,11 +18,17 @@ access(all) contract TidalStrategies {
         destroy vault // TODO: Update vault handling
         return DummyStrategy(id: DFB.UniqueIdentifier())
     }
+
+    access(all) struct interface StrategyBuilder {
+        access(all) fun createStrategy(funds: @{FungibleToken.Vault}): {Strategy}
+    }
     
-    access(all) struct interface Strategy : DFB.Sink, DFB.Source {
+    access(all) struct interface StrategyInfo {
         access(all) view fun getSupportedCollateralTypes(): [Type]
         access(all) view fun isSupportedCollateralType(_ type: Type): Bool
     }
+
+    access(all) struct Strategy : StrategyInfo, DFB.Sink, DFB.Source  {}
 
     access(all) struct DummyStrategy : Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
@@ -38,11 +44,11 @@ access(all) contract TidalStrategies {
         }
 
         access(all) view fun getSupportedCollateralTypes(): [Type] {
-            return [] // TODO: tmp
+            return [self.sink!.getSinkType()]
         }
 
         access(all) view fun isSupportedCollateralType(_ type: Type): Bool {
-            return false // TODO: tmp
+            return self.sink!.getSinkType() == type
         }
 
         /// Returns the Vault type accepted by this Sink

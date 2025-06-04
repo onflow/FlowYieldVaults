@@ -1,5 +1,11 @@
 {
 	"contracts": {
+		"AlpenFlow": {
+			"source": "cadence/contracts/internal-dependencies/AlpenFlow.cdc",
+			"aliases": {
+				"testing": "0000000000000007"
+			}
+		},
 		"DFB": {
 			"source": "cadence/contracts/internal-dependencies/interfaces/DFB.cdc",
 			"aliases": {
@@ -151,6 +157,7 @@
 				"DFB",
 				"FungibleTokenStack",
 				"SwapStack",
+				"AlpenFlow",
 				{
 					"name": "USDA",
 					"args": [
