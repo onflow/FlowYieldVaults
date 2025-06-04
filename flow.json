@@ -18,6 +18,12 @@
 				"testing": "0000000000000008"
 			}
 		},
+		"MockSwapper": {
+			"source": "cadence/contracts/mocks/MockSwapper.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
 		"SwapStack": {
 			"source": "cadence/contracts/internal-dependencies/connectors/SwapStack.cdc",
 			"aliases": {
@@ -132,7 +138,15 @@
 				"DFB",
 				"FungibleTokenStack",
 				"SwapStack",
-				"USDA",
+				{
+					"name": "USDA",
+					"args": [
+						{
+							"value": "1000000.0",
+							"type": "UFix64"
+						}
+					]
+				},
 				{
 					"name": "MockOracle",
 					"args": [
@@ -142,6 +156,7 @@
 						}
 					]
 				},
+				"MockSwapper",
 				"Tidal"
 			]
 		}
