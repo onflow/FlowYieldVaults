@@ -25,8 +25,8 @@ access(all) contract Tidal {
 
     /* --- CONSTRUCTS --- */
 
-    access(all) resource Tide : Burner.Burnable, FungibleToken.Receiver, FungibleToken.Provider, ViewResolver.Resolver {
-        access(contract) let uniqueID: DFB.UniqueIdentifier
+    access(all) resource Tide : Burner.Burnable, FungibleToken.Receiver, FungibleToken.Provider, ViewResolver.Resolver, DFB.IdentifiableResource {
+        access(contract) let uniqueID: DFB.UniqueIdentifier?
         access(self) let vault: @{FungibleToken.Vault}
 
         init(_ vault: @{FungibleToken.Vault}) {
@@ -35,7 +35,7 @@ access(all) contract Tidal {
         }
 
         access(all) view fun id(): UInt64 {
-            return self.uniqueID.id
+            return self.uniqueID!.id
         }
 
         access(all) view fun getTideBalance(): UFix64 {
@@ -43,7 +43,7 @@ access(all) contract Tidal {
         }
 
         access(contract) fun burnCallback() {
-            emit BurnedTide(id: self.uniqueID.id, idType: self.uniqueID.getType().identifier,remainingBalance: self.vault.balance)
+            emit BurnedTide(id: self.uniqueID!.id, idType: self.uniqueID!.getType().identifier,remainingBalance: self.vault.balance)
         }
 
         access(all) view fun getViews(): [Type] {
@@ -59,7 +59,7 @@ access(all) contract Tidal {
                 self.isSupportedVaultType(type: from.getType()):
                 "Deposited vault of type \(from.getType().identifier) is not supported by this Tide"
             }
-            emit DepositedToTide(id: self.uniqueID.id, idType: self.uniqueID.getType().identifier, amount: from.balance, owner: self.owner?.address, fromUUID: from.uuid)
+            emit DepositedToTide(id: self.uniqueID!.id, idType: self.uniqueID!.getType().identifier, amount: from.balance, owner: self.owner?.address, fromUUID: from.uuid)
             self.vault.deposit(from: <-from)
         }
 
@@ -82,7 +82,7 @@ access(all) contract Tidal {
                 "Requested amount \(amount) is greater than withdrawable balance of \(self.vault.balance)"
             }
             let res <- self.vault.withdraw(amount: amount)
-            emit WithdrawnFromTide(id: self.uniqueID.id, idType: self.uniqueID.getType().identifier, amount: amount, owner: self.owner?.address, toUUID: res.uuid)
+            emit WithdrawnFromTide(id: self.uniqueID!.id, idType: self.uniqueID!.getType().identifier, amount: amount, owner: self.owner?.address, toUUID: res.uuid)
             return <- res
         }
     }
@@ -116,18 +116,18 @@ access(all) contract Tidal {
             let balance = withVault.balance
             let tide <-create Tide(<-withVault)
 
-            emit CreatedTide(id: tide.uniqueID.id, idType: tide.uniqueID.getType().identifier, uuid: tide.uuid, initialAmount: balance, creator: self.owner?.address)
+            emit CreatedTide(id: tide.uniqueID!.id, idType: tide.uniqueID!.getType().identifier, uuid: tide.uuid, initialAmount: balance, creator: self.owner?.address)
 
             self.addTide(<-tide)
         }
 
         access(all) fun addTide(_ tide: @Tide) {
             pre {
-                self.tides[tide.uniqueID.id] == nil:
-                "Collision with Tide ID \(tide.uniqueID.id) - a Tide with this ID already exists"
+                self.tides[tide.uniqueID!.id] == nil:
+                "Collision with Tide ID \(tide.uniqueID!.id) - a Tide with this ID already exists"
             }
-            emit AddedToManager(id: tide.uniqueID.id, idType: tide.uniqueID.getType().identifier, owner: self.owner?.address, managerUUID: self.uuid)
-            self.tides[tide.uniqueID.id] <-! tide
+            emit AddedToManager(id: tide.uniqueID!.id, idType: tide.uniqueID!.getType().identifier, owner: self.owner?.address, managerUUID: self.uuid)
+            self.tides[tide.uniqueID!.id] <-! tide
         }
 
         access(all) fun depositToTide(_ id: UInt64, from: @{FungibleToken.Vault}) {

@@ -1,19 +1,19 @@
 {
 	"contracts": {
 		"DFB": {
-			"source": "cadence/contracts/internal-dependencies/interfaces/DFB.cdc",
+			"source": "./DeFiBlocks/cadence/contracts/interfaces/DFB.cdc",
 			"aliases": {
 				"testing": "0000000000000007"
 			}
 		},
 		"DFBUtils": {
-			"source": "cadence/contracts/internal-dependencies/utils/DFBUtils.cdc",
+			"source": "./DeFiBlocks/cadence/contracts/utils/DFBUtils.cdc",
 			"aliases": {
 				"testing": "0000000000000007"
 			}
 		},
 		"FungibleTokenStack": {
-			"source": "cadence/contracts/internal-dependencies/connectors/FungibleTokenStack.cdc",
+			"source": "./DeFiBlocks/cadence/contracts/connectors/FungibleTokenStack.cdc",
 			"aliases": {
 				"testing": "0000000000000007"
 			}
@@ -31,7 +31,7 @@
 			}
 		},
 		"SwapStack": {
-			"source": "cadence/contracts/internal-dependencies/connectors/SwapStack.cdc",
+			"source": "./DeFiBlocks/cadence/contracts/connectors/SwapStack.cdc",
 			"aliases": {
 				"testing": "0000000000000007"
 			}

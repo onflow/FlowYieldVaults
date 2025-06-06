@@ -1,3 +1,4 @@
+git submodule update --init --recursive
 flow deploy
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.0ae53cb6e3f42a79.FlowToken.Vault' 0.5
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.f8d6e0586b0a20c7.YieldToken.Vault' 1.0
