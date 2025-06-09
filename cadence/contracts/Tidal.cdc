@@ -43,7 +43,7 @@ access(all) contract Tidal {
         }
 
         access(all) view fun id(): UInt64 {
-            return self.uniqueID.id
+            return self.uniqueID!.id
         }
 
         access(all) fun getTideBalance(): UFix64 {
@@ -125,18 +125,18 @@ access(all) contract Tidal {
             let balance = withVault.balance
             let tide <-create Tide(<-withVault)
 
-            emit CreatedTide(id: tide.uniqueID.id, idType: tide.uniqueID.getType().identifier, uuid: tide.uuid, initialAmount: balance, creator: self.owner?.address)
+            emit CreatedTide(id: tide.uniqueID!.id, idType: tide.uniqueID!.getType().identifier, uuid: tide.uuid, initialAmount: balance, creator: self.owner?.address)
 
             self.addTide(<-tide)
         }
 
         access(all) fun addTide(_ tide: @Tide) {
             pre {
-                self.tides[tide.uniqueID.id] == nil:
-                "Collision with Tide ID \(tide.uniqueID.id) - a Tide with this ID already exists"
+                self.tides[tide.uniqueID!.id] == nil:
+                "Collision with Tide ID \(tide.uniqueID!.id) - a Tide with this ID already exists"
             }
-            emit AddedToManager(id: tide.uniqueID.id, idType: tide.uniqueID.getType().identifier, owner: self.owner?.address, managerUUID: self.uuid)
-            self.tides[tide.uniqueID.id] <-! tide
+            emit AddedToManager(id: tide.uniqueID!.id, idType: tide.uniqueID!.getType().identifier, owner: self.owner?.address, managerUUID: self.uuid)
+            self.tides[tide.uniqueID!.id] <-! tide
         }
 
         access(all) fun depositToTide(_ id: UInt64, from: @{FungibleToken.Vault}) {
@@ -181,6 +181,5 @@ access(all) contract Tidal {
         let pathIdentifier = "TidalTideManager_\(self.account.address)"
         self.TideManagerStoragePath = StoragePath(identifier: pathIdentifier)!
         self.TideManagerPublicPath = PublicPath(identifier: pathIdentifier)!
-
     }
 }
