@@ -48,8 +48,8 @@
 				"testing": "0000000000000008"
 			}
 		},
-		"TidalStrategies": {
-			"source": "cadence/contracts/TidalStrategies.cdc",
+		"TidalYieldFactory": {
+			"source": "cadence/contracts/TidalYieldFactory.cdc",
 			"aliases": {
 				"testing": "0000000000000008"
 			}

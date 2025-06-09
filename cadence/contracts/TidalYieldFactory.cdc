@@ -4,8 +4,9 @@ import "FlowToken"
 import "DFBUtils"
 import "DFB"
 
-// TODO: rename to TidalYieldStrategies
-access(all) contract TidalStrategies {
+/// This contract is used by TidalYield to manage supported Strategies and create Factories for new Tides.
+///
+access(all) contract TidalYieldFactory {
 
     access(all) let FactoryStoragePath: StoragePath
     access(all) let FactoryPublicPath: PublicPath
