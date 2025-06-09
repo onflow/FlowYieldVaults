@@ -54,12 +54,6 @@
 				"testing": "0000000000000008"
 			}
 		},
-		"TidalYieldFactory": {
-			"source": "cadence/contracts/TidalYieldFactory.cdc",
-			"aliases": {
-				"testing": "0000000000000008"
-			}
-		},
 		"MOET": {
 			"source": "cadence/contracts/internal-dependencies/tokens/USDA.cdc",
 			"aliases": {
