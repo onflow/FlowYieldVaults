@@ -1,7 +1,7 @@
 {
 	"contracts": {
-		"AlpenFlow": {
-			"source": "cadence/contracts/internal-dependencies/AlpenFlow.cdc",
+		"TidalProtocol": {
+			"source": "cadence/contracts/internal-dependencies/TidalProtocol.cdc",
 			"aliases": {
 				"testing": "0000000000000007"
 			}
@@ -54,7 +54,7 @@
 				"testing": "0000000000000008"
 			}
 		},
-		"USDA": {
+		"MOET": {
 			"source": "cadence/contracts/internal-dependencies/tokens/USDA.cdc",
 			"aliases": {
 				"testing": "0000000000000007"
@@ -164,7 +164,7 @@
 				"FungibleTokenStack",
 				"SwapStack",
 				{
-					"name": "USDA",
+					"name": "MOET",
 					"args": [
 						{
 							"value": "1000000.0",

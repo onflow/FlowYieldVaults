@@ -6,9 +6,9 @@ import "FungibleTokenMetadataViews"
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ///
-access(all) contract USDA : FungibleToken {
+access(all) contract MOET : FungibleToken {
 
-    /// Total supply of USDA in existence
+    /// Total supply of MOET in existence
     access(all) var totalSupply: UFix64
 
     /// Storage and Public Paths
@@ -29,7 +29,7 @@ access(all) contract USDA : FungibleToken {
     /// and store the returned Vault in their storage in order to allow their
     /// account to be able to receive deposits of this token type.
     ///
-    access(all) fun createEmptyVault(vaultType: Type): @USDA.Vault {
+    access(all) fun createEmptyVault(vaultType: Type): @MOET.Vault {
         return <- create Vault(balance: 0.0)
     }
 
@@ -58,9 +58,9 @@ access(all) contract USDA : FungibleToken {
                 )
                 let medias = MetadataViews.Medias([media])
                 return FungibleTokenMetadataViews.FTDisplay(
-                    name: "AlpenFlow USD",
-                    symbol: "USDA",
-                    description: "A mocked version of AlpenFlow USD",
+                    name: "TidalProtocol USD",
+                    symbol: "MOET",
+                    description: "A mocked version of TidalProtocol stablecoin",
                     externalURL: MetadataViews.ExternalURL("https://flow.com"),
                     logos: medias,
                     socials: {
@@ -72,15 +72,15 @@ access(all) contract USDA : FungibleToken {
                     storagePath: self.VaultStoragePath,
                     receiverPath: self.ReceiverPublicPath,
                     metadataPath: self.VaultPublicPath,
-                    receiverLinkedType: Type<&USDA.Vault>(),
-                    metadataLinkedType: Type<&USDA.Vault>(),
+                    receiverLinkedType: Type<&MOET.Vault>(),
+                    metadataLinkedType: Type<&MOET.Vault>(),
                     createEmptyVaultFunction: (fun(): @{FungibleToken.Vault} {
-                        return <-USDA.createEmptyVault(vaultType: Type<@USDA.Vault>())
+                        return <-MOET.createEmptyVault(vaultType: Type<@MOET.Vault>())
                     })
                 )
             case Type<FungibleTokenMetadataViews.TotalSupply>():
                 return FungibleTokenMetadataViews.TotalSupply(
-                    totalSupply: USDA.totalSupply
+                    totalSupply: MOET.totalSupply
                 )
         }
         return nil
@@ -115,17 +115,17 @@ access(all) contract USDA : FungibleToken {
         /// Called when a fungible token is burned via the `Burner.burn()` method
         access(contract) fun burnCallback() {
             if self.balance > 0.0 {
-                USDA.totalSupply = USDA.totalSupply - self.balance
+                MOET.totalSupply = MOET.totalSupply - self.balance
             }
             self.balance = 0.0
         }
 
         access(all) view fun getViews(): [Type] {
-            return USDA.getContractViews(resourceType: nil)
+            return MOET.getContractViews(resourceType: nil)
         }
 
         access(all) fun resolveView(_ view: Type): AnyStruct? {
-            return USDA.resolveContractView(resourceType: nil, viewType: view)
+            return MOET.resolveContractView(resourceType: nil, viewType: view)
         }
 
         access(all) view fun getSupportedVaultTypes(): {Type: Bool} {
@@ -142,18 +142,18 @@ access(all) contract USDA : FungibleToken {
             return amount <= self.balance
         }
 
-        access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @USDA.Vault {
+        access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @MOET.Vault {
             self.balance = self.balance - amount
             return <-create Vault(balance: amount)
         }
 
         access(all) fun deposit(from: @{FungibleToken.Vault}) {
-            let vault <- from as! @USDA.Vault
+            let vault <- from as! @MOET.Vault
             self.balance = self.balance + vault.balance
             destroy vault
         }
 
-        access(all) fun createEmptyVault(): @USDA.Vault {
+        access(all) fun createEmptyVault(): @MOET.Vault {
             return <-create Vault(balance: 0.0)
         }
     }
@@ -175,8 +175,8 @@ access(all) contract USDA : FungibleToken {
         /// Function that mints new tokens, adds them to the total supply,
         /// and returns them to the calling context.
         ///
-        access(all) fun mintTokens(amount: UFix64): @USDA.Vault {
-            USDA.totalSupply = USDA.totalSupply + amount
+        access(all) fun mintTokens(amount: UFix64): @MOET.Vault {
+            MOET.totalSupply = MOET.totalSupply + amount
             let vault <-create Vault(balance: amount)
             emit Minted(type: vault.getType().identifier, amount: amount, toUUID: vault.uuid, minterUUID: self.uuid)
             return <-vault
@@ -188,10 +188,10 @@ access(all) contract USDA : FungibleToken {
         self.totalSupply = 0.0
         
         let address = self.account.address
-        self.VaultStoragePath = StoragePath(identifier: "usdaTokenVault_\(address)")!
-        self.VaultPublicPath = PublicPath(identifier: "usdaTokenVault_\(address)")!
-        self.ReceiverPublicPath = PublicPath(identifier: "usdaTokenReceiver_\(address)")!
-        self.AdminStoragePath = StoragePath(identifier: "usdaTokenAdmin_\(address)")!
+        self.VaultStoragePath = StoragePath(identifier: "moetTokenVault_\(address)")!
+        self.VaultPublicPath = PublicPath(identifier: "moetTokenVault_\(address)")!
+        self.ReceiverPublicPath = PublicPath(identifier: "moetTokenReceiver_\(address)")!
+        self.AdminStoragePath = StoragePath(identifier: "moetTokenAdmin_\(address)")!
 
 
         // Create a public capability to the stored Vault that exposes
@@ -199,9 +199,9 @@ access(all) contract USDA : FungibleToken {
         // and the `balance` method through the `Balance` interface
         //
         self.account.storage.save(<-create Vault(balance: self.totalSupply), to: self.VaultStoragePath)
-        let vaultCap = self.account.capabilities.storage.issue<&USDA.Vault>(self.VaultStoragePath)
+        let vaultCap = self.account.capabilities.storage.issue<&MOET.Vault>(self.VaultStoragePath)
         self.account.capabilities.publish(vaultCap, at: self.VaultPublicPath)
-        let receiverCap = self.account.capabilities.storage.issue<&USDA.Vault>(self.VaultStoragePath)
+        let receiverCap = self.account.capabilities.storage.issue<&MOET.Vault>(self.VaultStoragePath)
         self.account.capabilities.publish(receiverCap, at: self.ReceiverPublicPath)
 
         // Create a Minter & mint the initial supply of tokens to the contract account's Vault
