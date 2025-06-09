@@ -42,8 +42,8 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"Tidal": {
-			"source": "cadence/contracts/Tidal.cdc",
+		"TidalYield": {
+			"source": "cadence/contracts/TidalYield.cdc",
 			"aliases": {
 				"testing": "0000000000000008"
 			}
@@ -191,7 +191,7 @@
 					]
 				},
 				"MockSwapper",
-				"Tidal"
+				"TidalYield"
 			]
 		}
 	}

@@ -9,7 +9,7 @@ import "TidalStrategies"
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ///
-access(all) contract Tidal {
+access(all) contract TidalYield {
 
     access(all) let TideManagerStoragePath: StoragePath
     access(all) let TideManagerPublicPath: PublicPath
@@ -178,7 +178,7 @@ access(all) contract Tidal {
     }
 
     init() {
-        let pathIdentifier = "TidalTideManager_\(self.account.address)"
+        let pathIdentifier = "TidalYieldTideManager_\(self.account.address)"
         self.TideManagerStoragePath = StoragePath(identifier: pathIdentifier)!
         self.TideManagerPublicPath = PublicPath(identifier: pathIdentifier)!
     }

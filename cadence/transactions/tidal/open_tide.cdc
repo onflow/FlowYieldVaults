@@ -2,7 +2,7 @@ import "FungibleToken"
 import "FungibleTokenMetadataViews"
 import "ViewResolver"
 
-import "Tidal"
+import "TidalYield"
 
 /// Opens a new Tide in the Tidal platform, funding the Tide with the specified Vault and amount
 ///
@@ -11,7 +11,7 @@ import "Tidal"
 /// @param amount: The amount to deposit into the new Tide
 ///
 transaction(vaultIdentifier: String, amount: UFix64) {
-    let manager: &Tidal.TideManager
+    let manager: &TidalYield.TideManager
     let depositVault: @{FungibleToken.Vault}
 
     prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability) &Account) {
@@ -32,17 +32,17 @@ transaction(vaultIdentifier: String, amount: UFix64) {
         self.depositVault <- sourceVault.withdraw(amount: amount)
 
         // configure the TideManager if needed
-        if signer.storage.type(at: Tidal.TideManagerStoragePath) == nil {
-            signer.storage.save(<-Tidal.createTideManager(), to: Tidal.TideManagerStoragePath)
-            let cap = signer.capabilities.storage.issue<&Tidal.TideManager>(Tidal.TideManagerStoragePath)
-            signer.capabilities.publish(cap, at: Tidal.TideManagerPublicPath)
+        if signer.storage.type(at: TidalYield.TideManagerStoragePath) == nil {
+            signer.storage.save(<-TidalYield.createTideManager(), to: TidalYield.TideManagerStoragePath)
+            let cap = signer.capabilities.storage.issue<&TidalYield.TideManager>(TidalYield.TideManagerStoragePath)
+            signer.capabilities.publish(cap, at: TidalYield.TideManagerPublicPath)
             // issue an authorized capability for later access via Capability controller if needed (e.g. via HybridCustody)
-            signer.capabilities.storage.issue<auth(Tidal.Owner) &Tidal.TideManager>(
-                    Tidal.TideManagerStoragePath
+            signer.capabilities.storage.issue<auth(TidalYield.Owner) &TidalYield.TideManager>(
+                    TidalYield.TideManagerStoragePath
                 )
         }
-        self.manager = signer.storage.borrow<&Tidal.TideManager>(from: Tidal.TideManagerStoragePath)
-            ?? panic("Signer does not have a TideManager stored at path \(Tidal.TideManagerStoragePath) - configure and retry")
+        self.manager = signer.storage.borrow<&TidalYield.TideManager>(from: TidalYield.TideManagerStoragePath)
+            ?? panic("Signer does not have a TideManager stored at path \(TidalYield.TideManagerStoragePath) - configure and retry")
     }
 
     execute {
