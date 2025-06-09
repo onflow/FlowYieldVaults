@@ -30,6 +30,12 @@
 				"testing": "0000000000000008"
 			}
 		},
+		"MockStrategy": {
+			"source": "cadence/contracts/mocks/MockStrategy.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
 		"MockSwapper": {
 			"source": "cadence/contracts/mocks/MockSwapper.cdc",
 			"aliases": {
