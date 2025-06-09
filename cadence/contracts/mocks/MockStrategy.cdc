@@ -4,7 +4,7 @@ import "FlowToken"
 import "DFBUtils"
 import "DFB"
 
-import "TidalYieldFactory"
+import "TidalYield"
 
 ///
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
@@ -43,7 +43,7 @@ access(all) contract MockStrategy {
         }
     }
 
-    access(all) struct DummyStrategy : TidalYieldFactory.Strategy {
+    access(all) struct DummyStrategy : TidalYield.Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) let uniqueID: DFB.UniqueIdentifier?
@@ -56,8 +56,8 @@ access(all) contract MockStrategy {
             self.source = source
         }
 
-        access(all) view fun getSupportedCollateralTypes(): [Type] {
-            return [self.sink.getSinkType()]
+        access(all) view fun getSupportedCollateralTypes(): {Type: Bool} {
+            return {self.sink.getSinkType(): true }
         }
 
         access(all) view fun isSupportedCollateralType(_ type: Type): Bool {
@@ -84,14 +84,14 @@ access(all) contract MockStrategy {
         }
     }
 
-    access(all) struct DummyStrategyBuilder : TidalYieldFactory.StrategyBuilder {
-        access(all) view fun getSupportedInitializationVaults(forStrategy: Type): [Type] {
-            return []
+    access(all) struct DummyStrategyBuilder : TidalYield.StrategyBuilder {
+        access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
+            return {}
         }
-        access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): [Type] {
-            return []
+        access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
+            return {}
         }
-        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}): {TidalYieldFactory.Strategy} {
+        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}): {TidalYield.Strategy} {
             let id = DFB.UniqueIdentifier()
             let strat = DummyStrategy(
                 id: id,
