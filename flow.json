@@ -55,7 +55,7 @@
 			}
 		},
 		"MOET": {
-			"source": "cadence/contracts/internal-dependencies/tokens/USDA.cdc",
+			"source": "cadence/contracts/internal-dependencies/tokens/MOET.cdc",
 			"aliases": {
 				"testing": "0000000000000007"
 			}
@@ -185,7 +185,7 @@
 					"name": "MockOracle",
 					"args": [
 						{
-							"value": "A.f8d6e0586b0a20c7.USDA.Vault",
+							"value": "A.f8d6e0586b0a20c7.MOET.Vault",
 							"type": "String"
 						}
 					]
