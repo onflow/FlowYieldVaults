@@ -34,7 +34,7 @@ access(all) contract TidalYieldAutoBalancers {
         rebalanceSink: {DFB.Sink}?,
         rebalanceSource: {DFB.Source}?,
         uniqueID: DFB.UniqueIdentifier
-    ) {
+    ): auth(DFB.Auto, DFB.Set, DFB.Get, FungibleToken.Withdraw) &DFB.AutoBalancer {
         
         // derive paths & prevent collision
         let storagePath = self.deriveAutoBalancerPath(id: uniqueID.id, storage: true) as! StoragePath
@@ -74,6 +74,7 @@ access(all) contract TidalYieldAutoBalancers {
             message: "Error when configuring AutoBalancer for UniqueIdentifier.id \(uniqueID.id) at path \(storagePath)")
         assert(!publishedCap,
             message: "Error when publishing AutoBalancer Capability for UniqueIdentifier.id \(uniqueID.id) at path \(publicPath)")
+        return autoBalancerRef
     }
 
     /// Returns an authorized reference on the AutoBalancer with the associated UniqueIdentifier.id. If none is found,
