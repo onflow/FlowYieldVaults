@@ -54,6 +54,18 @@
 				"testing": "0000000000000008"
 			}
 		},
+		"TidalYieldAutoBalancers": {
+			"source": "cadence/contracts/TidalYieldAutoBalancers.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
+		"TidalYieldStrategies": {
+			"source": "cadence/contracts/TidalYieldStrategies.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
 		"MOET": {
 			"source": "cadence/contracts/internal-dependencies/tokens/MOET.cdc",
 			"aliases": {
@@ -191,6 +203,8 @@
 					]
 				},
 				"MockSwapper",
+				"TidalYieldAutoBalancers",
+				"TidalYieldStrategies",
 				"TidalYield"
 			]
 		}
