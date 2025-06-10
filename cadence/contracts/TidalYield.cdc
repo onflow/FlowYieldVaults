@@ -10,6 +10,8 @@ import "DFB"
 ///
 access(all) contract TidalYield {
 
+    /* --- FIELDS --- */
+
     /// Canonical StoragePath for where TideManager should be stored
     access(all) let TideManagerStoragePath: StoragePath
     /// Canonical PublicPath for where TideManager Capability should be published
@@ -19,32 +21,13 @@ access(all) contract TidalYield {
     /// Canonical PublicPath for where StrategyFactory Capability should be published
     access(all) let FactoryPublicPath: PublicPath
 
+    /* --- EVENTS --- */
+
     access(all) event CreatedTide(id: UInt64, idType: String, uuid: UInt64, initialAmount: UFix64, creator: Address?)
     access(all) event DepositedToTide(id: UInt64, idType: String, amount: UFix64, owner: Address?, fromUUID: UInt64)
     access(all) event WithdrawnFromTide(id: UInt64, idType: String, amount: UFix64, owner: Address?, toUUID: UInt64)
     access(all) event AddedToManager(id: UInt64, idType: String, owner: Address?, managerUUID: UInt64)
     access(all) event BurnedTide(id: UInt64, idType: String, remainingBalance: UFix64)
-
-    /* --- PUBLIC METHODS --- */
-
-    access(all) view fun getSupportedStrategies(): [Type] {
-        return self._borrowFactory().getSupportedStrategies()
-    }
-    access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
-        return self._borrowFactory().getSupportedInitializationVaults(forStrategy: forStrategy)
-    }
-    access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
-        return self._borrowFactory().getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith)
-    }
-    access(all) fun createStrategy(type: Type, withFunds: @{FungibleToken.Vault}): @{Strategy} {
-        return <- self._borrowFactory().createStrategy(type, withFunds: <-withFunds)
-    }
-    access(all) fun createStrategyFactory(): @StrategyFactory {
-        return <- create StrategyFactory()
-    }
-    access(all) fun createTideManager(): @TideManager {
-        return <-create TideManager()
-    }
 
     /* --- CONSTRUCTS --- */
 
@@ -90,7 +73,7 @@ access(all) contract TidalYield {
         access(all) view fun getComposedStrategyTypes(): {Type: Bool}
         /// Returns the Vault types which can be used to initialize a given Strategy
         access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool}
-        /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the 
+        /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the
         /// provided Vault type
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool}
         /// Composes a Strategy of the given type with the provided funds
@@ -281,6 +264,34 @@ access(all) contract TidalYield {
             Burner.burn(<-tide)
             return <-res
         }
+    }
+
+    /* --- PUBLIC METHODS --- */
+
+    /// Returns the Types of Strategies that can be used in Tides
+    access(all) view fun getSupportedStrategies(): [Type] {
+        return self._borrowFactory().getSupportedStrategies()
+    }
+    /// Returns the Vault types which can be used to initialize a given Strategy
+    access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
+        return self._borrowFactory().getSupportedInitializationVaults(forStrategy: forStrategy)
+    }
+    /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the
+    /// provided Vault type
+    access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
+        return self._borrowFactory().getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith)
+    }
+    /// Creates a Strategy of the requested Type using the provided Vault as an initial deposit
+    access(all) fun createStrategy(type: Type, withFunds: @{FungibleToken.Vault}): @{Strategy} {
+        return <- self._borrowFactory().createStrategy(type, withFunds: <-withFunds)
+    }
+    /// Creates a TideManager used to create and manage Tides
+    access(all) fun createTideManager(): @TideManager {
+        return <-create TideManager()
+    }
+    /// Creates a StrategyFactory resource
+    access(all) fun createStrategyFactory(): @StrategyFactory {
+        return <- create StrategyFactory()
     }
 
     /* --- INTERNAL METHODS --- */
