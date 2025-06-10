@@ -84,14 +84,17 @@ access(all) contract MockStrategy {
         }
     }
 
-    access(all) struct DummyStrategyBuilder : TidalYield.StrategyBuilder {
+    access(all) struct DummyStrategyComposer : TidalYield.StrategyComposer {
+        access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
+            return { Type<DummyStrategy>(): true }
+        }
         access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
             return {}
         }
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
             return {}
         }
-        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}): {TidalYield.Strategy} {
+        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}, params: {String: AnyStruct}): {TidalYield.Strategy} {
             let id = DFB.UniqueIdentifier()
             let strat = DummyStrategy(
                 id: id,

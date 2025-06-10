@@ -10,9 +10,13 @@ import "DFB"
 ///
 access(all) contract TidalYield {
 
+    /// Canonical StoragePath for where TideManager should be stored
     access(all) let TideManagerStoragePath: StoragePath
+    /// Canonical PublicPath for where TideManager Capability should be published
     access(all) let TideManagerPublicPath: PublicPath
+    /// Canonical StoragePath for where StrategyFactory should be stored
     access(all) let FactoryStoragePath: StoragePath
+    /// Canonical PublicPath for where StrategyFactory Capability should be published
     access(all) let FactoryPublicPath: PublicPath
 
     access(all) event CreatedTide(id: UInt64, idType: String, uuid: UInt64, initialAmount: UFix64, creator: Address?)
@@ -50,7 +54,7 @@ access(all) contract TidalYield {
     /// thought of as the top-level of a nesting of DeFiBlocks connectors & adapters where one can deposit & withdraw
     /// funds into the composed DeFi workflows
     /// TODO: Consider making Sink/Source multi-asset - we could then make Strategy a composite Sink, Source & do away
-    ///     with the added layer of abstraction introduced by a StrategyBuilder.
+    ///     with the added layer of abstraction introduced by a StrategyComposer.
     access(all) struct interface Strategy : DFB.IdentifiableStruct {
         /// Returns the type of Vaults that this Strategy instance can handle
         access(all) view fun getSupportedCollateralTypes(): {Type: Bool}
@@ -69,49 +73,56 @@ access(all) contract TidalYield {
         }
     }
 
-    /// A StrategyBuilder is responsible for stacking DeFiBlocks connectors in a manner that composes a final Strategy.
+    /// A StrategyComposer is responsible for stacking DeFiBlocks connectors in a manner that composes a final Strategy.
     /// Since DeFiBlock Sink/Source only support single assets and some Strategies may be multi-asset, we deal with
     /// building a Strategy distinctly from encapsulating the top-level DFB connectors acting as entrypoints in to the
     /// composed DeFiBlocks infrastructure.
     /// TODO: Consider making Sink/Source multi-asset - we could then make Strategy a composite Sink, Source & do away
-    ///     with the added layer of abstraction introduced by a StrategyBuilder.
-    access(all) struct interface StrategyBuilder {
+    ///     with the added layer of abstraction introduced by a StrategyComposer.
+    access(all) struct interface StrategyComposer {
+        /// Returns the Types of Strategies composed by this StrategyComposer
+        access(all) view fun getComposedStrategyTypes(): {Type: Bool}
         /// Returns the Vault types which can be used to initialize a given Strategy
         access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool}
         /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the 
         /// provided Vault type
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool}
         /// Composes a Strategy of the given type with the provided funds
-        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}): {Strategy}
+        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}, params: {String: AnyStruct}): {Strategy} {
+            pre {
+                self.getComposedStrategyTypes()[type] == true:
+                "Strategy \(type.identifier) is unsupported by StrategyComposer \(self.getType().identifier)"
+            }
+        }
     }
 
     access(all) resource StrategyFactory {
         /// The strategies this factory can build
-        access(self) let builders: {Type: {StrategyBuilder}}
+        access(self) let composers: {Type: {StrategyComposer}}
 
         init() {
-            self.builders = {}
+            self.composers = {}
         }
         access(all) view fun getSupportedStrategies(): [Type] {
-            return self.builders.keys
+            return self.composers.keys
         }
         access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
-            return self.builders[forStrategy]?.getSupportedInitializationVaults(forStrategy: forStrategy) ?? {}
+            return self.composers[forStrategy]?.getSupportedInitializationVaults(forStrategy: forStrategy) ?? {}
         }
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
-            return self.builders[forStrategy]?.getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith) ?? {}
+            return self.composers[forStrategy]?.getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith) ?? {}
         }
         access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}): {Strategy} {
             pre {
-                self.builders[type] != nil: "Strategy \(type.identifier) is unsupported"
+                self.composers[type] != nil: "Strategy \(type.identifier) is unsupported"
             }
-            return self.builders[type]!.createStrategy(type, withFunds: <-withFunds)
+            return self.composers[type]!.createStrategy(type, withFunds: <-withFunds, params: {}) // TODO: decide on params inclusion or not
         }
-        access(Mutate) fun setStrategyBuilder(_ strategy: Type, builder: {StrategyBuilder}) {
-            self.builders[strategy] = builder
+        access(Mutate) fun setStrategyComposer(_ strategy: Type, builder: {StrategyComposer}) {
+            self.composers[strategy] = builder
         }
         access(Mutate) fun removeStrategy(_ strategy: Type): Bool {
-            return self.builders.remove(key: strategy) != nil
+            return self.composers.remove(key: strategy) != nil
         }
     }
 
@@ -132,7 +143,7 @@ access(all) contract TidalYield {
         }
 
         access(all) view fun id(): UInt64 {
-            return self.uniqueID!.id
+            return self.uniqueID.id
         }
 
         access(all) fun getTideBalance(): UFix64 {
