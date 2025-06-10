@@ -31,6 +31,8 @@ access(all) contract TidalYield {
 
     /* --- CONSTRUCTS --- */
 
+    /// Strategy
+    ///
     /// A Strategy is meant to encapsulate the Sink/Source entrypoints allowing for flows into and out of composed
     /// DeFiBlocks components. These compositions are intended to capitalize on some yield-bearing opportunity so that
     /// a Strategy bears yield on that which is deposited into it, albeit not without some risk. A Strategy then can be
@@ -42,6 +44,7 @@ access(all) contract TidalYield {
     /// resource - because the Type and uniqueness of composition of a given Strategy must be preserved as that is its
     /// distinguishing factor. These qualities are preserved by restricting the party who can construct it, which for
     /// resources is within the contract that defines it.
+    ///
     /// TODO: Consider making Sink/Source multi-asset - we could then make Strategy a composite Sink, Source & do away
     ///     with the added layer of abstraction introduced by a StrategyComposer.
     access(all) resource interface Strategy : DFB.IdentifiableResource {
@@ -70,10 +73,13 @@ access(all) contract TidalYield {
         }
     }
 
+    /// StrategyComposer
+    ///
     /// A StrategyComposer is responsible for stacking DeFiBlocks connectors in a manner that composes a final Strategy.
     /// Since DeFiBlock Sink/Source only support single assets and some Strategies may be multi-asset, we deal with
     /// building a Strategy distinctly from encapsulating the top-level DFB connectors acting as entrypoints in to the
     /// composed DeFiBlocks infrastructure.
+    ///
     /// TODO: Consider making Sink/Source multi-asset - we could then make Strategy a composite Sink, Source & do away
     ///     with the added layer of abstraction introduced by a StrategyComposer.
     access(all) struct interface StrategyComposer {
@@ -100,13 +106,18 @@ access(all) contract TidalYield {
         }
     }
 
+    /// StrategyFactory
+    ///
+    /// This resource enables the management of StrategyComposers and the construction of the Strategies they compose.
+    ///
     access(all) resource StrategyFactory {
-        /// The strategies this factory can build
+        /// A mapping of StrategyComposers indexed on the related Strategies they can compose
         access(self) let composers: {Type: {StrategyComposer}}
 
         init() {
             self.composers = {}
         }
+
         access(all) view fun getSupportedStrategies(): [Type] {
             return self.composers.keys
         }
@@ -130,6 +141,10 @@ access(all) contract TidalYield {
         }
     }
 
+    /// Tide
+    ///
+    /// A Tide is a resource enabling the management of a composed Strategy
+    ///
     access(all) resource Tide : Burner.Burnable, FungibleToken.Receiver, ViewResolver.Resolver {
         access(contract) let uniqueID: DFB.UniqueIdentifier
         access(self) let vaultType: Type
@@ -201,8 +216,14 @@ access(all) contract TidalYield {
         }
     }
 
+    /// Entitlement enabling access on owner-related privileged operations on the TideManager resource
     access(all) entitlement Owner
 
+    /// TideManager
+    ///
+    /// A TideManager encapsulates nested Tide resources. Through a TideManager, one can create, manage, and close
+    /// out inner Tide resources.
+    ///
     access(all) resource TideManager : ViewResolver.ResolverCollection {
         access(self) let tides: @{UInt64: Tide}
 

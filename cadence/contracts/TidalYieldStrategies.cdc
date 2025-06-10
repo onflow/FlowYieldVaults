@@ -24,7 +24,7 @@ import "MockSwapper"
 ///
 /// This contract defines Strategies used in the TidalYield platform.
 ///
-/// A Strategy instance can be thought of as an an objects wrapping a stack of DeFiBlocks connectors wired together to 
+/// A Strategy instance can be thought of as an an objects wrapping a stack of DeFiBlocks connectors wired together to
 /// (optimally) generate some yield on initial deposits. Strategies can be simple such as swapping into a yield-bearing
 /// asset (such as stFLOW) or more complex compositions of DeFiBlocks connectors.
 ///
@@ -88,7 +88,7 @@ access(all) contract TidalYieldStrategies {
             return { Type<@FlowToken.Vault>(): true }
         }
 
-        /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the 
+        /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the
         /// provided Vault type
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
             return { Type<@FlowToken.Vault>(): true }
@@ -170,7 +170,7 @@ access(all) contract TidalYieldStrategies {
             // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value,
             // recollateralizing the position
             autoBalancer.setSink(positionSwapSink)
-            
+
             return <-create TracerStrategy(
                 id: DFB.UniqueIdentifier(),
                 collateralType: collateralType,
