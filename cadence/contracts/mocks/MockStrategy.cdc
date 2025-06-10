@@ -43,7 +43,7 @@ access(all) contract MockStrategy {
         }
     }
 
-    access(all) struct DummyStrategy : TidalYield.Strategy {
+    access(all) resource DummyStrategy : TidalYield.Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) let uniqueID: DFB.UniqueIdentifier?
@@ -86,7 +86,7 @@ access(all) contract MockStrategy {
 
     access(all) struct DummyStrategyComposer : TidalYield.StrategyComposer {
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
-            return { Type<DummyStrategy>(): true }
+            return { Type<@DummyStrategy>(): true }
         }
         access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
             return {}
@@ -94,16 +94,16 @@ access(all) contract MockStrategy {
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
             return {}
         }
-        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}, params: {String: AnyStruct}): {TidalYield.Strategy} {
+        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}, params: {String: AnyStruct}): @{TidalYield.Strategy} {
             let id = DFB.UniqueIdentifier()
-            let strat = DummyStrategy(
+            let strat <- create DummyStrategy(
                 id: id,
                 sink: DummySink(id),
                 source: DummySource(id)
             )
             strat.deposit(from: &withFunds as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
             destroy withFunds
-            return strat
+            return <- strat
         }
     }
 }

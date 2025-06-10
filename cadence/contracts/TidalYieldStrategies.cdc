@@ -16,7 +16,6 @@ import "MOET"
 // mocks
 import "MockOracle"
 import "MockSwapper"
-import "MockStrategy"
 
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -38,7 +37,7 @@ access(all) contract TidalYieldStrategies {
     /// Source. While this object is a simple wrapper for the top-level collateralized position, the true magic of the
     /// DeFiBlocks is in the stacking of the related connectors. This composition logic can be found in the
     /// TracerStrategyComposer construct.
-    access(all) struct TracerStrategy : TidalYield.Strategy {
+    access(all) resource TracerStrategy : TidalYield.Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) let uniqueID: DFB.UniqueIdentifier?
@@ -80,7 +79,7 @@ access(all) contract TidalYieldStrategies {
     access(all) struct TracerStrategyComposer : TidalYield.StrategyComposer {
         /// Returns the Types of Strategies composed by this StrategyComposer
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
-            return { Type<TracerStrategy>(): true }
+            return { Type<@TracerStrategy>(): true }
         }
 
         /// Returns the Vault types which can be used to initialize a given Strategy
@@ -95,7 +94,7 @@ access(all) contract TidalYieldStrategies {
         }
 
         /// Composes a Strategy of the given type with the provided funds
-        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}, params: {String: AnyStruct}): {TidalYield.Strategy} {
+        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}, params: {String: AnyStruct}): @{TidalYield.Strategy} {
             // init the UniqueIdentifier that identifies all associated DFB components
             let id = DFB.UniqueIdentifier()
             // this PriceOracle is mocked and will be shared by all components used in the TracerStrategy
@@ -168,7 +167,7 @@ access(all) contract TidalYieldStrategies {
             // recollateralizing the position
             autoBalancer.setSink(positionSwapSink)
             
-            return TracerStrategy(
+            return <-create TracerStrategy(
                 id: DFB.UniqueIdentifier(),
                 collateralType: collateralType,
                 position: position

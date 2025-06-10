@@ -36,8 +36,8 @@ access(all) contract TidalYield {
     access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
         return self._borrowFactory().getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith)
     }
-    access(all) fun createStrategy(type: Type, withFunds: @{FungibleToken.Vault}): {Strategy} {
-        return self._borrowFactory().createStrategy(type, withFunds: <-withFunds)
+    access(all) fun createStrategy(type: Type, withFunds: @{FungibleToken.Vault}): @{Strategy} {
+        return <- self._borrowFactory().createStrategy(type, withFunds: <-withFunds)
     }
     access(all) fun createStrategyFactory(): @StrategyFactory {
         return <- create StrategyFactory()
@@ -52,10 +52,16 @@ access(all) contract TidalYield {
     /// DeFiBlocks components. These compositions are intended to capitalize on some yield-bearing opportunity so that
     /// a Strategy bears yield on that which is deposited into it, albeit not without some risk. A Strategy then can be
     /// thought of as the top-level of a nesting of DeFiBlocks connectors & adapters where one can deposit & withdraw
-    /// funds into the composed DeFi workflows
+    /// funds into the composed DeFi workflows.
+    ///
+    /// While two types of strategies may not highly differ with respect to their fields, the compositions of DeFiBlocks
+    /// components & connections they provide access to likely do. This difference in wiring is why the Strategy is a
+    /// resource - because the Type and uniqueness of composition of a given Strategy must be preserved as that is its
+    /// distinguishing factor. These qualities are preserved by restricting the party who can construct it, which for
+    /// resources is within the contract that defines it.
     /// TODO: Consider making Sink/Source multi-asset - we could then make Strategy a composite Sink, Source & do away
     ///     with the added layer of abstraction introduced by a StrategyComposer.
-    access(all) struct interface Strategy : DFB.IdentifiableStruct {
+    access(all) resource interface Strategy : DFB.IdentifiableResource {
         /// Returns the type of Vaults that this Strategy instance can handle
         access(all) view fun getSupportedCollateralTypes(): {Type: Bool}
         /// Returns whether the provided Vault type is supported by this Strategy instance
@@ -88,7 +94,7 @@ access(all) contract TidalYield {
         /// provided Vault type
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool}
         /// Composes a Strategy of the given type with the provided funds
-        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}, params: {String: AnyStruct}): {Strategy} {
+        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}, params: {String: AnyStruct}): @{Strategy} {
             pre {
                 self.getComposedStrategyTypes()[type] == true:
                 "Strategy \(type.identifier) is unsupported by StrategyComposer \(self.getType().identifier)"
@@ -112,11 +118,11 @@ access(all) contract TidalYield {
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
             return self.composers[forStrategy]?.getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith) ?? {}
         }
-        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}): {Strategy} {
+        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}): @{Strategy} {
             pre {
                 self.composers[type] != nil: "Strategy \(type.identifier) is unsupported"
             }
-            return self.composers[type]!.createStrategy(type, withFunds: <-withFunds, params: {}) // TODO: decide on params inclusion or not
+            return <- self.composers[type]!.createStrategy(type, withFunds: <-withFunds, params: {}) // TODO: decide on params inclusion or not
         }
         access(Mutate) fun setStrategyComposer(_ strategy: Type, builder: {StrategyComposer}) {
             self.composers[strategy] = builder
@@ -129,7 +135,7 @@ access(all) contract TidalYield {
     access(all) resource Tide : Burner.Burnable, FungibleToken.Receiver, ViewResolver.Resolver {
         access(contract) let uniqueID: DFB.UniqueIdentifier
         access(self) let vaultType: Type
-        access(self) let strategy: {Strategy}
+        access(self) let strategy: @{Strategy}
 
         init(strategyType: Type, withVault: @{FungibleToken.Vault}) {
             // pre {
@@ -138,7 +144,7 @@ access(all) contract TidalYield {
             // }
             self.uniqueID = DFB.UniqueIdentifier()
             self.vaultType = withVault.getType()
-            self.strategy = TidalYield.createStrategy(type: strategyType, withFunds: <-withVault)
+            self.strategy <- TidalYield.createStrategy(type: strategyType, withFunds: <-withVault)
             assert(self.strategy.isSupportedCollateralType(self.vaultType), message: "TODO")
         }
 
