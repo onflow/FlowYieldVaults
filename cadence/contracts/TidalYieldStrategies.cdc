@@ -51,11 +51,12 @@ access(all) contract TidalYieldStrategies {
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSource(type: collateralType)
         }
+
+        // Inherited from TidalYield.Strategy default implementation
+        // access(all) view fun isSupportedCollateralType(_ type: Type): Bool
+
         access(all) view fun getSupportedCollateralTypes(): {Type: Bool} {
-            return {self.sink.getSinkType(): true }
-        }
-        access(all) view fun isSupportedCollateralType(_ type: Type): Bool {
-            return self.sink.getSinkType() == type
+            return { self.sink.getSinkType(): true }
         }
         /// Returns the amount available for withdrawal via the inner Source
         access(all) fun availableBalance(ofToken: Type): UFix64 {
@@ -94,9 +95,12 @@ access(all) contract TidalYieldStrategies {
         }
 
         /// Composes a Strategy of the given type with the provided funds
-        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}, params: {String: AnyStruct}): @{TidalYield.Strategy} {
-            // init the UniqueIdentifier that identifies all associated DFB components
-            let id = DFB.UniqueIdentifier()
+        access(all) fun createStrategy(
+            _ type: Type,
+            uniqueID: DFB.UniqueIdentifier,
+            withFunds: @{FungibleToken.Vault},
+            params: {String: AnyStruct}
+        ): @{TidalYield.Strategy} {
             // this PriceOracle is mocked and will be shared by all components used in the TracerStrategy
             let oracle = MockOracle.PriceOracle()
 
@@ -114,12 +118,12 @@ access(all) contract TidalYieldStrategies {
                 upperThreshold: params["upperThreshold"] as! UFix64? ?? panic("Malformed params missing \"upperThreshold\""),
                 rebalanceSink: nil,
                 rebalanceSource: nil,
-                uniqueID: id
+                uniqueID: uniqueID
             )
             // enables deposits of YieldToken to the AutoBalancer
-            let abaSink = autoBalancer.createBalancerSink() ?? panic("Could not retrieve Sink from AutoBalancer with id \(id.id)")
+            let abaSink = autoBalancer.createBalancerSink() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
             // enables withdrawals of YieldToken from the AutoBalancer
-            let abaSource = autoBalancer.createBalancerSource() ?? panic("Could not retrieve Sink from AutoBalancer with id \(id.id)")
+            let abaSource = autoBalancer.createBalancerSource() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
 
             // init MOET <> YIELD swappers
             //
@@ -127,21 +131,21 @@ access(all) contract TidalYieldStrategies {
             let moetToYieldSwapper = MockSwapper.Swapper(
                     inVault: moetTokenType,
                     outVault: yieldTokenType,
-                    uniqueID: id
+                    uniqueID: uniqueID
                 )
             // YieldToken -> MOET
             let yieldToMoetSwapper = MockSwapper.Swapper(
                     inVault: yieldTokenType,
                     outVault: moetTokenType,
-                    uniqueID: id
+                    uniqueID: uniqueID
                 )
 
             // init SwapSink directing swapped funds to AutoBalancer
             //
             // Swaps provided MOET to YieldToken & deposits to the AutoBalancer
-            let abaSwapSink = SwapStack.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: id)
+            let abaSwapSink = SwapStack.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
             // Swaps YieldToken & provides swapped MOET, sourcing YieldToken from the AutoBalancer
-            let abaSwapSource = SwapStack.SwapSource(swapper: moetToYieldSwapper, source: abaSource, uniqueID: id)
+            let abaSwapSource = SwapStack.SwapSource(swapper: moetToYieldSwapper, source: abaSource, uniqueID: uniqueID)
 
             // open a TidalProtocol position
             let position = TidalProtocol.openPosition(
@@ -158,10 +162,10 @@ access(all) contract TidalYieldStrategies {
             let yieldToFlowSwapper = MockSwapper.Swapper(
                     inVault: yieldTokenType,
                     outVault: flowTokenType,
-                    uniqueID: id
+                    uniqueID: uniqueID
                 )
             // allows for YieldToken to be deposited to the Position
-            let positionSwapSink = SwapStack.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: id)
+            let positionSwapSink = SwapStack.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
 
             // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value,
             // recollateralizing the position

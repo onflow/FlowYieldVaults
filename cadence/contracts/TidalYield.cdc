@@ -48,16 +48,24 @@ access(all) contract TidalYield {
         /// Returns the type of Vaults that this Strategy instance can handle
         access(all) view fun getSupportedCollateralTypes(): {Type: Bool}
         /// Returns whether the provided Vault type is supported by this Strategy instance
-        access(all) view fun isSupportedCollateralType(_ type: Type): Bool
+        access(all) view fun isSupportedCollateralType(_ type: Type): Bool {
+            return self.getSupportedCollateralTypes()[type] ?? false
+        }
         /// Returns the balance of the given token available for withdrawal. Note that this may be an estimate due to
         /// the lack of guarantees inherent to DeFiBlocks Sources
         access(all) fun availableBalance(ofToken: Type): UFix64
         /// Deposits up to the balance of the referenced Vault into this Strategy
-        access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
+        access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
+            pre {
+                self.isSupportedCollateralType(from.getType()):
+                "Cannot deposit Vault \(from.getType().identifier) to Strategy \(self.getType().identifier) - unsupported deposit type"
+            }
+        }
         /// Withdraws from this Strategy and returns the resulting Vault of the requested token Type
         access(FungibleToken.Withdraw) fun withdraw(maxAmount: UFix64, ofToken: Type): @{FungibleToken.Vault} {
             post {
-                result.getType() == ofToken: "Invalid Vault returns - requests \(ofToken.identifier) but returned \(result.getType().identifier)"
+                result.getType() == ofToken:
+                "Invalid Vault returns - requests \(ofToken.identifier) but returned \(result.getType().identifier)"
             }
         }
     }
@@ -77,8 +85,15 @@ access(all) contract TidalYield {
         /// provided Vault type
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool}
         /// Composes a Strategy of the given type with the provided funds
-        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}, params: {String: AnyStruct}): @{Strategy} {
+        access(all) fun createStrategy(
+            _ type: Type,
+            uniqueID: DFB.UniqueIdentifier,
+            withFunds: @{FungibleToken.Vault},
+            params: {String: AnyStruct}
+        ): @{Strategy} {
             pre {
+                self.getSupportedInitializationVaults(forStrategy: type)[withFunds.getType()] == true:
+                "Cannot initialize Strategy \(type.identifier) with Vault \(withFunds.getType().identifier) - unsupported initialization Vault"
                 self.getComposedStrategyTypes()[type] == true:
                 "Strategy \(type.identifier) is unsupported by StrategyComposer \(self.getType().identifier)"
             }
@@ -101,11 +116,11 @@ access(all) contract TidalYield {
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
             return self.composers[forStrategy]?.getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith) ?? {}
         }
-        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}): @{Strategy} {
+        access(all) fun createStrategy(_ type: Type, uniqueID: DFB.UniqueIdentifier, withFunds: @{FungibleToken.Vault}): @{Strategy} {
             pre {
                 self.composers[type] != nil: "Strategy \(type.identifier) is unsupported"
             }
-            return <- self.composers[type]!.createStrategy(type, withFunds: <-withFunds, params: {}) // TODO: decide on params inclusion or not
+            return <- self.composers[type]!.createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds, params: {}) // TODO: decide on params inclusion or not
         }
         access(Mutate) fun setStrategyComposer(_ strategy: Type, builder: {StrategyComposer}) {
             self.composers[strategy] = builder
@@ -121,14 +136,15 @@ access(all) contract TidalYield {
         access(self) let strategy: @{Strategy}
 
         init(strategyType: Type, withVault: @{FungibleToken.Vault}) {
-            // pre {
-            //     TidalStrategies.isSupportedCollateralType(withVault.getType(), forStrategy: strategyNumber) == true:
-            //     "Provided vault of type \(withVault.getType().identifier) is unsupported collateral Type for strategy \(strategyNumber)"
-            // }
             self.uniqueID = DFB.UniqueIdentifier()
             self.vaultType = withVault.getType()
-            self.strategy <- TidalYield.createStrategy(type: strategyType, withFunds: <-withVault)
-            assert(self.strategy.isSupportedCollateralType(self.vaultType), message: "TODO")
+            self.strategy <- TidalYield.createStrategy(
+                    type: strategyType,
+                    uniqueID: self.uniqueID,
+                    withFunds: <-withVault
+                )
+            assert(self.strategy.isSupportedCollateralType(self.vaultType),
+                message: "TODO")
         }
 
         access(all) view fun id(): UInt64 {
@@ -282,8 +298,8 @@ access(all) contract TidalYield {
         return self._borrowFactory().getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith)
     }
     /// Creates a Strategy of the requested Type using the provided Vault as an initial deposit
-    access(all) fun createStrategy(type: Type, withFunds: @{FungibleToken.Vault}): @{Strategy} {
-        return <- self._borrowFactory().createStrategy(type, withFunds: <-withFunds)
+    access(all) fun createStrategy(type: Type, uniqueID: DFB.UniqueIdentifier, withFunds: @{FungibleToken.Vault}): @{Strategy} {
+        return <- self._borrowFactory().createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds)
     }
     /// Creates a TideManager used to create and manage Tides
     access(all) fun createTideManager(): @TideManager {
