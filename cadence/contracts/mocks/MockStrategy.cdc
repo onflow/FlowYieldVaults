@@ -11,8 +11,10 @@ import "TidalYield"
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ///
 access(all) contract MockStrategy {
+
+    access(all) let IssuerStoragePath : StoragePath
     
-    access(all) struct DummySink : DFB.Sink {
+    access(all) struct Sink : DFB.Sink {
         access(contract) let uniqueID: DFB.UniqueIdentifier?
         init(_ id: DFB.UniqueIdentifier?) {
             self.uniqueID = id
@@ -27,7 +29,7 @@ access(all) contract MockStrategy {
             return
         }
     }
-    access(all) struct DummySource : DFB.Source {
+    access(all) struct Source : DFB.Source {
         access(contract) let uniqueID: DFB.UniqueIdentifier?
         init(_ id: DFB.UniqueIdentifier?) {
             self.uniqueID = id
@@ -43,7 +45,7 @@ access(all) contract MockStrategy {
         }
     }
 
-    access(all) resource DummyStrategy : TidalYield.Strategy {
+    access(all) resource Strategy : TidalYield.Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) let uniqueID: DFB.UniqueIdentifier?
@@ -86,9 +88,9 @@ access(all) contract MockStrategy {
         access(contract) fun burnCallback() {} // no-op
     }
 
-    access(all) resource DummyStrategyComposer : TidalYield.StrategyComposer {
+    access(all) resource StrategyComposer : TidalYield.StrategyComposer {
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
-            return { Type<@DummyStrategy>(): true }
+            return { Type<@Strategy>(): true }
         }
         access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
             return {}
@@ -103,14 +105,37 @@ access(all) contract MockStrategy {
             params: {String: AnyStruct}
         ): @{TidalYield.Strategy} {
             let id = DFB.UniqueIdentifier()
-            let strat <- create DummyStrategy(
+            let strat <- create Strategy(
                 id: id,
-                sink: DummySink(id),
-                source: DummySource(id)
+                sink: Sink(id),
+                source: Source(id)
             )
             strat.deposit(from: &withFunds as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
             destroy withFunds
             return <- strat
         }
+    }
+
+    /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
+    /// may utilize resource consumption (i.e. account storage). Since TracerStrategy creation consumes account storage
+    /// via configured AutoBalancers
+    access(all) resource StrategyComposerIssuer : TidalYield.StrategyComposerIssuer {
+        access(all) view fun getSupportedComposers(): {Type: Bool} {
+            return { Type<@StrategyComposer>(): true }
+        }
+        access(all) fun issueComposer(_ type: Type): @{TidalYield.StrategyComposer} {
+            switch type {
+            case Type<@StrategyComposer>():
+                return <- create StrategyComposer()
+            default:
+                panic("Unsupported StrategyComposer requested: \(type.identifier)")
+            }
+        }
+    }
+
+    init() {
+        self.IssuerStoragePath = StoragePath(identifier: "TidalYieldStrategyComposerIssuer_\(self.account.address)")!
+
+        self.account.storage.save(<-create StrategyComposerIssuer(), to: self.IssuerStoragePath)
     }
 }
