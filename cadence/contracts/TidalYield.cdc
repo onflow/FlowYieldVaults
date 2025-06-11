@@ -118,24 +118,42 @@ access(all) contract TidalYield {
             self.composers = {}
         }
 
+        /// Returns the Strategy types that can be produced by this StrategyFactory
         access(all) view fun getSupportedStrategies(): [Type] {
             return self.composers.keys
         }
+        /// Returns the Vaults that can be used to initialize a Strategy of the given Type
         access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
             return self.composers[forStrategy]?.getSupportedInitializationVaults(forStrategy: forStrategy) ?? {}
         }
+        /// Returns the Vaults that can be deposited to a Strategy initialized with the provided Type
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
-            return self.composers[forStrategy]?.getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith) ?? {}
+            return self.composers[forStrategy]
+                ?.getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith)
+                ?? {}
         }
-        access(all) fun createStrategy(_ type: Type, uniqueID: DFB.UniqueIdentifier, withFunds: @{FungibleToken.Vault}): @{Strategy} {
+        /// Initializes a new Strategy of the given type with the provided Vault, identifying all associated DeFiBlocks
+        /// components by the provided UniqueIdentifier
+        access(all)
+        fun createStrategy(_ type: Type, uniqueID: DFB.UniqueIdentifier, withFunds: @{FungibleToken.Vault}): @{Strategy} {
             pre {
                 self.composers[type] != nil: "Strategy \(type.identifier) is unsupported"
             }
+            post {
+                result.getType() == type:
+                "Invalid Strategy returned - expected \(type.identifier) but returned \(result.getType().identifier)"
+            }
             return <- self.composers[type]!.createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds, params: {}) // TODO: decide on params inclusion or not
         }
-        access(Mutate) fun setStrategyComposer(_ strategy: Type, builder: {StrategyComposer}) {
-            self.composers[strategy] = builder
+        /// Sets the provided Strategy and Composer association in the StrategyFactory
+        access(Mutate) fun setStrategyComposer(_ strategy: Type, composer: {StrategyComposer}) {
+            pre {
+                composer.getComposedStrategyTypes()[strategy] == true:
+                "Strategy \(strategy.identifier) cannot be composed by StrategyComposer \(composer.getType().identifier)"
+            }
+            self.composers[strategy] = composer
         }
+        /// Removes the Strategy from this StrategyFactory and returns whether the value existed or not
         access(Mutate) fun removeStrategy(_ strategy: Type): Bool {
             return self.composers.remove(key: strategy) != nil
         }
@@ -146,8 +164,11 @@ access(all) contract TidalYield {
     /// A Tide is a resource enabling the management of a composed Strategy
     ///
     access(all) resource Tide : Burner.Burnable, FungibleToken.Receiver, ViewResolver.Resolver {
+        /// The UniqueIdentifier that identifies all related DeFiBlocks connectors used in the encapsulated Strategy
         access(contract) let uniqueID: DFB.UniqueIdentifier
+        /// The type of Vault this Tide can receive as a deposit and provides as a withdrawal
         access(self) let vaultType: Type
+        /// The Strategy granting top-level access to the yield-bearing DeFiBlocks composition
         access(self) let strategy: @{Strategy}
 
         init(strategyType: Type, withVault: @{FungibleToken.Vault}) {
@@ -162,26 +183,27 @@ access(all) contract TidalYield {
                 message: "TODO")
         }
 
+        /// Returns the Tide's ID as defined by it's DFB.UniqueIdentifier.id
         access(all) view fun id(): UInt64 {
             return self.uniqueID.id
         }
-
+        /// Returns the balance of the Tide's vaultType available via the encapsulated Strategy
         access(all) fun getTideBalance(): UFix64 {
             return self.strategy.availableBalance(ofToken: self.vaultType)
         }
-
+        /// Burner.Burnable conformance - emits the BurnedTide event when burned
         access(contract) fun burnCallback() {
             emit BurnedTide(id: self.uniqueID.id, idType: self.uniqueID.getType().identifier, remainingBalance: self.getTideBalance())
         }
-
+        /// TODO: TidalYield specific views
         access(all) view fun getViews(): [Type] {
             return []
         }
-
+        /// TODO: TidalYield specific view resolution
         access(all) fun resolveView(_ view: Type): AnyStruct? {
             return nil
         }
-
+        /// Deposits the provided Vault to the Strategy
         access(all) fun deposit(from: @{FungibleToken.Vault}) {
             pre {
                 self.isSupportedVaultType(type: from.getType()):
@@ -192,26 +214,30 @@ access(all) contract TidalYield {
             assert(from.balance == 0.0, message: "TODO")
             Burner.burn(<-from)
         }
-
+        /// Returns the Vaults types supported by this Tide as a mapping associated with their current support status
         access(all) view fun getSupportedVaultTypes(): {Type: Bool} {
             return self.strategy.getSupportedCollateralTypes()
         }
-
+        /// Returns whether the given Vault type is supported by this Tide
         access(all) view fun isSupportedVaultType(type: Type): Bool {
             return self.getSupportedVaultTypes()[type] ?? false
         }
-
+        /// Withdraws the requested amount from the Strategy
         access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @{FungibleToken.Vault} {
             post {
-                result.balance == amount: "TODO"
+                result.balance == amount:
+                "Invalid Vault balance returned - requested \(amount) but returned \(result.balance)"
+                self.vaultType == result.getType():
+                "Invalid Vault returned - expected \(self.vaultType.identifier) but returned \(result.getType().identifier)"
             }
             let available = self.strategy.availableBalance(ofToken: self.vaultType)
-            assert(
-                amount <= available,
-                message: "Requested amount \(amount) is greater than withdrawable balance of \(available)"
-            )
+            assert(amount <= available,
+                message: "Requested amount \(amount) is greater than withdrawable balance of \(available)")
+
             let res <- self.strategy.withdraw(maxAmount: amount, ofToken: self.vaultType)
+
             emit WithdrawnFromTide(id: self.uniqueID.id, idType: self.uniqueID.getType().identifier, amount: amount, owner: self.owner?.address, toUUID: res.uuid)
+
             return <- res
         }
     }
@@ -225,28 +251,30 @@ access(all) contract TidalYield {
     /// out inner Tide resources.
     ///
     access(all) resource TideManager : ViewResolver.ResolverCollection {
+        /// The open Tides managed by this TideManager
         access(self) let tides: @{UInt64: Tide}
 
         init() {
             self.tides <- {}
         }
 
+        /// Borrows the unauthorized Tide with the given id, returning `nil` if none exists
         access(all) view fun borrowTide(id: UInt64): &Tide? {
             return &self.tides[id]
         }
-
+        /// Borrows the Tide with the given ID as a ViewResolver.Resolver, returning `nil` if none exists
         access(all) view fun borrowViewResolver(id: UInt64): &{ViewResolver.Resolver}? {
             return &self.tides[id]
         }
-
+        /// Returns the Tide IDs managed by this TideManager
         access(all) view fun getIDs(): [UInt64] {
             return self.tides.keys
         }
-
+        /// Returns the number of open Tides currently managed by this TideManager
         access(all) view fun getNumberOfTides(): Int {
             return self.tides.length
         }
-
+        /// Creates a new Tide executing the specified Strategy with the provided funds
         access(all) fun createTide(strategyType: Type, withVault: @{FungibleToken.Vault}) {
             let balance = withVault.balance
             let tide <-create Tide(strategyType: strategyType, withVault: <-withVault) // TODO: fix init
@@ -255,7 +283,8 @@ access(all) contract TidalYield {
 
             self.addTide(<-tide)
         }
-
+        /// Adds an open Tide to this TideManager resource. This effectively transfers ownership of the newly added
+        /// Tide to the owner of this TideManager
         access(all) fun addTide(_ tide: @Tide) {
             pre {
                 self.tides[tide.uniqueID.id] == nil:
@@ -264,7 +293,7 @@ access(all) contract TidalYield {
             emit AddedToManager(id: tide.uniqueID.id, idType: tide.uniqueID.getType().identifier, owner: self.owner?.address, managerUUID: self.uuid)
             self.tides[tide.uniqueID.id] <-! tide
         }
-
+        /// Deposits additional funds to the specified Tide, reverting if none exists with the provided ID
         access(all) fun depositToTide(_ id: UInt64, from: @{FungibleToken.Vault}) {
             pre {
                 self.tides[id] != nil:
@@ -273,16 +302,18 @@ access(all) contract TidalYield {
             let tide = (&self.tides[id] as &Tide?)!
             tide.deposit(from: <-from)
         }
-
-        access(Owner) fun withdrawTide(id: UInt64): @Tide {
+        /// Withdraws the specified Tide, reverting if none exists with the provided ID
+        access(FungibleToken.Withdraw) fun withdrawTide(id: UInt64): @Tide {
             pre {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
             }
             return <- self.tides.remove(key: id)!
         }
-
-        access(Owner) fun withdrawFromTide(_ id: UInt64, amount: UFix64): @{FungibleToken.Vault} {
+        /// Withdraws funds from the specified Tide in the given amount. The resulting Vault Type will be whatever
+        /// denomination is supported by the Tide, so callers should examine the Tide to know the resulting Vault to
+        /// expect
+        access(FungibleToken.Withdraw) fun withdrawFromTide(_ id: UInt64, amount: UFix64): @{FungibleToken.Vault} {
             pre {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
@@ -290,15 +321,16 @@ access(all) contract TidalYield {
             let tide = (&self.tides[id] as auth(FungibleToken.Withdraw) &Tide?)!
             return <- tide.withdraw(amount: amount)
         }
-
-        access(Owner) fun closeTide(_ id: UInt64): @{FungibleToken.Vault} {
+        /// Withdraws and returns all available funds from the specified Tide, destroying the Tide and access to any
+        /// Strategy-related wiring with it
+        access(FungibleToken.Withdraw) fun closeTide(_ id: UInt64): @{FungibleToken.Vault} {
             pre {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
             }
             let tide <- self.withdrawTide(id: id)
             let res <- tide.withdraw(amount: tide.getTideBalance())
-            Burner.burn(<-tide)
+            Burner.burn(<-tide) // TODO: need to garbage collect anything related to the strategy (e.g. stored AutoBalancer) - add burnCallback on strategy for cleanup
             return <-res
         }
     }
@@ -333,6 +365,7 @@ access(all) contract TidalYield {
 
     /* --- INTERNAL METHODS --- */
 
+    /// Returns a reference to the StrategyFactory stored in this contract's account storage
     access(self) view fun _borrowFactory(): &StrategyFactory {
         return self.account.storage.borrow<&StrategyFactory>(from: self.FactoryStoragePath)
             ?? panic("Could not borrow reference to StrategyFactory from \(self.FactoryStoragePath)")
