@@ -47,7 +47,7 @@ access(all) contract TidalYield {
     ///
     /// TODO: Consider making Sink/Source multi-asset - we could then make Strategy a composite Sink, Source & do away
     ///     with the added layer of abstraction introduced by a StrategyComposer.
-    access(all) resource interface Strategy : DFB.IdentifiableResource {
+    access(all) resource interface Strategy : DFB.IdentifiableResource, Burner.Burnable {
         /// Returns the type of Vaults that this Strategy instance can handle
         access(all) view fun getSupportedCollateralTypes(): {Type: Bool}
         /// Returns whether the provided Vault type is supported by this Strategy instance
@@ -169,18 +169,19 @@ access(all) contract TidalYield {
         /// The type of Vault this Tide can receive as a deposit and provides as a withdrawal
         access(self) let vaultType: Type
         /// The Strategy granting top-level access to the yield-bearing DeFiBlocks composition
-        access(self) let strategy: @{Strategy}
+        access(self) var strategy: @{Strategy}?
 
         init(strategyType: Type, withVault: @{FungibleToken.Vault}) {
             self.uniqueID = DFB.UniqueIdentifier()
             self.vaultType = withVault.getType()
-            self.strategy <- TidalYield.createStrategy(
+            let _strategy <- TidalYield.createStrategy(
                     type: strategyType,
                     uniqueID: self.uniqueID,
                     withFunds: <-withVault
                 )
-            assert(self.strategy.isSupportedCollateralType(self.vaultType),
+            assert(_strategy.isSupportedCollateralType(self.vaultType),
                 message: "TODO")
+            self.strategy <-_strategy
         }
 
         /// Returns the Tide's ID as defined by it's DFB.UniqueIdentifier.id
@@ -189,11 +190,13 @@ access(all) contract TidalYield {
         }
         /// Returns the balance of the Tide's vaultType available via the encapsulated Strategy
         access(all) fun getTideBalance(): UFix64 {
-            return self.strategy.availableBalance(ofToken: self.vaultType)
+            return self._borrowStrategy().availableBalance(ofToken: self.vaultType)
         }
         /// Burner.Burnable conformance - emits the BurnedTide event when burned
         access(contract) fun burnCallback() {
             emit BurnedTide(id: self.uniqueID.id, idType: self.uniqueID.getType().identifier, remainingBalance: self.getTideBalance())
+            let _strategy <- self.strategy <- nil
+            Burner.burn(<-_strategy)
         }
         /// TODO: TidalYield specific views
         access(all) view fun getViews(): [Type] {
@@ -210,13 +213,13 @@ access(all) contract TidalYield {
                 "Deposited vault of type \(from.getType().identifier) is not supported by this Tide"
             }
             emit DepositedToTide(id: self.uniqueID.id, idType: self.uniqueID.getType().identifier, amount: from.balance, owner: self.owner?.address, fromUUID: from.uuid)
-            self.strategy.deposit(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
+            self._borrowStrategy().deposit(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
             assert(from.balance == 0.0, message: "TODO")
             Burner.burn(<-from)
         }
         /// Returns the Vaults types supported by this Tide as a mapping associated with their current support status
         access(all) view fun getSupportedVaultTypes(): {Type: Bool} {
-            return self.strategy.getSupportedCollateralTypes()
+            return self._borrowStrategy().getSupportedCollateralTypes()
         }
         /// Returns whether the given Vault type is supported by this Tide
         access(all) view fun isSupportedVaultType(type: Type): Bool {
@@ -230,15 +233,20 @@ access(all) contract TidalYield {
                 self.vaultType == result.getType():
                 "Invalid Vault returned - expected \(self.vaultType.identifier) but returned \(result.getType().identifier)"
             }
-            let available = self.strategy.availableBalance(ofToken: self.vaultType)
+            let available = self._borrowStrategy().availableBalance(ofToken: self.vaultType)
             assert(amount <= available,
                 message: "Requested amount \(amount) is greater than withdrawable balance of \(available)")
 
-            let res <- self.strategy.withdraw(maxAmount: amount, ofToken: self.vaultType)
+            let res <- self._borrowStrategy().withdraw(maxAmount: amount, ofToken: self.vaultType)
 
             emit WithdrawnFromTide(id: self.uniqueID.id, idType: self.uniqueID.getType().identifier, amount: amount, owner: self.owner?.address, toUUID: res.uuid)
 
             return <- res
+        }
+        /// Returns 
+        access(self) view fun _borrowStrategy(): auth(FungibleToken.Withdraw) &{Strategy} {
+            return &self.strategy as auth(FungibleToken.Withdraw) &{Strategy}?
+                ?? panic("Unknown error - could not borrow Strategy for Tide #\(self.id())")
         }
     }
 

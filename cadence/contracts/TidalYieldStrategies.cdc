@@ -45,7 +45,7 @@ access(all) contract TidalYieldStrategies {
         access(self) var sink: {DFB.Sink}
         access(self) var source: {DFB.Source}
 
-        init(id: DFB.UniqueIdentifier?, collateralType: Type, position: TidalProtocol.Position) {
+        init(id: DFB.UniqueIdentifier, collateralType: Type, position: TidalProtocol.Position) {
             self.uniqueID = id
             self.position = position
             self.sink = position.createSink(type: collateralType)
@@ -73,6 +73,10 @@ access(all) contract TidalYieldStrategies {
                 return <- DFBUtils.getEmptyVault(ofToken)
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
+        }
+        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
+        access(contract) fun burnCallback() {
+            TidalYieldAutoBalancers._cleanupAutoBalancer(id: self.id()!)
         }
     }
 

@@ -1,3 +1,4 @@
+import "Burner"
 import "FungibleToken"
 
 import "DFB"
@@ -85,6 +86,23 @@ access(all) contract TidalYieldAutoBalancers {
         return self.account.storage.borrow<auth(DFB.Auto, DFB.Set, DFB.Get, FungibleToken.Withdraw) &DFB.AutoBalancer>(
                 from: storagePath
             ) ?? panic("Could not borrow reference to AutoBalancer with UniqueIdentifier.id \(id) from StoragePath \(storagePath)")
+    }
+
+    /// Called by strategies defined in the TidalYield account which leverage account-hosted AutoBalancers when a
+    /// Strategy is burned
+    access(account) fun _cleanupAutoBalancer(id: UInt64) {
+        let storagePath = self.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
+        let publicPath = self.deriveAutoBalancerPath(id: id, storage: false) as! PublicPath
+        // unpublish the public AutoBalancer Capability
+        self.account.capabilities.unpublish(publicPath)
+        // delete any CapabilityControllers targetting the AutoBalancer
+        self.account.capabilities.storage.forEachController(forPath: storagePath, fun(_ controller: &StorageCapabilityController): Bool {
+            controller.delete()
+            return true
+        })
+        // load & burn the AutoBalancer
+        let autoBalancer <-self.account.storage.load<@DFB.AutoBalancer>(from: storagePath)
+        Burner.burn(<-autoBalancer)
     }
 
     init() {
