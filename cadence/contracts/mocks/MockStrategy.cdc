@@ -93,10 +93,10 @@ access(all) contract MockStrategy {
             return { Type<@Strategy>(): true }
         }
         access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
-            return {}
+            return { Type<@FlowToken.Vault>(): true }
         }
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
-            return {}
+            return { Type<@FlowToken.Vault>(): true }
         }
         access(all) fun createStrategy(
             _ type: Type,
