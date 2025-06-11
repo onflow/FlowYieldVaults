@@ -33,6 +33,8 @@ import "MockSwapper"
 ///
 access(all) contract TidalYieldStrategies {
 
+    access(all) let IssuerStoragePath: StoragePath
+
     /// This is the first Strategy implementation, wrapping a TidalProtocol Position along with its related Sink &
     /// Source. While this object is a simple wrapper for the top-level collateralized position, the true magic of the
     /// DeFiBlocks is in the stacking of the related connectors. This stacking logic can be found in the
@@ -198,5 +200,11 @@ access(all) contract TidalYieldStrategies {
                 panic("Unsupported StrategyComposer requested: \(type.identifier)")
             }
         }
+    }
+
+    init() {
+        self.IssuerStoragePath = StoragePath(identifier: "TidalYieldStrategyComposerIssuer_\(self.account.address)")!
+
+        self.account.storage.save(<-create StrategyComposerIssuer(), to: self.IssuerStoragePath)
     }
 }
