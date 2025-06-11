@@ -280,9 +280,6 @@ access(all) contract TidalYield {
         }
     }
 
-    /// Entitlement enabling access on owner-related privileged operations on the TideManager resource
-    access(all) entitlement Owner
-
     /// TideManager
     ///
     /// A TideManager encapsulates nested Tide resources. Through a TideManager, one can create, manage, and close
