@@ -82,9 +82,11 @@ access(all) contract MockStrategy {
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
         }
+
+        access(contract) fun burnCallback() {} // no-op
     }
 
-    access(all) struct DummyStrategyComposer : TidalYield.StrategyComposer {
+    access(all) resource DummyStrategyComposer : TidalYield.StrategyComposer {
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
             return { Type<@DummyStrategy>(): true }
         }
@@ -94,7 +96,12 @@ access(all) contract MockStrategy {
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
             return {}
         }
-        access(all) fun createStrategy(_ type: Type, withFunds: @{FungibleToken.Vault}, params: {String: AnyStruct}): @{TidalYield.Strategy} {
+        access(all) fun createStrategy(
+            _ type: Type,
+            uniqueID: DFB.UniqueIdentifier,
+            withFunds: @{FungibleToken.Vault},
+            params: {String: AnyStruct}
+        ): @{TidalYield.Strategy} {
             let id = DFB.UniqueIdentifier()
             let strat <- create DummyStrategy(
                 id: id,

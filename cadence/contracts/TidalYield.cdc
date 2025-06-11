@@ -82,7 +82,7 @@ access(all) contract TidalYield {
     ///
     /// TODO: Consider making Sink/Source multi-asset - we could then make Strategy a composite Sink, Source & do away
     ///     with the added layer of abstraction introduced by a StrategyComposer.
-    access(all) struct interface StrategyComposer {
+    access(all) resource interface StrategyComposer {
         /// Returns the Types of Strategies composed by this StrategyComposer
         access(all) view fun getComposedStrategyTypes(): {Type: Bool}
         /// Returns the Vault types which can be used to initialize a given Strategy
@@ -112,10 +112,10 @@ access(all) contract TidalYield {
     ///
     access(all) resource StrategyFactory {
         /// A mapping of StrategyComposers indexed on the related Strategies they can compose
-        access(self) let composers: {Type: {StrategyComposer}}
+        access(self) let composers: @{Type: {StrategyComposer}}
 
         init() {
-            self.composers = {}
+            self.composers <- {}
         }
 
         /// Returns the Strategy types that can be produced by this StrategyFactory
@@ -143,19 +143,30 @@ access(all) contract TidalYield {
                 result.getType() == type:
                 "Invalid Strategy returned - expected \(type.identifier) but returned \(result.getType().identifier)"
             }
-            return <- self.composers[type]!.createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds, params: {}) // TODO: decide on params inclusion or not
+            return <- self._borrowComposer(forStrategy: type)
+                .createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds, params: {}) // TODO: decide on params inclusion or not
         }
         /// Sets the provided Strategy and Composer association in the StrategyFactory
-        access(Mutate) fun setStrategyComposer(_ strategy: Type, composer: {StrategyComposer}) {
+        access(Mutate) fun addStrategyComposer(_ strategy: Type, composer: @{StrategyComposer}) {
             pre {
                 composer.getComposedStrategyTypes()[strategy] == true:
                 "Strategy \(strategy.identifier) cannot be composed by StrategyComposer \(composer.getType().identifier)"
             }
-            self.composers[strategy] = composer
+            let old <- self.composers[strategy] <- composer
+            Burner.burn(<-old)
         }
         /// Removes the Strategy from this StrategyFactory and returns whether the value existed or not
         access(Mutate) fun removeStrategy(_ strategy: Type): Bool {
-            return self.composers.remove(key: strategy) != nil
+            if let removed <- self.composers.remove(key: strategy) {
+                Burner.burn(<-removed)
+                return true
+            }
+            return false
+        }
+        /// Returns a reference to the StrategyComposer for the requested Strategy type, reverting if none exists
+        access(self) view fun _borrowComposer(forStrategy: Type): &{StrategyComposer} {
+            return &self.composers[forStrategy] as &{StrategyComposer}?
+                ?? panic("Could not borrow StrategyComposer for Strategy \(forStrategy.identifier)")
         }
     }
 

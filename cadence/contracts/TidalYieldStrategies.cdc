@@ -81,7 +81,7 @@ access(all) contract TidalYieldStrategies {
     }
 
     /// This StrategyComposer builds a TracerStrategy
-    access(all) struct TracerStrategyComposer : TidalYield.StrategyComposer {
+    access(all) resource TracerStrategyComposer : TidalYield.StrategyComposer {
         /// Returns the Types of Strategies composed by this StrategyComposer
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
             return { Type<@TracerStrategy>(): true }
