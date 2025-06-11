@@ -134,7 +134,7 @@ access(all) contract MockStrategy {
     }
 
     init() {
-        self.IssuerStoragePath = StoragePath(identifier: "TidalYieldStrategyComposerIssuer_\(self.account.address)")!
+        self.IssuerStoragePath = StoragePath(identifier: "MockStrategyComposerIssuer_\(self.account.address)")!
 
         self.account.storage.save(<-create StrategyComposerIssuer(), to: self.IssuerStoragePath)
     }

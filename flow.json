@@ -3,7 +3,7 @@
 		"TidalProtocol": {
 			"source": "cadence/contracts/internal-dependencies/TidalProtocol.cdc",
 			"aliases": {
-				"testing": "0000000000000007"
+				"testing": "0000000000000008"
 			}
 		},
 		"DFB": {
@@ -27,19 +27,19 @@
 		"MockOracle": {
 			"source": "cadence/contracts/mocks/MockOracle.cdc",
 			"aliases": {
-				"testing": "0000000000000008"
+				"testing": "0000000000000009"
 			}
 		},
 		"MockStrategy": {
 			"source": "cadence/contracts/mocks/MockStrategy.cdc",
 			"aliases": {
-				"testing": "0000000000000008"
+				"testing": "0000000000000009"
 			}
 		},
 		"MockSwapper": {
 			"source": "cadence/contracts/mocks/MockSwapper.cdc",
 			"aliases": {
-				"testing": "0000000000000008"
+				"testing": "0000000000000009"
 			}
 		},
 		"SwapStack": {
@@ -51,31 +51,31 @@
 		"TidalYield": {
 			"source": "cadence/contracts/TidalYield.cdc",
 			"aliases": {
-				"testing": "0000000000000008"
+				"testing": "0000000000000009"
 			}
 		},
 		"TidalYieldAutoBalancers": {
 			"source": "cadence/contracts/TidalYieldAutoBalancers.cdc",
 			"aliases": {
-				"testing": "0000000000000008"
+				"testing": "0000000000000009"
 			}
 		},
 		"TidalYieldStrategies": {
 			"source": "cadence/contracts/TidalYieldStrategies.cdc",
 			"aliases": {
-				"testing": "0000000000000008"
+				"testing": "0000000000000009"
 			}
 		},
 		"MOET": {
 			"source": "cadence/contracts/internal-dependencies/tokens/MOET.cdc",
 			"aliases": {
-				"testing": "0000000000000007"
+				"testing": "0000000000000008"
 			}
 		},
 		"YieldToken": {
 			"source": "cadence/contracts/internal-dependencies/tokens/YieldToken.cdc",
 			"aliases": {
-				"testing": "0000000000000007"
+				"testing": "00000000000000010"
 			}
 		}
 	},
@@ -184,6 +184,7 @@
 						}
 					]
 				},
+				"TidalProtocol",
 				{
 					"name": "YieldToken",
 					"args": [
@@ -204,8 +205,8 @@
 				},
 				"MockSwapper",
 				"TidalYieldAutoBalancers",
-				"TidalYieldStrategies",
-				"TidalYield"
+				"TidalYield",
+				"TidalYieldStrategies"
 			]
 		}
 	}
