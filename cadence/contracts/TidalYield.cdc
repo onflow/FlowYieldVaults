@@ -33,13 +33,13 @@ access(all) contract TidalYield {
 
     /// Strategy
     ///
-    /// A Strategy is meant to encapsulate the Sink/Source entrypoints allowing for flows into and out of composed
+    /// A Strategy is meant to encapsulate the Sink/Source entrypoints allowing for flows into and out of stacked
     /// DeFiBlocks components. These compositions are intended to capitalize on some yield-bearing opportunity so that
     /// a Strategy bears yield on that which is deposited into it, albeit not without some risk. A Strategy then can be
     /// thought of as the top-level of a nesting of DeFiBlocks connectors & adapters where one can deposit & withdraw
     /// funds into the composed DeFi workflows.
     ///
-    /// While two types of strategies may not highly differ with respect to their fields, the compositions of DeFiBlocks
+    /// While two types of strategies may not highly differ with respect to their fields, the stacking of DeFiBlocks
     /// components & connections they provide access to likely do. This difference in wiring is why the Strategy is a
     /// resource - because the Type and uniqueness of composition of a given Strategy must be preserved as that is its
     /// distinguishing factor. These qualities are preserved by restricting the party who can construct it, which for
@@ -78,7 +78,7 @@ access(all) contract TidalYield {
     /// A StrategyComposer is responsible for stacking DeFiBlocks connectors in a manner that composes a final Strategy.
     /// Since DeFiBlock Sink/Source only support single assets and some Strategies may be multi-asset, we deal with
     /// building a Strategy distinctly from encapsulating the top-level DFB connectors acting as entrypoints in to the
-    /// composed DeFiBlocks infrastructure.
+    /// DeFiBlocks stack.
     ///
     /// TODO: Consider making Sink/Source multi-asset - we could then make Strategy a composite Sink, Source & do away
     ///     with the added layer of abstraction introduced by a StrategyComposer.
@@ -170,6 +170,21 @@ access(all) contract TidalYield {
         }
     }
 
+    /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
+    /// may utilize resource consumption (i.e. account storage). Contracts defining Strategies that do not require
+    /// such protections may wish to expose Strategy creation publicly via public Capabilities.
+    access(all) resource interface StrategyComposerIssuer {
+        /// Returns the StrategyComposer types supported by this issuer
+        access(all) view fun getSupportedComposers(): {Type: Bool}
+        /// Returns the requested StrategyComposer. If the requested type is unsupported, a revert should be expected
+        access(all) fun issueComposer(_ type: Type): @{StrategyComposer} {
+            post {
+                result.getType() == type:
+                "Invalid StrategyComposer returned - requested \(type.identifier) but returned \(result.getType().identifier)"
+            }
+        }
+    }
+
     /// Tide
     ///
     /// A Tide is a resource enabling the management of a composed Strategy
@@ -179,7 +194,7 @@ access(all) contract TidalYield {
         access(contract) let uniqueID: DFB.UniqueIdentifier
         /// The type of Vault this Tide can receive as a deposit and provides as a withdrawal
         access(self) let vaultType: Type
-        /// The Strategy granting top-level access to the yield-bearing DeFiBlocks composition
+        /// The Strategy granting top-level access to the yield-bearing DeFiBlocks stack
         access(self) var strategy: @{Strategy}?
 
         init(strategyType: Type, withVault: @{FungibleToken.Vault}) {
@@ -191,7 +206,7 @@ access(all) contract TidalYield {
                     withFunds: <-withVault
                 )
             assert(_strategy.isSupportedCollateralType(self.vaultType),
-                message: "TODO")
+                message: "Vault type \(self.vaultType.identifier) is not supported by Strategy \(strategyType.identifier)")
             self.strategy <-_strategy
         }
 
@@ -223,9 +238,13 @@ access(all) contract TidalYield {
                 self.isSupportedVaultType(type: from.getType()):
                 "Deposited vault of type \(from.getType().identifier) is not supported by this Tide"
             }
+            let amount = from.balance
             emit DepositedToTide(id: self.uniqueID.id, idType: self.uniqueID.getType().identifier, amount: from.balance, owner: self.owner?.address, fromUUID: from.uuid)
             self._borrowStrategy().deposit(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
-            assert(from.balance == 0.0, message: "TODO")
+            assert(
+                from.balance == 0.0,
+                message: "Deposit amount \(amount) of \(self.vaultType.identifier) could not be deposited to Tide \(self.id())"
+            )
             Burner.burn(<-from)
         }
         /// Returns the Vaults types supported by this Tide as a mapping associated with their current support status
@@ -349,7 +368,7 @@ access(all) contract TidalYield {
             }
             let tide <- self.withdrawTide(id: id)
             let res <- tide.withdraw(amount: tide.getTideBalance())
-            Burner.burn(<-tide) // TODO: need to garbage collect anything related to the strategy (e.g. stored AutoBalancer) - add burnCallback on strategy for cleanup
+            Burner.burn(<-tide)
             return <-res
         }
     }

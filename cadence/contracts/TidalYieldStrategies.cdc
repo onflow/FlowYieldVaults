@@ -24,18 +24,18 @@ import "MockSwapper"
 ///
 /// This contract defines Strategies used in the TidalYield platform.
 ///
-/// A Strategy instance can be thought of as an an objects wrapping a stack of DeFiBlocks connectors wired together to
+/// A Strategy instance can be thought of as objects wrapping a stack of DeFiBlocks connectors wired together to
 /// (optimally) generate some yield on initial deposits. Strategies can be simple such as swapping into a yield-bearing
-/// asset (such as stFLOW) or more complex compositions of DeFiBlocks connectors.
+/// asset (such as stFLOW) or more complex DeFiBlocks stacks.
 ///
-/// A StrategyComposer is tasked with the creation of a supported Strategy. It's within the composition of DeFiBlocks
+/// A StrategyComposer is tasked with the creation of a supported Strategy. It's within the stacking of DeFiBlocks
 /// connectors that the true power of the components lies.
 ///
 access(all) contract TidalYieldStrategies {
 
     /// This is the first Strategy implementation, wrapping a TidalProtocol Position along with its related Sink &
     /// Source. While this object is a simple wrapper for the top-level collateralized position, the true magic of the
-    /// DeFiBlocks is in the stacking of the related connectors. This composition logic can be found in the
+    /// DeFiBlocks is in the stacking of the related connectors. This stacking logic can be found in the
     /// TracerStrategyComposer construct.
     access(all) resource TracerStrategy : TidalYield.Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
@@ -180,6 +180,23 @@ access(all) contract TidalYieldStrategies {
                 collateralType: collateralType,
                 position: position
             )
+        }
+    }
+
+    /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
+    /// may utilize resource consumption (i.e. account storage). Since TracerStrategy creation consumes account storage
+    /// via configured AutoBalancers
+    access(all) resource StrategyComposerIssuer : TidalYield.StrategyComposerIssuer {
+        access(all) view fun getSupportedComposers(): {Type: Bool} {
+            return { Type<@TracerStrategyComposer>(): true }
+        }
+        access(all) fun issueComposer(_ type: Type): @{TidalYield.StrategyComposer} {
+            switch type {
+            case Type<@TracerStrategyComposer>():
+                return <- create TracerStrategyComposer()
+            default:
+                panic("Unsupported StrategyComposer requested: \(type.identifier)")
+            }
         }
     }
 }
