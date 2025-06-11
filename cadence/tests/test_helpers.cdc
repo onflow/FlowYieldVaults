@@ -118,6 +118,13 @@ fun getBalance(address: Address, vaultPublicPath: PublicPath): UFix64? {
     return res.returnValue as! UFix64?
 }
 
+access(all)
+fun getTideIDs(address: Address): [UInt64]? {
+    let res = _executeScript("../scripts/tidal-yield/get_tide_ids.cdc", [address])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! [UInt64]?
+}
+
 /* --- Transaction Helpers --- */
 
 access(all)
@@ -177,4 +184,34 @@ access(all)
 fun mintMoet(signer: Test.TestAccount, to: Address, amount: UFix64, beFailed: Bool) {
     let mintRes = _executeTransaction("../transactions/moet/mint_moet.cdc", [to, amount], signer)
     Test.expect(mintRes, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+access(all)
+fun addStrategyComposer(signer: Test.TestAccount, strategyIdentifier: String, composerIdentifier: String, issuerStoragePath: StoragePath, beFailed: Bool) {
+    let addRes = _executeTransaction("../transactions/tidal-yield/admin/add_strategy_composer.cdc",
+            [ strategyIdentifier, composerIdentifier, issuerStoragePath ],
+            signer
+        )
+    Test.expect(addRes, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+access(all)
+fun openTide(
+    signer: Test.TestAccount,
+    strategyIdentifier: String,
+    vaultIdentifier: String,
+    amount: UFix64,
+    beFailed: Bool
+) {
+    let res = _executeTransaction("../transactions/tidal-yield/open_tide.cdc",
+            [ strategyIdentifier, vaultIdentifier, amount ],
+            signer
+        )
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+access(all)
+fun closeTide(signer: Test.TestAccount, id: UInt64, beFailed: Bool) {
+    let res = _executeTransaction("../transactions/tidal-yield/close_tide.cdc", [id], signer)
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
