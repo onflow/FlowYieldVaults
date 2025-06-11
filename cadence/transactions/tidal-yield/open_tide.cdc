@@ -10,11 +10,16 @@ import "TidalYield"
 ///     e.g. vault.getType().identifier == 'A.0ae53cb6e3f42a79.FlowToken.Vault'
 /// @param amount: The amount to deposit into the new Tide
 ///
-transaction(vaultIdentifier: String, amount: UFix64) {
+transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64) {
     let manager: &TidalYield.TideManager
+    let strategy: Type
     let depositVault: @{FungibleToken.Vault}
 
     prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability) &Account) {
+        // create the Strategy Type to compose which the Tide should manage
+        self.strategy = CompositeType(strategyIdentifier)
+            ?? panic("Invalid strategyIdentifier \(strategyIdentifier) - ensure the provided strategyIdentifier corresponds to a valid Strategy Type")
+
         // get the data for where the vault type is canoncially stored
         let vaultType = CompositeType(vaultIdentifier)
             ?? panic("Vault identifier \(vaultIdentifier) is not associated with a valid Type")
@@ -46,6 +51,6 @@ transaction(vaultIdentifier: String, amount: UFix64) {
     }
 
     execute {
-        self.manager.createTide(withVault: <-self.depositVault)
+        self.manager.createTide(strategyType: self.strategy, withVault: <-self.depositVault)
     }
 }
