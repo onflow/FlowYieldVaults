@@ -19,8 +19,7 @@ transaction {
             signer.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(YieldToken.VaultStoragePath)
         }
         // ensure proper configuration
-        if signer.storage.type(at: YieldToken.VaultStoragePath) != Type<@YieldToken.Vault>(){
-            panic("Could not configure YieldToken Vault at \(YieldToken.VaultStoragePath) - check for collision and try again")
-        }
+        assert(signer.storage.type(at: YieldToken.VaultStoragePath) == Type<@YieldToken.Vault>(),
+            message: "Could not configure YieldToken Vault at \(YieldToken.VaultStoragePath) - check for collision and try again")
     }
 }
