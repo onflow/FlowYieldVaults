@@ -35,7 +35,7 @@ fun test_CreateTideSucceeds() {
     let user = Test.createAccount()
     mintFlow(to: user, amount: fundingAmount)
 
-    openTide(
+    createTide(
         signer: user,
         strategyIdentifier: strategyIdentifier,
         vaultIdentifier: flowTokenIdentifier,
@@ -57,7 +57,7 @@ fun test_CloseTideSucceeds() {
     let user = Test.createAccount()
     mintFlow(to: user, amount: fundingAmount)
 
-    openTide(
+    createTide(
         signer: user,
         strategyIdentifier: strategyIdentifier,
         vaultIdentifier: flowTokenIdentifier,

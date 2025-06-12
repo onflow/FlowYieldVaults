@@ -43,6 +43,12 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "FungibleTokenStack",
+        path: "../../DeFiBlocks/cadence/contracts/connectors/FungibleTokenStack.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
 
     // TidalProtocol contracts
     let initialMoetSupply = 0.0
@@ -109,6 +115,14 @@ access(all) fun deployContracts() {
     Test.expect(err, Test.beNil())
 }
 
+access(all)
+fun setupTidalProtocol(signer: Test.TestAccount) {
+    let res = _executeTransaction("../transactions/tidal-protocol/create_and_store_pool.cdc",
+            [],
+            signer
+        )
+}
+
 /* --- Script helpers */
 
 access(all)
@@ -135,16 +149,6 @@ fun createAndStorePool(signer: Test.TestAccount, defaultTokenIdentifier: String,
         signer
     )
     Test.expect(createRes, beFailed ? Test.beFailed() : Test.beSucceeded())
-}
-
-access(all)
-fun setMockOraclePrice(signer: Test.TestAccount, forTokenIdentifier: String, price: UFix64) {
-    let setRes = _executeTransaction(
-        "./transactions/mock-oracle/set_price.cdc",
-        [forTokenIdentifier, price],
-        signer
-    )
-    Test.expect(setRes, Test.beSucceeded())
 }
 
 access(all)
@@ -181,8 +185,20 @@ fun setupMoetVault(_ signer: Test.TestAccount, beFailed: Bool) {
 }
 
 access(all)
+fun setupYieldVault(_ signer: Test.TestAccount, beFailed: Bool) {
+    let setupRes = _executeTransaction("../transactions/yield-token/setup_vault.cdc", [], signer)
+    Test.expect(setupRes, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+access(all)
 fun mintMoet(signer: Test.TestAccount, to: Address, amount: UFix64, beFailed: Bool) {
     let mintRes = _executeTransaction("../transactions/moet/mint_moet.cdc", [to, amount], signer)
+    Test.expect(mintRes, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+access(all)
+fun mintYield(signer: Test.TestAccount, to: Address, amount: UFix64, beFailed: Bool) {
+    let mintRes = _executeTransaction("../transactions/yield-token/mint_yield.cdc", [to, amount], signer)
     Test.expect(mintRes, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
@@ -196,14 +212,14 @@ fun addStrategyComposer(signer: Test.TestAccount, strategyIdentifier: String, co
 }
 
 access(all)
-fun openTide(
+fun createTide(
     signer: Test.TestAccount,
     strategyIdentifier: String,
     vaultIdentifier: String,
     amount: UFix64,
     beFailed: Bool
 ) {
-    let res = _executeTransaction("../transactions/tidal-yield/open_tide.cdc",
+    let res = _executeTransaction("../transactions/tidal-yield/create_tide.cdc",
             [ strategyIdentifier, vaultIdentifier, amount ],
             signer
         )
@@ -214,4 +230,26 @@ access(all)
 fun closeTide(signer: Test.TestAccount, id: UInt64, beFailed: Bool) {
     let res = _executeTransaction("../transactions/tidal-yield/close_tide.cdc", [id], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+/* --- Mock helpers --- */
+
+access(all)
+fun setMockOraclePrice(signer: Test.TestAccount, forTokenIdentifier: String, price: UFix64) {
+    let setRes = _executeTransaction(
+        "../transactions/mocks/oracle/set_price.cdc",
+        [ forTokenIdentifier, price ],
+        signer
+    )
+    Test.expect(setRes, Test.beSucceeded())
+}
+
+access(all)
+fun setMockSwapperLiquidityConnector(signer: Test.TestAccount, vaultStoragePath: StoragePath) {
+    let setRes = _executeTransaction(
+        "../transactions/mocks/swapper/set_liquidity_connector.cdc",
+        [ vaultStoragePath ],
+        signer
+    )
+    Test.expect(setRes, Test.beSucceeded())
 }
