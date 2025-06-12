@@ -101,8 +101,7 @@ access(all) contract MockStrategy {
         access(all) fun createStrategy(
             _ type: Type,
             uniqueID: DFB.UniqueIdentifier,
-            withFunds: @{FungibleToken.Vault},
-            params: {String: AnyStruct}
+            withFunds: @{FungibleToken.Vault}
         ): @{TidalYield.Strategy} {
             let id = DFB.UniqueIdentifier()
             let strat <- create Strategy(
