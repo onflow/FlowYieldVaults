@@ -1,10 +1,10 @@
+// standards
 import "FungibleToken"
 import "Burner"
 import "ViewResolver"
-
+// DeFiBlocks
 import "DFB"
 
-///
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ///
@@ -169,6 +169,8 @@ access(all) contract TidalYield {
         }
     }
 
+    /// StrategyComposerIssuer
+    ///
     /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
     /// may utilize resource consumption (i.e. account storage). Contracts defining Strategies that do not require
     /// such protections may wish to expose Strategy creation publicly via public Capabilities.
@@ -272,7 +274,7 @@ access(all) contract TidalYield {
 
             return <- res
         }
-        /// Returns 
+        /// Returns an authorized reference to the encapsulated Strategy
         access(self) view fun _borrowStrategy(): auth(FungibleToken.Withdraw) &{Strategy} {
             return &self.strategy as auth(FungibleToken.Withdraw) &{Strategy}?
                 ?? panic("Unknown error - could not borrow Strategy for Tide #\(self.id())")

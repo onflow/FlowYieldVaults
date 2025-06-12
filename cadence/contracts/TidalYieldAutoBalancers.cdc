@@ -1,17 +1,29 @@
+// standards
 import "Burner"
 import "FungibleToken"
-
+// DeFiBlocks
 import "DFB"
 
+/// TidalYieldAutoBalancers
+///
+/// This contract deals with the storage, retrieval and cleanup of DeFiBlocks AutoBalancers as they are used in
+/// TidalYield defined Strategies.
+///
+/// AutoBalancers are stored in contract account storage at paths derived by their related DFB.UniqueIdentifier.id
+/// which identifies all DeFiBlocks components in the stack related to their composite Strategy.
+///
+/// When a Tide and necessarily the related Strategy is closed & burned, the related AutoBalancer and its Capabilities
+/// are destroyed and deleted
+///
 access(all) contract TidalYieldAutoBalancers {
 
     /// The path prefix used for StoragePath & PublicPath derivations
     access(all) let pathPrefix: String
-    
+
     /* --- PUBLIC METHODS --- */
 
-    /// Returns the path (StoragePath or PublicPath) at which an AutoBalancer is stored with the associated 
-    /// UniqueIdentifier.id. 
+    /// Returns the path (StoragePath or PublicPath) at which an AutoBalancer is stored with the associated
+    /// UniqueIdentifier.id.
     access(all) view fun deriveAutoBalancerPath(id: UInt64, storage: Bool): Path {
         return storage ? StoragePath(identifier: "\(self.pathPrefix)\(id)")! : PublicPath(identifier: "\(self.pathPrefix)\(id)")!
     }
@@ -36,7 +48,7 @@ access(all) contract TidalYieldAutoBalancers {
         rebalanceSource: {DFB.Source}?,
         uniqueID: DFB.UniqueIdentifier
     ): auth(DFB.Auto, DFB.Set, DFB.Get, FungibleToken.Withdraw) &DFB.AutoBalancer {
-        
+
         // derive paths & prevent collision
         let storagePath = self.deriveAutoBalancerPath(id: uniqueID.id, storage: true) as! StoragePath
         let publicPath = self.deriveAutoBalancerPath(id: uniqueID.id, storage: false) as! PublicPath

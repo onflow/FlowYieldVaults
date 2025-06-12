@@ -33,6 +33,7 @@ import "MockSwapper"
 ///
 access(all) contract TidalYieldStrategies {
 
+    /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let IssuerStoragePath: StoragePath
 
     /// This is the first Strategy implementation, wrapping a TidalProtocol Position along with its related Sink &
