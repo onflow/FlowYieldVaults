@@ -6,6 +6,8 @@ import "TidalYield"
 
 /// Opens a new Tide in the Tidal platform, funding the Tide with the specified Vault and amount
 ///
+/// @param strategyIdentifier: The Strategy's Type identifier. Must be a Strategy Type that is currently supported by
+///     TidalYield. See `TidalYield.getSupportedStrategies()` to get those currently supported.
 /// @param vaultIdentifier: The Vault's Type identifier
 ///     e.g. vault.getType().identifier == 'A.0ae53cb6e3f42a79.FlowToken.Vault'
 /// @param amount: The amount to deposit into the new Tide

@@ -17,7 +17,7 @@ transaction {
         let cap = signer.capabilities.storage.issue<&TidalYield.TideManager>(TidalYield.TideManagerStoragePath)
         signer.capabilities.publish(cap, at: TidalYield.TideManagerPublicPath)
         // issue an authorized capability for later access via Capability controller if needed (e.g. via HybridCustody)
-        signer.capabilities.storage.issue<auth(TidalYield.Owner) &TidalYield.TideManager>(TidalYield.TideManagerStoragePath)
+        signer.capabilities.storage.issue<auth(FungibleToken.Withdraw) &TidalYield.TideManager>(TidalYield.TideManagerStoragePath)
 
         // confirm setup of TideManager at canonical path
         let storedType = signer.storage.type(at: TidalYield.TideManagerStoragePath) ?? Type<Never>()
