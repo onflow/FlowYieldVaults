@@ -42,7 +42,7 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
             let cap = signer.capabilities.storage.issue<&TidalYield.TideManager>(TidalYield.TideManagerStoragePath)
             signer.capabilities.publish(cap, at: TidalYield.TideManagerPublicPath)
             // issue an authorized capability for later access via Capability controller if needed (e.g. via HybridCustody)
-            signer.capabilities.storage.issue<auth(TidalYield.Owner) &TidalYield.TideManager>(
+            signer.capabilities.storage.issue<&TidalYield.TideManager>(
                     TidalYield.TideManagerStoragePath
                 )
         }

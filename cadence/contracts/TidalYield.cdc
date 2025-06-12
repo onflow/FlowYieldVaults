@@ -94,8 +94,7 @@ access(all) contract TidalYield {
         access(all) fun createStrategy(
             _ type: Type,
             uniqueID: DFB.UniqueIdentifier,
-            withFunds: @{FungibleToken.Vault},
-            params: {String: AnyStruct}
+            withFunds: @{FungibleToken.Vault}
         ): @{Strategy} {
             pre {
                 self.getSupportedInitializationVaults(forStrategy: type)[withFunds.getType()] == true:
@@ -144,7 +143,7 @@ access(all) contract TidalYield {
                 "Invalid Strategy returned - expected \(type.identifier) but returned \(result.getType().identifier)"
             }
             return <- self._borrowComposer(forStrategy: type)
-                .createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds, params: {}) // TODO: decide on params inclusion or not
+                .createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds)
         }
         /// Sets the provided Strategy and Composer association in the StrategyFactory
         access(Mutate) fun addStrategyComposer(_ strategy: Type, composer: @{StrategyComposer}) {

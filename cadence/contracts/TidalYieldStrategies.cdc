@@ -104,13 +104,12 @@ access(all) contract TidalYieldStrategies {
         access(all) fun createStrategy(
             _ type: Type,
             uniqueID: DFB.UniqueIdentifier,
-            withFunds: @{FungibleToken.Vault},
-            params: {String: AnyStruct}
+            withFunds: @{FungibleToken.Vault}
         ): @{TidalYield.Strategy} {
             // this PriceOracle is mocked and will be shared by all components used in the TracerStrategy
             let oracle = MockOracle.PriceOracle()
 
-            // token types
+            // assign token types
             let collateralType = withFunds.getType()
             let yieldTokenType = Type<@YieldToken.Vault>()
             let moetTokenType = Type<@MOET.Vault>()
@@ -118,13 +117,13 @@ access(all) contract TidalYieldStrategies {
 
             // configure and AutoBalancer for this stack
             let autoBalancer = TidalYieldAutoBalancers._initNewAutoBalancer(
-                oracle: oracle,
-                vaultType: yieldTokenType,
-                lowerThreshold: params["lowerThreshold"] as! UFix64? ?? panic("Malformed params missing \"lowerThreshold\""),
-                upperThreshold: params["upperThreshold"] as! UFix64? ?? panic("Malformed params missing \"upperThreshold\""),
-                rebalanceSink: nil,
-                rebalanceSource: nil,
-                uniqueID: uniqueID
+                oracle: oracle,             // used to determine value of deposits & when to rebalance
+                vaultType: yieldTokenType,  // the type of Vault held by the AutoBalancer
+                lowerThreshold: 0.95,       // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
+                upperThreshold: 1.05,       // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
+                rebalanceSink: nil,         // nil on init - will be set once a PositionSink is available
+                rebalanceSource: nil,       // nil on init - not set for TracerStrategy
+                uniqueID: uniqueID          // identifies AutoBalancer as part of this Strategy
             )
             // enables deposits of YieldToken to the AutoBalancer
             let abaSink = autoBalancer.createBalancerSink() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
@@ -151,7 +150,7 @@ access(all) contract TidalYieldStrategies {
             // Swaps provided MOET to YieldToken & deposits to the AutoBalancer
             let abaSwapSink = SwapStack.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
             // Swaps YieldToken & provides swapped MOET, sourcing YieldToken from the AutoBalancer
-            let abaSwapSource = SwapStack.SwapSource(swapper: moetToYieldSwapper, source: abaSource, uniqueID: uniqueID)
+            let abaSwapSource = SwapStack.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
 
             // open a TidalProtocol position
             let position = TidalProtocol.openPosition(
@@ -167,7 +166,7 @@ access(all) contract TidalYieldStrategies {
             // init YieldToken -> FLOW Swapper
             let yieldToFlowSwapper = MockSwapper.Swapper(
                     inVault: yieldTokenType,
-                    outVault: flowTokenType,
+                    outVault: flowTokenType, // TODO: before 
                     uniqueID: uniqueID
                 )
             // allows for YieldToken to be deposited to the Position

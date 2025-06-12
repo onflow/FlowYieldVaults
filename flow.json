@@ -1,11 +1,5 @@
 {
 	"contracts": {
-		"TidalProtocol": {
-			"source": "cadence/contracts/internal-dependencies/TidalProtocol.cdc",
-			"aliases": {
-				"testing": "0000000000000008"
-			}
-		},
 		"DFB": {
 			"source": "./DeFiBlocks/cadence/contracts/interfaces/DFB.cdc",
 			"aliases": {
@@ -22,6 +16,12 @@
 			"source": "./DeFiBlocks/cadence/contracts/connectors/FungibleTokenStack.cdc",
 			"aliases": {
 				"testing": "0000000000000007"
+			}
+		},
+		"MOET": {
+			"source": "cadence/contracts/internal-dependencies/tokens/MOET.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
 			}
 		},
 		"MockOracle": {
@@ -48,6 +48,12 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"TidalProtocol": {
+			"source": "cadence/contracts/internal-dependencies/TidalProtocol.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
 		"TidalYield": {
 			"source": "cadence/contracts/TidalYield.cdc",
 			"aliases": {
@@ -66,16 +72,10 @@
 				"testing": "0000000000000009"
 			}
 		},
-		"MOET": {
-			"source": "cadence/contracts/internal-dependencies/tokens/MOET.cdc",
-			"aliases": {
-				"testing": "0000000000000008"
-			}
-		},
 		"YieldToken": {
 			"source": "cadence/contracts/internal-dependencies/tokens/YieldToken.cdc",
 			"aliases": {
-				"testing": "00000000000000010"
+				"testing": "0000000000000010"
 			}
 		}
 	},
@@ -179,7 +179,7 @@
 					"name": "MOET",
 					"args": [
 						{
-							"value": "1000000.0",
+							"value": "1000000.00000000",
 							"type": "UFix64"
 						}
 					]
@@ -189,7 +189,7 @@
 					"name": "YieldToken",
 					"args": [
 						{
-							"value": "1000000.0",
+							"value": "1000000.00000000",
 							"type": "UFix64"
 						}
 					]

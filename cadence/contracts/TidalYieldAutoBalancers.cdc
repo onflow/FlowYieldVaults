@@ -73,7 +73,7 @@ access(all) contract TidalYieldAutoBalancers {
         publishedCap = self.account.capabilities.exists(publicPath)
         assert(storedType == Type<@DFB.AutoBalancer>(),
             message: "Error when configuring AutoBalancer for UniqueIdentifier.id \(uniqueID.id) at path \(storagePath)")
-        assert(!publishedCap,
+        assert(publishedCap,
             message: "Error when publishing AutoBalancer Capability for UniqueIdentifier.id \(uniqueID.id) at path \(publicPath)")
         return autoBalancerRef
     }
