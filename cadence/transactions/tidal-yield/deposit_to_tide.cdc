@@ -2,7 +2,7 @@ import "FungibleToken"
 import "FungibleTokenMetadataViews"
 import "ViewResolver"
 
-import "TidalYield"
+import "Tidal"
 
 /// Deposits to an existing Tide stored in the signer's TideManager
 ///
@@ -10,13 +10,13 @@ import "TidalYield"
 /// @param amount: The amount to deposit into the new Tide, denominated in the Tide's Vault type
 ///
 transaction(id: UInt64, amount: UFix64) {
-    let manager: &TidalYield.TideManager
+    let manager: &Tidal.TideManager
     let depositVault: @{FungibleToken.Vault}
 
     prepare(signer: auth(BorrowValue) &Account) {
         // reference the signer's TideManager & underlying Tide
-        self.manager = signer.storage.borrow<&TidalYield.TideManager>(from: TidalYield.TideManagerStoragePath)
-            ?? panic("Signer does not have a TideManager stored at path \(TidalYield.TideManagerStoragePath) - configure and retry")
+        self.manager = signer.storage.borrow<&Tidal.TideManager>(from: Tidal.TideManagerStoragePath)
+            ?? panic("Signer does not have a TideManager stored at path \(Tidal.TideManagerStoragePath) - configure and retry")
         let tide = self.manager.borrowTide(id: id) ?? panic("Tide with ID \(id) was not found")
 
         // get the data for where the vault type is canoncially stored

@@ -1,7 +1,7 @@
-import "TidalYield"
+import "Tidal"
 
-/// Returns the Strategy Types currently supported by TidalYield
+/// Returns the Strategy Types currently supported by Tidal
 ///
 access(all) fun main(): [Type] {
-    return TidalYield.getSupportedStrategies()
+    return Tidal.getSupportedStrategies()
 }
