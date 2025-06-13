@@ -8,7 +8,7 @@ import "DFB"
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ///
-access(all) contract Tidal {
+access(all) contract TidalYield {
 
     /* --- FIELDS --- */
 
@@ -201,7 +201,7 @@ access(all) contract Tidal {
         init(strategyType: Type, withVault: @{FungibleToken.Vault}) {
             self.uniqueID = DFB.UniqueIdentifier()
             self.vaultType = withVault.getType()
-            let _strategy <- Tidal.createStrategy(
+            let _strategy <- TidalYield.createStrategy(
                     type: strategyType,
                     uniqueID: self.uniqueID,
                     withFunds: <-withVault
