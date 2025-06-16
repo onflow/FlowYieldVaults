@@ -149,8 +149,11 @@ access(all) contract MOET : FungibleToken {
 
         access(all) fun deposit(from: @{FungibleToken.Vault}) {
             let vault <- from as! @MOET.Vault
-            self.balance = self.balance + vault.balance
+            let amount = vault.balance
+            vault.balance = 0.0
             destroy vault
+
+            self.balance = self.balance + amount
         }
 
         access(all) fun createEmptyVault(): @MOET.Vault {
