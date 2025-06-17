@@ -8,5 +8,5 @@ fun main(forTokenIdentifier: String): UFix64 {
     // Type identifier - e.g. vault.getType().identifier == 'A.0ae53cb6e3f42a79.FlowToken.Vault'
     return MockOracle.PriceOracle().price(
         ofToken: CompositeType(forTokenIdentifier) ?? panic("Invalid forTokenIdentifier \(forTokenIdentifier)")
-    )
+    ) ?? panic("MockOracle does not have a price for token \(forTokenIdentifier)")
 }
