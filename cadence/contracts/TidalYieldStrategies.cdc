@@ -8,7 +8,7 @@ import "SwapStack"
 // Lending protocol
 import "TidalProtocol"
 // TidalYield platform
-import "TidalYield"
+import "Tidal"
 import "TidalYieldAutoBalancers"
 // tokens
 import "YieldToken"
@@ -40,7 +40,7 @@ access(all) contract TidalYieldStrategies {
     /// Source. While this object is a simple wrapper for the top-level collateralized position, the true magic of the
     /// DeFiBlocks is in the stacking of the related connectors. This stacking logic can be found in the
     /// TracerStrategyComposer construct.
-    access(all) resource TracerStrategy : TidalYield.Strategy {
+    access(all) resource TracerStrategy : Tidal.Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) let uniqueID: DFB.UniqueIdentifier?
@@ -55,7 +55,7 @@ access(all) contract TidalYieldStrategies {
             self.source = position.createSource(type: collateralType)
         }
 
-        // Inherited from TidalYield.Strategy default implementation
+        // Inherited from Tidal.Strategy default implementation
         // access(all) view fun isSupportedCollateralType(_ type: Type): Bool
 
         access(all) view fun getSupportedCollateralTypes(): {Type: Bool} {
@@ -84,7 +84,7 @@ access(all) contract TidalYieldStrategies {
     }
 
     /// This StrategyComposer builds a TracerStrategy
-    access(all) resource TracerStrategyComposer : TidalYield.StrategyComposer {
+    access(all) resource TracerStrategyComposer : Tidal.StrategyComposer {
         /// Returns the Types of Strategies composed by this StrategyComposer
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
             return { Type<@TracerStrategy>(): true }
@@ -106,7 +106,7 @@ access(all) contract TidalYieldStrategies {
             _ type: Type,
             uniqueID: DFB.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
-        ): @{TidalYield.Strategy} {
+        ): @{Tidal.Strategy} {
             // this PriceOracle is mocked and will be shared by all components used in the TracerStrategy
             let oracle = MockOracle.PriceOracle()
 
@@ -188,11 +188,11 @@ access(all) contract TidalYieldStrategies {
     /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
     /// may utilize resource consumption (i.e. account storage). Since TracerStrategy creation consumes account storage
     /// via configured AutoBalancers
-    access(all) resource StrategyComposerIssuer : TidalYield.StrategyComposerIssuer {
+    access(all) resource StrategyComposerIssuer : Tidal.StrategyComposerIssuer {
         access(all) view fun getSupportedComposers(): {Type: Bool} {
             return { Type<@TracerStrategyComposer>(): true }
         }
-        access(all) fun issueComposer(_ type: Type): @{TidalYield.StrategyComposer} {
+        access(all) fun issueComposer(_ type: Type): @{Tidal.StrategyComposer} {
             switch type {
             case Type<@TracerStrategyComposer>():
                 return <- create TracerStrategyComposer()

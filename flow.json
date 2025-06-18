@@ -62,8 +62,8 @@
 				"testing": "0000000000000008"
 			}
 		},
-		"TidalYield": {
-			"source": "cadence/contracts/TidalYield.cdc",
+		"Tidal": {
+			"source": "cadence/contracts/Tidal.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000009"
@@ -224,7 +224,7 @@
 				},
 				"MockSwapper",
 				"TidalYieldAutoBalancers",
-				"TidalYield",
+				"Tidal",
 				"TidalYieldStrategies"
 			]
 		}
