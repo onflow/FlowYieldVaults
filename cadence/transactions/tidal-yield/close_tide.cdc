@@ -19,7 +19,7 @@ transaction(id: UInt64) {
             ?? panic("Signer does not have a TideManager stored at path \(Tidal.TideManagerStoragePath) - configure and retry")
         let tide = self.manager.borrowTide(id: id) ?? panic("Tide with ID \(id) was not found")
         
-        // get the data for where the vault type is canoncially stored
+        // get the data for where the vault type is canonically stored
         let vaultType = tide.getSupportedVaultTypes().keys[0]
         let tokenContract = getAccount(vaultType.address!).contracts.borrow<&{FungibleToken}>(name: vaultType.contractName!)
             ?? panic("Vault type \(vaultType.identifier) is not defined by a FungibleToken contract")

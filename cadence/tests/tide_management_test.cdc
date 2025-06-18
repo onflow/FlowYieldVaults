@@ -20,8 +20,8 @@ fun setup() {
     // enable mocked Strategy creation
     addStrategyComposer(signer: tidalYieldAccount,
         strategyIdentifier: strategyIdentifier,
-        composerIdentifier: Type<@MockStrategy.StrategyComposer>().identifier,
-        issuerStoragePath: MockStrategy.IssuerStoragePath,
+        composerStoragePath: MockStrategy.ComposerStoragePath,
+        enable: true,
         beFailed: false
     )
 

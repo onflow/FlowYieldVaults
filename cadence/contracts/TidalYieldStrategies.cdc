@@ -34,7 +34,7 @@ import "MockSwapper"
 access(all) contract TidalYieldStrategies {
 
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
-    access(all) let IssuerStoragePath: StoragePath
+    access(all) let ComposerStoragePath: StoragePath
 
     /// This is the first Strategy implementation, wrapping a TidalProtocol Position along with its related Sink &
     /// Source. While this object is a simple wrapper for the top-level collateralized position, the true magic of the
@@ -183,28 +183,16 @@ access(all) contract TidalYieldStrategies {
                 position: position
             )
         }
-    }
 
-    /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
-    /// may utilize resource consumption (i.e. account storage). Since TracerStrategy creation consumes account storage
-    /// via configured AutoBalancers
-    access(all) resource StrategyComposerIssuer : Tidal.StrategyComposerIssuer {
-        access(all) view fun getSupportedComposers(): {Type: Bool} {
-            return { Type<@TracerStrategyComposer>(): true }
-        }
-        access(all) fun issueComposer(_ type: Type): @{Tidal.StrategyComposer} {
-            switch type {
-            case Type<@TracerStrategyComposer>():
-                return <- create TracerStrategyComposer()
-            default:
-                panic("Unsupported StrategyComposer requested: \(type.identifier)")
-            }
+        /// Returns an instance of itself enabling the holder to compose supported Strategies
+        access(Tidal.Issue) fun copyComposer(): @{Tidal.StrategyComposer} {
+            return <-create TracerStrategyComposer()
         }
     }
 
     init() {
-        self.IssuerStoragePath = StoragePath(identifier: "TidalYieldStrategyComposerIssuer_\(self.account.address)")!
+        self.ComposerStoragePath = StoragePath(identifier: "TidalYieldStrategyComposer_\(self.account.address)")!
 
-        self.account.storage.save(<-create StrategyComposerIssuer(), to: self.IssuerStoragePath)
+        self.account.storage.save(<-create TracerStrategyComposer(), to: self.ComposerStoragePath)
     }
 }

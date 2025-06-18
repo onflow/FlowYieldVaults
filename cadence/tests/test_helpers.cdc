@@ -203,9 +203,9 @@ fun mintYield(signer: Test.TestAccount, to: Address, amount: UFix64, beFailed: B
 }
 
 access(all)
-fun addStrategyComposer(signer: Test.TestAccount, strategyIdentifier: String, composerIdentifier: String, issuerStoragePath: StoragePath, beFailed: Bool) {
+fun addStrategyComposer(signer: Test.TestAccount, strategyIdentifier: String, composerStoragePath: StoragePath, enable: Bool, beFailed: Bool) {
     let addRes = _executeTransaction("../transactions/tidal-yield/admin/add_strategy_composer.cdc",
-            [ strategyIdentifier, composerIdentifier, issuerStoragePath ],
+            [ strategyIdentifier, composerStoragePath, enable ],
             signer
         )
     Test.expect(addRes, beFailed ? Test.beFailed() : Test.beSucceeded())

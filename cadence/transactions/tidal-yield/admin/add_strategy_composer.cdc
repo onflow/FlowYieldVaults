@@ -3,7 +3,7 @@ import "Tidal"
 /// Adds the provided Strategy type to the Tidal StrategyFactory as built by the given StrategyComposer type
 ///
 /// @param strategyIdentifier: The Type identifier of the Strategy to add to the StrategyFactory
-/// @param composerIdentifier: The Type identifier of the StrategyComposer that builds the Strategy Type
+/// @param composerStoragePath: The StoragePath where the StrategyComposer is stored
 ///
 transaction(strategyIdentifier: String, composerStoragePath: StoragePath, enable: Bool) {
 

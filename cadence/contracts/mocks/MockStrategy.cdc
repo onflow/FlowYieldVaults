@@ -12,7 +12,7 @@ import "Tidal"
 ///
 access(all) contract MockStrategy {
 
-    access(all) let IssuerStoragePath : StoragePath
+    access(all) let ComposerStoragePath: StoragePath
     
     access(all) struct Sink : DFB.Sink {
         access(contract) let uniqueID: DFB.UniqueIdentifier?
@@ -113,28 +113,14 @@ access(all) contract MockStrategy {
             destroy withFunds
             return <- strat
         }
-    }
-
-    /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
-    /// may utilize resource consumption (i.e. account storage). Since TracerStrategy creation consumes account storage
-    /// via configured AutoBalancers
-    access(all) resource StrategyComposerIssuer : Tidal.StrategyComposerIssuer {
-        access(all) view fun getSupportedComposers(): {Type: Bool} {
-            return { Type<@StrategyComposer>(): true }
-        }
-        access(all) fun issueComposer(_ type: Type): @{Tidal.StrategyComposer} {
-            switch type {
-            case Type<@StrategyComposer>():
-                return <- create StrategyComposer()
-            default:
-                panic("Unsupported StrategyComposer requested: \(type.identifier)")
-            }
+        access(Tidal.Issue) fun copyComposer(): @{Tidal.StrategyComposer} {
+            return <- create StrategyComposer()
         }
     }
 
     init() {
-        self.IssuerStoragePath = StoragePath(identifier: "MockStrategyComposerIssuer_\(self.account.address)")!
+        self.ComposerStoragePath = StoragePath(identifier: "MockStrategyComposer_\(self.account.address)")!
 
-        self.account.storage.save(<-create StrategyComposerIssuer(), to: self.IssuerStoragePath)
+        self.account.storage.save(<-create StrategyComposer(), to: self.ComposerStoragePath)
     }
 }

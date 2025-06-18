@@ -73,6 +73,8 @@ access(all) contract Tidal {
         }
     }
 
+    access(all) entitlement Issue
+
     /// StrategyComposer
     ///
     /// A StrategyComposer is responsible for stacking DeFiBlocks connectors in a manner that composes a final Strategy.
@@ -98,9 +100,18 @@ access(all) contract Tidal {
         ): @{Strategy} {
             pre {
                 self.getSupportedInitializationVaults(forStrategy: type)[withFunds.getType()] == true:
-                "Cannot initialize Strategy \(type.identifier) with Vault \(withFunds.getType().identifier) - unsupported initialization Vault"
+                "Cannot initialize Strategy \(type.identifier) with Vault \(withFunds.getType().identifier) - "
+                    .concat("unsupported initialization Vault")
                 self.getComposedStrategyTypes()[type] == true:
                 "Strategy \(type.identifier) is unsupported by StrategyComposer \(self.getType().identifier)"
+            }
+        }
+        /// Returns the requested StrategyComposer. If the requested type is unsupported, a revert should be expected
+        access(Issue) fun copyComposer(): @{StrategyComposer} {
+            post {
+                result.getType() == self.getType():
+                "Invalid StrategyComposer returned - requested a copy of StrategyComposer \(self.getType().identifier) "
+                    .concat("but returned \(result.getType().identifier)")
             }
         }
     }
@@ -185,23 +196,6 @@ access(all) contract Tidal {
         access(self) view fun _borrowComposer(forStrategy: Type): &{StrategyComposer} {
             return &self.composers[forStrategy] as &{StrategyComposer}?
                 ?? panic("Could not borrow StrategyComposer for Strategy \(forStrategy.identifier)")
-        }
-    }
-
-    /// StrategyComposerIssuer
-    ///
-    /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
-    /// may utilize resource consumption (i.e. account storage). Contracts defining Strategies that do not require
-    /// such protections may wish to expose Strategy creation publicly via public Capabilities.
-    access(all) resource interface StrategyComposerIssuer {
-        /// Returns the StrategyComposer types supported by this issuer
-        access(all) view fun getSupportedComposers(): {Type: Bool}
-        /// Returns the requested StrategyComposer. If the requested type is unsupported, a revert should be expected
-        access(all) fun issueComposer(_ type: Type): @{StrategyComposer} {
-            post {
-                result.getType() == type:
-                "Invalid StrategyComposer returned - requested \(type.identifier) but returned \(result.getType().identifier)"
-            }
         }
     }
 
