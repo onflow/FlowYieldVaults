@@ -6,13 +6,13 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "TidalYieldStrategies"
+import "TracerStrategies"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let tidalYieldAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@TidalYieldStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@TracerStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -50,7 +50,7 @@ fun setup() {
     // enable mocked Strategy creation
     addStrategyComposer(signer: tidalYieldAccount,
         strategyIdentifier: strategyIdentifier,
-        composerStoragePath: TidalYieldStrategies.ComposerStoragePath,
+        composerStoragePath: TracerStrategies.ComposerStoragePath,
         enable: true,
         beFailed: false
     )

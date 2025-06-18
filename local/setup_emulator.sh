@@ -27,6 +27,6 @@ flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connec
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/yieldTokenVault_0xf8d6e0586b0a20c7
 # add TracerStrategy as supported Strategy with the ability to initialize when new Tides are created
 flow transactions send ./cadence/transactions/tidal-yield/admin/add_strategy_composer.cdc \
-    'A.f8d6e0586b0a20c7.TidalYieldStrategies.TracerStrategy' \
-    'A.f8d6e0586b0a20c7.TidalYieldStrategies.TracerStrategyComposer' \
-    /storage/TidalYieldStrategyComposerIssuer_0xf8d6e0586b0a20c7
+    'A.f8d6e0586b0a20c7.TracerStrategies.TracerStrategy' \
+    /storage/TidalYieldStrategyComposer_0xf8d6e0586b0a20c7 \
+    true

@@ -20,7 +20,7 @@ import "MockSwapper"
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ///
-/// TidalYieldStrategies
+/// TracerStrategies
 ///
 /// This contract defines Strategies used in the TidalYield platform.
 ///
@@ -31,7 +31,7 @@ import "MockSwapper"
 /// A StrategyComposer is tasked with the creation of a supported Strategy. It's within the stacking of DeFiBlocks
 /// connectors that the true power of the components lies.
 ///
-access(all) contract TidalYieldStrategies {
+access(all) contract TracerStrategies {
 
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let ComposerStoragePath: StoragePath
