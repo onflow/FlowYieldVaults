@@ -5,6 +5,8 @@ import "ViewResolver"
 // DeFiBlocks
 import "DFB"
 
+import "StrategyComposer"
+
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ///
@@ -16,10 +18,11 @@ access(all) contract Tidal {
     access(all) let TideManagerStoragePath: StoragePath
     /// Canonical PublicPath for where TideManager Capability should be published
     access(all) let TideManagerPublicPath: PublicPath
-    /// Canonical StoragePath for where StrategyFactory should be stored
-    access(all) let FactoryStoragePath: StoragePath
-    /// Canonical PublicPath for where StrategyFactory Capability should be published
-    access(all) let FactoryPublicPath: PublicPath
+    /// Canonical StoragePath for the contract's Admin resource
+    access(all) let AdminStoragePath: StoragePath
+
+    /// The statuses for all added Strategy Types and whether they are currently enabled or not
+    access(self) let strategyStatus: {Type: Bool}
 
     /* --- EVENTS --- */
 
@@ -29,175 +32,39 @@ access(all) contract Tidal {
     access(all) event AddedToManager(id: UInt64, idType: String, owner: Address?, managerUUID: UInt64)
     access(all) event BurnedTide(id: UInt64, idType: String, remainingBalance: UFix64)
 
+    /* --- PUBLIC METHODS --- */
+
+    /// Creates a TideManager used to create and manage Tides
+    access(all) fun createTideManager(): @TideManager {
+        return <-create TideManager()
+    }
+    
+    /// Returns the Strategy types and their relevant support status for new Tides
+    access(all) view fun getSupportedStrategies(): {Type: Bool} {
+        return self.strategyStatus
+    }
+
+    /// Returns the Vaults that can be used to initialize a Strategy of the given Type
+    access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
+        if self.strategyStatus[forStrategy] == nil {
+            return {}
+        }
+        return self._borrowStrategyComposer(forType: forStrategy)
+            ?.getSupportedInitializationVaults(forStrategy: forStrategy)
+            ?? {}
+    }
+
+    /// Returns the Vaults that can be deposited to a Strategy initialized with the provided Type
+    access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
+        if self.strategyStatus[forStrategy] == nil {
+            return {}
+        }
+        return self._borrowStrategyComposer(forType: forStrategy)
+            ?.getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith)
+            ?? {}
+    }
+
     /* --- CONSTRUCTS --- */
-
-    /// Strategy
-    ///
-    /// A Strategy is meant to encapsulate the Sink/Source entrypoints allowing for flows into and out of stacked
-    /// DeFiBlocks components. These compositions are intended to capitalize on some yield-bearing opportunity so that
-    /// a Strategy bears yield on that which is deposited into it, albeit not without some risk. A Strategy then can be
-    /// thought of as the top-level of a nesting of DeFiBlocks connectors & adapters where one can deposit & withdraw
-    /// funds into the composed DeFi workflows.
-    ///
-    /// While two types of strategies may not highly differ with respect to their fields, the stacking of DeFiBlocks
-    /// components & connections they provide access to likely do. This difference in wiring is why the Strategy is a
-    /// resource - because the Type and uniqueness of composition of a given Strategy must be preserved as that is its
-    /// distinguishing factor. These qualities are preserved by restricting the party who can construct it, which for
-    /// resources is within the contract that defines it.
-    ///
-    /// TODO: Consider making Sink/Source multi-asset - we could then make Strategy a composite Sink, Source & do away
-    ///     with the added layer of abstraction introduced by a StrategyComposer.
-    access(all) resource interface Strategy : DFB.IdentifiableResource, Burner.Burnable {
-        /// Returns the type of Vaults that this Strategy instance can handle
-        access(all) view fun getSupportedCollateralTypes(): {Type: Bool}
-        /// Returns whether the provided Vault type is supported by this Strategy instance
-        access(all) view fun isSupportedCollateralType(_ type: Type): Bool {
-            return self.getSupportedCollateralTypes()[type] ?? false
-        }
-        /// Returns the balance of the given token available for withdrawal. Note that this may be an estimate due to
-        /// the lack of guarantees inherent to DeFiBlocks Sources
-        access(all) fun availableBalance(ofToken: Type): UFix64
-        /// Deposits up to the balance of the referenced Vault into this Strategy
-        access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
-            pre {
-                self.isSupportedCollateralType(from.getType()):
-                "Cannot deposit Vault \(from.getType().identifier) to Strategy \(self.getType().identifier) - unsupported deposit type"
-            }
-        }
-        /// Withdraws from this Strategy and returns the resulting Vault of the requested token Type
-        access(FungibleToken.Withdraw) fun withdraw(maxAmount: UFix64, ofToken: Type): @{FungibleToken.Vault} {
-            post {
-                result.getType() == ofToken:
-                "Invalid Vault returns - requests \(ofToken.identifier) but returned \(result.getType().identifier)"
-            }
-        }
-    }
-
-    access(all) entitlement Issue
-
-    /// StrategyComposer
-    ///
-    /// A StrategyComposer is responsible for stacking DeFiBlocks connectors in a manner that composes a final Strategy.
-    /// Since DeFiBlock Sink/Source only support single assets and some Strategies may be multi-asset, we deal with
-    /// building a Strategy distinctly from encapsulating the top-level DFB connectors acting as entrypoints in to the
-    /// DeFiBlocks stack.
-    ///
-    /// TODO: Consider making Sink/Source multi-asset - we could then make Strategy a composite Sink, Source & do away
-    ///     with the added layer of abstraction introduced by a StrategyComposer.
-    access(all) resource interface StrategyComposer {
-        /// Returns the Types of Strategies composed by this StrategyComposer
-        access(all) view fun getComposedStrategyTypes(): {Type: Bool}
-        /// Returns the Vault types which can be used to initialize a given Strategy
-        access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool}
-        /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the
-        /// provided Vault type
-        access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool}
-        /// Composes a Strategy of the given type with the provided funds
-        access(all) fun createStrategy(
-            _ type: Type,
-            uniqueID: DFB.UniqueIdentifier,
-            withFunds: @{FungibleToken.Vault}
-        ): @{Strategy} {
-            pre {
-                self.getSupportedInitializationVaults(forStrategy: type)[withFunds.getType()] == true:
-                "Cannot initialize Strategy \(type.identifier) with Vault \(withFunds.getType().identifier) - "
-                    .concat("unsupported initialization Vault")
-                self.getComposedStrategyTypes()[type] == true:
-                "Strategy \(type.identifier) is unsupported by StrategyComposer \(self.getType().identifier)"
-            }
-        }
-        /// Returns the requested StrategyComposer. If the requested type is unsupported, a revert should be expected
-        access(Issue) fun copyComposer(): @{StrategyComposer} {
-            post {
-                result.getType() == self.getType():
-                "Invalid StrategyComposer returned - requested a copy of StrategyComposer \(self.getType().identifier) "
-                    .concat("but returned \(result.getType().identifier)")
-            }
-        }
-    }
-
-    /// StrategyFactory
-    ///
-    /// This resource enables the management of StrategyComposers and the construction of the Strategies they compose.
-    ///
-    access(all) resource StrategyFactory {
-        /// A mapping of StrategyComposers indexed on the related Strategies they can compose
-        access(self) let composers: @{Type: {StrategyComposer}}
-        /// The statuses for all added Strategy Types and whether they are currently enabled or not
-        access(self) let strategyStatus: {Type: Bool}
-
-        init() {
-            self.composers <- {}
-            self.strategyStatus = {}
-        }
-
-        /// Returns the Strategy types that can be produced by this StrategyFactory
-        access(all) view fun getSupportedStrategies(): {Type: Bool} {
-            return self.strategyStatus
-        }
-        /// Returns the Vaults that can be used to initialize a Strategy of the given Type
-        access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
-            return self.composers[forStrategy]?.getSupportedInitializationVaults(forStrategy: forStrategy) ?? {}
-        }
-        /// Returns the Vaults that can be deposited to a Strategy initialized with the provided Type
-        access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
-            return self.composers[forStrategy]
-                ?.getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith)
-                ?? {}
-        }
-        /// Initializes a new Strategy of the given type with the provided Vault, identifying all associated DeFiBlocks
-        /// components by the provided UniqueIdentifier
-        access(all)
-        fun createStrategy(_ type: Type, uniqueID: DFB.UniqueIdentifier, withFunds: @{FungibleToken.Vault}): @{Strategy} {
-            pre {
-                self.composers[type] != nil: "Strategy \(type.identifier) is unsupported"
-                self.strategyStatus[type] == true: "Strategy \(type.identifier) is currently disabled"
-            }
-            post {
-                result.getType() == type:
-                "Invalid Strategy returned - expected \(type.identifier) but returned \(result.getType().identifier)"
-            }
-            return <- self._borrowComposer(forStrategy: type)
-                .createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds)
-        }
-        /// Sets the provided Strategy and Composer association in the StrategyFactory
-        access(Mutate) fun addStrategyComposer(_ strategy: Type, composer: @{StrategyComposer}, enable: Bool) {
-            pre {
-                strategy.isSubtype(of: Type<@{Strategy}>()):
-                "Invalid Strategy Type \(strategy.identifier) - provided Type does not implement the Strategy interface"
-                composer.getComposedStrategyTypes()[strategy] == true:
-                "Strategy \(strategy.identifier) cannot be composed by StrategyComposer \(composer.getType().identifier)"
-            }
-            let old <- self.composers[strategy] <- composer
-            self.strategyStatus[strategy] = enable
-            Burner.burn(<-old)
-        }
-        /// Sets the Strategy's status as enabled or disabled
-        access(Mutate) fun setStrategyStatus(_ type: Type, enable: Bool) {
-            pre {
-                self.composers[type] != nil: "Strategy \(type.identifier) is unsupported"
-            }
-            post {
-                self.strategyStatus[type] == enable:
-                "Error when setting the status of Strategy \(type.identifier) to \(enable)"
-            }
-            self.strategyStatus[type] = enable
-        }
-        /// Removes the Strategy from this StrategyFactory and returns whether the value existed or not
-        access(Mutate) fun removeStrategy(_ strategy: Type): Bool {
-            if let removed <- self.composers.remove(key: strategy) {
-                Burner.burn(<-removed)
-                self.strategyStatus.remove(key: strategy)
-                return true
-            }
-            return false
-        }
-        /// Returns a reference to the StrategyComposer for the requested Strategy type, reverting if none exists
-        access(self) view fun _borrowComposer(forStrategy: Type): &{StrategyComposer} {
-            return &self.composers[forStrategy] as &{StrategyComposer}?
-                ?? panic("Could not borrow StrategyComposer for Strategy \(forStrategy.identifier)")
-        }
-    }
 
     /// Tide
     ///
@@ -209,13 +76,13 @@ access(all) contract Tidal {
         /// The type of Vault this Tide can receive as a deposit and provides as a withdrawal
         access(self) let vaultType: Type
         /// The Strategy granting top-level access to the yield-bearing DeFiBlocks stack
-        access(self) var strategy: @{Strategy}?
+        access(self) var strategy: @{StrategyComposer.Strategy}?
 
         init(strategyType: Type, withVault: @{FungibleToken.Vault}) {
             self.uniqueID = DFB.UniqueIdentifier()
             self.vaultType = withVault.getType()
-            let _strategy <- Tidal.createStrategy(
-                    type: strategyType,
+            let _strategy <- Tidal._createStrategy(
+                    strategyType,
                     uniqueID: self.uniqueID,
                     withFunds: <-withVault
                 )
@@ -288,8 +155,8 @@ access(all) contract Tidal {
             return <- res
         }
         /// Returns an authorized reference to the encapsulated Strategy
-        access(self) view fun _borrowStrategy(): auth(FungibleToken.Withdraw) &{Strategy} {
-            return &self.strategy as auth(FungibleToken.Withdraw) &{Strategy}?
+        access(self) view fun _borrowStrategy(): auth(FungibleToken.Withdraw) &{StrategyComposer.Strategy} {
+            return &self.strategy as auth(FungibleToken.Withdraw) &{StrategyComposer.Strategy}?
                 ?? panic("Unknown error - could not borrow Strategy for Tide #\(self.id())")
         }
     }
@@ -384,54 +251,78 @@ access(all) contract Tidal {
         }
     }
 
-    /* --- PUBLIC METHODS --- */
-
-    /// Returns the Types of Strategies that can be used in Tides
-    access(all) view fun getSupportedStrategies(): {Type: Bool} {
-        return self._borrowFactory().getSupportedStrategies()
-    }
-    /// Returns the Vault types which can be used to initialize a given Strategy
-    access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
-        return self._borrowFactory().getSupportedInitializationVaults(forStrategy: forStrategy)
-    }
-    /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the
-    /// provided Vault type
-    access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
-        return self._borrowFactory().getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith)
-    }
-    /// Creates a Strategy of the requested Type using the provided Vault as an initial deposit
-    access(all) fun createStrategy(type: Type, uniqueID: DFB.UniqueIdentifier, withFunds: @{FungibleToken.Vault}): @{Strategy} {
-        return <- self._borrowFactory().createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds)
-    }
-    /// Creates a TideManager used to create and manage Tides
-    access(all) fun createTideManager(): @TideManager {
-        return <-create TideManager()
-    }
-    /// Creates a StrategyFactory resource
-    access(all) fun createStrategyFactory(): @StrategyFactory {
-        return <- create StrategyFactory()
+    // Admin-related entitlements
+    access(all) entitlement Add
+    access(all) entitlement Set
+    access(all) entitlement Delete
+    
+    /// Admin
+    ///
+    access(all) resource Admin {
+        /// Sets the provided Strategy and Composer association in the Tidal contract
+        access(Add) fun addStrategy(_ strategy: Type, enable: Bool) {
+            pre {
+                strategy.isSubtype(of: Type<@{StrategyComposer.Strategy}>()):
+                "Invalid Strategy Type \(strategy.identifier) - provided Type does not implement the Strategy interface"
+                Tidal._borrowStrategyComposer(forType: strategy) != nil:
+                "Invalid Strategy-defining contract for type \(strategy.identifier) - contract does not conform to StrategyComposer interface"
+                Tidal._borrowStrategyComposer(forType: strategy)!.getComposedStrategyTypes()[strategy] == true:
+                "Strategy \(strategy.identifier) cannot be composed by its defining StrategyComposer contract"
+            }
+            Tidal.strategyStatus[strategy] = enable
+        }
+        /// Sets the Strategy's status as enabled or disabled
+        access(Set) fun setStrategyStatus(_ type: Type, enable: Bool) {
+            pre {
+                Tidal.strategyStatus[type] != nil: "Attempting to set status for an unsupported Strategy \(type.identifier)"
+            }
+            post {
+                Tidal.strategyStatus[type] == enable:
+                "Error when setting the status of Strategy \(type.identifier) to \(enable)"
+            }
+            Tidal.strategyStatus[type] = enable
+        }
+        /// Removes the Strategy from the Tidal contract and returns whether the value existed or not
+        access(Delete) fun removeStrategy(_ strategy: Type): Bool {
+            return Tidal.strategyStatus.remove(key: strategy) != nil
+        }
     }
 
     /* --- INTERNAL METHODS --- */
 
-    /// Returns a reference to the StrategyFactory stored in this contract's account storage
-    access(self) view fun _borrowFactory(): &StrategyFactory {
-        return self.account.storage.borrow<&StrategyFactory>(from: self.FactoryStoragePath)
-            ?? panic("Could not borrow reference to StrategyFactory from \(self.FactoryStoragePath)")
+    /// Creates a Strategy of the provided Type with the funds provided
+    access(self) fun _createStrategy(
+        _ type: Type,
+        uniqueID: DFB.UniqueIdentifier,
+        withFunds: @{FungibleToken.Vault}
+    ): @{StrategyComposer.Strategy} {
+        pre {
+            type.isSubtype(of: Type<@{StrategyComposer.Strategy}>()):
+            "Requested type \(type.identifier) is not a StrategyComposer.Strategy implementation"
+            self.strategyStatus[type] == true:
+            "Requested Strategy \(type.identifier) is unsupported by TidalYield"
+        }
+        let composer = self._borrowStrategyComposer(forType: type)
+            ?? panic("Could not borrow StrategyComposer contract for Strategy \(type.identifier)")
+        return <- composer.createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds)
+    }
+
+    /// Returns a reference to the StrategyComposer assuming the contract defines the Strategy Type
+    access(self) view fun _borrowStrategyComposer(forType: Type): &{StrategyComposer}? {
+        if !forType.isSubtype(of: Type<@{StrategyComposer.Strategy}>()) {
+            return nil
+        }
+        return getAccount(forType.address!).contracts.borrow<&{StrategyComposer}>(name: forType.contractName!)
     }
 
     init() {
-        var pathIdentifier = "TidalYieldTideManager_\(self.account.address)"
+        let pathIdentifier = "TidalYieldTideManager_\(self.account.address)"
         self.TideManagerStoragePath = StoragePath(identifier: pathIdentifier)!
         self.TideManagerPublicPath = PublicPath(identifier: pathIdentifier)!
+        self.AdminStoragePath = StoragePath(identifier: "TidalYieldAdmin_\(self.account.address)")!
 
-        pathIdentifier = "TidalYieldStrategyFactory_\(self.account.address)"
-        self.FactoryStoragePath = StoragePath(identifier: pathIdentifier)!
-        self.FactoryPublicPath = PublicPath(identifier: pathIdentifier)!
+        self.strategyStatus = {}
 
-        // configure a StrategyFactory in storage and publish a public Capability
-        self.account.storage.save(<-create StrategyFactory(), to: self.FactoryStoragePath)
-        let cap = self.account.capabilities.storage.issue<&StrategyFactory>(self.FactoryStoragePath)
-        self.account.capabilities.publish(cap, at: self.FactoryPublicPath)
+        self.account.storage.save(<-create Admin(), to: self.AdminStoragePath)
     }
 }

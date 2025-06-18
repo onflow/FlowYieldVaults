@@ -88,6 +88,12 @@ access(all) fun deployContracts() {
     
     // TidalYield contracts
     err = Test.deployContract(
+        name: "StrategyComposer",
+        path: "../contracts/interfaces/StrategyComposer.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
         name: "TidalYieldAutoBalancers",
         path: "../contracts/TidalYieldAutoBalancers.cdc",
         arguments: []
@@ -203,9 +209,9 @@ fun mintYield(signer: Test.TestAccount, to: Address, amount: UFix64, beFailed: B
 }
 
 access(all)
-fun addStrategyComposer(signer: Test.TestAccount, strategyIdentifier: String, composerStoragePath: StoragePath, enable: Bool, beFailed: Bool) {
+fun addStrategyComposer(signer: Test.TestAccount, strategyIdentifier: String, enable: Bool, beFailed: Bool) {
     let addRes = _executeTransaction("../transactions/tidal-yield/admin/add_strategy_composer.cdc",
-            [ strategyIdentifier, composerStoragePath, enable ],
+            [ strategyIdentifier, enable ],
             signer
         )
     Test.expect(addRes, beFailed ? Test.beFailed() : Test.beSucceeded())

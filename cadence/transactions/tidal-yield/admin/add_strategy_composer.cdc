@@ -1,46 +1,34 @@
 import "Tidal"
+import "StrategyComposer"
 
-/// Adds the provided Strategy type to the Tidal StrategyFactory as built by the given StrategyComposer type
+/// Adds the provided Strategy type to the Tidal contract
 ///
-/// @param strategyIdentifier: The Type identifier of the Strategy to add to the StrategyFactory
-/// @param composerStoragePath: The StoragePath where the StrategyComposer is stored
+/// @param strategyIdentifier: The Type identifier of the Strategy to add to Tidal contract
+/// @param enable: Whether the Strategy type should be immediately enabled or not
 ///
-transaction(strategyIdentifier: String, composerStoragePath: StoragePath, enable: Bool) {
+transaction(strategyIdentifier: String, enable: Bool) {
 
-    /// The Strategy Type to add to the StrategyFactory
+    /// The Strategy Type to add
     let strategyType: Type
-    /// The StrategyComposer that builds the Strategy Type
-    let composer: @{Tidal.StrategyComposer}
-    /// Authorized reference to the StrategyFactory to which the Strategy Type & StrategyComposer will be added
-    let factory: auth(Mutate) &Tidal.StrategyFactory
-    var finalStatus: Bool?
+    /// Authorized reference to the Admin through which the Strategy Type will be added to the Tidal contract
+    let admin: auth(Tidal.Add) &Tidal.Admin
 
     prepare(signer: auth(BorrowValue) &Account) {
         // construct the types
         self.strategyType = CompositeType(strategyIdentifier) ?? panic("Invalid Strategy type \(strategyIdentifier)")
 
-        // borrow reference to StrategyComposerIssuer & create the StategyComposer
-        let originComposer = signer.storage.borrow<auth(Tidal.Issue) &{Tidal.StrategyComposer}>(from: composerStoragePath)
-            ?? panic("Could not borrow reference to StrategyComposerIssuer from \(composerStoragePath)")
-        self.composer <- originComposer.copyComposer()
-
-        // assign StrategyFactory
-        self.factory = signer.storage.borrow<auth(Mutate) &Tidal.StrategyFactory>(from: Tidal.FactoryStoragePath)
-            ?? panic("Could not borrow reference to StrategyFactory from \(Tidal.FactoryStoragePath)")
-
-        self.finalStatus = false
+        // assign Admin
+        self.admin = signer.storage.borrow<auth(Tidal.Add) &Tidal.Admin>(from: Tidal.AdminStoragePath)
+            ?? panic("Could not borrow reference to StrategyFactory from \(Tidal.AdminStoragePath)")
     }
 
     execute {
-        // add the Strategy Type as built by the new StrategyComposer
-        self.factory.addStrategyComposer(self.strategyType, composer: <-self.composer, enable: enable)
-        // capture the final status for post-condition check
-        self.finalStatus = self.factory.getSupportedStrategies()[self.strategyType]
+        // add the Strategy Type as supported
+        self.admin.addStrategy(self.strategyType, enable: enable)
     }
 
     post {
-        self.finalStatus == enable:
-        "Strategy \(strategyIdentifier) was not correctly added to StrategyFactory - was given enable \(enable) but found status of "
-            .concat(self.finalStatus != nil ? "\(self.finalStatus!)" : "nil")
+        Tidal.getSupportedStrategies()[self.strategyType] == enable:
+        "Strategy \(strategyIdentifier) was not correctly added to Tidal"
     }
 }

@@ -83,6 +83,13 @@
 				"testing": "0000000000000009"
 			}
 		},
+		"StrategyComposer": {
+			"source": "cadence/contracts/interfaces/StrategyComposer.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009"
+			}
+		},
 		"YieldToken": {
 			"source": "cadence/contracts/internal-dependencies/tokens/YieldToken.cdc",
 			"aliases": {
@@ -217,6 +224,7 @@
 				},
 				"MockSwapper",
 				"TidalYieldAutoBalancers",
+				"StrategyComposer",
 				"Tidal",
 				"TracerStrategies"
 			]

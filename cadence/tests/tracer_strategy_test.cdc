@@ -50,7 +50,6 @@ fun setup() {
     // enable mocked Strategy creation
     addStrategyComposer(signer: tidalYieldAccount,
         strategyIdentifier: strategyIdentifier,
-        composerStoragePath: TracerStrategies.ComposerStoragePath,
         enable: true,
         beFailed: false
     )

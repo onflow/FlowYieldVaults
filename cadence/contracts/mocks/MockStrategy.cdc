@@ -4,15 +4,46 @@ import "FlowToken"
 import "DFBUtils"
 import "DFB"
 
-import "Tidal"
+import "StrategyComposer"
 
 ///
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ///
-access(all) contract MockStrategy {
+access(all) contract MockStrategy : StrategyComposer {
 
-    access(all) let ComposerStoragePath: StoragePath
+    access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
+        return { Type<@Strategy>(): true }
+    }
+    access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
+        return { Type<@FlowToken.Vault>(): true }
+    }
+    access(all) view fun getStrategyFundingMinimum(forStrategy: Type): UFix64? {
+        switch forStrategy {
+            case Type<@Strategy>():
+                return 0.0
+            default:
+                return nil
+        }
+    }
+    access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
+        return { Type<@FlowToken.Vault>(): true }
+    }
+    access(all) fun createStrategy(
+        _ type: Type,
+        uniqueID: DFB.UniqueIdentifier,
+        withFunds: @{FungibleToken.Vault}
+    ): @{StrategyComposer.Strategy} {
+        let id = DFB.UniqueIdentifier()
+        let strat <- create Strategy(
+            id: id,
+            sink: Sink(id),
+            source: Source(id)
+        )
+        strat.deposit(from: &withFunds as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
+        destroy withFunds
+        return <- strat
+    }
     
     access(all) struct Sink : DFB.Sink {
         access(contract) let uniqueID: DFB.UniqueIdentifier?
@@ -45,7 +76,7 @@ access(all) contract MockStrategy {
         }
     }
 
-    access(all) resource Strategy : Tidal.Strategy {
+    access(all) resource Strategy : StrategyComposer.Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) let uniqueID: DFB.UniqueIdentifier?
@@ -86,41 +117,5 @@ access(all) contract MockStrategy {
         }
 
         access(contract) fun burnCallback() {} // no-op
-    }
-
-    access(all) resource StrategyComposer : Tidal.StrategyComposer {
-        access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
-            return { Type<@Strategy>(): true }
-        }
-        access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
-            return { Type<@FlowToken.Vault>(): true }
-        }
-        access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
-            return { Type<@FlowToken.Vault>(): true }
-        }
-        access(all) fun createStrategy(
-            _ type: Type,
-            uniqueID: DFB.UniqueIdentifier,
-            withFunds: @{FungibleToken.Vault}
-        ): @{Tidal.Strategy} {
-            let id = DFB.UniqueIdentifier()
-            let strat <- create Strategy(
-                id: id,
-                sink: Sink(id),
-                source: Source(id)
-            )
-            strat.deposit(from: &withFunds as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
-            destroy withFunds
-            return <- strat
-        }
-        access(Tidal.Issue) fun copyComposer(): @{Tidal.StrategyComposer} {
-            return <- create StrategyComposer()
-        }
-    }
-
-    init() {
-        self.ComposerStoragePath = StoragePath(identifier: "MockStrategyComposer_\(self.account.address)")!
-
-        self.account.storage.save(<-create StrategyComposer(), to: self.ComposerStoragePath)
     }
 }

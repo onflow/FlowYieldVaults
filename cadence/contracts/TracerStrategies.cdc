@@ -9,6 +9,7 @@ import "SwapStack"
 import "TidalProtocol"
 // TidalYield platform
 import "Tidal"
+import "StrategyComposer"
 import "TidalYieldAutoBalancers"
 // tokens
 import "YieldToken"
@@ -31,16 +32,55 @@ import "MockSwapper"
 /// A StrategyComposer is tasked with the creation of a supported Strategy. It's within the stacking of DeFiBlocks
 /// connectors that the true power of the components lies.
 ///
-access(all) contract TracerStrategies {
+access(all) contract TracerStrategies : StrategyComposer {
 
-    /// Canonical StoragePath where the StrategyComposerIssuer should be stored
-    access(all) let ComposerStoragePath: StoragePath
+    /// Returns the Types of Strategies composed by this StrategyComposer
+    access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
+        return { Type<@TracerStrategy>(): true }
+    }
 
+    /// Returns the Vault types which can be used to initialize a given Strategy
+    access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
+        return { Type<@FlowToken.Vault>(): true }
+    }
+
+    /// Returns the minimum funding amount for a new Strategy of the given Type
+    access(all) view fun getStrategyFundingMinimum(forStrategy: Type): UFix64? {
+        switch forStrategy {
+            case Type<@TracerStrategy>():
+                return 1.0
+            default:
+                return nil
+        }
+    }
+
+    /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the
+    /// provided Vault type
+    access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
+        return { Type<@FlowToken.Vault>(): true }
+    }
+
+    /// Composes a Strategy of the given type with the provided funds
+    access(all) fun createStrategy(
+        _ type: Type,
+        uniqueID: DFB.UniqueIdentifier,
+        withFunds: @{FungibleToken.Vault}
+    ): @{StrategyComposer.Strategy} {
+        switch type {
+            case Type<@TracerStrategy>():
+                return <-self._composeTracerStrategy(uniqueID: uniqueID, withFunds: <-withFunds)
+            default:
+                panic("Could not create Strategy \(type.identifier)")
+        }
+    }
+
+    /// TracerStrategy
+    ///
     /// This is the first Strategy implementation, wrapping a TidalProtocol Position along with its related Sink &
     /// Source. While this object is a simple wrapper for the top-level collateralized position, the true magic of the
     /// DeFiBlocks is in the stacking of the related connectors. This stacking logic can be found in the
     /// TracerStrategyComposer construct.
-    access(all) resource TracerStrategy : Tidal.Strategy {
+    access(all) resource TracerStrategy : StrategyComposer.Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) let uniqueID: DFB.UniqueIdentifier?
@@ -55,7 +95,7 @@ access(all) contract TracerStrategies {
             self.source = position.createSource(type: collateralType)
         }
 
-        // Inherited from Tidal.Strategy default implementation
+        // Inherited from StrategyComposer.Strategy default implementation
         // access(all) view fun isSupportedCollateralType(_ type: Type): Bool
 
         access(all) view fun getSupportedCollateralTypes(): {Type: Bool} {
@@ -83,116 +123,82 @@ access(all) contract TracerStrategies {
         }
     }
 
-    /// This StrategyComposer builds a TracerStrategy
-    access(all) resource TracerStrategyComposer : Tidal.StrategyComposer {
-        /// Returns the Types of Strategies composed by this StrategyComposer
-        access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
-            return { Type<@TracerStrategy>(): true }
-        }
+    access(self)
+    fun _composeTracerStrategy(uniqueID: DFB.UniqueIdentifier, withFunds: @{FungibleToken.Vault}): @TracerStrategy {
+        // this PriceOracle is mocked and will be shared by all components used in the TracerStrategy
+        let oracle = MockOracle.PriceOracle()
 
-        /// Returns the Vault types which can be used to initialize a given Strategy
-        access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
-            return { Type<@FlowToken.Vault>(): true }
-        }
+        // assign token types
+        let collateralType = withFunds.getType()
+        let yieldTokenType = Type<@YieldToken.Vault>()
+        let moetTokenType = Type<@MOET.Vault>()
+        let flowTokenType = Type<@FlowToken.Vault>()
 
-        /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the
-        /// provided Vault type
-        access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
-            return { Type<@FlowToken.Vault>(): true }
-        }
+        // configure and AutoBalancer for this stack
+        let autoBalancer = TidalYieldAutoBalancers._initNewAutoBalancer(
+            oracle: oracle,             // used to determine value of deposits & when to rebalance
+            vaultType: yieldTokenType,  // the type of Vault held by the AutoBalancer
+            lowerThreshold: 0.95,       // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
+            upperThreshold: 1.05,       // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
+            rebalanceSink: nil,         // nil on init - will be set once a PositionSink is available
+            rebalanceSource: nil,       // nil on init - not set for TracerStrategy
+            uniqueID: uniqueID          // identifies AutoBalancer as part of this Strategy
+        )
+        // enables deposits of YieldToken to the AutoBalancer
+        let abaSink = autoBalancer.createBalancerSink() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
+        // enables withdrawals of YieldToken from the AutoBalancer
+        let abaSource = autoBalancer.createBalancerSource() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
 
-        /// Composes a Strategy of the given type with the provided funds
-        access(all) fun createStrategy(
-            _ type: Type,
-            uniqueID: DFB.UniqueIdentifier,
-            withFunds: @{FungibleToken.Vault}
-        ): @{Tidal.Strategy} {
-            // this PriceOracle is mocked and will be shared by all components used in the TracerStrategy
-            let oracle = MockOracle.PriceOracle()
-
-            // assign token types
-            let collateralType = withFunds.getType()
-            let yieldTokenType = Type<@YieldToken.Vault>()
-            let moetTokenType = Type<@MOET.Vault>()
-            let flowTokenType = Type<@FlowToken.Vault>()
-
-            // configure and AutoBalancer for this stack
-            let autoBalancer = TidalYieldAutoBalancers._initNewAutoBalancer(
-                oracle: oracle,             // used to determine value of deposits & when to rebalance
-                vaultType: yieldTokenType,  // the type of Vault held by the AutoBalancer
-                lowerThreshold: 0.95,       // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
-                upperThreshold: 1.05,       // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
-                rebalanceSink: nil,         // nil on init - will be set once a PositionSink is available
-                rebalanceSource: nil,       // nil on init - not set for TracerStrategy
-                uniqueID: uniqueID          // identifies AutoBalancer as part of this Strategy
+        // init MOET <> YIELD swappers
+        //
+        // MOET -> YieldToken
+        let moetToYieldSwapper = MockSwapper.Swapper(
+                inVault: moetTokenType,
+                outVault: yieldTokenType,
+                uniqueID: uniqueID
             )
-            // enables deposits of YieldToken to the AutoBalancer
-            let abaSink = autoBalancer.createBalancerSink() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
-            // enables withdrawals of YieldToken from the AutoBalancer
-            let abaSource = autoBalancer.createBalancerSource() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
-
-            // init MOET <> YIELD swappers
-            //
-            // MOET -> YieldToken
-            let moetToYieldSwapper = MockSwapper.Swapper(
-                    inVault: moetTokenType,
-                    outVault: yieldTokenType,
-                    uniqueID: uniqueID
-                )
-            // YieldToken -> MOET
-            let yieldToMoetSwapper = MockSwapper.Swapper(
-                    inVault: yieldTokenType,
-                    outVault: moetTokenType,
-                    uniqueID: uniqueID
-                )
-
-            // init SwapSink directing swapped funds to AutoBalancer
-            //
-            // Swaps provided MOET to YieldToken & deposits to the AutoBalancer
-            let abaSwapSink = SwapStack.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
-            // Swaps YieldToken & provides swapped MOET, sourcing YieldToken from the AutoBalancer
-            let abaSwapSource = SwapStack.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
-
-            // open a TidalProtocol position
-            let position = TidalProtocol.openPosition(
-                    collateral: <-withFunds,
-                    issuanceSink: abaSwapSink,
-                    repaymentSource: abaSwapSource,
-                    pushToDrawDownSink: true
-                )
-            // get Sink & Source connectors relating to the new Position
-            let positionSink = position.createSinkWithOptions(type: collateralType, pushToDrawDownSink: true)
-            let positionSource = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true) // TODO: may need to be false
-
-            // init YieldToken -> FLOW Swapper
-            let yieldToFlowSwapper = MockSwapper.Swapper(
-                    inVault: yieldTokenType,
-                    outVault: flowTokenType, // TODO: before 
-                    uniqueID: uniqueID
-                )
-            // allows for YieldToken to be deposited to the Position
-            let positionSwapSink = SwapStack.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
-
-            // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value,
-            // recollateralizing the position
-            autoBalancer.setSink(positionSwapSink)
-
-            return <-create TracerStrategy(
-                id: DFB.UniqueIdentifier(),
-                collateralType: collateralType,
-                position: position
+        // YieldToken -> MOET
+        let yieldToMoetSwapper = MockSwapper.Swapper(
+                inVault: yieldTokenType,
+                outVault: moetTokenType,
+                uniqueID: uniqueID
             )
-        }
 
-        /// Returns an instance of itself enabling the holder to compose supported Strategies
-        access(Tidal.Issue) fun copyComposer(): @{Tidal.StrategyComposer} {
-            return <-create TracerStrategyComposer()
-        }
-    }
+        // init SwapSink directing swapped funds to AutoBalancer
+        //
+        // Swaps provided MOET to YieldToken & deposits to the AutoBalancer
+        let abaSwapSink = SwapStack.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
+        // Swaps YieldToken & provides swapped MOET, sourcing YieldToken from the AutoBalancer
+        let abaSwapSource = SwapStack.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
 
-    init() {
-        self.ComposerStoragePath = StoragePath(identifier: "TidalYieldStrategyComposer_\(self.account.address)")!
+        // open a TidalProtocol position
+        let position = TidalProtocol.openPosition(
+                collateral: <-withFunds,
+                issuanceSink: abaSwapSink,
+                repaymentSource: abaSwapSource,
+                pushToDrawDownSink: true
+            )
+        // get Sink & Source connectors relating to the new Position
+        let positionSink = position.createSinkWithOptions(type: collateralType, pushToDrawDownSink: true)
+        let positionSource = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true) // TODO: may need to be false
 
-        self.account.storage.save(<-create TracerStrategyComposer(), to: self.ComposerStoragePath)
+        // init YieldToken -> FLOW Swapper
+        let yieldToFlowSwapper = MockSwapper.Swapper(
+                inVault: yieldTokenType,
+                outVault: flowTokenType, // TODO: before 
+                uniqueID: uniqueID
+            )
+        // allows for YieldToken to be deposited to the Position
+        let positionSwapSink = SwapStack.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
+
+        // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value,
+        // recollateralizing the position
+        autoBalancer.setSink(positionSwapSink)
+
+        return <-create TracerStrategy(
+            id: DFB.UniqueIdentifier(),
+            collateralType: collateralType,
+            position: position
+        )
     }
 }
