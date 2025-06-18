@@ -4,7 +4,7 @@ import "FlowToken"
 import "DFBUtils"
 import "DFB"
 
-import "Tidal"
+import "TidalYield"
 
 ///
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
@@ -45,7 +45,7 @@ access(all) contract MockStrategy {
         }
     }
 
-    access(all) resource Strategy : Tidal.Strategy {
+    access(all) resource Strategy : TidalYield.Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) let uniqueID: DFB.UniqueIdentifier?
@@ -88,7 +88,7 @@ access(all) contract MockStrategy {
         access(contract) fun burnCallback() {} // no-op
     }
 
-    access(all) resource StrategyComposer : Tidal.StrategyComposer {
+    access(all) resource StrategyComposer : TidalYield.StrategyComposer {
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
             return { Type<@Strategy>(): true }
         }
@@ -102,7 +102,7 @@ access(all) contract MockStrategy {
             _ type: Type,
             uniqueID: DFB.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
-        ): @{Tidal.Strategy} {
+        ): @{TidalYield.Strategy} {
             let id = DFB.UniqueIdentifier()
             let strat <- create Strategy(
                 id: id,
@@ -118,11 +118,11 @@ access(all) contract MockStrategy {
     /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
     /// may utilize resource consumption (i.e. account storage). Since TracerStrategy creation consumes account storage
     /// via configured AutoBalancers
-    access(all) resource StrategyComposerIssuer : Tidal.StrategyComposerIssuer {
+    access(all) resource StrategyComposerIssuer : TidalYield.StrategyComposerIssuer {
         access(all) view fun getSupportedComposers(): {Type: Bool} {
             return { Type<@StrategyComposer>(): true }
         }
-        access(all) fun issueComposer(_ type: Type): @{Tidal.StrategyComposer} {
+        access(all) fun issueComposer(_ type: Type): @{TidalYield.StrategyComposer} {
             switch type {
             case Type<@StrategyComposer>():
                 return <- create StrategyComposer()

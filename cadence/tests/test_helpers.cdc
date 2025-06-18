@@ -94,8 +94,8 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "Tidal",
-        path: "../contracts/Tidal.cdc",
+        name: "TidalYield",
+        path: "../contracts/TidalYield.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
