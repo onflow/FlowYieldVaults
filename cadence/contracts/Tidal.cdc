@@ -112,14 +112,17 @@ access(all) contract Tidal {
     access(all) resource StrategyFactory {
         /// A mapping of StrategyComposers indexed on the related Strategies they can compose
         access(self) let composers: @{Type: {StrategyComposer}}
+        /// The statuses for all added Strategy Types and whether they are currently enabled or not
+        access(self) let strategyStatus: {Type: Bool}
 
         init() {
             self.composers <- {}
+            self.strategyStatus = {}
         }
 
         /// Returns the Strategy types that can be produced by this StrategyFactory
-        access(all) view fun getSupportedStrategies(): [Type] {
-            return self.composers.keys
+        access(all) view fun getSupportedStrategies(): {Type: Bool} {
+            return self.strategyStatus
         }
         /// Returns the Vaults that can be used to initialize a Strategy of the given Type
         access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
@@ -137,6 +140,7 @@ access(all) contract Tidal {
         fun createStrategy(_ type: Type, uniqueID: DFB.UniqueIdentifier, withFunds: @{FungibleToken.Vault}): @{Strategy} {
             pre {
                 self.composers[type] != nil: "Strategy \(type.identifier) is unsupported"
+                self.strategyStatus[type] == true: "Strategy \(type.identifier) is currently disabled"
             }
             post {
                 result.getType() == type:
@@ -146,7 +150,7 @@ access(all) contract Tidal {
                 .createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds)
         }
         /// Sets the provided Strategy and Composer association in the StrategyFactory
-        access(Mutate) fun addStrategyComposer(_ strategy: Type, composer: @{StrategyComposer}) {
+        access(Mutate) fun addStrategyComposer(_ strategy: Type, composer: @{StrategyComposer}, enable: Bool) {
             pre {
                 strategy.isSubtype(of: Type<@{Strategy}>()):
                 "Invalid Strategy Type \(strategy.identifier) - provided Type does not implement the Strategy interface"
@@ -154,12 +158,25 @@ access(all) contract Tidal {
                 "Strategy \(strategy.identifier) cannot be composed by StrategyComposer \(composer.getType().identifier)"
             }
             let old <- self.composers[strategy] <- composer
+            self.strategyStatus[strategy] = enable
             Burner.burn(<-old)
+        }
+        /// Sets the Strategy's status as enabled or disabled
+        access(Mutate) fun setStrategyStatus(_ type: Type, enable: Bool) {
+            pre {
+                self.composers[type] != nil: "Strategy \(type.identifier) is unsupported"
+            }
+            post {
+                self.strategyStatus[type] == enable:
+                "Error when setting the status of Strategy \(type.identifier) to \(enable)"
+            }
+            self.strategyStatus[type] = enable
         }
         /// Removes the Strategy from this StrategyFactory and returns whether the value existed or not
         access(Mutate) fun removeStrategy(_ strategy: Type): Bool {
             if let removed <- self.composers.remove(key: strategy) {
                 Burner.burn(<-removed)
+                self.strategyStatus.remove(key: strategy)
                 return true
             }
             return false
@@ -376,7 +393,7 @@ access(all) contract Tidal {
     /* --- PUBLIC METHODS --- */
 
     /// Returns the Types of Strategies that can be used in Tides
-    access(all) view fun getSupportedStrategies(): [Type] {
+    access(all) view fun getSupportedStrategies(): {Type: Bool} {
         return self._borrowFactory().getSupportedStrategies()
     }
     /// Returns the Vault types which can be used to initialize a given Strategy
