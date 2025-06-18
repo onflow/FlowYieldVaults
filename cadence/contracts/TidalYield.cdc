@@ -148,6 +148,8 @@ access(all) contract TidalYield {
         /// Sets the provided Strategy and Composer association in the StrategyFactory
         access(Mutate) fun addStrategyComposer(_ strategy: Type, composer: @{StrategyComposer}) {
             pre {
+                strategy.isSubtype(of: Type<@{Strategy}>()):
+                "Invalid Strategy Type \(strategy.identifier) - provided Type does not implement the Strategy interface"
                 composer.getComposedStrategyTypes()[strategy] == true:
                 "Strategy \(strategy.identifier) cannot be composed by StrategyComposer \(composer.getType().identifier)"
             }
