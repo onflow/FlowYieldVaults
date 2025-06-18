@@ -185,7 +185,14 @@
 				"type": "file",
 				"location": "emulator-account.pkey"
 			}
-		}
+		},
+    "test-user": {
+      "address": "179b6b1cb6755e31",
+      "key": {
+        "type": "file",
+        "location": "test-user.pkey"
+      }
+    }
 	},
 	"deployments": {
 		"emulator": {
