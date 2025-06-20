@@ -252,6 +252,296 @@ The rebalancing system leverages DeFiBlocks components:
 
 This creates a fully automated yield farming system that adapts to market conditions while maintaining position safety.
 
+## Testing Rebalancing
+
+This section provides a step-by-step guide to test rebalancing functionality in the mock environment by manipulating collateral prices and observing the automatic rebalancing effects.
+
+### Rebalancing Flow Diagram
+
+```
+                             TIDAL REBALANCING SYSTEM
+                                                                    
+    ┌─────────────┐         ┌──────────────────┐         ┌─────────────────┐
+    │ Mock Oracle │◄────────┤   Price Monitor  ├────────►│ AutoBalancer    │
+    │             │         │                  │         │                 │
+    │ FLOW: $1.00 │         │ Threshold Check: │         │ YieldToken Held │
+    └─────────────┘         │ 0.95 < X < 1.05  │         │ Target Ratio    │
+                            └──────────────────┘         └─────────────────┘
+                                     │                            │
+                                     ▼                            ▼
+                            
+    ┌─────────────────────────────────────────────────────────────────────────┐
+    │                        REBALANCING SCENARIOS                             │
+    └─────────────────────────────────────────────────────────────────────────┘
+                                     
+    ┌──── OVER-COLLATERALIZED (Price ↑) ────┐    ┌─── UNDER-COLLATERALIZED (Price ↓) ───┐
+    │                                       │    │                                       │
+    │  FLOW Price: $1.00 → $1.20 (+20%)    │    │  FLOW Price: $1.00 → $0.70 (-30%)    │
+    │  Ratio: 1.20 > 1.05 (TRIGGER!)       │    │  Ratio: 0.70 < 0.95 (TRIGGER!)       │
+    │                                       │    │                                       │
+    │  ┌─────────────────────────────────┐  │    │  ┌─────────────────────────────────┐  │
+    │  │        REBALANCING FLOW         │  │    │  │        REBALANCING FLOW         │  │
+    │  │                                 │  │    │  │                                 │  │
+    │  │ 1. Higher Collateral Value      │  │    │  │ 1. Lower Collateral Value       │  │
+    │  │         ▼                       │  │    │  │         ▼                       │  │
+    │  │ 2. More Borrowing Capacity      │  │    │  │ 2. Position At Risk             │  │
+    │  │         ▼                       │  │    │  │         ▼                       │  │
+    │  │ 3. TidalProtocol Issues MOET    │  │    │  │ 3. AutoBalancer Sells YieldTkn  │  │
+    │  │         ▼                       │  │    │  │         ▼                       │  │
+    │  │ 4. MOET → YieldToken (Swap)     │  │    │  │ 4. YieldToken → FLOW (Swap)     │  │
+    │  │         ▼                       │  │    │  │         ▼                       │  │
+    │  │ 5. YieldToken → AutoBalancer    │  │    │  │ 5. FLOW → Position Collateral   │  │
+    │  └─────────────────────────────────┘  │    │  └─────────────────────────────────┘  │
+    │                                       │    │                                       │
+    │  RESULT:                              │    │  RESULT:                              │
+    │  ✓ More YieldTokens acquired          │    │  ✓ Position health improved           │
+    │  ✓ Higher withdrawal balance          │    │  ✓ Liquidation risk reduced           │
+    │  ✓ Increased yield generation         │    │  ✓ Stable collateral ratio            │
+    └───────────────────────────────────────┘    └───────────────────────────────────────┘
+
+                                TOKEN FLOW ARCHITECTURE
+                                                       
+    ┌─────────────┐    MOET     ┌─────────────┐    YieldToken   ┌─────────────────┐
+    │ TidalProto  │◄───────────►│MockSwapper  │◄───────────────►│  AutoBalancer   │
+    │ Position    │             │MOET↔Yield   │                 │                 │
+    │             │             └─────────────┘                 │ ┌─────────────┐ │
+    │ Collateral: │                   ▲                         │ │ YieldToken  │ │
+    │    FLOW     │                   │                         │ │   Vault     │ │
+    └─────────────┘                   │                         │ └─────────────┘ │
+           ▲                          │                         └─────────────────┘
+           │                          │                                   │
+           │                          │                                   │
+      FLOW │                     YieldToken                               │ YieldToken
+           │                          │                                   │
+           │                  ┌─────────────┐                            │
+           └──────────────────┤MockSwapper  │◄───────────────────────────┘
+                              │Yield↔FLOW   │
+                              └─────────────┘
+                              
+    Legend:
+    ────►  Token Flow Direction
+    ◄───►  Bidirectional Swap
+    ┌───┐  System Component
+    ▲ ▼    Rebalancing Trigger
+
+### Prerequisites
+
+1. **Set up your test environment** with the Flow emulator
+2. **Deploy all contracts** including mocks
+3. **Create a Tide position** using `create_tide` transaction
+4. **Fund the MockSwapper** with liquidity for all token pairs
+
+### Step-by-Step Testing Process
+
+#### 1. Record Initial State
+
+Before manipulating prices, record baseline values to compare against after rebalancing.
+
+**Get your Tide ID:**
+```bash
+flow scripts execute scripts/tidal-yield/get_tide_ids.cdc --arg Address:0xYourAddress
+```
+
+**Record initial balances:**
+```bash
+# Get initial Tide balance (FLOW available for withdrawal)
+flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
+  --arg Address:0xYourAddress \
+  --arg UInt64:123  # Your Tide ID
+
+# Get AutoBalancer YieldToken balance
+flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
+  --arg UInt64:123  # Your Tide ID
+
+# Get current FLOW price from oracle
+flow scripts execute scripts/mocks/oracle/get_price.cdc \
+  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault"
+```
+
+**Check TidalProtocol position health:** 
+```bash
+# You'll need to find your position ID from the TidalProtocol
+flow scripts execute scripts/tidal-protocol/position_health.cdc \
+  --arg UInt64:456  # Position ID (different from Tide ID)
+```
+
+#### 2. Test Over-Collateralization (Price Increase)
+
+Increase the FLOW token price to trigger rebalancing for additional borrowing.
+
+**Increase FLOW price by 20%:**
+```bash
+# If current price is 1.0, set to 1.2
+flow transactions send transactions/mocks/oracle/set_price.cdc \
+  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
+  --arg UFix64:1.2 \
+  --signer test-account
+```
+
+**Trigger manual rebalancing:**
+```bash
+flow transactions send transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
+  --arg UInt64:123 \
+  --arg Bool:true \
+  --signer test-account
+```
+
+**Observe the results:**
+```bash
+# Check new AutoBalancer balance (should increase)
+flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
+  --arg UInt64:123
+
+# Check new Tide balance (should increase)
+flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
+  --arg Address:0xYourAddress \
+  --arg UInt64:123
+
+# Check position health (should improve)
+flow scripts execute scripts/tidal-protocol/position_health.cdc \
+  --arg UInt64:456
+```
+
+**Expected Changes:**
+- ✅ **AutoBalancer YieldToken balance increases** (more yield tokens acquired)
+- ✅ **Tide withdrawable balance increases** (more FLOW available)
+- ✅ **Position health improves** (better collateralization ratio)
+- ✅ **More MOET borrowed** against the higher collateral value
+
+#### 3. Test Under-Collateralization (Price Decrease)
+
+Decrease the FLOW token price to trigger recollateralization.
+
+**Decrease FLOW price by 30%:**
+```bash
+# Set price lower than original (e.g., from 1.0 to 0.7)
+flow transactions send transactions/mocks/oracle/set_price.cdc \
+  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
+  --arg UFix64:0.7 \
+  --signer test-account
+```
+
+**Trigger rebalancing:**
+```bash
+flow transactions send transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
+  --arg UInt64:123 \
+  --arg Bool:true \
+  --signer test-account
+```
+
+**Observe the results:**
+```bash
+# Check AutoBalancer balance (should decrease)
+flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
+  --arg UInt64:123
+
+# Check Tide balance 
+flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
+  --arg Address:0xYourAddress \
+  --arg UInt64:123
+
+# Check position health
+flow scripts execute scripts/tidal-protocol/position_health.cdc \
+  --arg UInt64:456
+```
+
+**Expected Changes:**
+- ✅ **AutoBalancer YieldToken balance decreases** (tokens sold for collateral)
+- ✅ **Position health stabilizes** (collateral added to maintain ratio)
+- ✅ **Loan risk reduced** through additional collateralization
+
+#### 4. Test Random Price Fluctuations
+
+Use the bump price function to simulate market volatility.
+
+**Random price changes:**
+```bash
+# Bump price randomly within ±1% variance
+flow transactions send transactions/mocks/oracle/bump_price.cdc \
+  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
+  --signer test-account
+
+# Check new price
+flow scripts execute scripts/mocks/oracle/get_price.cdc \
+  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault"
+
+# Force rebalancing if needed
+flow transactions send transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
+  --arg UInt64:123 \
+  --arg Bool:false \  # Only rebalance if thresholds exceeded
+  --signer test-account
+```
+
+### Key Metrics to Monitor
+
+#### AutoBalancer Health
+```bash
+# Current YieldToken holdings in AutoBalancer
+scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc
+
+# Compare against expected value based on deposits
+# Ratio should stay between 0.95 - 1.05 for healthy positions
+```
+
+#### Position Metrics
+```bash
+# Overall position health (collateralization ratio)
+scripts/tidal-protocol/position_health.cdc
+
+# Available balance for withdrawal from position
+scripts/tidal-protocol/get_available_balance.cdc
+```
+
+#### User Balance
+```bash
+# Total FLOW available for withdrawal from Tide
+scripts/tidal-yield/get_tide_balance.cdc
+
+# Your account token balances
+scripts/tokens/get_balance.cdc
+```
+
+### Understanding the Results
+
+#### Successful Over-Collateralization Test
+- Price increase → More borrowing capacity
+- AutoBalancer YieldToken balance increases
+- More MOET borrowed and converted to YieldTokens
+- User's withdrawable balance increases
+
+#### Successful Under-Collateralization Test  
+- Price decrease → Position at risk
+- AutoBalancer sells YieldTokens for FLOW
+- Additional FLOW added as collateral to position
+- Position health maintained/improved
+
+#### Threshold Behavior
+- **Automatic rebalancing** only occurs when ratios exceed ±5% thresholds
+- **Manual rebalancing** (`force: true`) bypasses thresholds
+- **No rebalancing** occurs if within 0.95-1.05 range and `force: false`
+
+### Troubleshooting
+
+#### Common Issues:
+1. **"Could not borrow AutoBalancer"** - Ensure Tide ID is correct
+2. **"No price set for token"** - Set initial prices for all tokens before testing
+3. **"Insufficient liquidity"** - Fund MockSwapper with adequate token reserves
+4. **"Position not found"** - Verify TidalProtocol position ID (different from Tide ID)
+
+#### Debugging Commands:
+```bash
+# Check if oracle has price set
+flow scripts execute scripts/mocks/oracle/get_price.cdc --arg String:"TOKEN_TYPE"
+
+# Check your Tide IDs
+flow scripts execute scripts/tidal-yield/get_tide_ids.cdc --arg Address:0xYourAddress
+
+# Check supported strategies
+flow scripts execute scripts/tidal-yield/get_supported_strategies.cdc
+```
+
+This testing framework allows you to validate that the rebalancing system correctly responds to market conditions while maintaining position safety and optimizing yield generation.
+
 ## Key Features
 
 ### 1. Composable Strategies
