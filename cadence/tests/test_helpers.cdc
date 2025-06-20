@@ -232,6 +232,12 @@ fun closeTide(signer: Test.TestAccount, id: UInt64, beFailed: Bool) {
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
+access(all)
+fun rebalanceTide(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
+    let res = _executeTransaction("../transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
 /* --- Mock helpers --- */
 
 access(all)

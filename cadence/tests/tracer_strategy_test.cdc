@@ -110,3 +110,36 @@ fun test_CloseTideSucceeds() {
     Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
     Test.assertEqual(0, tideIDs!.length)
 }
+
+access(all)
+fun test_RebalanceTideSucceeds() {
+    Test.reset(to: snapshot)
+
+    let fundingAmount = 100.0
+
+    let user = Test.createAccount()
+    mintFlow(to: user, amount: fundingAmount)
+
+    createTide(
+        signer: user,
+        strategyIdentifier: strategyIdentifier,
+        vaultIdentifier: flowTokenIdentifier,
+        amount: fundingAmount,
+        beFailed: false
+    )
+
+    var tideIDs = getTideIDs(address: user.address)
+    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+    Test.assertEqual(1, tideIDs!.length)
+
+    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.1)
+
+    log("Rebalancing Tide...")
+    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+
+    closeTide(signer: user, id: tideIDs![0], beFailed: false)
+
+    tideIDs = getTideIDs(address: user.address)
+    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+    Test.assertEqual(0, tideIDs!.length)
+}
