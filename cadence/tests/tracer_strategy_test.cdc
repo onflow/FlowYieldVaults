@@ -109,6 +109,10 @@ fun test_CloseTideSucceeds() {
     tideIDs = getTideIDs(address: user.address)
     Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
     Test.assertEqual(0, tideIDs!.length)
+
+    let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+
+    Test.assertEqual(fundingAmount, flowBalanceAfter)
 }
 
 access(all)
@@ -132,7 +136,7 @@ fun test_RebalanceTideSucceeds() {
     Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
     Test.assertEqual(1, tideIDs!.length)
 
-    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.1)
+    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5)
 
     log("Rebalancing Tide...")
     rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
