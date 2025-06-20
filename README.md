@@ -289,8 +289,8 @@ This section provides a step-by-step guide to test rebalancing functionality in 
 │  │                 │                └──────────────────────┘               │     Vault       │ │
 │  └─────────────────┘                                                       └─────────────────┘ │
 │                                                                                                │
-│  RESULT: ✓ More YieldTokens in AutoBalancer  ✓ Higher Tide withdrawal balance                 │
-│          ✓ Improved position health          ✓ Increased borrowing capacity                   │
+│  RESULT: More YieldTokens in AutoBalancer | Higher Tide withdrawal balance                   │
+│          Improved position health | Increased borrowing capacity                              │
 └────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────── FLOW PRICE DOWN (-30%) ────────────────────────────────────┐
@@ -320,8 +320,8 @@ This section provides a step-by-step guide to test rebalancing functionality in 
 │  │                 │                │       .cdc)          │               │                 │ │
 │  └─────────────────┘                └──────────────────────┘               └─────────────────┘ │
 │                                                                                                │
-│  RESULT: ✓ Fewer YieldTokens (sold for collateral)  ✓ Stabilized position health             │
-│          ✓ Reduced liquidation risk                 ✓ Maintained loan safety                 │
+│  RESULT: Fewer YieldTokens (sold for collateral) | Stabilized position health               │
+│          Reduced liquidation risk | Maintained loan safety                                   │
 └────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -366,8 +366,8 @@ This section provides a step-by-step guide to test rebalancing functionality in 
 │  │                 │                └──────────────────────┘               │     Vault       │ │
 │  └─────────────────┘                                                       └─────────────────┘ │
 │                                                                                                │
-│  RESULT: ✓ Gains captured & reinvested           ✓ More total YieldTokens acquired            │
-│          ✓ Stronger collateral position          ✓ Compounded growth potential                │
+│  RESULT: Gains captured & reinvested | More total YieldTokens acquired                      │
+│          Stronger collateral position | Compounded growth potential                          │
 └────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ┌────────────────────────────────── YIELD TOKEN DOWN (-15%) ────────────────────────────────────┐
@@ -400,8 +400,8 @@ This section provides a step-by-step guide to test rebalancing functionality in 
 │  └─────────────────┘                                                       │ Target: $200    │ │
 │                                                                            └─────────────────┘ │
 │                                                                                                │
-│  RESULT: ✓ More YieldTokens acquired (~18 tokens)    ✓ Target portfolio value restored        │
-│          ✓ Protected against further losses          ✓ Maintained optimal allocation          │
+│  RESULT: More YieldTokens acquired (~18 tokens) | Target portfolio value restored          │
+│          Protected against further losses | Maintained optimal allocation                    │
 └────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -688,7 +688,7 @@ echo "New Tide Balance (may be lower due to collateral needs):"
 flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
 
-echo "✅ SCENARIO 2 COMPLETE!"
+echo "SCENARIO 2 COMPLETE!"
 echo "Expected Results:"
 echo "- AutoBalancer YieldToken balance should DECREASE"
 echo "- Position health should STABILIZE"
@@ -833,7 +833,7 @@ echo "New Tide Balance (should be HIGHER from captured gains):"
 flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
 
-echo "✅ SCENARIO 3 COMPLETE!"
+echo "SCENARIO 3 COMPLETE!"
 echo "Expected Results:"
 echo "- Gains captured from YieldToken appreciation"
 echo "- Position strengthened with additional collateral"
@@ -978,7 +978,7 @@ echo "New Tide Balance:"
 flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
 
-echo "✅ SCENARIO 4 COMPLETE!"
+echo "SCENARIO 4 COMPLETE!"
 echo "Expected Results:"
 echo "- More YieldTokens acquired (bought at lower price)"
 echo "- Target allocation maintained despite price drop"
@@ -1096,7 +1096,7 @@ This testing framework allows you to validate that the rebalancing system correc
 
 ## Important Notes
 
-⚠️ **This is a mock implementation for development and testing purposes only. It is not intended for production use.**
+**This is a mock implementation for development and testing purposes only. It is not intended for production use.**
 
 The contracts include extensive mock components (MockOracle, MockSwapper, etc.) that simulate real DeFi infrastructure. In a production environment, these would be replaced with actual oracle services and DEX integrations.
 
