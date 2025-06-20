@@ -426,6 +426,41 @@ This interest system is what enables the TidalProtocol to function as a sustaina
 
 The TidalProtocol implements a sophisticated loan health system that determines borrowing capacity, monitors position safety, and prevents liquidations. This system is fundamental to how the TracerStrategy calculates how much can be borrowed against a user's initial collateral position.
 
+### Key Definitions
+
+Before diving into the mechanics, it's important to understand the core terminology used throughout the TidalProtocol loan system:
+
+#### Position-Related Terms
+- **Position**: A lending/borrowing account that holds collateral and debt across multiple token types
+- **Position ID (pid)**: Unique identifier for each lending position in the protocol
+- **Position Health**: Numerical ratio representing the safety of a lending position (Effective Collateral ÷ Effective Debt)
+- **Balance Direction**: Whether a token balance is Credit (collateral/deposit) or Debit (borrowed/debt)
+
+#### Value Calculation Terms
+- **Effective Collateral**: Total USD value of all collateral deposits, adjusted by their respective Collateral Factors
+- **Effective Debt**: Total USD value of all borrowed amounts, adjusted by their respective Borrow Factors
+- **Oracle Price**: Real-time market price of tokens provided by price oracles (e.g., FLOW = $1.00, YieldToken = $2.00)
+- **Token Value**: Raw USD value of token amount (Token Amount × Oracle Price)
+
+#### Risk Parameter Terms
+- **Collateral Factor**: Percentage (0.0-1.0) of a token's value that counts toward borrowing capacity (e.g., 0.8 = 80%)
+- **Borrow Factor**: Risk adjustment (0.0-1.0) applied to borrowed amounts for additional safety margins
+- **Target Health**: Optimal health ratio (default: 1.3) that the protocol maintains through automatic rebalancing
+- **Minimum Health**: Liquidation threshold (default: 1.1) below which positions become unsafe
+- **Maximum Health**: Upper bound that triggers automatic draw-down of excess collateral
+
+#### Interest and Balance Terms
+- **Scaled Balance**: Stored balance amount that doesn't change with interest accrual
+- **True Balance**: Actual current balance including accumulated interest (Scaled Balance × Interest Index)
+- **Interest Index**: Compound multiplier that tracks accumulated interest over time
+- **Token State**: Global state tracking interest rates, indices, and lending parameters for each token type
+
+#### System Operation Terms
+- **Liquidation**: Forced closure of unhealthy positions to protect the protocol and lenders
+- **Rebalancing**: Automatic adjustment of positions to maintain target health ratios
+- **Top-Up Source**: Optional funding source that can add collateral to prevent liquidation
+- **Draw-Down Sink**: Destination for excess funds when positions become over-collateralized
+
 ### Core Health Calculation
 
 The protocol calculates position health using the formula:
