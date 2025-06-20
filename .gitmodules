@@ -1,3 +1,6 @@
 [submodule "DeFiBlocks"]
 	path = DeFiBlocks
 	url = git@github.com:onflow/DeFiBlocks.git
+[submodule "TidalProtocol"]
+	path = TidalProtocol
+	url = https://github.com/onflow/TidalProtocol
