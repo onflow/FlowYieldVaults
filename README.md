@@ -412,254 +412,387 @@ This section provides a step-by-step guide to test rebalancing functionality in 
 3. **Create a Tide position** using `create_tide` transaction
 4. **Fund the MockSwapper** with liquidity for all token pairs
 
-### Four Distinct Rebalancing Scenarios
+## Testing Guide for Junior Engineers
 
-The Tidal system responds to price changes in both collateral (FLOW) and yield assets (YieldToken). Here are the four scenarios you can test:
+This section provides step-by-step instructions to test all 4 rebalancing scenarios. Follow these instructions carefully to understand how the Tidal protocol responds to different market conditions.
 
-#### Setup: Record Initial State
+### 🔧 Prerequisites Setup
 
-Before testing any scenario, capture baseline metrics:
+Before starting any test, ensure you have:
+1. **Flow emulator running** with contracts deployed
+2. **Test account configured** with appropriate permissions
+3. **MockSwapper funded** with sufficient liquidity for all token pairs
+4. **A Tide position created** using the `create_tide` transaction
 
-**Get your Tide ID and record initial state:**
+### 📊 Initial State Capture
+
+**IMPORTANT:** Always record baseline metrics before testing any scenario!
+
 ```bash
-# Get your Tide ID
-flow scripts execute scripts/tidal-yield/get_tide_ids.cdc --arg Address:0xYourAddress
+# Step 1: Set your variables (replace with actual values)
+export TIDE_ID=123                    # Your actual Tide ID
+export YOUR_ADDRESS=0xYourAddress     # Your test account address  
+export POSITION_ID=456                # Your TidalProtocol position ID (different from Tide ID)
 
-# Record initial balances (replace 123 with your actual Tide ID)
-TIDE_ID=123
-YOUR_ADDRESS=0xYourAddress
+# Step 2: Get your Tide ID if you don't know it
+flow scripts execute scripts/tidal-yield/get_tide_ids.cdc \
+  --arg Address:$YOUR_ADDRESS
 
-# Initial Tide balance (FLOW available for withdrawal)
+# Step 3: Record all baseline metrics
+echo "=== RECORDING INITIAL STATE ==="
+
+# Tide withdrawable balance (FLOW available)
+echo "Initial Tide Balance:"
 flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
 
-# Initial AutoBalancer YieldToken balance  
+# AutoBalancer YieldToken holdings
+echo "Initial AutoBalancer Balance:"
 flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$TIDE_ID
 
-# Initial FLOW price
+# FLOW token price
+echo "Initial FLOW Price:"
 flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault"
 
-# Initial YieldToken price
+# YieldToken price  
+echo "Initial YieldToken Price:"
 flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
-# Position health (you'll need to find your position ID)
-POSITION_ID=456  # Different from Tide ID
+# Position health score
+echo "Initial Position Health:"
 flow scripts execute scripts/tidal-protocol/position_health.cdc \
   --arg UInt64:$POSITION_ID
+
+echo "=== BASELINE RECORDED - READY FOR TESTING ==="
 ```
 
 ---
 
-### SCENARIO 1: Collateral Appreciation (FLOW Price ↑)
-**Test Case:** FLOW price increases → Over-collateralized → More borrowing capacity
+## 🧪 SCENARIO 1: Collateral Appreciates (FLOW Price ↑)
 
-#### Execute Test:
+**💡 What happens:** FLOW price increases → Position becomes over-collateralized → System borrows more MOET → Buys more YieldTokens
+
+**📈 Expected Outcome:** More YieldTokens, higher withdrawal balance, better position health
+
+### Execute the Test:
 ```bash
-# 1. Increase FLOW price by 20% (e.g., $1.00 → $1.20)
+echo "=== SCENARIO 1: FLOW PRICE INCREASE ==="
+
+# Step 1: Increase FLOW price by 20%
+echo "Setting FLOW price from $1.00 to $1.20 (+20%)"
 flow transactions send transactions/mocks/oracle/set_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --arg UFix64:1.2 \
   --signer test-account
 
-# 2. Trigger rebalancing
+# Step 2: Verify price change
+echo "Confirming new FLOW price:"
+flow scripts execute scripts/mocks/oracle/get_price.cdc \
+  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault"
+
+# Step 3: Trigger rebalancing (force=true bypasses thresholds)
+echo "Triggering rebalancing..."
 flow transactions send transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
   --arg UInt64:$TIDE_ID \
   --arg Bool:true \
   --signer test-account
+
+echo "✅ Rebalancing triggered!"
 ```
 
-#### Verify Results:
+### Verify Results:
 ```bash
+echo "=== CHECKING RESULTS ==="
+
 # Check AutoBalancer balance (should INCREASE)
+echo "New AutoBalancer Balance (should be HIGHER):"
 flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$TIDE_ID
 
 # Check Tide withdrawable balance (should INCREASE) 
+echo "New Tide Balance (should be HIGHER):"
 flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
 
 # Check position health (should IMPROVE)
+echo "New Position Health (should be BETTER):"
 flow scripts execute scripts/tidal-protocol/position_health.cdc \
   --arg UInt64:$POSITION_ID
+
+echo "✅ SCENARIO 1 COMPLETE - Compare with baseline values!"
 ```
 
-#### Expected Changes:
-- ✅ **AutoBalancer YieldToken balance increases** (more MOET borrowed → more YieldTokens)
-- ✅ **Tide withdrawable balance increases** (more FLOW available)  
+**🎯 What You Should See:**
+- ✅ **AutoBalancer YieldToken balance increases** (more tokens from additional borrowing)
+- ✅ **Tide withdrawable balance increases** (more FLOW available for withdrawal)  
 - ✅ **Position health improves** (better collateralization ratio)
 
 ---
 
-### SCENARIO 2: Collateral Depreciation (FLOW Price ↓)
-**Test Case:** FLOW price decreases → Under-collateralized → Need recollateralization
+## 🧪 SCENARIO 2: Collateral Depreciates (FLOW Price ↓)
 
-#### Execute Test:
+**💡 What happens:** FLOW price decreases → Position becomes under-collateralized → System sells YieldTokens → Adds FLOW as collateral
+
+**📉 Expected Outcome:** Fewer YieldTokens, stabilized position health, reduced liquidation risk
+
+### Execute the Test:
 ```bash
-# 1. Reset to baseline first
+echo "=== SCENARIO 2: FLOW PRICE DECREASE ==="
+
+# Step 1: Reset to baseline (important!)
+echo "Resetting FLOW price to baseline..."
 flow transactions send transactions/mocks/oracle/set_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --arg UFix64:1.0 \
   --signer test-account
 
-# 2. Decrease FLOW price by 30% (e.g., $1.00 → $0.70)
+# Step 2: Decrease FLOW price by 30%
+echo "Setting FLOW price from $1.00 to $0.70 (-30%)"
 flow transactions send transactions/mocks/oracle/set_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --arg UFix64:0.7 \
   --signer test-account
 
-# 3. Trigger rebalancing
+# Step 3: Verify price change
+echo "Confirming new FLOW price:"
+flow scripts execute scripts/mocks/oracle/get_price.cdc \
+  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault"
+
+# Step 4: Trigger rebalancing
+echo "Triggering recollateralization..."
 flow transactions send transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
   --arg UInt64:$TIDE_ID \
   --arg Bool:true \
   --signer test-account
+
+echo "✅ Recollateralization triggered!"
 ```
 
-#### Verify Results:
+### Verify Results:
 ```bash
+echo "=== CHECKING RESULTS ==="
+
 # Check AutoBalancer balance (should DECREASE)
+echo "New AutoBalancer Balance (should be LOWER):"
 flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$TIDE_ID
 
 # Check Tide balance (may decrease as collateral added)
+echo "New Tide Balance (may be lower due to collateral needs):"
 flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
 
 # Check position health (should STABILIZE)
+echo "New Position Health (should be STABILIZED):"
 flow scripts execute scripts/tidal-protocol/position_health.cdc \
   --arg UInt64:$POSITION_ID
+
+echo "✅ SCENARIO 2 COMPLETE - Position should be safer now!"
 ```
 
-#### Expected Changes:
-- ✅ **AutoBalancer YieldToken balance decreases** (YieldTokens sold → FLOW for collateral)
-- ✅ **Position health stabilizes** (additional collateral added)
-- ✅ **Loan risk reduced** (improved collateralization ratio)
+**🎯 What You Should See:**
+- ✅ **AutoBalancer YieldToken balance decreases** (tokens sold to get FLOW for collateral)
+- ✅ **Position health stabilizes** (additional collateral added to maintain safety)
+- ✅ **Loan risk reduced** (improved collateralization protects against liquidation)
 
 ---
 
-### SCENARIO 3: YieldToken Appreciation (YieldToken Price ↑)
-**Test Case:** YieldToken price increases → Portfolio over-valued → Capture gains
+## 🧪 SCENARIO 3: YieldToken Appreciates (YieldToken Price ↑)
 
-#### Execute Test:
+**💡 What happens:** YieldToken price increases → Portfolio becomes over-valued → System sells excess tokens → Captures gains and reinvests
+
+**📈 Expected Outcome:** Gains captured, stronger position, compounded growth
+
+### Execute the Test:
 ```bash
-# 1. Reset FLOW price to baseline
+echo "=== SCENARIO 3: YIELD TOKEN PRICE INCREASE ==="
+
+# Step 1: Reset FLOW price to baseline (important!)
+echo "Resetting FLOW price to baseline..."
 flow transactions send transactions/mocks/oracle/set_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --arg UFix64:1.0 \
   --signer test-account
 
-# 2. Increase YieldToken price by 15% (e.g., $2.00 → $2.30)
+# Step 2: Increase YieldToken price by 15%
+echo "Setting YieldToken price from $2.00 to $2.30 (+15%)"
 flow transactions send transactions/mocks/oracle/set_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault" \
   --arg UFix64:2.30 \
   --signer test-account
 
-# 3. Trigger rebalancing
+# Step 3: Verify price change
+echo "Confirming new YieldToken price:"
+flow scripts execute scripts/mocks/oracle/get_price.cdc \
+  --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
+
+# Step 4: Trigger rebalancing
+echo "Triggering gain capture..."
 flow transactions send transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
   --arg UInt64:$TIDE_ID \
   --arg Bool:true \
   --signer test-account
+
+echo "✅ Gain capture triggered!"
 ```
 
-#### Verify Results:
+### Verify Results:
 ```bash
-# Check YieldToken price
+echo "=== CHECKING RESULTS ==="
+
+# Check YieldToken price is updated
+echo "Current YieldToken Price:"
 flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
-# Check AutoBalancer balance (total value should rebalance)
+# Check AutoBalancer balance (net effect depends on gain capture vs reinvestment)
+echo "New AutoBalancer Balance:"
 flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$TIDE_ID
 
 # Check position health (should improve from gains)
+echo "New Position Health (should be BETTER from captured gains):"
 flow scripts execute scripts/tidal-protocol/position_health.cdc \
   --arg UInt64:$POSITION_ID
 
 # Check Tide balance (should increase from captured gains)
+echo "New Tide Balance (should be HIGHER from captured gains):"
 flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
+
+echo "✅ SCENARIO 3 COMPLETE - Gains should be captured and reinvested!"
 ```
 
-#### Expected Changes:
-- ✅ **Gains captured** from YieldToken appreciation
-- ✅ **Position strengthened** with additional collateral from gains
-- ✅ **More YieldTokens acquired** through reinvestment of profits
+**🎯 What You Should See:**
+- ✅ **Gains captured** from YieldToken appreciation (some tokens sold at higher price)
+- ✅ **Position strengthened** with additional collateral from captured gains
+- ✅ **More total YieldTokens acquired** through reinvestment of profits
 
 ---
 
-### SCENARIO 4: YieldToken Depreciation (YieldToken Price ↓)
-**Test Case:** YieldToken price decreases → Portfolio under-valued → Restore target allocation
+## 🧪 SCENARIO 4: YieldToken Depreciates (YieldToken Price ↓)
 
-#### Execute Test:
+**💡 What happens:** YieldToken price decreases → Portfolio becomes under-valued → System borrows more MOET → Buys more YieldTokens to restore target
+
+**📉 Expected Outcome:** More YieldTokens acquired, target allocation restored, protected against further losses
+
+### Execute the Test:
 ```bash
-# 1. Reset YieldToken to baseline first
+echo "=== SCENARIO 4: YIELD TOKEN PRICE DECREASE ==="
+
+# Step 1: Reset YieldToken to baseline (important!)
+echo "Resetting YieldToken price to baseline..."
 flow transactions send transactions/mocks/oracle/set_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault" \
   --arg UFix64:2.0 \
   --signer test-account
 
-# 2. Decrease YieldToken price by 15% (e.g., $2.00 → $1.70)
+# Step 2: Decrease YieldToken price by 15%
+echo "Setting YieldToken price from $2.00 to $1.70 (-15%)"
 flow transactions send transactions/mocks/oracle/set_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault" \
   --arg UFix64:1.70 \
   --signer test-account
 
-# 3. Trigger rebalancing
+# Step 3: Verify price change
+echo "Confirming new YieldToken price:"
+flow scripts execute scripts/mocks/oracle/get_price.cdc \
+  --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
+
+# Step 4: Trigger rebalancing
+echo "Triggering portfolio restoration..."
 flow transactions send transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
   --arg UInt64:$TIDE_ID \
   --arg Bool:true \
   --signer test-account
+
+echo "✅ Portfolio restoration triggered!"
 ```
 
-#### Verify Results:
+### Verify Results:
 ```bash
-# Check YieldToken price
+echo "=== CHECKING RESULTS ==="
+
+# Check YieldToken price is updated
+echo "Current YieldToken Price:"
 flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
-# Check AutoBalancer balance (should increase to restore value)
+# Check AutoBalancer balance (should increase to restore target value)
+echo "New AutoBalancer Balance (should be HIGHER in token count):"
 flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$TIDE_ID
 
 # Check position health (should remain stable)
+echo "New Position Health (should remain STABLE):"
 flow scripts execute scripts/tidal-protocol/position_health.cdc \
   --arg UInt64:$POSITION_ID
 
 # Check Tide balance
+echo "New Tide Balance:"
 flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
+
+echo "✅ SCENARIO 4 COMPLETE - Portfolio should be restored to target allocation!"
 ```
 
-#### Expected Changes:
-- ✅ **More YieldTokens acquired** to restore target portfolio value
-- ✅ **Target allocation maintained** despite price depreciation
-- ✅ **Protected against further losses** through rebalancing
+**🎯 What You Should See:**
+- ✅ **More YieldTokens acquired** (system buys more tokens at lower price to restore target value)
+- ✅ **Target allocation maintained** (portfolio value restored to target despite price drop)
+- ✅ **Protected against further losses** (rebalancing maintains optimal exposure)
 
 ---
 
-### Testing Random Market Volatility
+## 🎲 Bonus: Random Market Volatility Testing
 
-For realistic testing, use the bump price function:
+Test realistic market conditions with random price movements:
 
 ```bash
+echo "=== TESTING RANDOM MARKET VOLATILITY ==="
+
 # Random FLOW price changes (±1% variance)
+echo "Creating random FLOW price movement..."
 flow transactions send transactions/mocks/oracle/bump_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --signer test-account
 
 # Random YieldToken price changes (±1% variance)  
+echo "Creating random YieldToken price movement..."
 flow transactions send transactions/mocks/oracle/bump_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault" \
   --signer test-account
 
-# Check if rebalancing is needed (only triggers if thresholds exceeded)
+# Check current prices
+echo "New FLOW Price:"
+flow scripts execute scripts/mocks/oracle/get_price.cdc \
+  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault"
+
+echo "New YieldToken Price:"
+flow scripts execute scripts/mocks/oracle/get_price.cdc \
+  --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
+
+# Try rebalancing (only triggers if thresholds exceeded)
+echo "Attempting rebalancing (will only trigger if thresholds exceeded)..."
 flow transactions send transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
   --arg UInt64:$TIDE_ID \
   --arg Bool:false \
   --signer test-account
+
+echo "✅ Random volatility test complete!"
 ```
+
+## 📝 Notes for Junior Engineers
+
+1. **Always reset prices** between scenarios to ensure clean testing
+2. **Record baseline values** before each test to see the changes clearly  
+3. **The `force: true` parameter** bypasses threshold checks for testing
+4. **The `force: false` parameter** only rebalances if thresholds are actually exceeded
+5. **Position ID ≠ Tide ID** - they are different identifiers in the system
+6. **Compare before/after values** to understand the rebalancing effects
+7. **Each scenario demonstrates different market conditions** the protocol handles automatically
 
 ### Key Metrics to Monitor
 
