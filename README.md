@@ -1,6 +1,6 @@
 # Tidal Smart Contracts
 
-Tidal is a yield farming platform built on the Flow blockchain using Cadence 1.0. The platform enables users to deposit tokens into yield-generating strategies that automatically optimize returns through DeFiBlocks components and auto-balancing mechanisms.
+Tidal is a yield farming platform built on the Flow blockchain using Cadence 1.0. The platform enables users to deposit tokens to borrow against in order to boost purchasing power to gain exposure to yield-generating strategies that automatically optimize returns through DeFiBlocks components and auto-balancing mechanisms.
 
 ## System Architecture
 
