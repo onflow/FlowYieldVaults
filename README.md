@@ -252,6 +252,176 @@ The rebalancing system leverages DeFiBlocks components:
 
 This creates a fully automated yield farming system that adapts to market conditions while maintaining position safety.
 
+## Interest Rate System
+
+The TidalProtocol implements a sophisticated interest rate system that governs borrowing costs and lending yields. This system is fundamental to the protocol's economics and affects all lending positions.
+
+### How Interest Rates Work
+
+#### 1. Interest Rate Calculation
+Interest rates are determined dynamically based on supply and demand:
+
+- **Debit Interest Rate**: The rate charged on borrowed tokens
+- **Credit Interest Rate**: The rate earned on deposited tokens
+- **Utilization-Based**: Rates adjust based on the ratio of borrowed to supplied tokens
+
+#### 2. Interest Curves
+The protocol uses `InterestCurve` implementations to calculate rates:
+
+```cadence
+// Simple example - in production, curves would be more sophisticated
+access(all) struct SimpleInterestCurve: InterestCurve {
+    access(all) fun interestRate(creditBalance: UFix64, debitBalance: UFix64): UFix64 {
+        // Returns interest rate based on utilization ratio
+        // Higher utilization = higher rates
+        let utilizationRatio = debitBalance / creditBalance
+        return baseRate + (utilizationRatio * rateSlope)
+    }
+}
+```
+
+#### 3. Compound Interest Implementation
+Interest compounds continuously using per-second calculations:
+
+- **Per-Second Rates**: Yearly rates converted to per-second multipliers
+- **Interest Indices**: Track cumulative interest over time
+- **Automatic Compounding**: Interest accrues every second without manual updates
+
+### Interest Index System
+
+#### Scaled Balances
+The protocol uses "scaled balances" for efficiency:
+
+```
+Scaled Balance = True Balance / Interest Index
+True Balance = Scaled Balance × Interest Index
+```
+
+**Benefits:**
+- No need to update every position when interest accrues
+- Only update when deposits/withdrawals occur
+- Interest automatically compounds through index growth
+
+#### Interest Index Updates
+```cadence
+// Interest index compounds over time
+newIndex = oldIndex × (perSecondRate ^ elapsedSeconds)
+```
+
+### Interest Rate Types
+
+#### Credit Interest (Lender Earnings)
+- **Earned by**: Token depositors (lenders)
+- **Rate Calculation**: `(debitIncome - insuranceReserve) / totalCreditBalance`
+- **Insurance Deduction**: 0.1% of credit balance reserved for protocol security
+- **Distribution**: Paid to all credit positions proportionally
+
+#### Debit Interest (Borrower Costs)
+- **Paid by**: Token borrowers
+- **Rate Determination**: Set by interest curve based on utilization
+- **Market Driven**: High demand = higher rates
+- **Risk Adjusted**: Riskier assets typically have higher rates
+
+### Interest Rate Parameters
+
+#### Per-Token Configuration
+Each supported token has individual interest parameters:
+
+```cadence
+// When adding a new token to the pool
+pool.addSupportedToken(
+    tokenType: Type<@FlowToken.Vault>(),
+    collateralFactor: 0.8,        // 80% of value usable as collateral
+    borrowFactor: 1.0,            // No additional risk adjustment
+    interestCurve: MyInterestCurve(),  // Custom rate calculation
+    depositRate: 1000000.0,       // Rate limiting for deposits
+    depositCapacityCap: 1000000.0 // Maximum deposit capacity
+)
+```
+
+#### Risk Factors
+- **Collateral Factor**: Percentage of token value that can be borrowed against
+- **Borrow Factor**: Additional risk adjustment for debt calculations
+- **Interest Curve**: Algorithm determining base interest rates
+
+### How Interest Affects Positions
+
+#### Position Health Impact
+Interest accrual affects position health over time:
+
+```
+Health = Effective Collateral / Effective Debt
+
+// As debt interest accrues:
+// - Effective Debt increases
+// - Position health decreases
+// - May trigger rebalancing or liquidation
+```
+
+#### Automatic Rebalancing with Interest
+The rebalancing system accounts for interest:
+
+1. **Interest Accrual**: Debt grows, collateral may earn yield
+2. **Health Monitoring**: System checks if health falls below thresholds
+3. **Automatic Adjustment**: Rebalancing triggered to maintain target health
+4. **Compound Effect**: Interest earnings can be reinvested automatically
+
+### Interest Rate Examples
+
+#### High Utilization Scenario
+```
+Total Credit Balance: 1,000,000 FLOW
+Total Debit Balance: 800,000 FLOW
+Utilization: 80%
+
+// High utilization leads to:
+Debit Interest Rate: 8% APY
+Credit Interest Rate: 6.4% APY (after insurance deduction)
+```
+
+#### Low Utilization Scenario
+```
+Total Credit Balance: 1,000,000 FLOW  
+Total Debit Balance: 200,000 FLOW
+Utilization: 20%
+
+// Low utilization leads to:
+Debit Interest Rate: 2% APY
+Credit Interest Rate: 0.36% APY (after insurance deduction)
+```
+
+### Monitoring Interest Rates
+
+#### For Position Holders
+- **Borrow Costs**: Monitor debit interest on borrowed amounts
+- **Earning Rates**: Track credit interest on deposited collateral
+- **Health Impact**: Watch how interest affects position health over time
+
+#### For Protocol Governance
+- **Rate Optimization**: Adjust interest curves based on market conditions
+- **Risk Management**: Monitor utilization ratios and adjust parameters
+- **Protocol Revenue**: Track insurance reserves and protocol fees
+
+### Interest Rate Security
+
+#### Insurance Mechanism
+- **Reserve Fund**: 0.1% of credit balance reserved for protocol security
+- **Liquidation Protection**: Reserves help cover bad debt from liquidations
+- **Rate Stability**: Insurance provides buffer for rate calculations
+
+#### Risk Management
+- **Dynamic Rates**: Automatically adjust to market conditions
+- **Utilization Caps**: Prevent over-borrowing through rate increases
+- **Oracle Integration**: Interest calculations use real-time price data
+
+The interest rate system is designed to:
+1. **Balance Supply/Demand**: Higher rates when utilization is high
+2. **Incentivize Stability**: Rewards for providing liquidity during high demand
+3. **Manage Risk**: Insurance reserves and dynamic adjustments protect the protocol
+4. **Enable Automation**: Continuous compounding without manual intervention
+
+This interest system is what enables the TidalProtocol to function as a sustainable lending platform while providing the foundation for complex yield farming strategies built on top.
+
 ## Testing Rebalancing
 
 This section provides a step-by-step guide to test rebalancing functionality in the mock environment by manipulating collateral prices and observing the automatic rebalancing effects.
