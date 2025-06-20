@@ -6,15 +6,22 @@ import "Tidal"
 
 /// Opens a new Tide in the Tidal platform, funding the Tide with the specified Vault and amount
 ///
+/// @param strategyIdentifier: The Strategy's Type identifier. Must be a Strategy Type that is currently supported by
+///     Tidal. See `Tidal.getSupportedStrategies()` to get those currently supported.
 /// @param vaultIdentifier: The Vault's Type identifier
 ///     e.g. vault.getType().identifier == 'A.0ae53cb6e3f42a79.FlowToken.Vault'
 /// @param amount: The amount to deposit into the new Tide
 ///
-transaction(vaultIdentifier: String, amount: UFix64) {
+transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64) {
     let manager: &Tidal.TideManager
+    let strategy: Type
     let depositVault: @{FungibleToken.Vault}
 
     prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability) &Account) {
+        // create the Strategy Type to compose which the Tide should manage
+        self.strategy = CompositeType(strategyIdentifier)
+            ?? panic("Invalid strategyIdentifier \(strategyIdentifier) - ensure the provided strategyIdentifier corresponds to a valid Strategy Type")
+
         // get the data for where the vault type is canoncially stored
         let vaultType = CompositeType(vaultIdentifier)
             ?? panic("Vault identifier \(vaultIdentifier) is not associated with a valid Type")
@@ -37,7 +44,7 @@ transaction(vaultIdentifier: String, amount: UFix64) {
             let cap = signer.capabilities.storage.issue<&Tidal.TideManager>(Tidal.TideManagerStoragePath)
             signer.capabilities.publish(cap, at: Tidal.TideManagerPublicPath)
             // issue an authorized capability for later access via Capability controller if needed (e.g. via HybridCustody)
-            signer.capabilities.storage.issue<auth(Tidal.Owner) &Tidal.TideManager>(
+            signer.capabilities.storage.issue<&Tidal.TideManager>(
                     Tidal.TideManagerStoragePath
                 )
         }
@@ -46,6 +53,6 @@ transaction(vaultIdentifier: String, amount: UFix64) {
     }
 
     execute {
-        self.manager.createTide(withVault: <-self.depositVault)
+        self.manager.createTide(strategyType: self.strategy, withVault: <-self.depositVault)
     }
 }

@@ -3,55 +3,98 @@
 		"DFB": {
 			"source": "./DeFiBlocks/cadence/contracts/interfaces/DFB.cdc",
 			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
 		"DFBUtils": {
 			"source": "./DeFiBlocks/cadence/contracts/utils/DFBUtils.cdc",
 			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
 		"FungibleTokenStack": {
 			"source": "./DeFiBlocks/cadence/contracts/connectors/FungibleTokenStack.cdc",
 			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
+			}
+		},
+		"MOET": {
+			"source": "cadence/contracts/internal-dependencies/tokens/MOET.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
 			}
 		},
 		"MockOracle": {
 			"source": "cadence/contracts/mocks/MockOracle.cdc",
 			"aliases": {
-				"testing": "0000000000000008"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009"
+			}
+		},
+		"MockStrategy": {
+			"source": "cadence/contracts/mocks/MockStrategy.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009"
 			}
 		},
 		"MockSwapper": {
 			"source": "cadence/contracts/mocks/MockSwapper.cdc",
 			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009"
+			}
+		},
+		"MockTidalProtocolConsumer": {
+			"source": "./cadence/contracts/mocks/MockTidalProtocolConsumer.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000008"
 			}
 		},
 		"SwapStack": {
 			"source": "./DeFiBlocks/cadence/contracts/connectors/SwapStack.cdc",
 			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
+			}
+		},
+		"TidalProtocol": {
+			"source": "cadence/contracts/internal-dependencies/TidalProtocol.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000008"
 			}
 		},
 		"Tidal": {
 			"source": "cadence/contracts/Tidal.cdc",
 			"aliases": {
-				"testing": "0000000000000008"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009"
 			}
 		},
-		"USDA": {
-			"source": "cadence/contracts/internal-dependencies/tokens/USDA.cdc",
+		"TidalYieldAutoBalancers": {
+			"source": "cadence/contracts/TidalYieldAutoBalancers.cdc",
 			"aliases": {
-				"testing": "0000000000000007"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009"
+			}
+		},
+		"TidalYieldStrategies": {
+			"source": "cadence/contracts/TidalYieldStrategies.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009"
 			}
 		},
 		"YieldToken": {
 			"source": "cadence/contracts/internal-dependencies/tokens/YieldToken.cdc",
 			"aliases": {
-				"testing": "0000000000000007"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000010"
 			}
 		}
 	},
@@ -142,7 +185,14 @@
 				"type": "file",
 				"location": "emulator-account.pkey"
 			}
-		}
+		},
+    "test-user": {
+      "address": "179b6b1cb6755e31",
+      "key": {
+        "type": "file",
+        "location": "test-user.pkey"
+      }
+    }
 	},
 	"deployments": {
 		"emulator": {
@@ -152,19 +202,20 @@
 				"FungibleTokenStack",
 				"SwapStack",
 				{
-					"name": "USDA",
+					"name": "MOET",
 					"args": [
 						{
-							"value": "1000000.0",
+							"value": "1000000.00000000",
 							"type": "UFix64"
 						}
 					]
 				},
+				"TidalProtocol",
 				{
 					"name": "YieldToken",
 					"args": [
 						{
-							"value": "1000000.0",
+							"value": "1000000.00000000",
 							"type": "UFix64"
 						}
 					]
@@ -173,13 +224,15 @@
 					"name": "MockOracle",
 					"args": [
 						{
-							"value": "A.f8d6e0586b0a20c7.USDA.Vault",
+							"value": "A.f8d6e0586b0a20c7.MOET.Vault",
 							"type": "String"
 						}
 					]
 				},
 				"MockSwapper",
-				"Tidal"
+				"TidalYieldAutoBalancers",
+				"Tidal",
+				"TidalYieldStrategies"
 			]
 		}
 	}

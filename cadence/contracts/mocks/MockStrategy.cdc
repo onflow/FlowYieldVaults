@@ -1,0 +1,140 @@
+import "FungibleToken"
+import "FlowToken"
+
+import "DFBUtils"
+import "DFB"
+
+import "Tidal"
+
+///
+/// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
+/// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+///
+access(all) contract MockStrategy {
+
+    access(all) let IssuerStoragePath : StoragePath
+    
+    access(all) struct Sink : DFB.Sink {
+        access(contract) let uniqueID: DFB.UniqueIdentifier?
+        init(_ id: DFB.UniqueIdentifier?) {
+            self.uniqueID = id
+        }
+        access(all) view fun getSinkType(): Type {
+            return Type<@FlowToken.Vault>()
+        }
+        access(all) fun minimumCapacity(): UFix64 {
+            return 0.0
+        }
+        access(all) fun depositCapacity(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
+            return
+        }
+    }
+    access(all) struct Source : DFB.Source {
+        access(contract) let uniqueID: DFB.UniqueIdentifier?
+        init(_ id: DFB.UniqueIdentifier?) {
+            self.uniqueID = id
+        }
+        access(all) view fun getSourceType(): Type {
+            return Type<@FlowToken.Vault>()
+        }
+        access(all) fun minimumAvailable(): UFix64 {
+            return 0.0
+        }
+        access(FungibleToken.Withdraw) fun withdrawAvailable(maxAmount: UFix64): @{FungibleToken.Vault} {
+            return <- DFBUtils.getEmptyVault(self.getSourceType())
+        }
+    }
+
+    access(all) resource Strategy : Tidal.Strategy {
+        /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
+        /// specific Identifier to associated connectors on construction
+        access(contract) let uniqueID: DFB.UniqueIdentifier?
+        access(self) var sink: {DFB.Sink}
+        access(self) var source: {DFB.Source}
+
+        init(id: DFB.UniqueIdentifier?, sink: {DFB.Sink}, source: {DFB.Source}) {
+            self.uniqueID = id
+            self.sink = sink
+            self.source = source
+        }
+
+        access(all) view fun getSupportedCollateralTypes(): {Type: Bool} {
+            return {self.sink.getSinkType(): true }
+        }
+
+        access(all) view fun isSupportedCollateralType(_ type: Type): Bool {
+            return self.sink.getSinkType() == type
+        }
+
+        /// Returns the amount available for withdrawal via the inner Source
+        access(all) fun availableBalance(ofToken: Type): UFix64 {
+            return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
+        }
+
+        /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
+        access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
+            self.sink.depositCapacity(from: from)
+        }
+
+        /// Withdraws up to the max amount, returning the withdrawn Vault. If the requested token type is unsupported,
+        /// an empty Vault is returned.
+        access(FungibleToken.Withdraw) fun withdraw(maxAmount: UFix64, ofToken: Type): @{FungibleToken.Vault} {
+            if ofToken != self.source.getSourceType() {
+                return <- DFBUtils.getEmptyVault(ofToken)
+            }
+            return <- self.source.withdrawAvailable(maxAmount: maxAmount)
+        }
+
+        access(contract) fun burnCallback() {} // no-op
+    }
+
+    access(all) resource StrategyComposer : Tidal.StrategyComposer {
+        access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
+            return { Type<@Strategy>(): true }
+        }
+        access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
+            return { Type<@FlowToken.Vault>(): true }
+        }
+        access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
+            return { Type<@FlowToken.Vault>(): true }
+        }
+        access(all) fun createStrategy(
+            _ type: Type,
+            uniqueID: DFB.UniqueIdentifier,
+            withFunds: @{FungibleToken.Vault}
+        ): @{Tidal.Strategy} {
+            let id = DFB.UniqueIdentifier()
+            let strat <- create Strategy(
+                id: id,
+                sink: Sink(id),
+                source: Source(id)
+            )
+            strat.deposit(from: &withFunds as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
+            destroy withFunds
+            return <- strat
+        }
+    }
+
+    /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
+    /// may utilize resource consumption (i.e. account storage). Since TracerStrategy creation consumes account storage
+    /// via configured AutoBalancers
+    access(all) resource StrategyComposerIssuer : Tidal.StrategyComposerIssuer {
+        access(all) view fun getSupportedComposers(): {Type: Bool} {
+            return { Type<@StrategyComposer>(): true }
+        }
+        access(all) fun issueComposer(_ type: Type): @{Tidal.StrategyComposer} {
+            switch type {
+            case Type<@StrategyComposer>():
+                return <- create StrategyComposer()
+            default:
+                panic("Unsupported StrategyComposer requested: \(type.identifier)")
+            }
+        }
+    }
+
+    init() {
+        self.IssuerStoragePath = StoragePath(identifier: "MockStrategyComposerIssuer_\(self.account.address)")!
+
+        self.account.storage.save(<-create StrategyComposerIssuer(), to: self.IssuerStoragePath)
+    }
+}

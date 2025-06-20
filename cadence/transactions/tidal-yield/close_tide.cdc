@@ -10,12 +10,12 @@ import "Tidal"
 /// @param id: The Tide.id() of the Tide from which the full balance will be withdrawn
 ///
 transaction(id: UInt64) {
-    let manager: auth(Tidal.Owner) &Tidal.TideManager
+    let manager: auth(FungibleToken.Withdraw) &Tidal.TideManager
     let receiver: &{FungibleToken.Vault}
 
     prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability) &Account) {
         // reference the signer's TideManager & underlying Tide
-        self.manager = signer.storage.borrow<auth(Tidal.Owner) &Tidal.TideManager>(from: Tidal.TideManagerStoragePath)
+        self.manager = signer.storage.borrow<auth(FungibleToken.Withdraw) &Tidal.TideManager>(from: Tidal.TideManagerStoragePath)
             ?? panic("Signer does not have a TideManager stored at path \(Tidal.TideManagerStoragePath) - configure and retry")
         let tide = self.manager.borrowTide(id: id) ?? panic("Tide with ID \(id) was not found")
         
