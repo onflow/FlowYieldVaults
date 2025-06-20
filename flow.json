@@ -48,6 +48,13 @@
 				"testing": "0000000000000009"
 			}
 		},
+		"MockTidalProtocolConsumer": {
+			"source": "./cadence/contracts/mocks/MockTidalProtocolConsumer.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000008"
+			}
+		},
 		"SwapStack": {
 			"source": "./DeFiBlocks/cadence/contracts/connectors/SwapStack.cdc",
 			"aliases": {

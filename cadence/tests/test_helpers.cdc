@@ -85,6 +85,13 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "MockTidalProtocolConsumer",
+        path: "../contracts/mocks/MockTidalProtocolConsumer.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
     
     // TidalYield contracts
     err = Test.deployContract(

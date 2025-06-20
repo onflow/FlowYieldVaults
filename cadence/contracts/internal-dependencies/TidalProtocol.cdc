@@ -680,8 +680,6 @@ access(all) contract TidalProtocol {
 					// The top up source may not have enough funds get us to the target health, but could have
 					// enough to keep us over the minimum.
 					if pulledVault.balance >= requiredDeposit {
-						// this deposit is made in MOET
-						log("Withdrawing \(amount) of \(type.identifier) from position ID \(pid) - Sufficient funds available from top up source")
 						// We can service this withdrawal if we deposit funds from our top up source
 						self.depositAndPush(pid: pid, from: <-pulledVault, pushToDrawDownSink: false)
 						canWithdraw = true
@@ -703,10 +701,6 @@ access(all) contract TidalProtocol {
 			}
 
 			let reserveVault = (&self.reserves[type] as auth(FungibleToken.Withdraw) &{FungibleToken.Vault}?)!
-			// the reserve vault here is in Flow, so if we withdraw above the base collateral,
-			// there is no way to use the MOET reserves to gain Flow at the moment
-			log("Withdrawing \(amount) of \(type.identifier) from position ID \(pid) - Reserve vault balance is \(reserveVault.balance)")
-
 
 			// Reflect the withdrawal in the position's balance
 			position.balances[type]!.recordWithdrawal(amount: amount, tokenState: tokenState)

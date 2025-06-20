@@ -17,6 +17,9 @@ access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
+access(all) let collateralFactor = 0.8
+access(all) let targetHealthFactor = 1.3
+
 access(all) var snapshot: UInt64 = 0
 
 access(all)
@@ -28,10 +31,11 @@ fun setup() {
     setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
 
     // mint tokens & set liquidity in mock swapper contract
+    let reserveAmount = 100_000_00.0
     setupYieldVault(protocolAccount, beFailed: false)
-    mintFlow(to: protocolAccount, amount: 100_000_00.0)
-    mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: 100_000_00.0, beFailed: false)
-    mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: 100_000_00.0, beFailed: false)
+    mintFlow(to: protocolAccount, amount: reserveAmount)
+    mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
+    mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
@@ -47,6 +51,15 @@ fun setup() {
         depositCapacityCap: 1_000_000.0
     )
 
+    // open wrapped position (pushToDrawDownSink)
+    // the equivalent of depositing reserves
+    let openRes = executeTransaction(
+        "../transactions/mocks/position/create_wrapped_position.cdc",
+        [reserveAmount/2.0, /storage/flowTokenVault, true],
+        protocolAccount
+    )
+    Test.expect(openRes, Test.beSucceeded())
+
     // enable mocked Strategy creation
     addStrategyComposer(signer: tidalYieldAccount,
         strategyIdentifier: strategyIdentifier,
@@ -54,6 +67,7 @@ fun setup() {
         issuerStoragePath: TidalYieldStrategies.IssuerStoragePath,
         beFailed: false
     )
+
 
     snapshot = getCurrentBlockHeight()
 }
@@ -120,8 +134,12 @@ fun test_RebalanceTideSucceeds() {
     Test.reset(to: snapshot)
 
     let fundingAmount = 100.0
+    let priceIncrease = 1.5
 
     let user = Test.createAccount()
+
+    // Likely 0.0
+    let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
     mintFlow(to: user, amount: fundingAmount)
 
     createTide(
@@ -136,9 +154,8 @@ fun test_RebalanceTideSucceeds() {
     Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
     Test.assertEqual(1, tideIDs!.length)
 
-    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5)
+    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: priceIncrease)
 
-    log("Rebalancing Tide...")
     rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
 
     closeTide(signer: user, id: tideIDs![0], beFailed: false)
@@ -146,4 +163,10 @@ fun test_RebalanceTideSucceeds() {
     tideIDs = getTideIDs(address: user.address)
     Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
     Test.assertEqual(0, tideIDs!.length)
+
+    let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+    let expectedBalance = fundingAmount * (collateralFactor / targetHealthFactor) * priceIncrease
+    Test.assert((flowBalanceAfter-flowBalanceBefore) >= expectedBalance,
+        message: "Expected user's Flow balance after rebalance to be at least \(expectedBalance) but got \(flowBalanceAfter)"
+    )
 }
