@@ -422,6 +422,281 @@ The interest rate system is designed to:
 
 This interest system is what enables the TidalProtocol to function as a sustainable lending platform while providing the foundation for complex yield farming strategies built on top.
 
+## TidalProtocol Loan Health Mechanism
+
+The TidalProtocol implements a sophisticated loan health system that determines borrowing capacity, monitors position safety, and prevents liquidations. This system is fundamental to how the TracerStrategy calculates how much can be borrowed against a user's initial collateral position.
+
+### Core Health Calculation
+
+The protocol calculates position health using the formula:
+
+```
+Position Health = Effective Collateral / Effective Debt
+```
+
+#### Health Computation Function
+```cadence
+// From TidalProtocol.cdc
+access(all) fun healthComputation(effectiveCollateral: UFix64, effectiveDebt: UFix64): UFix64 {
+    if effectiveCollateral == 0.0 {
+        return 0.0
+    } else if effectiveDebt == 0.0 {
+        return UFix64.max  // Infinite health - no debt
+    } else {
+        return effectiveCollateral / effectiveDebt
+    }
+}
+```
+
+### Effective Collateral and Effective Debt
+
+#### Effective Collateral Calculation
+For each token type in a position:
+```
+Token Value = Token Amount × Oracle Price
+Effective Collateral += Token Value × Collateral Factor
+```
+
+#### Effective Debt Calculation
+For each borrowed token type:
+```
+Token Value = Token Amount × Oracle Price  
+Effective Debt += Token Value ÷ Borrow Factor
+```
+
+### Risk Parameters
+
+#### Collateral Factor
+- **Definition**: Percentage of token value that can be used as collateral
+- **Range**: 0.0 to 1.0 (0% to 100%)
+- **Purpose**: Manages risk based on token volatility and liquidity
+- **Example**: FLOW with 0.8 collateral factor means 80% of FLOW value counts toward borrowing capacity
+
+#### Borrow Factor  
+- **Definition**: Risk adjustment applied to borrowed amounts
+- **Range**: 0.0 to 1.0 (0% to 100%)
+- **Purpose**: Additional safety margin for high-risk borrowing scenarios
+- **Effect**: Lower borrow factor = higher effective debt for same borrowed amount
+
+### Health Thresholds
+
+#### Target Health
+- **Default Value**: 1.3 (130% collateralization)
+- **Purpose**: Optimal health level the protocol maintains through rebalancing
+- **Getter**: `getTargetHealth()` 
+- **Setter**: `setTargetHealth(targetHealth: UFix64)` (governance only)
+
+#### Minimum Health
+- **Default Value**: 1.1 (110% collateralization)  
+- **Purpose**: Liquidation threshold - positions below this health are at risk
+- **Getter**: `getMinHealth()`
+- **Setter**: `setMinHealth(minHealth: UFix64)` (governance only)
+
+#### Maximum Health
+- **Purpose**: Upper bound for automatic rebalancing
+- **Behavior**: Positions above this trigger draw-down to target health
+
+### Borrowing Capacity Calculation
+
+When a user deposits collateral, the protocol calculates maximum borrowing capacity:
+
+```cadence
+// Simplified borrowing capacity calculation
+let tokenValue = collateralAmount × oraclePrice
+let effectiveCollateral = tokenValue × collateralFactor
+let maxBorrowableValue = effectiveCollateral ÷ targetHealth
+let maxBorrowableTokens = maxBorrowableValue × borrowFactor ÷ borrowTokenPrice
+```
+
+#### Real Example with TracerStrategy
+1. **User deposits 100 FLOW at $1.00 each**
+2. **FLOW collateral factor: 0.8 (80%)**
+3. **Target health: 1.3 (130%)**
+4. **MOET borrow factor: 1.0 (100%)**
+
+```
+Token Value = 100 FLOW × $1.00 = $100
+Effective Collateral = $100 × 0.8 = $80
+Max Borrowable Value = $80 ÷ 1.3 = $61.54
+Max MOET Borrowable = $61.54 × 1.0 ÷ $1.00 = 61.54 MOET
+```
+
+### Scaled Balance System
+
+The protocol uses **scaled balances** for efficient interest calculations:
+
+#### True vs Scaled Balance
+```cadence
+// Convert scaled balance to actual balance
+fun scaledBalanceToTrueBalance(scaledBalance: UFix64, interestIndex: UInt64): UFix64 {
+    let indexMultiplier = UFix64.fromBigEndianBytes(interestIndex.toBigEndianBytes())! / 100000000.0
+    return scaledBalance * indexMultiplier
+}
+```
+
+#### Interest Index Compounding
+```cadence
+// Interest compounds continuously
+newIndex = oldIndex × (perSecondRate ^ elapsedSeconds)
+```
+
+### Position Health Monitoring
+
+#### Balance Sheet Structure
+```cadence
+access(all) struct BalanceSheet {
+    access(all) let effectiveCollateral: UFix64
+    access(all) let effectiveDebt: UFix64
+    access(all) let health: UFix64
+}
+```
+
+#### Health Calculation for Multi-Token Positions
+```cadence
+access(all) fun positionHealth(pid: UInt64): UFix64 {
+    var effectiveCollateral = 0.0
+    var effectiveDebt = 0.0
+    
+    for type in position.balances.keys {
+        let balance = position.balances[type]!
+        let tokenState = self.tokenState(type: type)
+        let tokenPrice = self.priceOracle.price(ofToken: type)!
+        
+        if balance.direction == BalanceDirection.Credit {
+            // Collateral calculation
+            let trueBalance = scaledBalanceToTrueBalance(
+                scaledBalance: balance.scaledBalance,
+                interestIndex: tokenState.creditInterestIndex
+            )
+            let value = tokenPrice * trueBalance
+            effectiveCollateral += (value * self.collateralFactor[type]!)
+            
+        } else {
+            // Debt calculation  
+            let trueBalance = scaledBalanceToTrueBalance(
+                scaledBalance: balance.scaledBalance,
+                interestIndex: tokenState.debitInterestIndex
+            )
+            let value = tokenPrice * trueBalance
+            effectiveDebt += (value / self.borrowFactor[type]!)
+        }
+    }
+    
+    return healthComputation(effectiveCollateral: effectiveCollateral, effectiveDebt: effectiveDebt)
+}
+```
+
+### Available Funds Calculations
+
+#### Funds Available Above Target Health
+The protocol calculates how much can be withdrawn while maintaining target health:
+
+```cadence
+access(all) fun fundsAvailableAboveTargetHealth(pid: UInt64, type: Type, targetHealth: UFix64): UFix64
+```
+
+**Logic:**
+1. Calculate current effective collateral and debt
+2. Determine maximum debt increase that maintains target health
+3. Convert to token amount using price oracle and borrow factor
+
+#### Funds Required for Target Health
+Calculates additional deposits needed to reach target health:
+
+```cadence
+access(all) fun fundsRequiredForTargetHealth(pid: UInt64, type: Type, targetHealth: UFix64): UFix64
+```
+
+### Health-Based Operations
+
+#### Withdrawal Validation
+```cadence
+access(all) fun healthAfterWithdrawal(pid: UInt64, type: Type, amount: UFix64): UFix64
+```
+- Returns projected health after withdrawal
+- Values below 1.0 indicate withdrawal would fail
+- Used to prevent unhealthy withdrawals
+
+#### Deposit Impact
+```cadence
+access(all) fun healthAfterDeposit(pid: UInt64, type: Type, amount: UFix64): UFix64
+```
+- Calculates health improvement from deposits
+- Accounts for debt payoff vs collateral increase
+
+### Automatic Rebalancing Integration
+
+#### Position Health Monitoring
+The protocol continuously monitors position health and triggers rebalancing:
+
+```cadence
+// From rebalancePosition function
+let balanceSheet = self.positionBalanceSheet(pid: pid)
+
+if balanceSheet.health < position.targetHealth {
+    // Under-collateralized: need more collateral or debt payoff
+    // Trigger top-up from repayment source
+    
+} else if balanceSheet.health > position.targetHealth {
+    // Over-collateralized: can borrow more or withdraw excess
+    // Trigger draw-down to sink
+}
+```
+
+#### TracerStrategy Health Management
+The TracerStrategy leverages this health system:
+
+1. **Initial Position**: Deposits FLOW, borrows MOET at target health (1.3)
+2. **Health Monitoring**: AutoBalancer tracks YieldToken value vs expected value
+3. **Price Changes**: Oracle price updates affect position health
+4. **Automatic Rebalancing**: System maintains health within target range
+
+### Liquidation Protection
+
+#### Minimum Health Enforcement
+- Positions below `minHealth` (1.1) trigger automatic intervention
+- System attempts to use `repaymentSource` before liquidation
+- Multiple rebalancing attempts before declaring position unhealthy
+
+#### Top-Up Source Integration
+```cadence
+// Position structure includes automatic top-up capability
+access(EImplementation) var topUpSource: {DFB.Source}?
+```
+
+### Oracle Price Integration
+
+#### Real-Time Health Updates
+```cadence
+// All health calculations use live oracle prices
+let tokenPrice = self.priceOracle.price(ofToken: type)!
+let value = tokenPrice * trueBalance
+```
+
+#### Multi-Token Support
+- Each token type has individual collateral and borrow factors
+- Oracle provides prices in terms of default token (typically FLOW)
+- Health calculations aggregate across all position tokens
+
+### Key Features for Yield Strategies
+
+#### Dynamic Borrowing Capacity
+- Borrowing capacity increases with collateral value appreciation
+- Automatic recognition of additional borrowing room
+- Enables strategies to leverage favorable market conditions
+
+#### Interest-Aware Calculations  
+- All balance calculations include accrued interest
+- Compound interest affects both collateral and debt over time
+- Health automatically adjusts for interest accumulation
+
+#### Multi-Asset Position Management
+- Single position can hold multiple collateral and debt types
+- Cross-collateralization enables complex strategies
+- Unified health calculation across all assets
+
+This comprehensive loan health system enables the TidalProtocol to safely support leveraged yield farming strategies while maintaining strict risk management and protecting user funds from liquidation through automated rebalancing mechanisms.
+
 ## Testing Rebalancing
 
 This section provides a step-by-step guide to test rebalancing functionality in the mock environment by manipulating collateral prices and observing the automatic rebalancing effects.
