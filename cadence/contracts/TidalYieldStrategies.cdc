@@ -52,7 +52,7 @@ access(all) contract TidalYieldStrategies {
             self.uniqueID = id
             self.position = position
             self.sink = position.createSink(type: collateralType)
-            self.source = position.createSource(type: collateralType)
+            self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
         }
 
         // Inherited from Tidal.Strategy default implementation
