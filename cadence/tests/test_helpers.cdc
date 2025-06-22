@@ -146,6 +146,13 @@ fun getTideIDs(address: Address): [UInt64]? {
     return res.returnValue as! [UInt64]?
 }
 
+access(all)
+fun getTideBalance(address: Address, tideID: UInt64): UFix64? {
+    let res = _executeScript("../scripts/tidal-yield/get_tide_balance.cdc", [address, tideID])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! UFix64?
+}
+
 /* --- Transaction Helpers --- */
 
 access(all)
