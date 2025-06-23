@@ -142,10 +142,10 @@ The AutoBalancer continuously monitors the **value ratio** between:
 
 ### Rebalancing Scenarios
 
-#### 1. Over-Collateralized Position (Upper Threshold Exceeded)
-**When:** YieldToken value > 105% of expected value
-**Cause:** Collateral price increased or yield generated excess tokens
-**Action:** Position can support more borrowing
+#### 1. Overflown AutoBalancer Value (Upper Threshold Exceeded)
+**When:** Current YieldToken value > 105% historical value of deposits
+**Cause:** YieldToken value has increased by 5% over the value of deposits
+**Action:** AutoBalancer deposits YieldToken to the provided rebalanceSink, swapping into FLOW and recollateralizing the original TidalProtocol position. This results in value flows back into the AutoBalancer thus bumping up the new value of deposits.
 
 **Automated Flow:**
 ```
