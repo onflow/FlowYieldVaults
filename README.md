@@ -52,6 +52,8 @@ Mock FungibleToken implementations representing:
 
 ## How the System Works
 
+Below is an overview of the initial prototype Tracer Strategy in the broader context of TidalProtocol and the Tidal platform.
+
 ### 1. Strategy Architecture
 The TracerStrategy demonstrates the power of DeFiBlocks composition:
 
