@@ -130,6 +130,12 @@ The `local/setup_emulator.sh` script provides emulator configuration for local d
 
 The Tidal platform implements sophisticated automatic rebalancing and recollateralizing mechanisms to maintain healthy loan positions and optimize yield generation.
 
+**Important Distinction:** The system has TWO different rebalancing mechanisms:
+1. **AutoBalancer Rebalancing** (DFB): Maintains optimal ratio between YieldToken holdings and expected deposit value
+2. **Position Rebalancing** (TidalProtocol): Maintains healthy collateralization ratios for lending positions
+
+These work together but serve different purposes and can trigger independently based on market conditions.
+
 ### How Auto-Balancing Works
 
 Each TracerStrategy includes an AutoBalancer with configured thresholds:
@@ -144,18 +150,18 @@ The AutoBalancer continuously monitors the **value ratio** between:
 
 #### 1. Overflown AutoBalancer Value (Upper Threshold Exceeded)
 **When:** Current YieldToken value > 105% historical value of deposits
-**Cause:** YieldToken value has increased by 5% over the value of deposits
-**Action:** AutoBalancer deposits YieldToken to the provided rebalanceSink, swapping into FLOW and recollateralizing the original TidalProtocol position. This results in value flows back into the AutoBalancer thus bumping up the new value of deposits.
+**Cause:** YieldToken price has increased OR position became over-collateralized leading to excess token holdings
+**Action:** AutoBalancer deposits excess YieldToken to the rebalanceSink, swapping to FLOW and recollateralizing the TidalProtocol position.
 
 **Automated Flow:**
 ```
-YieldToken (excess) → Swap to FLOW → Deposit to TidalProtocol Position → Issue more MOET → Swap to YieldToken
+YieldToken (excess) → Swap to FLOW → Deposit to TidalProtocol Position (recollateralization)
 ```
 
 **Result:** 
-- Increased borrowing capacity utilized
-- More MOET borrowed against higher collateral value
-- Additional YieldToken acquired for continued yield generation
+- Excess value moved from YieldToken holdings back to collateral
+- Position health improved through additional collateralization
+- Maintained optimal balance between yield tokens and position safety
 
 #### 2. Under-Collateralized Position (Lower Threshold Breached)
 **When:** YieldToken value < 95% of expected value  
@@ -746,64 +752,63 @@ This section provides a step-by-step guide to test rebalancing functionality in 
 ┌──────────────────────────────────── FLOW PRICE UP (+20%) ─────────────────────────────────────┐
 │                                                                                                │
 │  MockOracle.cdc: FLOW $1.00 → $1.20 (+20%)                                                    │
-│  Status: OVER-COLLATERALIZED | Trigger: Ratio > 1.05                                          │
+│  Status: POSITION OVER-COLLATERALIZED | AutoBalancer may need rebalancing                     │
 │                                                                                                │
-│  ┌─────────────────┐ 1. Price Check ┌──────────────────────┐ 2. Threshold   ┌─────────────────┐ │
-│  │   MockOracle    │───────────────►│TidalYieldAutoBalancer│─────Exceeded──►│   AutoBalancer  │ │
-│  │                 │                │       .cdc           │                │   (DFB.cdc)     │ │
-│  │ FLOW: $1.20     │                └──────────────────────┘                │ Rebalance Sink  │ │
+│  ┌─────────────────┐ 1. Price Check ┌──────────────────────┐ 2. Assess      ┌─────────────────┐ │
+│  │   MockOracle    │───────────────►│TidalYieldAutoBalancer│─────Need──────►│   AutoBalancer  │ │
+│  │                 │                │       .cdc           │   Rebalance    │   (DFB.cdc)     │ │
+│  │ FLOW: $1.20     │                └──────────────────────┘                │ Check Thresholds│ │
 │  └─────────────────┘                                                        └─────────────────┘ │
 │                                                                                        │         │
-│                                                3. Trigger Rebalancing                  │         │
+│                               3. AutoBalancer Rebalance (if YieldToken > threshold)   │         │
 │                                                         │                             │         │
 │                                                         ▼                             │         │
-│  ┌─────────────────┐ 4. More Collat ┌──────────────────────┐ 5. Issue MOET ┌─────────────────┐ │
-│  │ TidalProtocol   │◄───────────────│  TracerStrategy      │◄──────────────│  TidalProtocol  │ │
-│  │   Position      │   Value         │(TidalYieldStrategies │   Loan        │     Pool        │ │
-│  │                 │                │       .cdc)          │               │                 │ │
-│  │ Collateral: FLOW│                └──────────────────────┘               └─────────────────┘ │
-│  └─────────────────┘                            │                                             │
-│                                                  │ 6. MOET → YieldToken                       │
+│  ┌─────────────────┐ 4. Withdraw    ┌──────────────────────┐ 5. Source      ┌─────────────────┐ │
+│  │   AutoBalancer  │───────────────►│    SwapStack.cdc     │◄───────────────│  AutoBalancer   │ │
+│  │  YieldToken     │  YieldTokens   │(YieldToken→FLOW Swap)│  YieldTokens   │  Rebalance Sink │ │
+│  │    Vault        │                └──────────────────────┘                │                 │ │
+│  └─────────────────┘                            │                           └─────────────────┘ │
+│                                                  │ 6. YieldToken → FLOW                         │
 │                                                  ▼                                             │
-│  ┌─────────────────┐ 7. Receive     ┌──────────────────────┐ 8. Add Tokens ┌─────────────────┐ │
-│  │   MockSwapper   │◄───────────────│    SwapStack.cdc     │──────────────►│  AutoBalancer   │ │
-│  │  MOET↔Yield     │   YieldTokens  │   (SwapSink)         │   to Balance  │   YieldToken    │ │
-│  │                 │                └──────────────────────┘               │     Vault       │ │
-│  └─────────────────┘                                                       └─────────────────┘ │
+│  ┌─────────────────┐ 7. Receive FLOW┌──────────────────────┐ 8. Add Collat  ┌─────────────────┐ │
+│  │   MockSwapper   │───────────────►│    SwapStack.cdc     │───────────────►│ TidalProtocol   │ │
+│  │  Yield↔FLOW     │                │   (Position Sink)    │  Recollateralize│   Position      │ │
+│  │                 │                └──────────────────────┘                │                 │ │
+│  └─────────────────┘                                                        └─────────────────┘ │
 │                                                                                                │
-│  RESULT: More YieldTokens in AutoBalancer | Higher Tide withdrawal balance                   │
-│          Improved position health | Increased borrowing capacity                              │
+│  RESULT: YieldTokens sold to strengthen position | Excess value moved to collateral          │
+│          Position health improved through recollateralization                                 │
 └────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────── FLOW PRICE DOWN (-30%) ────────────────────────────────────┐
 │                                                                                                │
 │  MockOracle.cdc: FLOW $1.00 → $0.70 (-30%)                                                    │
-│  Status: UNDER-COLLATERALIZED | Trigger: Ratio < 0.95                                         │
+│  Status: POSITION UNDER-COLLATERALIZED | AutoBalancer typically unaffected                    │
 │                                                                                                │
-│  ┌─────────────────┐ 1. Price Drop  ┌──────────────────────┐ 2. Threshold   ┌─────────────────┐ │
-│  │   MockOracle    │───────────────►│TidalYieldAutoBalancer│─────Breached──►│   AutoBalancer  │ │
-│  │                 │                │       .cdc           │                │   (DFB.cdc)     │ │
-│  │ FLOW: $0.70     │                └──────────────────────┘                │ Rebalance Needed│ │
+│  ┌─────────────────┐ 1. Price Drop  ┌──────────────────────┐ 2. Position    ┌─────────────────┐ │
+│  │   MockOracle    │───────────────►│  TidalProtocol       │─────Health─────►│   Position      │ │
+│  │                 │                │   Pool.cdc           │   Monitoring   │  Rebalancing    │ │
+│  │ FLOW: $0.70     │                └──────────────────────┘                │                 │ │
 │  └─────────────────┘                                                        └─────────────────┘ │
 │                                                                                        │         │
-│                                                3. Trigger Recollateralization         │         │
+│                                         3. Trigger Position Rebalancing             │         │
 │                                                         │                             │         │
 │                                                         ▼                             │         │
-│  ┌─────────────────┐ 4. Withdraw    ┌──────────────────────┐ 5. Source     ┌─────────────────┐ │
-│  │   AutoBalancer  │───────────────►│    SwapStack.cdc     │◄──────────────│  AutoBalancer   │ │
-│  │  YieldToken     │  YieldTokens   │   (SwapSource)       │  YieldTokens  │    Source       │ │
-│  │    Vault        │                └──────────────────────┘               │                 │ │
+│  ┌─────────────────┐ 4. Auto Top-Up ┌──────────────────────┐ 5. Source     ┌─────────────────┐ │
+│  │  AutoBalancer   │───────────────►│    SwapStack.cdc     │◄──────────────│  AutoBalancer   │ │
+│  │  (topUpSource)  │  YieldTokens   │   (SwapSource)       │  YieldTokens  │    Source       │ │
+│  │  YieldToken     │                └──────────────────────┘               │                 │ │
 │  └─────────────────┘                            │                          └─────────────────┘ │
 │                                                  │ 6. YieldToken → FLOW                        │
 │                                                  ▼                                             │
 │  ┌─────────────────┐ 7. Receive FLOW┌──────────────────────┐ 8. Add Collat ┌─────────────────┐ │
-│  │   MockSwapper   │───────────────►│  TracerStrategy      │──────────────►│ TidalProtocol   │ │
-│  │  Yield↔FLOW     │                │(TidalYieldStrategies │               │   Position      │ │
-│  │                 │                │       .cdc)          │               │                 │ │
-│  └─────────────────┘                └──────────────────────┘               └─────────────────┘ │
+│  │   MockSwapper   │───────────────►│  TidalProtocol       │──────────────►│ TidalProtocol   │ │
+│  │  Yield↔FLOW     │                │  Position topUp      │               │   Position      │ │
+│  │                 │                └──────────────────────┘               │                 │ │
+│  └─────────────────┘                                                       └─────────────────┘ │
 │                                                                                                │
-│  RESULT: Fewer YieldTokens (sold for collateral) | Stabilized position health               │
-│          Reduced liquidation risk | Maintained loan safety                                   │
+│  RESULT: Position health stabilized | YieldTokens used to prevent liquidation               │
+│          This is Position rebalancing, not AutoBalancer rebalancing                         │
 └────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -835,27 +840,28 @@ This section provides a step-by-step guide to test rebalancing functionality in 
 │                                                  │ 6. YieldToken → FLOW (~$30)                 │
 │                                                  ▼                                             │
 │  ┌─────────────────┐ 7. Swap to FLOW┌──────────────────────┐ 8. Enhanced   ┌─────────────────┐ │
-│  │   MockSwapper   │◄───────────────│  TracerStrategy      │──────────────►│ TidalProtocol   │ │
-│  │  Yield↔FLOW     │                │(TidalYieldStrategies │   Collateral  │   Position      │ │
-│  │                 │                │       .cdc)          │               │                 │ │
-│  └─────────────────┘                └──────────────────────┘               └─────────────────┘ │
-│                                                  │                                             │
-│                                                  │ 9. Borrow More MOET                        │
-│                                                  ▼                                             │
-│  ┌─────────────────┐ 10. Buy More   ┌──────────────────────┐ 11. Compound  ┌─────────────────┐ │
-│  │   MockSwapper   │◄───────────────│    SwapStack.cdc     │──────────────►│  AutoBalancer   │ │
-│  │  MOET↔Yield     │   YieldTokens  │    (SwapSink)        │   Gains       │   YieldToken    │ │
-│  │                 │                └──────────────────────┘               │     Vault       │ │
+│  │   MockSwapper   │◄───────────────│    SwapStack.cdc     │──────────────►│ TidalProtocol   │ │
+│  │  Yield↔FLOW     │                │   (Position Sink)    │   Collateral  │   Position      │ │
+│  │                 │                └──────────────────────┘               │                 │ │
 │  └─────────────────┘                                                       └─────────────────┘ │
 │                                                                                                │
-│  RESULT: Gains captured & reinvested | More total YieldTokens acquired                      │
-│          Stronger collateral position | Compounded growth potential                          │
+│                                     9. AutoBalancer rebalance complete                        │
+│                                                         │                                     │
+│                                                         ▼                                     │
+│  ┌─────────────────┐                ┌──────────────────────┐               ┌─────────────────┐ │
+│  │   AutoBalancer  │                │   Rebalancing        │               │   Position      │ │
+│  │   Now Balanced  │◄───────────────│    Complete          │──────────────►│   Strengthened  │ │
+│  │ Value = Deposits│                │                      │               │  More Collateral│ │
+│  └─────────────────┘                └──────────────────────┘               └─────────────────┘ │
+│                                                                                                │
+│  RESULT: Gains captured and moved to collateral | AutoBalancer rebalanced                   │
+│          Stronger position health | Excess value transferred to safer collateral             │
 └────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ┌────────────────────────────────── YIELD TOKEN DOWN (-15%) ────────────────────────────────────┐
 │                                                                                                │
 │  MockOracle.cdc: YieldToken $2.00 → $1.70 (-15%)                                              │
-│  Portfolio Value: $170 vs Target $200 | Trigger: Ratio < 0.95                                 │
+│  Portfolio Value: $170 vs Target $200 | AutoBalancer deficit but NO rebalanceSource          │
 │                                                                                                │
 │  ┌─────────────────┐ 1. Price Drop  ┌──────────────────────┐ 2. Value Calc  ┌─────────────────┐ │
 │  │   MockOracle    │───────────────►│TidalYieldAutoBalancer│─────────────►│   AutoBalancer  │ │
@@ -864,26 +870,28 @@ This section provides a step-by-step guide to test rebalancing functionality in 
 │  └─────────────────┘                                                       │ = $170 < $200   │ │
 │                                                                            └─────────────────┘ │
 │                                                                                        │         │
-│                                        3. Trigger Portfolio Restoration              │         │
+│                                    3. Check rebalanceSource = nil                     │         │
 │                                                         │                             │         │
 │                                                         ▼                             │         │
-│  ┌─────────────────┐ 4. More Collat ┌──────────────────────┐ 5. Issue MOET ┌─────────────────┐ │
-│  │ TidalProtocol   │◄───────────────│  TracerStrategy      │◄──────────────│  TidalProtocol  │ │
-│  │   Position      │   Leverage     │(TidalYieldStrategies │   (~$30 loan)  │     Pool        │ │
-│  │                 │                │       .cdc)          │               │                 │ │
-│  │ Collateral: FLOW│                └──────────────────────┘               └─────────────────┘ │
-│  └─────────────────┘                            │                                             │
-│                                                  │ 6. MOET → YieldToken (~18 tokens)          │
-│                                                  ▼                                             │
-│  ┌─────────────────┐ 7. Buy Tokens  ┌──────────────────────┐ 8. Restore    ┌─────────────────┐ │
-│  │   MockSwapper   │◄───────────────│    SwapStack.cdc     │──────────────►│  AutoBalancer   │ │
-│  │  MOET↔Yield     │                │    (SwapSink)        │   Balance     │   YieldToken    │ │
-│  │                 │                └──────────────────────┘               │     Vault       │ │
-│  └─────────────────┘                                                       │ Target: $200    │ │
-│                                                                            └─────────────────┘ │
+│  ┌─────────────────┐                ┌──────────────────────┐               ┌─────────────────┐ │
+│  │  NO AUTOMATIC   │                │   AutoBalancer       │               │   NO AUTOMATIC  │ │
+│  │   REBALANCING   │                │    .rebalance()      │               │   TOP-UP FROM   │ │
+│  │                 │                │                      │               │  rebalanceSource│ │
+│  │rebalanceSource  │                │   Returns early:     │               │                 │ │
+│  │    = nil        │                │   No action taken    │               │   Available     │ │
+│  └─────────────────┘                └──────────────────────┘               └─────────────────┘ │
 │                                                                                                │
-│  RESULT: More YieldTokens acquired (~18 tokens) | Target portfolio value restored          │
-│          Protected against further losses | Maintained optimal allocation                    │
+│                                     4. Manual intervention may be needed                      │
+│                                                         │                                     │
+│                                                         ▼                                     │
+│  ┌─────────────────┐                ┌──────────────────────┐               ┌─────────────────┐ │
+│  │     User or     │                │    Manual Deposit    │               │  Position-Level │ │
+│  │   Governance    │───────────────►│   or Position-Level  │──────────────►│   Rebalancing   │ │
+│  │   Intervention  │                │    Rebalancing       │               │   (TidalProtocol)│ │
+│  └─────────────────┘                └──────────────────────┘               └─────────────────┘ │
+│                                                                                                │
+│  RESULT: AutoBalancer cannot self-rebalance when under-valued (no rebalanceSource)          │
+│          Position health may be at risk - manual action or position rebalancing needed      │
 └────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -904,9 +912,9 @@ Each scenario below is completely self-contained and can be run independently. Y
 
 ## SCENARIO 1: Collateral Appreciates (FLOW Price Increases)
 
-**What happens:** FLOW price increases → Position becomes over-collateralized → System borrows more MOET → Buys more YieldTokens
+**What happens:** FLOW price increases → Position becomes over-collateralized → AutoBalancer may rebalance if YieldToken holdings exceed threshold
 
-**Expected Outcome:** More YieldTokens, higher withdrawal balance, better position health
+**Expected Outcome:** If AutoBalancer triggers: fewer YieldTokens (sold for collateral), stronger position health
 
 ### Complete Self-Contained Test:
 ```bash
@@ -1031,23 +1039,23 @@ flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
 
 echo "SCENARIO 1 COMPLETE!"
 echo "Expected Results:"
-echo "- AutoBalancer YieldToken balance should INCREASE"
-echo "- Tide withdrawable balance should INCREASE"
-echo "- Position became over-collateralized, borrowed more MOET, bought more YieldTokens"
+echo "- If AutoBalancer triggers: YieldToken balance may DECREASE (sold for collateral)"
+echo "- Position health should IMPROVE from additional collateral"
+echo "- FLOW price increase may trigger AutoBalancer rebalanceSink if YieldToken value exceeds threshold"
 ```
 
 **What You Should See:**
-- **AutoBalancer YieldToken balance increases** (more tokens from additional borrowing)
-- **Tide withdrawable balance increases** (more FLOW available for withdrawal)  
-- **Position health improves** (better collateralization ratio)
+- **Position health improves** (higher FLOW collateral value)
+- **AutoBalancer may trigger rebalanceSink** if YieldToken holdings exceed threshold
+- **If rebalancing occurs: YieldToken balance decreases** (sold for additional collateral)
 
 ---
 
 ## SCENARIO 2: Collateral Depreciates (FLOW Price Decreases)
 
-**What happens:** FLOW price decreases → Position becomes under-collateralized → System sells YieldTokens → Adds FLOW as collateral
+**What happens:** FLOW price decreases → Position becomes under-collateralized → Position may use topUpSource (AutoBalancer) to add collateral
 
-**Expected Outcome:** Fewer YieldTokens, stabilized position health, reduced liquidation risk
+**Expected Outcome:** Position health stabilized through topUpSource mechanism, may reduce YieldToken holdings
 
 ### Complete Self-Contained Test:
 ```bash
@@ -1172,23 +1180,23 @@ flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
 
 echo "SCENARIO 2 COMPLETE!"
 echo "Expected Results:"
-echo "- AutoBalancer YieldToken balance should DECREASE"
-echo "- Position health should STABILIZE"
-echo "- YieldTokens sold to get FLOW for additional collateral"
+echo "- Position may use topUpSource to add collateral (if configured)"
+echo "- AutoBalancer balance may DECREASE if used as topUpSource"
+echo "- Position health stabilized through topUpSource mechanism"
 ```
 
 **What You Should See:**
-- **AutoBalancer YieldToken balance decreases** (tokens sold to get FLOW for collateral)
-- **Position health stabilizes** (additional collateral added to maintain safety)
-- **Loan risk reduced** (improved collateralization protects against liquidation)
+- **Position health at risk** (lower FLOW collateral value)
+- **May trigger topUpSource mechanism** (AutoBalancer provides collateral if configured)
+- **AutoBalancer balance may decrease** if used as topUpSource for position health
 
 ---
 
 ## SCENARIO 3: YieldToken Appreciates (YieldToken Price Increases)
 
-**What happens:** YieldToken price increases → Portfolio becomes over-valued → System sells excess tokens → Captures gains and reinvests
+**What happens:** YieldToken price increases → AutoBalancer portfolio over-valued → Sells excess YieldTokens → Moves gains to position collateral
 
-**Expected Outcome:** Gains captured, stronger position, compounded growth
+**Expected Outcome:** Gains captured and transferred to collateral, AutoBalancer rebalanced, stronger position health
 
 ### Complete Self-Contained Test:
 ```bash
@@ -1317,23 +1325,23 @@ flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
 
 echo "SCENARIO 3 COMPLETE!"
 echo "Expected Results:"
-echo "- Gains captured from YieldToken appreciation"
-echo "- Position strengthened with additional collateral"
-echo "- Some tokens sold at higher price, gains reinvested"
+echo "- AutoBalancer should trigger rebalanceSink (excess YieldTokens sold)"
+echo "- Gains captured and transferred to position as collateral"
+echo "- AutoBalancer rebalanced to target ratio"
 ```
 
 **What You Should See:**
-- **Gains captured** from YieldToken appreciation (some tokens sold at higher price)
-- **Position strengthened** with additional collateral from captured gains
-- **More total YieldTokens acquired** through reinvestment of profits
+- **AutoBalancer triggers rebalanceSink** (YieldToken value exceeds threshold)
+- **YieldToken balance decreases** (excess tokens sold at higher price)
+- **Position strengthened** with gains transferred to collateral
 
 ---
 
 ## SCENARIO 4: YieldToken Depreciates (YieldToken Price Decreases)
 
-**What happens:** YieldToken price decreases → Portfolio becomes under-valued → System borrows more MOET → Buys more YieldTokens to restore target
+**What happens:** YieldToken price decreases → AutoBalancer portfolio under-valued → NO automatic rebalancing (rebalanceSource = nil)
 
-**Expected Outcome:** More YieldTokens acquired, target allocation restored, protected against further losses
+**Expected Outcome:** AutoBalancer cannot self-correct, manual intervention or position-level rebalancing may be needed
 
 ### Complete Self-Contained Test:
 ```bash
@@ -1462,15 +1470,15 @@ flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
 
 echo "SCENARIO 4 COMPLETE!"
 echo "Expected Results:"
-echo "- More YieldTokens acquired (bought at lower price)"
-echo "- Target allocation maintained despite price drop"
-echo "- Protected against further losses through rebalancing"
+echo "- AutoBalancer CANNOT rebalance automatically (no rebalanceSource)"
+echo "- Portfolio remains under-valued"
+echo "- Manual intervention or position-level rebalancing may be needed"
 ```
 
 **What You Should See:**
-- **More YieldTokens acquired** (system buys more tokens at lower price to restore target value)
-- **Target allocation maintained** (portfolio value restored to target despite price drop)
-- **Protected against further losses** (rebalancing maintains optimal exposure)
+- **AutoBalancer CANNOT rebalance** (no rebalanceSource configured)
+- **YieldToken balance unchanged** (no automatic top-up mechanism)
+- **Portfolio remains under-valued** (manual intervention may be needed)
 
 ---
 
