@@ -27,25 +27,25 @@ access(all) fun deployContracts() {
     // DeFiBlocks contracts
     var err = Test.deployContract(
         name: "DFBUtils",
-        path: "../../DeFiBlocks/cadence/contracts/utils/DFBUtils.cdc",
+        path: "../../lib/DeFiBlocks/cadence/contracts/utils/DFBUtils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "DFB",
-        path: "../../DeFiBlocks/cadence/contracts/interfaces/DFB.cdc",
+        path: "../../lib/DeFiBlocks/cadence/contracts/interfaces/DFB.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "SwapStack",
-        path: "../../DeFiBlocks/cadence/contracts/connectors/SwapStack.cdc",
+        path: "../../lib/DeFiBlocks/cadence/contracts/connectors/SwapStack.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "FungibleTokenStack",
-        path: "../../DeFiBlocks/cadence/contracts/connectors/FungibleTokenStack.cdc",
+        path: "../../lib/DeFiBlocks/cadence/contracts/connectors/FungibleTokenStack.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -54,13 +54,13 @@ access(all) fun deployContracts() {
     let initialMoetSupply = 0.0
     err = Test.deployContract(
         name: "MOET",
-        path: "../contracts/internal-dependencies/tokens/MOET.cdc",
+        path: "../../lib/TidalProtocol/cadence/contracts/MOET.cdc",
         arguments: [initialMoetSupply]
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "TidalProtocol",
-        path: "../contracts/internal-dependencies/TidalProtocol.cdc",
+        path: "../../lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -69,7 +69,7 @@ access(all) fun deployContracts() {
     let initialYieldSupply = 0.0
     err = Test.deployContract(
         name: "YieldToken",
-        path: "../contracts/internal-dependencies/tokens/YieldToken.cdc",
+        path: "../contracts/mocks/YieldToken.cdc",
         arguments: [initialYieldSupply]
     )
     Test.expect(err, Test.beNil())

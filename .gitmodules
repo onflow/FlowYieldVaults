@@ -1,3 +1,8 @@
-[submodule "DeFiBlocks"]
-	path = DeFiBlocks
-	url = git@github.com:onflow/DeFiBlocks.git
+[submodule "lib/DeFiBlocks"]
+	path = lib/DeFiBlocks
+	url = https://github.com/onflow/DeFiBlocks.git
+	branch = main
+[submodule "lib/TidalProtocol"]
+	path = lib/TidalProtocol
+	url = https://github.com/onflow/TidalProtocol.git
+	branch = gio/refactor-pool-creation-updated
