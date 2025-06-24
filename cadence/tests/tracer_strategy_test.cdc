@@ -154,7 +154,15 @@ fun test_RebalanceTideSucceeds() {
     Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
     Test.assertEqual(1, tideIDs!.length)
 
+    var tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+    log("Tide balance before yield increase: \(tideBalance ?? 0.0)")
+
     setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: priceIncrease)
+
+    tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+    log("Tide balance before rebalance: \(tideBalance ?? 0.0)")
 
     rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
 
@@ -168,5 +176,58 @@ fun test_RebalanceTideSucceeds() {
     let expectedBalance = fundingAmount * (collateralFactor / targetHealthFactor) * priceIncrease
     Test.assert((flowBalanceAfter-flowBalanceBefore) >= expectedBalance,
         message: "Expected user's Flow balance after rebalance to be at least \(expectedBalance) but got \(flowBalanceAfter)"
+    )
+}
+
+access(all)
+fun test_RebalanceTideSucceedsAfterPriceDecrease() {
+    Test.reset(to: snapshot)
+
+    let fundingAmount = 100.0
+    let priceDecrease = 0.1
+
+    let user = Test.createAccount()
+
+    // Likely 0.0
+    let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+    mintFlow(to: user, amount: fundingAmount)
+
+    createTide(
+        signer: user,
+        strategyIdentifier: strategyIdentifier,
+        vaultIdentifier: flowTokenIdentifier,
+        amount: fundingAmount,
+        beFailed: false
+    )
+
+    var tideIDs = getTideIDs(address: user.address)
+    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+    Test.assertEqual(1, tideIDs!.length)
+
+    var tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+    log("Tide balance before yield increase: \(tideBalance ?? 0.0)")
+
+    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: priceDecrease)
+
+    tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+    log("Tide balance before rebalance: \(tideBalance ?? 0.0)")
+
+    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+
+    closeTide(signer: user, id: tideIDs![0], beFailed: false)
+
+    tideIDs = getTideIDs(address: user.address)
+    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+    Test.assertEqual(0, tideIDs!.length)
+
+    let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+    let expectedBalance = fundingAmount * 0.5
+    Test.assert((flowBalanceAfter-flowBalanceBefore) <= expectedBalance,
+        message: "Expected user's Flow balance after rebalance to be less than the original, due to decrease in yield price but got \(flowBalanceAfter)")
+
+    Test.assert((flowBalanceAfter-flowBalanceBefore) > 0.1,
+        message: "Expected user's Flow balance after rebalance to be more than zero but got \(flowBalanceAfter)"
     )
 }
