@@ -1,6 +1,7 @@
 import Test
 
 import "MOET"
+import "TidalProtocol"
 
 /* --- Test execution helpers --- */
 
@@ -153,6 +154,25 @@ fun getTideBalance(address: Address, tideID: UInt64): UFix64? {
     return res.returnValue as! UFix64?
 }
 
+access(all)
+fun getAutoBalancerBalance(address: Address, id: UInt64): UFix64? {
+    let res = _executeScript("../scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc", [id])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! UFix64?
+}
+
+
+access(all)
+fun getPositionDetails(pid: UInt64, beFailed: Bool): TidalProtocol.PositionDetails {
+    let res = _executeScript("../scripts/tidal-protocol/position_details.cdc",
+            [pid]
+        )
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+
+    return res.returnValue as! TidalProtocol.PositionDetails
+}
+
+
 /* --- Transaction Helpers --- */
 
 access(all)
@@ -251,6 +271,12 @@ fun rebalanceTide(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: B
     let res = _executeTransaction("../transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
+
+// access(all)
+// fun rebalancePosition(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
+//     let res = _executeTransaction("../../lib/TidalProtocol/cadence/transactions/tidal-protocol/pool-management/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
+//     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+// }
 
 /* --- Mock helpers --- */
 
