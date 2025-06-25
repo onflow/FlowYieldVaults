@@ -173,7 +173,13 @@ fun test_RebalanceTideSucceeds() {
     let positionFlowBalance = positionDetails.balances[1]
     log(positionFlowBalance)
 
-    // Expect this to be 127.97
+    // The math here is a little off, expected amount is around 130, but the final value of the tide is 127
+    let initialLoan = fundingAmount * (collateralFactor / targetHealthFactor)
+    let expectedBalance = (initialLoan * priceIncrease - initialLoan) + fundingAmount
+    log("Position Flow balance after rebalance: \(positionFlowBalance.balance)")
+    Test.assert(positionFlowBalance.balance > fundingAmount,
+        message: "Expected user's Flow balance in their position after rebalance to be more than \(fundingAmount) but got \(positionFlowBalance.balance)"
+    )
 
     closeTide(signer: user, id: tideIDs![0], beFailed: false)
 
@@ -182,7 +188,6 @@ fun test_RebalanceTideSucceeds() {
     Test.assertEqual(0, tideIDs!.length)
 
     let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
-    let expectedBalance = fundingAmount * (collateralFactor / targetHealthFactor) * priceIncrease
     Test.assert((flowBalanceAfter-flowBalanceBefore) >= expectedBalance,
         message: "Expected user's Flow balance after rebalance to be at least \(expectedBalance) but got \(flowBalanceAfter)"
     )
