@@ -15,19 +15,19 @@ We've implemented two testing approaches:
 
 ```bash
 # Show help
-python3 run_price_test.py --help
+python3 verification_results/run_price_test.py --help
 
 # Run a preset scenario
-python3 run_price_test.py --scenario extreme
+python3 verification_results/run_price_test.py --scenario extreme
 
 # Run custom prices
-python3 run_price_test.py --prices 0.5,1.0,2.0 --descriptions "Drop 50%,Baseline,Double"
+python3 verification_results/run_price_test.py --prices 0.5,1.0,2.0 --descriptions "Drop 50%,Baseline,Double"
 
 # Test only auto-borrow
-python3 run_price_test.py --type auto-borrow --scenario volatile
+python3 verification_results/run_price_test.py --type auto-borrow --scenario volatile
 
 # Test only auto-balancer
-python3 run_price_test.py --type auto-balancer --prices 0.8,1.2,1.5
+python3 verification_results/run_price_test.py --type auto-balancer --prices 0.8,1.2,1.5
 ```
 
 ### Preset Scenarios
@@ -52,14 +52,14 @@ Create your own price scenarios:
 
 ```bash
 # Progressive recovery scenario
-python3 run_price_test.py \
+python3 verification_results/run_price_test.py \
   --type auto-borrow \
   --prices 0.25,0.5,0.75,1.0,1.5,2.0,3.0 \
   --descriptions "75% crash,50% drop,25% drop,baseline,50% rise,double,triple" \
   --name "Progressive Recovery"
 
 # Flash crash scenario
-python3 run_price_test.py \
+python3 verification_results/run_price_test.py \
   --prices 1.0,0.1,0.2,0.5,1.0 \
   --descriptions "Normal,Flash crash,Slight recovery,Half recovery,Full recovery" \
   --name "Flash Crash Event"
@@ -137,7 +137,7 @@ flow test --cover ./cadence/tests/price_scenario_test.cdc
 #### Zero/Micro/Extreme Prices
 ```bash
 # Tests: Zero price → full unwind, micro prices, and extreme high prices
-python3 run_price_test.py --prices 0,0.00000001,1000 \
+python3 verification_results/run_price_test.py --prices 0,0.00000001,1000 \
                          --descriptions "Zero,Micro,VeryHigh" \
                          --name "Edge Prices" \
                          --type auto-borrow
@@ -146,7 +146,7 @@ python3 run_price_test.py --prices 0,0.00000001,1000 \
 #### Price Extremes (Safe Range)
 ```bash
 # Tests: 0.001 to 500x price movements
-python3 run_price_test.py --prices 0.001,10,100,500 \
+python3 verification_results/run_price_test.py --prices 0.001,10,100,500 \
                          --descriptions "VeryLow,10x,100x,500x" \
                          --name "Price Extremes" \
                          --type auto-borrow
@@ -157,7 +157,7 @@ python3 run_price_test.py --prices 0.001,10,100,500 \
 #### Rapid Oscillations
 ```bash
 # Tests: 9 rapid price swings to check position degradation
-python3 run_price_test.py --prices 1,2,0.5,3,0.3,1.5,0.8,2.5,1 \
+python3 verification_results/run_price_test.py --prices 1,2,0.5,3,0.3,1.5,0.8,2.5,1 \
                          --descriptions "Start,2x,Drop50%,3x,Crash70%,Recover1.5x,Drop20%,2.5x,Stabilize" \
                          --name "Rapid Oscillations" \
                          --type auto-borrow
@@ -166,7 +166,7 @@ python3 run_price_test.py --prices 1,2,0.5,3,0.3,1.5,0.8,2.5,1 \
 #### Black Swan Event
 ```bash
 # Tests: 99% crash and recovery, health drops to 0.014
-python3 run_price_test.py --prices 1,0.05,0.01,0.5,1,1.5 \
+python3 verification_results/run_price_test.py --prices 1,0.05,0.01,0.5,1,1.5 \
                          --descriptions "Normal,Crash95%,Crash99%,Recovery50%,FullRecovery,Overshoot" \
                          --name "Black Swan Event" \
                          --type auto-borrow
@@ -175,7 +175,7 @@ python3 run_price_test.py --prices 1,0.05,0.01,0.5,1,1.5 \
 #### Market Crash and Recovery
 ```bash
 # Tests: Progressive crash to 90% drop and recovery
-python3 run_price_test.py --prices 1.0,0.8,0.5,0.3,0.1,0.5,1.0 \
+python3 verification_results/run_price_test.py --prices 1.0,0.8,0.5,0.3,0.1,0.5,1.0 \
                          --descriptions "Normal,Drop20%,Drop50%,Drop70%,Drop90%,Recovery50%,FullRecovery" \
                          --name "Market Crash and Recovery" \
                          --type auto-borrow
@@ -184,7 +184,7 @@ python3 run_price_test.py --prices 1.0,0.8,0.5,0.3,0.1,0.5,1.0 \
 #### Bull Market Run
 ```bash
 # Tests: Price increases up to 5x with corrections
-python3 run_price_test.py --prices 1.0,1.5,2.0,3.0,5.0,4.0,3.0,2.0 \
+python3 verification_results/run_price_test.py --prices 1.0,1.5,2.0,3.0,5.0,4.0,3.0,2.0 \
                          --descriptions "Start,+50%,2x,3x,5x,Correction20%,Correction40%,Stabilize2x" \
                          --name "Bull Market Run" \
                          --type auto-balancer
@@ -193,7 +193,7 @@ python3 run_price_test.py --prices 1.0,1.5,2.0,3.0,5.0,4.0,3.0,2.0 \
 #### Stablecoin Depeg
 ```bash
 # Tests: Gradual depeg to 20% off and recovery
-python3 run_price_test.py --prices 1.0,0.99,0.95,0.90,0.80,0.95,1.0 \
+python3 verification_results/run_price_test.py --prices 1.0,0.99,0.95,0.90,0.80,0.95,1.0 \
                          --descriptions "Pegged,Slight,5%Off,10%Off,20%Off,Recovering,Repegged" \
                          --name "Stablecoin Depeg Event" \
                          --type all
@@ -224,13 +224,13 @@ echo -e "\n1. Running all preset scenarios..."
 ./run_price_scenarios.sh --scenario all
 
 echo -e "\n2. Testing edge cases..."
-python3 run_price_test.py --prices 0,0.00000001,1000 --descriptions "Zero,Micro,VeryHigh" --name "Edge Prices" --type auto-borrow
+python3 verification_results/run_price_test.py --prices 0,0.00000001,1000 --descriptions "Zero,Micro,VeryHigh" --name "Edge Prices" --type auto-borrow
 
 echo -e "\n3. Testing rapid oscillations..."
-python3 run_price_test.py --prices 1,2,0.5,3,0.3,1.5,0.8,2.5,1 --descriptions "Start,2x,Drop50%,3x,Crash70%,Recover1.5x,Drop20%,2.5x,Stabilize" --name "Rapid Oscillations" --type auto-borrow
+python3 verification_results/run_price_test.py --prices 1,2,0.5,3,0.3,1.5,0.8,2.5,1 --descriptions "Start,2x,Drop50%,3x,Crash70%,Recover1.5x,Drop20%,2.5x,Stabilize" --name "Rapid Oscillations" --type auto-borrow
 
 echo -e "\n4. Testing black swan event..."
-python3 run_price_test.py --prices 1,0.05,0.01,0.5,1,1.5 --descriptions "Normal,Crash95%,Crash99%,Recovery50%,FullRecovery,Overshoot" --name "Black Swan Event" --type auto-borrow
+python3 verification_results/run_price_test.py --prices 1,0.05,0.01,0.5,1,1.5 --descriptions "Normal,Crash95%,Crash99%,Recovery50%,FullRecovery,Overshoot" --name "Black Swan Event" --type auto-borrow
 
 echo -e "\n5. Testing MOET depeg..."
 flow test --cover cadence/tests/moet_depeg_test.cdc
