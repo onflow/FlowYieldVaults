@@ -1,104 +1,94 @@
-# Tidal Protocol Mathematical Verification Summary
+# Tidal Protocol Verification Summary
 
-## Executive Summary
+## Test Suite Overview
 
-We've run comprehensive mathematical verification on the Tidal Protocol test suite, analyzing 7 different test scenarios with various price movements. The verification process examined:
+The comprehensive test suite includes 10 test scenarios covering:
 
-- **149 health ratio calculations**
-- **60 value calculations**
-- **70 rebalancing operations**
-- **Multiple extreme price scenarios** (0x to 1000x)
+1. **Preset scenarios**: extreme, gradual, volatile price movements
+2. **Edge cases**: zero, micro (0.00000001), and extreme (1000x) prices  
+3. **Market scenarios**: crashes, recoveries, oscillations
+4. **Special cases**: MOET depeg, concurrent rebalancing
+5. **Mixed scenarios**: simultaneous testing with independent FLOW/Yield prices
+6. **Inverse correlation**: assets moving opposite to each other
+7. **Decorrelated movements**: one stable while other moves
+
+## Verification Results
+
+After running all tests, the automated verification suite found:
+
+### 1. Calculation Verification
+- **Total calculations verified**: 180
+- **Total errors found**: 39
+- **Primary issue**: Health ratios below MIN_HEALTH (1.1) after rebalancing
+
+### 2. Deep Verification
+- **Total findings**: 59
+  - Errors: 1 (impossible health value)
+  - Warnings: 55
+  - Info: 3
+- **Key issue**: Multiple ineffective rebalances where health remains below 1.1
+
+### 3. Mathematical Analysis
+- **Total rebalances**: 70
+- **Reached optimal range (1.1-1.5)**: 32 (45.7%)
+- **Critical findings**: 39 ineffective rebalances
+- **Worst post-rebalance health**: 0.001301 (target is 1.3)
+
+### 4. Mixed Scenario Verification
+- **Critical events**: 4
+- **Price correlation patterns**: 
+  - Inverse: 13 occurrences (most common)
+  - Positive: 3 occurrences
+  - Yield stable/Flow volatile: 1 occurrence
+  - Neutral: 2 occurrences
 
 ## Key Findings
 
-### ✅ Verified Correct
+1. **Ineffective Rebalancing**: In extreme price scenarios, the protocol cannot always restore health to the minimum threshold of 1.1, especially when:
+   - FLOW price drops below 0.25
+   - Multiple price crashes occur simultaneously
+   - Available liquidity is exhausted
 
-1. **Basic Calculations**: All multiplication operations (balance × price = value) are mathematically correct within acceptable floating-point precision (< 0.00000001 difference)
+2. **Auto-balancer Vulnerabilities**: 
+   - Can be completely wiped out during severe market conditions
+   - Shows resilience during single-asset price movements
+   - Struggles when both assets crash simultaneously
 
-2. **Rebalancing Logic**: The protocol correctly:
-   - Triggers rebalancing when health < 1.1 or > 1.5
-   - Targets health ratio of 1.1-1.3 after rebalancing
-   - Maintains position health within safe bounds in most scenarios
+3. **Health Calculation Edge Case**: 
+   - One instance of impossibly high health (130081300813.00813008)
+   - Likely due to extreme price ratios or calculation overflow
 
-3. **Price Impact Handling**: The protocol responds appropriately to:
-   - Gradual price changes (10-50%)
-   - Volatile market conditions
-   - Most extreme scenarios
+## Test Coverage Metrics
 
-### ⚠️ Issues Identified
+Overall coverage across all tests: **71.7% - 75.5%** of statements
 
-1. **Extreme Price Multiplier (1000x)**:
-   - When FLOW price jumps to 1000 MOET, health calculation produces: `130,081,300,813`
-   - This astronomical value suggests potential overflow in the calculation
-   - However, rebalancing still brings it back to 1.3, indicating the issue may be in display/logging rather than core logic
+## Running Tests
 
-2. **Zero Balance Edge Cases**:
-   - In concurrent rebalancing tests, AutoBalancer balance remains at 0
-   - This occurs when there's no rebalanceSource configured
-   - Not a calculation error, but a configuration issue
-
-3. **Micro Price Handling**:
-   - Prices like 0.00000001 are handled correctly mathematically
-   - No underflow or precision loss detected
-
-## Mathematical Formulas Verified
-
-### 1. Health Ratio Calculation
-```
-Health = (Collateral Value × Collateral Factor) / Debt Value
-
-Where:
-- Collateral Value = FLOW Balance × FLOW Price
-- Collateral Factor = 0.8 (80%)
-- Debt Value = MOET Borrowed × MOET Price
+To run the complete test suite with automatic verification:
+```bash
+./run_all_tests.sh
 ```
 
-### 2. AutoBalancer Value
-```
-Total Value = YieldToken Balance × YieldToken Price
-```
+To run individual test scenarios:
+```bash
+# Single token price changes
+python3 verification_results/run_price_test.py --prices 1,2,0.5 --descriptions "Start,Double,Half" --name "Custom Test"
 
-### 3. Rebalancing Triggers
-```
-Auto-Borrow:
-- If Health < 1.1: Borrow more to reach 1.1
-- If Health > 1.5: Repay debt to reach 1.3
-
-Auto-Balancer:
-- If Value < 95% of target: Buy more YieldToken
-- If Value > 105% of target: Sell some YieldToken
+# Mixed token price changes  
+python3 verification_results/run_mixed_test.py --flow-prices 1,0.5,2 --yield-prices 1,2,0.5 --name "Inverse Test"
 ```
 
-## Test Coverage Analysis
+## Verification Artifacts
 
-### Scenarios Tested
-1. **Extreme Price Movements**: ✅ (75% effective)
-2. **Gradual Price Changes**: ✅ (100% effective) 
-3. **Volatile Market**: ✅ (100% effective)
-4. **Zero/Micro Prices**: ✅ (Handled safely)
-5. **MOET Depeg**: ✅ (Health improves as expected)
-6. **Concurrent Rebalancing**: ⚠️ (Limited by configuration)
-7. **Market Crash/Recovery**: ✅ (Protocol remains solvent)
-
-### Edge Cases Verified
-- **Zero prices**: Properly rejected/handled
-- **Negative prices**: Not possible in the system
-- **Overflow conditions**: Only at 1000x multiplier
-- **Underflow conditions**: None detected
-- **Division by zero**: Prevented by protocol checks
+All verification results are saved as JSON files in `verification_results/`:
+- `verification_results.json` - Calculation checks
+- `deep_verification_report.json` - Protocol behavior analysis
+- `mathematical_analysis.json` - Financial metrics
+- `mixed_scenario_analysis.json` - Interaction effects
 
 ## Recommendations
 
-1. **Investigate 1000x Health Calculation**: While functionally working, the display value of 130 billion suggests a potential issue in the calculation or logging
-
-2. **Add RebalanceSource**: For concurrent rebalancing tests, ensure AutoBalancers have a configured rebalanceSource
-
-3. **Consider Bounds Checking**: Add explicit checks for extreme multipliers (>100x) to prevent potential overflows
-
-## Conclusion
-
-The Tidal Protocol's mathematical calculations are fundamentally sound. All core formulas produce correct results, and the rebalancing logic maintains positions within safe parameters. The only significant issue is the extreme health value at 1000x price multiplier, which appears to be cosmetic rather than functional.
-
-**Overall Verification Result: PASS** ✅
-
-The protocol correctly handles 99% of real-world scenarios and even most extreme edge cases. The mathematical integrity of the system is maintained throughout all tested scenarios. 
+1. Consider adjusting rebalancing algorithms for extreme price scenarios
+2. Implement safeguards to prevent complete liquidation of auto-balancers
+3. Add bounds checking for health calculations to prevent overflow
+4. Consider different target health ratios for extreme market conditions 

@@ -3,1302 +3,1302 @@
   "total_calculations": 180,
   "total_errors": 39,
   "errors": [
-    "Line 2187: Extremely high health ratio 130081300813.00813008 - possible calculation error",
-    "Line 41: Health still below minHealth (1.1) after rebalance: 0.65000000 \u2192 0.86666666",
-    "Line 62: Health still below minHealth (1.1) after rebalance: 0.17333333 \u2192 0.19597989",
-    "Line 125: Health still below minHealth (1.1) after rebalance: 0.06500000 \u2192 0.06824146",
-    "Line 146: Health still below minHealth (1.1) after rebalance: 0.27296587 \u2192 0.32725200",
-    "Line 524: Health still below minHealth (1.1) after rebalance: 0.49087800 \u2192 0.64168558",
-    "Line 545: Health still below minHealth (1.1) after rebalance: 0.29945327 \u2192 0.36398318",
-    "Line 587: Health still below minHealth (1.1) after rebalance: 0.26051378 \u2192 0.31022297",
-    "Line 671: Health still below minHealth (1.1) after rebalance: 0.15600000 \u2192 0.17441860",
-    "Line 692: Health still below minHealth (1.1) after rebalance: 0.58139534 \u2192 0.77232592",
-    "Line 742: Health still below minHealth (1.1) after rebalance: 0.65000000 \u2192 0.86666666",
-    "Line 763: Health still below minHealth (1.1) after rebalance: 0.17333333 \u2192 0.19597989",
-    "Line 826: Health still below minHealth (1.1) after rebalance: 0.06500000 \u2192 0.06824146",
-    "Line 847: Health still below minHealth (1.1) after rebalance: 0.27296587 \u2192 0.32725200",
-    "Line 1225: Health still below minHealth (1.1) after rebalance: 0.49087800 \u2192 0.64168558",
-    "Line 1246: Health still below minHealth (1.1) after rebalance: 0.29945327 \u2192 0.36398318",
-    "Line 1288: Health still below minHealth (1.1) after rebalance: 0.26051378 \u2192 0.31022297",
-    "Line 1372: Health still below minHealth (1.1) after rebalance: 0.15600000 \u2192 0.17441860",
-    "Line 1393: Health still below minHealth (1.1) after rebalance: 0.58139534 \u2192 0.77232592",
-    "Line 1443: Health still below minHealth (1.1) after rebalance: 0.65000000 \u2192 0.86666666",
-    "Line 1464: Health still below minHealth (1.1) after rebalance: 0.17333333 \u2192 0.19597989",
-    "Line 1527: Health still below minHealth (1.1) after rebalance: 0.06500000 \u2192 0.06824146",
-    "Line 1548: Health still below minHealth (1.1) after rebalance: 0.27296587 \u2192 0.32725200",
-    "Line 1926: Health still below minHealth (1.1) after rebalance: 0.49087800 \u2192 0.64168558",
-    "Line 1947: Health still below minHealth (1.1) after rebalance: 0.29945327 \u2192 0.36398318",
-    "Line 1989: Health still below minHealth (1.1) after rebalance: 0.26051378 \u2192 0.31022297",
-    "Line 2073: Health still below minHealth (1.1) after rebalance: 0.15600000 \u2192 0.17441860",
-    "Line 2094: Health still below minHealth (1.1) after rebalance: 0.58139534 \u2192 0.77232592",
-    "Line 2145: Health still below minHealth (1.1) after rebalance: 0E-8 \u2192 1.00000000",
-    "Line 2243: Health still below minHealth (1.1) after rebalance: 0.00130000 \u2192 0.00130129",
-    "Line 2404: Health still below minHealth (1.1) after rebalance: 0.32500000 \u2192 0.40000000",
-    "Line 2446: Health still below minHealth (1.1) after rebalance: 0.13000000 \u2192 0.14285714",
-    "Line 2467: Health still below minHealth (1.1) after rebalance: 0.71428571 \u2192 0.94928583",
-    "Line 2488: Health still below minHealth (1.1) after rebalance: 0.50628577 \u2192 0.66422424",
-    "Line 2530: Health still below minHealth (1.1) after rebalance: 0.52000000 \u2192 0.68421052",
-    "Line 2607: Health still below minHealth (1.1) after rebalance: 0.06500000 \u2192 0.06824146",
-    "Line 2628: Health still below minHealth (1.1) after rebalance: 0.01364829 \u2192 0.01379156",
-    "Line 2649: Health still below minHealth (1.1) after rebalance: 0.68957835 \u2192 0.91830292",
-    "Line 2761: Health still below minHealth (1.1) after rebalance: 0.65000000 \u2192 0.86666666"
+    "Line 2184: Extremely high health ratio 130081300813.00813008 - possible calculation error",
+    "Line 38: Health still below minHealth (1.1) after rebalance: 0.65000000 \u2192 0.86666666",
+    "Line 59: Health still below minHealth (1.1) after rebalance: 0.17333333 \u2192 0.19597989",
+    "Line 122: Health still below minHealth (1.1) after rebalance: 0.06500000 \u2192 0.06824146",
+    "Line 143: Health still below minHealth (1.1) after rebalance: 0.27296587 \u2192 0.32725200",
+    "Line 521: Health still below minHealth (1.1) after rebalance: 0.49087800 \u2192 0.64168558",
+    "Line 542: Health still below minHealth (1.1) after rebalance: 0.29945327 \u2192 0.36398318",
+    "Line 584: Health still below minHealth (1.1) after rebalance: 0.26051378 \u2192 0.31022297",
+    "Line 668: Health still below minHealth (1.1) after rebalance: 0.15600000 \u2192 0.17441860",
+    "Line 689: Health still below minHealth (1.1) after rebalance: 0.58139534 \u2192 0.77232592",
+    "Line 739: Health still below minHealth (1.1) after rebalance: 0.65000000 \u2192 0.86666666",
+    "Line 760: Health still below minHealth (1.1) after rebalance: 0.17333333 \u2192 0.19597989",
+    "Line 823: Health still below minHealth (1.1) after rebalance: 0.06500000 \u2192 0.06824146",
+    "Line 844: Health still below minHealth (1.1) after rebalance: 0.27296587 \u2192 0.32725200",
+    "Line 1222: Health still below minHealth (1.1) after rebalance: 0.49087800 \u2192 0.64168558",
+    "Line 1243: Health still below minHealth (1.1) after rebalance: 0.29945327 \u2192 0.36398318",
+    "Line 1285: Health still below minHealth (1.1) after rebalance: 0.26051378 \u2192 0.31022297",
+    "Line 1369: Health still below minHealth (1.1) after rebalance: 0.15600000 \u2192 0.17441860",
+    "Line 1390: Health still below minHealth (1.1) after rebalance: 0.58139534 \u2192 0.77232592",
+    "Line 1440: Health still below minHealth (1.1) after rebalance: 0.65000000 \u2192 0.86666666",
+    "Line 1461: Health still below minHealth (1.1) after rebalance: 0.17333333 \u2192 0.19597989",
+    "Line 1524: Health still below minHealth (1.1) after rebalance: 0.06500000 \u2192 0.06824146",
+    "Line 1545: Health still below minHealth (1.1) after rebalance: 0.27296587 \u2192 0.32725200",
+    "Line 1923: Health still below minHealth (1.1) after rebalance: 0.49087800 \u2192 0.64168558",
+    "Line 1944: Health still below minHealth (1.1) after rebalance: 0.29945327 \u2192 0.36398318",
+    "Line 1986: Health still below minHealth (1.1) after rebalance: 0.26051378 \u2192 0.31022297",
+    "Line 2070: Health still below minHealth (1.1) after rebalance: 0.15600000 \u2192 0.17441860",
+    "Line 2091: Health still below minHealth (1.1) after rebalance: 0.58139534 \u2192 0.77232592",
+    "Line 2142: Health still below minHealth (1.1) after rebalance: 0E-8 \u2192 1.00000000",
+    "Line 2240: Health still below minHealth (1.1) after rebalance: 0.00130000 \u2192 0.00130129",
+    "Line 2401: Health still below minHealth (1.1) after rebalance: 0.32500000 \u2192 0.40000000",
+    "Line 2443: Health still below minHealth (1.1) after rebalance: 0.13000000 \u2192 0.14285714",
+    "Line 2464: Health still below minHealth (1.1) after rebalance: 0.71428571 \u2192 0.94928583",
+    "Line 2485: Health still below minHealth (1.1) after rebalance: 0.50628577 \u2192 0.66422424",
+    "Line 2527: Health still below minHealth (1.1) after rebalance: 0.52000000 \u2192 0.68421052",
+    "Line 2604: Health still below minHealth (1.1) after rebalance: 0.06500000 \u2192 0.06824146",
+    "Line 2625: Health still below minHealth (1.1) after rebalance: 0.01364829 \u2192 0.01379156",
+    "Line 2646: Health still below minHealth (1.1) after rebalance: 0.68957835 \u2192 0.91830292",
+    "Line 2758: Health still below minHealth (1.1) after rebalance: 0.65000000 \u2192 0.86666666"
   ],
   "calculations": [
     {
-      "line": 175,
+      "line": 172,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 180,
+      "line": 177,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 180,
+      "line": 177,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 185,
+      "line": 182,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 190,
+      "line": 187,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 190,
+      "line": 187,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 207,
+      "line": 204,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 212,
+      "line": 209,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 212,
+      "line": 209,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 217,
+      "line": 214,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 222,
+      "line": 219,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 222,
+      "line": 219,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 239,
+      "line": 236,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 244,
+      "line": 241,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 244,
+      "line": 241,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 249,
+      "line": 246,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 254,
+      "line": 251,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 254,
+      "line": 251,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 271,
+      "line": 268,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 276,
+      "line": 273,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 276,
+      "line": 273,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 281,
+      "line": 278,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 286,
+      "line": 283,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 286,
+      "line": 283,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 303,
+      "line": 300,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 308,
+      "line": 305,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 308,
+      "line": 305,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 313,
+      "line": 310,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 318,
+      "line": 315,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 318,
+      "line": 315,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 335,
+      "line": 332,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 340,
+      "line": 337,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 340,
+      "line": 337,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 345,
+      "line": 342,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 350,
+      "line": 347,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 350,
+      "line": 347,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 367,
+      "line": 364,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 372,
+      "line": 369,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 372,
+      "line": 369,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 377,
+      "line": 374,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 382,
+      "line": 379,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 382,
+      "line": 379,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 399,
+      "line": 396,
       "formula": "615.38461538 * 0.90000000",
       "expected": "553.84615384",
       "actual": "553.8461538420000000",
       "error": null
     },
     {
-      "line": 404,
+      "line": 401,
       "formula": "615.38461538 * 0.90000000",
       "expected": "553.84615384",
       "actual": "553.8461538420000000",
       "error": null
     },
     {
-      "line": 404,
+      "line": 401,
       "formula": "615.38461538 * 0.90000000",
       "expected": "553.84615384",
       "actual": "553.8461538420000000",
       "error": null
     },
     {
-      "line": 409,
+      "line": 406,
       "formula": "589.08612750 * 0.90000000",
       "expected": "530.17751475",
       "actual": "530.1775147500000000",
       "error": null
     },
     {
-      "line": 414,
+      "line": 411,
       "formula": "589.08612750 * 0.90000000",
       "expected": "530.17751475",
       "actual": "530.1775147500000000",
       "error": null
     },
     {
-      "line": 414,
+      "line": 411,
       "formula": "589.08612750 * 0.90000000",
       "expected": "530.17751475",
       "actual": "530.1775147500000000",
       "error": null
     },
     {
-      "line": 434,
+      "line": 431,
       "formula": "589.08612750 * 0.70000000",
       "expected": "412.36028925",
       "actual": "412.3602892500000000",
       "error": null
     },
     {
-      "line": 439,
+      "line": 436,
       "formula": "589.08612750 * 0.70000000",
       "expected": "412.36028925",
       "actual": "412.3602892500000000",
       "error": null
     },
     {
-      "line": 439,
+      "line": 436,
       "formula": "589.08612750 * 0.70000000",
       "expected": "412.36028925",
       "actual": "412.3602892500000000",
       "error": null
     },
     {
-      "line": 444,
+      "line": 441,
       "formula": "456.72670393 * 0.70000000",
       "expected": "319.70869275",
       "actual": "319.7086927510000000",
       "error": null
     },
     {
-      "line": 449,
+      "line": 446,
       "formula": "456.72670393 * 0.70000000",
       "expected": "319.70869275",
       "actual": "319.7086927510000000",
       "error": null
     },
     {
-      "line": 449,
+      "line": 446,
       "formula": "456.72670393 * 0.70000000",
       "expected": "319.70869275",
       "actual": "319.7086927510000000",
       "error": null
     },
     {
-      "line": 469,
+      "line": 466,
       "formula": "456.72670393 * 0.50000000",
       "expected": "228.36335196",
       "actual": "228.3633519650000000",
       "error": null
     },
     {
-      "line": 474,
+      "line": 471,
       "formula": "456.72670393 * 0.50000000",
       "expected": "228.36335196",
       "actual": "228.3633519650000000",
       "error": null
     },
     {
-      "line": 474,
+      "line": 471,
       "formula": "456.72670393 * 0.50000000",
       "expected": "228.36335196",
       "actual": "228.3633519650000000",
       "error": null
     },
     {
-      "line": 479,
+      "line": 476,
       "formula": "281.06258702 * 0.50000000",
       "expected": "140.53129351",
       "actual": "140.5312935100000000",
       "error": null
     },
     {
-      "line": 484,
+      "line": 481,
       "formula": "281.06258702 * 0.50000000",
       "expected": "140.53129351",
       "actual": "140.5312935100000000",
       "error": null
     },
     {
-      "line": 484,
+      "line": 481,
       "formula": "281.06258702 * 0.50000000",
       "expected": "140.53129351",
       "actual": "140.5312935100000000",
       "error": null
     },
     {
-      "line": 876,
+      "line": 873,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 881,
+      "line": 878,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 881,
+      "line": 878,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 886,
+      "line": 883,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 891,
+      "line": 888,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 891,
+      "line": 888,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 908,
+      "line": 905,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 913,
+      "line": 910,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 913,
+      "line": 910,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 918,
+      "line": 915,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 923,
+      "line": 920,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 923,
+      "line": 920,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 940,
+      "line": 937,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 945,
+      "line": 942,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 945,
+      "line": 942,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 950,
+      "line": 947,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 955,
+      "line": 952,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 955,
+      "line": 952,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 972,
+      "line": 969,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 977,
+      "line": 974,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 977,
+      "line": 974,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 982,
+      "line": 979,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 987,
+      "line": 984,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 987,
+      "line": 984,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 1004,
+      "line": 1001,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 1009,
+      "line": 1006,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 1009,
+      "line": 1006,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 1014,
+      "line": 1011,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 1019,
+      "line": 1016,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 1019,
+      "line": 1016,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 1036,
+      "line": 1033,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1041,
+      "line": 1038,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1041,
+      "line": 1038,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1046,
+      "line": 1043,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1051,
+      "line": 1048,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1051,
+      "line": 1048,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1068,
+      "line": 1065,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1073,
+      "line": 1070,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1073,
+      "line": 1070,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1078,
+      "line": 1075,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1083,
+      "line": 1080,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1083,
+      "line": 1080,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1100,
+      "line": 1097,
       "formula": "615.38461538 * 0.90000000",
       "expected": "553.84615384",
       "actual": "553.8461538420000000",
       "error": null
     },
     {
-      "line": 1105,
+      "line": 1102,
       "formula": "615.38461538 * 0.90000000",
       "expected": "553.84615384",
       "actual": "553.8461538420000000",
       "error": null
     },
     {
-      "line": 1105,
+      "line": 1102,
       "formula": "615.38461538 * 0.90000000",
       "expected": "553.84615384",
       "actual": "553.8461538420000000",
       "error": null
     },
     {
-      "line": 1110,
+      "line": 1107,
       "formula": "589.08612750 * 0.90000000",
       "expected": "530.17751475",
       "actual": "530.1775147500000000",
       "error": null
     },
     {
-      "line": 1115,
+      "line": 1112,
       "formula": "589.08612750 * 0.90000000",
       "expected": "530.17751475",
       "actual": "530.1775147500000000",
       "error": null
     },
     {
-      "line": 1115,
+      "line": 1112,
       "formula": "589.08612750 * 0.90000000",
       "expected": "530.17751475",
       "actual": "530.1775147500000000",
       "error": null
     },
     {
-      "line": 1135,
+      "line": 1132,
       "formula": "589.08612750 * 0.70000000",
       "expected": "412.36028925",
       "actual": "412.3602892500000000",
       "error": null
     },
     {
-      "line": 1140,
+      "line": 1137,
       "formula": "589.08612750 * 0.70000000",
       "expected": "412.36028925",
       "actual": "412.3602892500000000",
       "error": null
     },
     {
-      "line": 1140,
+      "line": 1137,
       "formula": "589.08612750 * 0.70000000",
       "expected": "412.36028925",
       "actual": "412.3602892500000000",
       "error": null
     },
     {
-      "line": 1145,
+      "line": 1142,
       "formula": "456.72670393 * 0.70000000",
       "expected": "319.70869275",
       "actual": "319.7086927510000000",
       "error": null
     },
     {
-      "line": 1150,
+      "line": 1147,
       "formula": "456.72670393 * 0.70000000",
       "expected": "319.70869275",
       "actual": "319.7086927510000000",
       "error": null
     },
     {
-      "line": 1150,
+      "line": 1147,
       "formula": "456.72670393 * 0.70000000",
       "expected": "319.70869275",
       "actual": "319.7086927510000000",
       "error": null
     },
     {
-      "line": 1170,
+      "line": 1167,
       "formula": "456.72670393 * 0.50000000",
       "expected": "228.36335196",
       "actual": "228.3633519650000000",
       "error": null
     },
     {
-      "line": 1175,
+      "line": 1172,
       "formula": "456.72670393 * 0.50000000",
       "expected": "228.36335196",
       "actual": "228.3633519650000000",
       "error": null
     },
     {
-      "line": 1175,
+      "line": 1172,
       "formula": "456.72670393 * 0.50000000",
       "expected": "228.36335196",
       "actual": "228.3633519650000000",
       "error": null
     },
     {
-      "line": 1180,
+      "line": 1177,
       "formula": "281.06258702 * 0.50000000",
       "expected": "140.53129351",
       "actual": "140.5312935100000000",
       "error": null
     },
     {
-      "line": 1185,
+      "line": 1182,
       "formula": "281.06258702 * 0.50000000",
       "expected": "140.53129351",
       "actual": "140.5312935100000000",
       "error": null
     },
     {
-      "line": 1185,
+      "line": 1182,
       "formula": "281.06258702 * 0.50000000",
       "expected": "140.53129351",
       "actual": "140.5312935100000000",
       "error": null
     },
     {
-      "line": 1577,
+      "line": 1574,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1582,
+      "line": 1579,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1582,
+      "line": 1579,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1587,
+      "line": 1584,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1592,
+      "line": 1589,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1592,
+      "line": 1589,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1609,
+      "line": 1606,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 1614,
+      "line": 1611,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 1614,
+      "line": 1611,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 1619,
+      "line": 1616,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 1624,
+      "line": 1621,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 1624,
+      "line": 1621,
       "formula": "615.38461538 * 1.20000000",
       "expected": "738.46153845",
       "actual": "738.4615384560000000",
       "error": null
     },
     {
-      "line": 1641,
+      "line": 1638,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1646,
+      "line": 1643,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1646,
+      "line": 1643,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1651,
+      "line": 1648,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1656,
+      "line": 1653,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1656,
+      "line": 1653,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1673,
+      "line": 1670,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 1678,
+      "line": 1675,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 1678,
+      "line": 1675,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 1683,
+      "line": 1680,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 1688,
+      "line": 1685,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 1688,
+      "line": 1685,
       "formula": "615.38461538 * 1.40000000",
       "expected": "861.53846153",
       "actual": "861.5384615320000000",
       "error": null
     },
     {
-      "line": 1705,
+      "line": 1702,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 1710,
+      "line": 1707,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 1710,
+      "line": 1707,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 1715,
+      "line": 1712,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 1720,
+      "line": 1717,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 1720,
+      "line": 1717,
       "formula": "615.38461538 * 1.50000000",
       "expected": "923.07692307",
       "actual": "923.0769230700000000",
       "error": null
     },
     {
-      "line": 1737,
+      "line": 1734,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1742,
+      "line": 1739,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1742,
+      "line": 1739,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1747,
+      "line": 1744,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1752,
+      "line": 1749,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1752,
+      "line": 1749,
       "formula": "615.38461538 * 1.30000000",
       "expected": "799.99999999",
       "actual": "799.9999999940000000",
       "error": null
     },
     {
-      "line": 1769,
+      "line": 1766,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1774,
+      "line": 1771,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1774,
+      "line": 1771,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1779,
+      "line": 1776,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1784,
+      "line": 1781,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1784,
+      "line": 1781,
       "formula": "615.38461538 * 1.10000000",
       "expected": "676.92307691",
       "actual": "676.9230769180000000",
       "error": null
     },
     {
-      "line": 1801,
+      "line": 1798,
       "formula": "615.38461538 * 0.90000000",
       "expected": "553.84615384",
       "actual": "553.8461538420000000",
       "error": null
     },
     {
-      "line": 1806,
+      "line": 1803,
       "formula": "615.38461538 * 0.90000000",
       "expected": "553.84615384",
       "actual": "553.8461538420000000",
       "error": null
     },
     {
-      "line": 1806,
+      "line": 1803,
       "formula": "615.38461538 * 0.90000000",
       "expected": "553.84615384",
       "actual": "553.8461538420000000",
       "error": null
     },
     {
-      "line": 1811,
+      "line": 1808,
       "formula": "589.08612750 * 0.90000000",
       "expected": "530.17751475",
       "actual": "530.1775147500000000",
       "error": null
     },
     {
-      "line": 1816,
+      "line": 1813,
       "formula": "589.08612750 * 0.90000000",
       "expected": "530.17751475",
       "actual": "530.1775147500000000",
       "error": null
     },
     {
-      "line": 1816,
+      "line": 1813,
       "formula": "589.08612750 * 0.90000000",
       "expected": "530.17751475",
       "actual": "530.1775147500000000",
       "error": null
     },
     {
-      "line": 1836,
+      "line": 1833,
       "formula": "589.08612750 * 0.70000000",
       "expected": "412.36028925",
       "actual": "412.3602892500000000",
       "error": null
     },
     {
-      "line": 1841,
+      "line": 1838,
       "formula": "589.08612750 * 0.70000000",
       "expected": "412.36028925",
       "actual": "412.3602892500000000",
       "error": null
     },
     {
-      "line": 1841,
+      "line": 1838,
       "formula": "589.08612750 * 0.70000000",
       "expected": "412.36028925",
       "actual": "412.3602892500000000",
       "error": null
     },
     {
-      "line": 1846,
+      "line": 1843,
       "formula": "456.72670393 * 0.70000000",
       "expected": "319.70869275",
       "actual": "319.7086927510000000",
       "error": null
     },
     {
-      "line": 1851,
+      "line": 1848,
       "formula": "456.72670393 * 0.70000000",
       "expected": "319.70869275",
       "actual": "319.7086927510000000",
       "error": null
     },
     {
-      "line": 1851,
+      "line": 1848,
       "formula": "456.72670393 * 0.70000000",
       "expected": "319.70869275",
       "actual": "319.7086927510000000",
       "error": null
     },
     {
-      "line": 1871,
+      "line": 1868,
       "formula": "456.72670393 * 0.50000000",
       "expected": "228.36335196",
       "actual": "228.3633519650000000",
       "error": null
     },
     {
-      "line": 1876,
+      "line": 1873,
       "formula": "456.72670393 * 0.50000000",
       "expected": "228.36335196",
       "actual": "228.3633519650000000",
       "error": null
     },
     {
-      "line": 1876,
+      "line": 1873,
       "formula": "456.72670393 * 0.50000000",
       "expected": "228.36335196",
       "actual": "228.3633519650000000",
       "error": null
     },
     {
-      "line": 1881,
+      "line": 1878,
       "formula": "281.06258702 * 0.50000000",
       "expected": "140.53129351",
       "actual": "140.5312935100000000",
       "error": null
     },
     {
-      "line": 1886,
+      "line": 1883,
       "formula": "281.06258702 * 0.50000000",
       "expected": "140.53129351",
       "actual": "140.5312935100000000",
       "error": null
     },
     {
-      "line": 1886,
+      "line": 1883,
       "formula": "281.06258702 * 0.50000000",
       "expected": "140.53129351",
       "actual": "140.5312935100000000",
@@ -1307,729 +1307,849 @@
   ],
   "price_updates": [
     {
-      "line": 14,
+      "line": 11,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 21,
+      "line": 18,
       "token": "MOET",
       "price": "1.00000000"
     },
     {
-      "line": 35,
+      "line": 32,
       "token": "FLOW",
       "price": "0.50000000"
     },
     {
-      "line": 56,
+      "line": 53,
       "token": "FLOW",
       "price": "0.10000000"
     },
     {
-      "line": 77,
+      "line": 74,
       "token": "FLOW",
       "price": "2.00000000"
     },
     {
-      "line": 98,
+      "line": 95,
       "token": "FLOW",
       "price": "5.00000000"
     },
     {
-      "line": 119,
+      "line": 116,
       "token": "FLOW",
       "price": "0.25000000"
     },
     {
-      "line": 140,
+      "line": 137,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 168,
+      "line": 165,
       "token": "YieldToken",
       "price": "1.10000000"
     },
     {
-      "line": 200,
+      "line": 197,
       "token": "YieldToken",
       "price": "1.20000000"
     },
     {
-      "line": 232,
+      "line": 229,
       "token": "YieldToken",
       "price": "1.30000000"
     },
     {
-      "line": 264,
+      "line": 261,
       "token": "YieldToken",
       "price": "1.40000000"
     },
     {
-      "line": 296,
+      "line": 293,
       "token": "YieldToken",
       "price": "1.50000000"
     },
     {
-      "line": 328,
+      "line": 325,
       "token": "YieldToken",
       "price": "1.30000000"
     },
     {
-      "line": 360,
+      "line": 357,
       "token": "YieldToken",
       "price": "1.10000000"
     },
     {
-      "line": 392,
+      "line": 389,
       "token": "YieldToken",
       "price": "0.90000000"
     },
     {
-      "line": 427,
+      "line": 424,
       "token": "YieldToken",
       "price": "0.70000000"
     },
     {
-      "line": 462,
+      "line": 459,
       "token": "YieldToken",
       "price": "0.50000000"
     },
     {
-      "line": 497,
+      "line": 494,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 504,
+      "line": 501,
       "token": "MOET",
       "price": "1.00000000"
     },
     {
-      "line": 518,
+      "line": 515,
       "token": "FLOW",
       "price": "1.50000000"
     },
     {
-      "line": 539,
+      "line": 536,
       "token": "FLOW",
       "price": "0.70000000"
     },
     {
-      "line": 560,
+      "line": 557,
       "token": "FLOW",
       "price": "1.80000000"
     },
     {
-      "line": 581,
+      "line": 578,
       "token": "FLOW",
       "price": "0.40000000"
     },
     {
-      "line": 602,
+      "line": 599,
       "token": "FLOW",
       "price": "1.20000000"
     },
     {
-      "line": 623,
+      "line": 620,
       "token": "FLOW",
       "price": "0.90000000"
     },
     {
-      "line": 644,
+      "line": 641,
       "token": "FLOW",
       "price": "2.50000000"
     },
     {
-      "line": 665,
+      "line": 662,
       "token": "FLOW",
       "price": "0.30000000"
     },
     {
-      "line": 686,
+      "line": 683,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 715,
+      "line": 712,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 722,
+      "line": 719,
       "token": "MOET",
       "price": "1.00000000"
     },
     {
-      "line": 736,
+      "line": 733,
       "token": "FLOW",
       "price": "0.50000000"
     },
     {
-      "line": 757,
+      "line": 754,
       "token": "FLOW",
       "price": "0.10000000"
     },
     {
-      "line": 778,
+      "line": 775,
       "token": "FLOW",
       "price": "2.00000000"
     },
     {
-      "line": 799,
+      "line": 796,
       "token": "FLOW",
       "price": "5.00000000"
     },
     {
-      "line": 820,
+      "line": 817,
       "token": "FLOW",
       "price": "0.25000000"
     },
     {
-      "line": 841,
+      "line": 838,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 869,
+      "line": 866,
       "token": "YieldToken",
       "price": "1.10000000"
     },
     {
-      "line": 901,
+      "line": 898,
       "token": "YieldToken",
       "price": "1.20000000"
     },
     {
-      "line": 933,
+      "line": 930,
       "token": "YieldToken",
       "price": "1.30000000"
     },
     {
-      "line": 965,
+      "line": 962,
       "token": "YieldToken",
       "price": "1.40000000"
     },
     {
-      "line": 997,
+      "line": 994,
       "token": "YieldToken",
       "price": "1.50000000"
     },
     {
-      "line": 1029,
+      "line": 1026,
       "token": "YieldToken",
       "price": "1.30000000"
     },
     {
-      "line": 1061,
+      "line": 1058,
       "token": "YieldToken",
       "price": "1.10000000"
     },
     {
-      "line": 1093,
+      "line": 1090,
       "token": "YieldToken",
       "price": "0.90000000"
     },
     {
-      "line": 1128,
+      "line": 1125,
       "token": "YieldToken",
       "price": "0.70000000"
     },
     {
-      "line": 1163,
+      "line": 1160,
       "token": "YieldToken",
       "price": "0.50000000"
     },
     {
-      "line": 1198,
+      "line": 1195,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 1205,
+      "line": 1202,
       "token": "MOET",
       "price": "1.00000000"
     },
     {
-      "line": 1219,
+      "line": 1216,
       "token": "FLOW",
       "price": "1.50000000"
     },
     {
-      "line": 1240,
+      "line": 1237,
       "token": "FLOW",
       "price": "0.70000000"
     },
     {
-      "line": 1261,
+      "line": 1258,
       "token": "FLOW",
       "price": "1.80000000"
     },
     {
-      "line": 1282,
+      "line": 1279,
       "token": "FLOW",
       "price": "0.40000000"
     },
     {
-      "line": 1303,
+      "line": 1300,
       "token": "FLOW",
       "price": "1.20000000"
     },
     {
-      "line": 1324,
+      "line": 1321,
       "token": "FLOW",
       "price": "0.90000000"
     },
     {
-      "line": 1345,
+      "line": 1342,
       "token": "FLOW",
       "price": "2.50000000"
     },
     {
-      "line": 1366,
+      "line": 1363,
       "token": "FLOW",
       "price": "0.30000000"
     },
     {
-      "line": 1387,
+      "line": 1384,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 1416,
+      "line": 1413,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 1423,
+      "line": 1420,
       "token": "MOET",
       "price": "1.00000000"
     },
     {
-      "line": 1437,
+      "line": 1434,
       "token": "FLOW",
       "price": "0.50000000"
     },
     {
-      "line": 1458,
+      "line": 1455,
       "token": "FLOW",
       "price": "0.10000000"
     },
     {
-      "line": 1479,
+      "line": 1476,
       "token": "FLOW",
       "price": "2.00000000"
     },
     {
-      "line": 1500,
+      "line": 1497,
       "token": "FLOW",
       "price": "5.00000000"
     },
     {
-      "line": 1521,
+      "line": 1518,
       "token": "FLOW",
       "price": "0.25000000"
     },
     {
-      "line": 1542,
+      "line": 1539,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 1570,
+      "line": 1567,
       "token": "YieldToken",
       "price": "1.10000000"
     },
     {
-      "line": 1602,
+      "line": 1599,
       "token": "YieldToken",
       "price": "1.20000000"
     },
     {
-      "line": 1634,
+      "line": 1631,
       "token": "YieldToken",
       "price": "1.30000000"
     },
     {
-      "line": 1666,
+      "line": 1663,
       "token": "YieldToken",
       "price": "1.40000000"
     },
     {
-      "line": 1698,
+      "line": 1695,
       "token": "YieldToken",
       "price": "1.50000000"
     },
     {
-      "line": 1730,
+      "line": 1727,
       "token": "YieldToken",
       "price": "1.30000000"
     },
     {
-      "line": 1762,
+      "line": 1759,
       "token": "YieldToken",
       "price": "1.10000000"
     },
     {
-      "line": 1794,
+      "line": 1791,
       "token": "YieldToken",
       "price": "0.90000000"
     },
     {
-      "line": 1829,
+      "line": 1826,
       "token": "YieldToken",
       "price": "0.70000000"
     },
     {
-      "line": 1864,
+      "line": 1861,
       "token": "YieldToken",
       "price": "0.50000000"
     },
     {
-      "line": 1899,
+      "line": 1896,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 1906,
+      "line": 1903,
       "token": "MOET",
       "price": "1.00000000"
     },
     {
-      "line": 1920,
+      "line": 1917,
       "token": "FLOW",
       "price": "1.50000000"
     },
     {
-      "line": 1941,
+      "line": 1938,
       "token": "FLOW",
       "price": "0.70000000"
     },
     {
-      "line": 1962,
+      "line": 1959,
       "token": "FLOW",
       "price": "1.80000000"
     },
     {
-      "line": 1983,
+      "line": 1980,
       "token": "FLOW",
       "price": "0.40000000"
     },
     {
-      "line": 2004,
+      "line": 2001,
       "token": "FLOW",
       "price": "1.20000000"
     },
     {
-      "line": 2025,
+      "line": 2022,
       "token": "FLOW",
       "price": "0.90000000"
     },
     {
-      "line": 2046,
+      "line": 2043,
       "token": "FLOW",
       "price": "2.50000000"
     },
     {
-      "line": 2067,
+      "line": 2064,
       "token": "FLOW",
       "price": "0.30000000"
     },
     {
-      "line": 2088,
+      "line": 2085,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 2118,
+      "line": 2115,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 2125,
+      "line": 2122,
       "token": "MOET",
       "price": "1.00000000"
     },
     {
-      "line": 2160,
+      "line": 2157,
       "token": "FLOW",
       "price": "1E-8"
     },
     {
-      "line": 2181,
+      "line": 2178,
       "token": "FLOW",
       "price": "1000.00000000"
     },
     {
-      "line": 2216,
+      "line": 2213,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 2223,
+      "line": 2220,
       "token": "MOET",
       "price": "1.00000000"
     },
     {
-      "line": 2237,
+      "line": 2234,
       "token": "FLOW",
       "price": "0.00100000"
     },
     {
-      "line": 2258,
+      "line": 2255,
       "token": "FLOW",
       "price": "10.00000000"
     },
     {
-      "line": 2279,
+      "line": 2276,
       "token": "FLOW",
       "price": "100.00000000"
     },
     {
-      "line": 2300,
+      "line": 2297,
       "token": "FLOW",
       "price": "500.00000000"
     },
     {
-      "line": 2335,
+      "line": 2332,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 2342,
+      "line": 2339,
       "token": "MOET",
       "price": "1.00000000"
     },
     {
-      "line": 2356,
+      "line": 2353,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 2377,
+      "line": 2374,
       "token": "FLOW",
       "price": "2.00000000"
     },
     {
-      "line": 2398,
+      "line": 2395,
       "token": "FLOW",
       "price": "0.50000000"
     },
     {
-      "line": 2419,
+      "line": 2416,
       "token": "FLOW",
       "price": "3.00000000"
     },
     {
-      "line": 2440,
+      "line": 2437,
       "token": "FLOW",
       "price": "0.30000000"
     },
     {
-      "line": 2461,
+      "line": 2458,
       "token": "FLOW",
       "price": "1.50000000"
     },
     {
-      "line": 2482,
+      "line": 2479,
       "token": "FLOW",
       "price": "0.80000000"
     },
     {
-      "line": 2503,
+      "line": 2500,
       "token": "FLOW",
       "price": "2.50000000"
     },
     {
-      "line": 2524,
+      "line": 2521,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 2559,
+      "line": 2556,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 2566,
+      "line": 2563,
       "token": "MOET",
       "price": "1.00000000"
     },
     {
-      "line": 2580,
+      "line": 2577,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 2601,
+      "line": 2598,
       "token": "FLOW",
       "price": "0.05000000"
     },
     {
-      "line": 2622,
+      "line": 2619,
       "token": "FLOW",
       "price": "0.01000000"
     },
     {
-      "line": 2643,
+      "line": 2640,
       "token": "FLOW",
       "price": "0.50000000"
     },
     {
-      "line": 2664,
+      "line": 2661,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 2685,
+      "line": 2682,
       "token": "FLOW",
       "price": "1.50000000"
     },
     {
-      "line": 2720,
+      "line": 2717,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 2727,
+      "line": 2724,
       "token": "MOET",
       "price": "1.00000000"
     },
     {
-      "line": 2740,
+      "line": 2737,
       "token": "MOET",
       "price": "0.50000000"
     },
     {
-      "line": 2755,
+      "line": 2752,
       "token": "FLOW",
       "price": "0.50000000"
     },
     {
-      "line": 2770,
+      "line": 2767,
       "token": "MOET",
       "price": "0.10000000"
     },
     {
-      "line": 2798,
+      "line": 2795,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 2805,
+      "line": 2802,
       "token": "MOET",
       "price": "1.00000000"
     },
     {
-      "line": 2821,
+      "line": 2818,
       "token": "FLOW",
       "price": "0.80000000"
     },
     {
-      "line": 2834,
+      "line": 2831,
       "token": "FLOW",
       "price": "1.20000000"
     },
     {
-      "line": 2845,
+      "line": 2842,
       "token": "FLOW",
       "price": "0.90000000"
     },
     {
-      "line": 2858,
+      "line": 2855,
       "token": "FLOW",
       "price": "1.10000000"
     },
     {
-      "line": 2869,
+      "line": 2866,
       "token": "FLOW",
       "price": "0.70000000"
     },
     {
-      "line": 2882,
+      "line": 2879,
       "token": "FLOW",
       "price": "1.30000000"
     },
     {
-      "line": 2930,
+      "line": 2927,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 2937,
+      "line": 2934,
       "token": "YieldToken",
       "price": "1.00000000"
     },
     {
-      "line": 2963,
+      "line": 2960,
       "token": "FLOW",
       "price": "0.50000000"
     },
     {
-      "line": 2970,
+      "line": 2967,
       "token": "YieldToken",
       "price": "1.20000000"
     },
     {
-      "line": 2996,
+      "line": 2993,
       "token": "FLOW",
       "price": "1.50000000"
     },
     {
-      "line": 3003,
+      "line": 3000,
       "token": "YieldToken",
       "price": "0.80000000"
     },
     {
-      "line": 3029,
+      "line": 3026,
       "token": "FLOW",
       "price": "0.30000000"
     },
     {
-      "line": 3036,
+      "line": 3033,
       "token": "YieldToken",
       "price": "0.50000000"
     },
     {
-      "line": 3064,
+      "line": 3061,
       "token": "FLOW",
       "price": "2.00000000"
     },
     {
-      "line": 3071,
+      "line": 3068,
       "token": "YieldToken",
       "price": "2.00000000"
     },
     {
-      "line": 3097,
+      "line": 3094,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 3104,
+      "line": 3101,
       "token": "YieldToken",
       "price": "0.10000000"
     },
     {
-      "line": 3130,
+      "line": 3127,
       "token": "FLOW",
       "price": "0.10000000"
     },
     {
-      "line": 3137,
+      "line": 3134,
       "token": "YieldToken",
       "price": "1.00000000"
     },
     {
-      "line": 3165,
+      "line": 3162,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 3172,
+      "line": 3169,
       "token": "YieldToken",
       "price": "1.00000000"
+    },
+    {
+      "line": 3227,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3234,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3260,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 3267,
+      "token": "YieldToken",
+      "price": "2.00000000"
+    },
+    {
+      "line": 3293,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 3300,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 3326,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 3333,
+      "token": "YieldToken",
+      "price": "3.00000000"
+    },
+    {
+      "line": 3359,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 3366,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 3392,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 3399,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 3465,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3472,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3498,
+      "token": "FLOW",
+      "price": "1.10000000"
+    },
+    {
+      "line": 3505,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3531,
+      "token": "FLOW",
+      "price": "0.90000000"
+    },
+    {
+      "line": 3538,
+      "token": "YieldToken",
+      "price": "1.50000000"
+    },
+    {
+      "line": 3564,
+      "token": "FLOW",
+      "price": "1.20000000"
+    },
+    {
+      "line": 3571,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 3597,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 3604,
+      "token": "YieldToken",
+      "price": "2.00000000"
+    },
+    {
+      "line": 3630,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3637,
+      "token": "YieldToken",
+      "price": "0.50000000"
     }
   ]
 }

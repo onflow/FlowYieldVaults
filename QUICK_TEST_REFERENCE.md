@@ -33,6 +33,22 @@ python3 verification_results/run_price_test.py --prices 1,0.05,0.01,0.5,1,1.5 --
 python3 verification_results/run_price_test.py --prices 1,2,0.5,3,0.3,1.5,0.8,2.5,1 --descriptions "Start,2x,Drop50%,3x,Crash70%,Recover1.5x,Drop20%,2.5x,Stabilize" --name "Rapid Oscillations" --type auto-borrow
 ```
 
+### Mixed Price Scenarios (NEW!)
+```bash
+# Default mixed scenario (FLOW and YieldToken move independently)
+python3 verification_results/run_mixed_test.py --scenario default
+
+# Inverse correlation
+python3 verification_results/run_mixed_test.py --scenario inverse
+
+# Custom mixed prices
+python3 verification_results/run_mixed_test.py \
+  --flow-prices 1.0,0.5,0.1 \
+  --yield-prices 1.0,2.0,3.0 \
+  --descriptions "Start,Diverge,Maximum" \
+  --name "Custom Divergence"
+```
+
 ### Special Tests
 ```bash
 # MOET depeg
@@ -57,6 +73,11 @@ python3 verification_results/run_price_test.py --scenario extreme --type auto-bo
 python3 verification_results/run_price_test.py --scenario extreme --type auto-balancer
 ```
 
+### Both with Different Prices
+```bash
+python3 verification_results/run_mixed_test.py --scenario default
+```
+
 ## 📊 Expected Results
 
 - **Coverage**: ~75.5% for preset scenarios
@@ -77,10 +98,20 @@ python3 verification_results/run_price_test.py --scenario extreme --type auto-ba
 
 ## 💡 Custom Test Template
 
+### Single Token Price Test
 ```bash
 python3 verification_results/run_price_test.py \
   --prices 1.0,0.5,2.0,1.0 \
   --descriptions "Start,Drop50%,Double,Recover" \
   --name "My Custom Test" \
   --type all
+```
+
+### Mixed Token Price Test
+```bash
+python3 verification_results/run_mixed_test.py \
+  --flow-prices 1.0,0.5,2.0,1.0 \
+  --yield-prices 1.0,1.2,0.8,1.0 \
+  --descriptions "Start,Diverge,Cross,Converge" \
+  --name "My Mixed Test"
 ``` 

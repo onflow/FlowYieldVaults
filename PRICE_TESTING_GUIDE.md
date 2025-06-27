@@ -65,6 +65,75 @@ python3 verification_results/run_price_test.py \
   --name "Flash Crash Event"
 ```
 
+## Mixed Price Testing (New!)
+
+For testing scenarios where FLOW and YieldToken prices move independently, use the `run_mixed_test.py` script:
+
+### Basic Usage
+
+```bash
+# Show help
+python3 verification_results/run_mixed_test.py --help
+
+# Run preset mixed scenario
+python3 verification_results/run_mixed_test.py --scenario default
+
+# Custom mixed prices
+python3 verification_results/run_mixed_test.py \
+  --flow-prices 1.0,0.5,2.0 \
+  --yield-prices 1.0,1.5,0.8 \
+  --descriptions "Baseline,Divergence,Convergence" \
+  --name "Custom Mixed Test"
+```
+
+### Mixed Preset Scenarios
+
+The mixed test runner includes three preset scenarios:
+
+1. **Default** (`--scenario default`)
+   - Tests various correlations including inverse moves and both assets crashing/mooning together
+   - Flow prices: [1.0, 0.5, 1.5, 0.3, 2.0, 1.0, 0.1, 1.0]
+   - Yield prices: [1.0, 1.2, 0.8, 0.5, 2.0, 0.1, 1.0, 1.0]
+
+2. **Inverse** (`--scenario inverse`)
+   - Tests inverse correlation where assets move opposite to each other
+   - Flow prices: [1.0, 0.5, 2.0, 0.3, 1.5, 0.8]
+   - Yield prices: [1.0, 2.0, 0.5, 3.0, 0.7, 1.2]
+
+3. **Decorrelated** (`--scenario decorrelated`)
+   - Tests decorrelated movements where one asset is stable while the other moves
+   - Flow prices: [1.0, 1.1, 0.9, 1.2, 0.8, 1.0]
+   - Yield prices: [1.0, 1.0, 1.5, 0.7, 2.0, 0.5]
+
+### Example Mixed Scenarios
+
+```bash
+# Test inverse correlation
+python3 verification_results/run_mixed_test.py --scenario inverse
+
+# Test decorrelated movements
+python3 verification_results/run_mixed_test.py --scenario decorrelated
+
+# Custom scenario: FLOW crash while Yield moons
+python3 verification_results/run_mixed_test.py \
+  --flow-prices 1.0,0.8,0.5,0.3,0.1 \
+  --yield-prices 1.0,1.2,1.5,2.0,3.0 \
+  --descriptions "Start,Divergence begins,Significant divergence,Extreme divergence,Maximum divergence" \
+  --name "FLOW Crash Yield Moon"
+```
+
+### Mixed Test Output
+
+The mixed test shows how both systems interact:
+- Auto-borrow position health changes with FLOW price
+- Auto-balancer YieldToken balance adjusts based on YieldToken price
+- Both systems are tested simultaneously to see interaction effects
+
+Key observations from mixed testing:
+- When both assets crash, the auto-balancer can be completely wiped out
+- YieldToken price crashes can actually improve borrow positions (cheaper debt repayment)
+- The systems can have complex interactions during extreme market conditions
+
 ## Test Output
 
 The enhanced logging provides:
@@ -123,6 +192,7 @@ flow test --cover ./cadence/tests/price_scenario_test.cdc
 3. **Vary Speed**: Test both gradual and sudden price changes
 4. **Check Recovery**: Always test how the protocol recovers from extreme conditions
 5. **Monitor Health**: Pay attention to position health ratios staying within bounds
+6. **Test Mixed Scenarios**: Use `run_mixed_test.py` to test realistic market conditions where assets move independently
 
 ## Comprehensive Test Commands Used
 
@@ -213,6 +283,15 @@ flow test --cover cadence/tests/moet_depeg_test.cdc
 flow test --cover cadence/tests/concurrent_rebalance_test.cdc
 ```
 
+#### Mixed Scenario Test
+```bash
+# Tests: Both auto-borrow and auto-balancer with different price movements
+flow test --cover cadence/tests/mixed_scenario_test.cdc
+
+# Or use the mixed test runner for custom scenarios
+python3 verification_results/run_mixed_test.py --scenario default
+```
+
 ### Create Your Own Test Suite Script
 
 Save this as `run_all_tests.sh`:
@@ -237,6 +316,9 @@ flow test --cover cadence/tests/moet_depeg_test.cdc
 
 echo -e "\n6. Testing concurrent rebalancing..."
 flow test --cover cadence/tests/concurrent_rebalance_test.cdc
+
+echo -e "\n7. Testing mixed scenario..."
+python3 verification_results/run_mixed_test.py --scenario default
 
 echo -e "\nAll tests completed!"
 ```
