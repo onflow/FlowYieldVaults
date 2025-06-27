@@ -124,28 +124,124 @@ flow test --cover ./cadence/tests/price_scenario_test.cdc
 4. **Check Recovery**: Always test how the protocol recovers from extreme conditions
 5. **Monitor Health**: Pay attention to position health ratios staying within bounds
 
-## Example Test Scenarios
+## Comprehensive Test Commands Used
 
-### Market Crash and Recovery
+### Quick Start: Run All Preset Scenarios
 ```bash
-python3 run_price_test.py \
-  --prices 1.0,0.9,0.7,0.5,0.3,0.1,0.3,0.5,0.7,0.9,1.0 \
-  --name "Market Crash and Recovery"
+# This runs extreme, gradual, and volatile scenarios (75.5% coverage achieved)
+./run_price_scenarios.sh --scenario all
 ```
 
-### Bull Market
+### Edge Case Testing
+
+#### Zero/Micro/Extreme Prices
 ```bash
-python3 run_price_test.py \
-  --prices 1.0,1.2,1.5,2.0,3.0,5.0,4.0,3.5,3.0 \
-  --name "Bull Market Run"
+# Tests: Zero price → full unwind, micro prices, and extreme high prices
+python3 run_price_test.py --prices 0,0.00000001,1000 \
+                         --descriptions "Zero,Micro,VeryHigh" \
+                         --name "Edge Prices" \
+                         --type auto-borrow
 ```
 
-### Stablecoin Depeg
+#### Price Extremes (Safe Range)
 ```bash
-python3 run_price_test.py \
-  --prices 1.0,0.99,0.95,0.90,0.85,0.90,0.95,0.99,1.0 \
-  --name "Stablecoin Depeg Event"
+# Tests: 0.001 to 500x price movements
+python3 run_price_test.py --prices 0.001,10,100,500 \
+                         --descriptions "VeryLow,10x,100x,500x" \
+                         --name "Price Extremes" \
+                         --type auto-borrow
 ```
+
+### Market Scenario Testing
+
+#### Rapid Oscillations
+```bash
+# Tests: 9 rapid price swings to check position degradation
+python3 run_price_test.py --prices 1,2,0.5,3,0.3,1.5,0.8,2.5,1 \
+                         --descriptions "Start,2x,Drop50%,3x,Crash70%,Recover1.5x,Drop20%,2.5x,Stabilize" \
+                         --name "Rapid Oscillations" \
+                         --type auto-borrow
+```
+
+#### Black Swan Event
+```bash
+# Tests: 99% crash and recovery, health drops to 0.014
+python3 run_price_test.py --prices 1,0.05,0.01,0.5,1,1.5 \
+                         --descriptions "Normal,Crash95%,Crash99%,Recovery50%,FullRecovery,Overshoot" \
+                         --name "Black Swan Event" \
+                         --type auto-borrow
+```
+
+#### Market Crash and Recovery
+```bash
+# Tests: Progressive crash to 90% drop and recovery
+python3 run_price_test.py --prices 1.0,0.8,0.5,0.3,0.1,0.5,1.0 \
+                         --descriptions "Normal,Drop20%,Drop50%,Drop70%,Drop90%,Recovery50%,FullRecovery" \
+                         --name "Market Crash and Recovery" \
+                         --type auto-borrow
+```
+
+#### Bull Market Run
+```bash
+# Tests: Price increases up to 5x with corrections
+python3 run_price_test.py --prices 1.0,1.5,2.0,3.0,5.0,4.0,3.0,2.0 \
+                         --descriptions "Start,+50%,2x,3x,5x,Correction20%,Correction40%,Stabilize2x" \
+                         --name "Bull Market Run" \
+                         --type auto-balancer
+```
+
+#### Stablecoin Depeg
+```bash
+# Tests: Gradual depeg to 20% off and recovery
+python3 run_price_test.py --prices 1.0,0.99,0.95,0.90,0.80,0.95,1.0 \
+                         --descriptions "Pegged,Slight,5%Off,10%Off,20%Off,Recovering,Repegged" \
+                         --name "Stablecoin Depeg Event" \
+                         --type all
+```
+
+### Special Test Files
+
+#### MOET Depeg Test
+```bash
+# Tests: Unit of account (MOET) losing peg while collateral changes
+flow test --cover cadence/tests/moet_depeg_test.cdc
+```
+
+#### Concurrent Rebalancing Test
+```bash
+# Tests: Rapid price changes with double rebalancing attempts
+flow test --cover cadence/tests/concurrent_rebalance_test.cdc
+```
+
+### Create Your Own Test Suite Script
+
+Save this as `run_all_tests.sh`:
+```bash
+#!/bin/bash
+echo "Running comprehensive Tidal Protocol test suite..."
+
+echo -e "\n1. Running all preset scenarios..."
+./run_price_scenarios.sh --scenario all
+
+echo -e "\n2. Testing edge cases..."
+python3 run_price_test.py --prices 0,0.00000001,1000 --descriptions "Zero,Micro,VeryHigh" --name "Edge Prices" --type auto-borrow
+
+echo -e "\n3. Testing rapid oscillations..."
+python3 run_price_test.py --prices 1,2,0.5,3,0.3,1.5,0.8,2.5,1 --descriptions "Start,2x,Drop50%,3x,Crash70%,Recover1.5x,Drop20%,2.5x,Stabilize" --name "Rapid Oscillations" --type auto-borrow
+
+echo -e "\n4. Testing black swan event..."
+python3 run_price_test.py --prices 1,0.05,0.01,0.5,1,1.5 --descriptions "Normal,Crash95%,Crash99%,Recovery50%,FullRecovery,Overshoot" --name "Black Swan Event" --type auto-borrow
+
+echo -e "\n5. Testing MOET depeg..."
+flow test --cover cadence/tests/moet_depeg_test.cdc
+
+echo -e "\n6. Testing concurrent rebalancing..."
+flow test --cover cadence/tests/concurrent_rebalance_test.cdc
+
+echo -e "\nAll tests completed!"
+```
+
+Make it executable: `chmod +x run_all_tests.sh`
 
 ## Troubleshooting
 

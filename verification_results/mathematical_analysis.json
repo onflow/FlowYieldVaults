@@ -1,0 +1,1642 @@
+{
+  "critical_findings": [
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testExtremePriceMovements",
+      "before": "0.65000000",
+      "after": "0.86666666",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testExtremePriceMovements",
+      "before": "0.17333333",
+      "after": "0.19597989",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testExtremePriceMovements",
+      "before": "0.06500000",
+      "after": "0.06824146",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testExtremePriceMovements",
+      "before": "0.27296587",
+      "after": "0.32725200",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testExtremePriceMovements",
+      "before": "0.49087800",
+      "after": "0.64168558",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testExtremePriceMovements",
+      "before": "0.29945327",
+      "after": "0.36398318",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testExtremePriceMovements",
+      "before": "0.26051378",
+      "after": "0.31022297",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testExtremePriceMovements",
+      "before": "0.15600000",
+      "after": "0.17441860",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testExtremePriceMovements",
+      "before": "0.58139534",
+      "after": "0.77232592",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testGradualPriceChanges",
+      "before": "0.65000000",
+      "after": "0.86666666",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testGradualPriceChanges",
+      "before": "0.17333333",
+      "after": "0.19597989",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testGradualPriceChanges",
+      "before": "0.06500000",
+      "after": "0.06824146",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testGradualPriceChanges",
+      "before": "0.27296587",
+      "after": "0.32725200",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testGradualPriceChanges",
+      "before": "0.49087800",
+      "after": "0.64168558",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testGradualPriceChanges",
+      "before": "0.29945327",
+      "after": "0.36398318",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testGradualPriceChanges",
+      "before": "0.26051378",
+      "after": "0.31022297",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testGradualPriceChanges",
+      "before": "0.15600000",
+      "after": "0.17441860",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testGradualPriceChanges",
+      "before": "0.58139534",
+      "after": "0.77232592",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.65000000",
+      "after": "0.86666666",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.17333333",
+      "after": "0.19597989",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.06500000",
+      "after": "0.06824146",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.27296587",
+      "after": "0.32725200",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.49087800",
+      "after": "0.64168558",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.29945327",
+      "after": "0.36398318",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.26051378",
+      "after": "0.31022297",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.15600000",
+      "after": "0.17441860",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.58139534",
+      "after": "0.77232592",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Health from zero",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0E-8",
+      "after": "1.00000000",
+      "issue": "Health changed from zero to non-zero"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0E-8",
+      "after": "1.00000000",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.00130000",
+      "after": "0.00130129",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.32500000",
+      "after": "0.40000000",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.13000000",
+      "after": "0.14285714",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.71428571",
+      "after": "0.94928583",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.50628577",
+      "after": "0.66422424",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.52000000",
+      "after": "0.68421052",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.06500000",
+      "after": "0.06824146",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.01364829",
+      "after": "0.01379156",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.68957835",
+      "after": "0.91830292",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    },
+    {
+      "type": "Ineffective rebalance",
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.65000000",
+      "after": "0.86666666",
+      "issue": "Health still below MIN_HEALTH after rebalance"
+    }
+  ],
+  "rebalance_effects": [
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "0.65000000",
+      "after": "0.86666666",
+      "change": "0.21666666",
+      "flow_price": "0.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0.43333334"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "0.17333333",
+      "after": "0.19597989",
+      "change": "0.02264656",
+      "flow_price": "0.10000000",
+      "direction_improved": true,
+      "distance_from_target": "1.10402011"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "3.91959799",
+      "after": "1.30000000",
+      "change": "-2.61959799",
+      "flow_price": "2.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "3.25000000",
+      "after": "1.30000000",
+      "change": "-1.95000000",
+      "flow_price": "5.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "0.06500000",
+      "after": "0.06824146",
+      "change": "0.00324146",
+      "flow_price": "0.25000000",
+      "direction_improved": true,
+      "distance_from_target": "1.23175854"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "0.27296587",
+      "after": "0.32725200",
+      "change": "0.05428613",
+      "flow_price": "1.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0.97274800"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "0.49087800",
+      "after": "0.64168558",
+      "change": "0.15080758",
+      "flow_price": "1.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0.65831442"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "0.29945327",
+      "after": "0.36398318",
+      "change": "0.06452991",
+      "flow_price": "0.70000000",
+      "direction_improved": true,
+      "distance_from_target": "0.93601682"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "0.93595675",
+      "after": "1.17231202",
+      "change": "0.23635527",
+      "flow_price": "1.80000000",
+      "direction_improved": true,
+      "distance_from_target": "0.12768798"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "0.26051378",
+      "after": "0.31022297",
+      "change": "0.04970919",
+      "flow_price": "0.40000000",
+      "direction_improved": true,
+      "distance_from_target": "0.98977703"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "0.93066891",
+      "after": "1.16828317",
+      "change": "0.23761426",
+      "flow_price": "1.20000000",
+      "direction_improved": true,
+      "distance_from_target": "0.13171683"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "0.87621238",
+      "after": "1.12294708",
+      "change": "0.24673470",
+      "flow_price": "0.90000000",
+      "direction_improved": true,
+      "distance_from_target": "0.17705292"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "3.11929746",
+      "after": "1.30000000",
+      "change": "-1.81929746",
+      "flow_price": "2.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "0.15600000",
+      "after": "0.17441860",
+      "change": "0.01841860",
+      "flow_price": "0.30000000",
+      "direction_improved": true,
+      "distance_from_target": "1.12558140"
+    },
+    {
+      "scenario": "testExtremePriceMovements",
+      "before": "0.58139534",
+      "after": "0.77232592",
+      "change": "0.19093058",
+      "flow_price": "1.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0.52767408"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "0.65000000",
+      "after": "0.86666666",
+      "change": "0.21666666",
+      "flow_price": "0.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0.43333334"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "0.17333333",
+      "after": "0.19597989",
+      "change": "0.02264656",
+      "flow_price": "0.10000000",
+      "direction_improved": true,
+      "distance_from_target": "1.10402011"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "3.91959799",
+      "after": "1.30000000",
+      "change": "-2.61959799",
+      "flow_price": "2.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "3.25000000",
+      "after": "1.30000000",
+      "change": "-1.95000000",
+      "flow_price": "5.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "0.06500000",
+      "after": "0.06824146",
+      "change": "0.00324146",
+      "flow_price": "0.25000000",
+      "direction_improved": true,
+      "distance_from_target": "1.23175854"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "0.27296587",
+      "after": "0.32725200",
+      "change": "0.05428613",
+      "flow_price": "1.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0.97274800"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "0.49087800",
+      "after": "0.64168558",
+      "change": "0.15080758",
+      "flow_price": "1.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0.65831442"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "0.29945327",
+      "after": "0.36398318",
+      "change": "0.06452991",
+      "flow_price": "0.70000000",
+      "direction_improved": true,
+      "distance_from_target": "0.93601682"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "0.93595675",
+      "after": "1.17231202",
+      "change": "0.23635527",
+      "flow_price": "1.80000000",
+      "direction_improved": true,
+      "distance_from_target": "0.12768798"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "0.26051378",
+      "after": "0.31022297",
+      "change": "0.04970919",
+      "flow_price": "0.40000000",
+      "direction_improved": true,
+      "distance_from_target": "0.98977703"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "0.93066891",
+      "after": "1.16828317",
+      "change": "0.23761426",
+      "flow_price": "1.20000000",
+      "direction_improved": true,
+      "distance_from_target": "0.13171683"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "0.87621238",
+      "after": "1.12294708",
+      "change": "0.24673470",
+      "flow_price": "0.90000000",
+      "direction_improved": true,
+      "distance_from_target": "0.17705292"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "3.11929746",
+      "after": "1.30000000",
+      "change": "-1.81929746",
+      "flow_price": "2.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "0.15600000",
+      "after": "0.17441860",
+      "change": "0.01841860",
+      "flow_price": "0.30000000",
+      "direction_improved": true,
+      "distance_from_target": "1.12558140"
+    },
+    {
+      "scenario": "testGradualPriceChanges",
+      "before": "0.58139534",
+      "after": "0.77232592",
+      "change": "0.19093058",
+      "flow_price": "1.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0.52767408"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.65000000",
+      "after": "0.86666666",
+      "change": "0.21666666",
+      "flow_price": "0.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0.43333334"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.17333333",
+      "after": "0.19597989",
+      "change": "0.02264656",
+      "flow_price": "0.10000000",
+      "direction_improved": true,
+      "distance_from_target": "1.10402011"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "3.91959799",
+      "after": "1.30000000",
+      "change": "-2.61959799",
+      "flow_price": "2.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "3.25000000",
+      "after": "1.30000000",
+      "change": "-1.95000000",
+      "flow_price": "5.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.06500000",
+      "after": "0.06824146",
+      "change": "0.00324146",
+      "flow_price": "0.25000000",
+      "direction_improved": true,
+      "distance_from_target": "1.23175854"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.27296587",
+      "after": "0.32725200",
+      "change": "0.05428613",
+      "flow_price": "1.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0.97274800"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.49087800",
+      "after": "0.64168558",
+      "change": "0.15080758",
+      "flow_price": "1.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0.65831442"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.29945327",
+      "after": "0.36398318",
+      "change": "0.06452991",
+      "flow_price": "0.70000000",
+      "direction_improved": true,
+      "distance_from_target": "0.93601682"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.93595675",
+      "after": "1.17231202",
+      "change": "0.23635527",
+      "flow_price": "1.80000000",
+      "direction_improved": true,
+      "distance_from_target": "0.12768798"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.26051378",
+      "after": "0.31022297",
+      "change": "0.04970919",
+      "flow_price": "0.40000000",
+      "direction_improved": true,
+      "distance_from_target": "0.98977703"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.93066891",
+      "after": "1.16828317",
+      "change": "0.23761426",
+      "flow_price": "1.20000000",
+      "direction_improved": true,
+      "distance_from_target": "0.13171683"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.87621238",
+      "after": "1.12294708",
+      "change": "0.24673470",
+      "flow_price": "0.90000000",
+      "direction_improved": true,
+      "distance_from_target": "0.17705292"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "3.11929746",
+      "after": "1.30000000",
+      "change": "-1.81929746",
+      "flow_price": "2.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.15600000",
+      "after": "0.17441860",
+      "change": "0.01841860",
+      "flow_price": "0.30000000",
+      "direction_improved": true,
+      "distance_from_target": "1.12558140"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.58139534",
+      "after": "0.77232592",
+      "change": "0.19093058",
+      "flow_price": "1.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0.52767408"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0E-8",
+      "after": "1.00000000",
+      "change": "1.00000000",
+      "flow_price": "1.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0.30000000"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "1.00000000",
+      "after": "1.30081300",
+      "change": "0.30081300",
+      "flow_price": "1E-8",
+      "direction_improved": true,
+      "distance_from_target": "0.00081300"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "130081300813.00813008",
+      "after": "1.30000000",
+      "change": "-130081300811.70813008",
+      "flow_price": "1000.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.00130000",
+      "after": "0.00130129",
+      "change": "0.00000129",
+      "flow_price": "0.00100000",
+      "direction_improved": true,
+      "distance_from_target": "1.29869871"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "13.01299998",
+      "after": "1.30000000",
+      "change": "-11.71299998",
+      "flow_price": "10.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "13.00000000",
+      "after": "1.30000000",
+      "change": "-11.70000000",
+      "flow_price": "100.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "6.50000000",
+      "after": "1.30000000",
+      "change": "-5.20000000",
+      "flow_price": "500.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "1.30000000",
+      "after": "1.30000000",
+      "change": "0E-8",
+      "flow_price": "1.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "2.60000000",
+      "after": "1.30000000",
+      "change": "-1.30000000",
+      "flow_price": "2.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.32500000",
+      "after": "0.40000000",
+      "change": "0.07500000",
+      "flow_price": "0.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0.90000000"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "2.40000000",
+      "after": "1.30000000",
+      "change": "-1.10000000",
+      "flow_price": "3.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.13000000",
+      "after": "0.14285714",
+      "change": "0.01285714",
+      "flow_price": "0.30000000",
+      "direction_improved": true,
+      "distance_from_target": "1.15714286"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.71428571",
+      "after": "0.94928583",
+      "change": "0.23500012",
+      "flow_price": "1.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0.35071417"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.50628577",
+      "after": "0.66422424",
+      "change": "0.15793847",
+      "flow_price": "0.80000000",
+      "direction_improved": true,
+      "distance_from_target": "0.63577576"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "2.07570075",
+      "after": "1.30000000",
+      "change": "-0.77570075",
+      "flow_price": "2.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.52000000",
+      "after": "0.68421052",
+      "change": "0.16421052",
+      "flow_price": "1.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0.61578948"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "1.30000000",
+      "after": "1.30000000",
+      "change": "0E-8",
+      "flow_price": "1.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.06500000",
+      "after": "0.06824146",
+      "change": "0.00324146",
+      "flow_price": "0.05000000",
+      "direction_improved": true,
+      "distance_from_target": "1.23175854"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.01364829",
+      "after": "0.01379156",
+      "change": "0.00014327",
+      "flow_price": "0.01000000",
+      "direction_improved": true,
+      "distance_from_target": "1.28620844"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.68957835",
+      "after": "0.91830292",
+      "change": "0.22872457",
+      "flow_price": "0.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0.38169708"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "1.83660585",
+      "after": "1.30000000",
+      "change": "-0.53660585",
+      "flow_price": "1.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "1.95000000",
+      "after": "1.30000000",
+      "change": "-0.65000000",
+      "flow_price": "1.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "1.30000000",
+      "after": "1.30000000",
+      "change": "0E-8",
+      "flow_price": "1.00000000",
+      "direction_improved": true,
+      "distance_from_target": "0E-8"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.65000000",
+      "after": "0.86666666",
+      "change": "0.21666666",
+      "flow_price": "0.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0.43333334"
+    },
+    {
+      "scenario": "testVolatilePriceSwings",
+      "before": "0.86666666",
+      "after": "1.11428571",
+      "change": "0.24761905",
+      "flow_price": "0.50000000",
+      "direction_improved": true,
+      "distance_from_target": "0.18571429"
+    }
+  ],
+  "price_history": [
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.10000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "5.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.25000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.40000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.90000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.70000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.80000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.40000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.20000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.90000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.10000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "5.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.25000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.40000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.90000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.70000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.80000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.40000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.20000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.90000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "5.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.25000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.40000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.40000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1E-8",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1000.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.00100000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "10.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "100.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "500.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "3.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.05000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.01000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "0.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    }
+  ],
+  "summary": {
+    "total_critical_findings": 39,
+    "total_rebalances": 70,
+    "rebalances_correct_direction": 70,
+    "rebalances_optimal_range": 32
+  }
+}
