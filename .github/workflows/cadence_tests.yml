@@ -31,3 +31,7 @@ jobs:
         run: flow deps install --skip-alias --skip-deployments
       - name: Run tests
         run: flow test --cover --covercode="contracts" --coverprofile="coverage.lcov" ./cadence/tests/*_test.cdc
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
