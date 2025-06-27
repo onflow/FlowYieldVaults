@@ -40,6 +40,9 @@ flow test --cover cadence/tests/moet_depeg_test.cdc
 
 # Concurrent rebalancing
 flow test --cover cadence/tests/concurrent_rebalance_test.cdc
+
+# Mixed scenario (BOTH auto-borrow + auto-balancer simultaneously)
+flow test --cover cadence/tests/mixed_scenario_test.cdc
 ```
 
 ## 🎯 Test Specific Components
@@ -63,6 +66,7 @@ python3 run_price_test.py --scenario extreme --type auto-balancer
   - 99% crash → health drops to ~0.014
   - MOET depeg → improves position health
   - Double rebalance → converges more precisely
+  - Mixed scenario → auto-balancer can be wiped out while auto-borrow survives
 
 ## 🛠️ Prerequisites
 
