@@ -5,4 +5,4 @@
 [submodule "lib/TidalProtocol"]
 	path = lib/TidalProtocol
 	url = git@github.com:onflow/TidalProtocol.git
-	branch = gio/refactor-pool-creation-updated
+	branch = tracer-bullet
