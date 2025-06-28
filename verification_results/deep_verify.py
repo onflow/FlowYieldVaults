@@ -42,6 +42,9 @@ class DeepVerifier:
         self.health_history: List[Tuple[int, Decimal, str]] = []  # (line, health, context)
         self.balance_history: List[Tuple[int, Decimal, str]] = []  # (line, balance, context)
         
+        # Track expected vs actual MOET debt for auto-borrow verification
+        self._pending_expected_debt: Optional[Decimal] = None  # Set when we parse "expected debt:" line
+        
     def analyze(self):
         """Perform deep analysis of the log file"""
         with open(self.log_file, 'r') as f:
@@ -74,6 +77,21 @@ class DeepVerifier:
                 balance = parse_decimal(balance_match.group(1))
                 token_type = "YieldToken" if "YieldToken" in line else "Unknown"
                 self.balance_history.append((i, balance, f"{token_type} - {current_stage}"))
+                
+            # Capture expected debt line (logged in tests)
+            if "expected debt" in line.lower():
+                debt_match = re.search(r'expected debt:\s*([0-9.,]+)', line, re.IGNORECASE)
+                if debt_match:
+                    self._pending_expected_debt = parse_decimal(debt_match.group(1))
+
+            # Capture actual debt line and compare
+            if "moet debt after rebalance" in line.lower():
+                debt_match = re.search(r'moet debt after rebalance:\s*([0-9.,]+)', line, re.IGNORECASE)
+                if debt_match:
+                    actual_debt = parse_decimal(debt_match.group(1))
+                    if self._pending_expected_debt is not None:
+                        self._verify_debt(i, self._pending_expected_debt, actual_debt)
+                        self._pending_expected_debt = None  # reset after comparison
                 
             # AutoBalancer calculations
             if "[AUTOBALANCER STATE]" in line and i+10 < len(lines):
@@ -289,6 +307,16 @@ class DeepVerifier:
             self.findings.append(Finding("WARNING", line_num, "Unexpected zero balance", 
                 f"AutoBalancer balance went to zero without obvious crash scenario"))
                     
+    def _verify_debt(self, line_num: int, expected: Decimal, actual: Decimal):
+        """Verify that actual MOET debt matches expected debt within 0.1% tolerance"""
+        if expected == 0:
+            return  # nothing to compare
+
+        if not is_close(expected, actual, rel_tol=Decimal('0.001')):  # 0.1% tolerance
+            error_pct = abs(expected - actual) / expected * 100
+            self.findings.append(Finding("ERROR", line_num, "Debt mismatch", 
+                f"Expected MOET debt {expected}, got {actual} (diff {error_pct:.4f}%)"))
+
     def generate_report(self):
         """Generate detailed findings report"""
         print("=" * 80)

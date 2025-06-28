@@ -88,25 +88,18 @@ access(all) fun testMixedScenario() {
     let tideID = tideIDs[0]
     let autoBalancerID = getAutoBalancerIDByTideID(tideID: tideID, beFailed: false)
     
-    // Log initial states
-    logSeparator(title: "Initial State")
-    let initialBorrowHealth = getPositionHealth(pid: 0, beFailed: false)
-    let initialBalancerBalance = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
-    
-    log("Auto-Borrow Position Health: ".concat(initialBorrowHealth.toString()))
-    log("Auto-Balancer YieldToken Balance: ".concat(initialBalancerBalance.toString()))
-    
     // Define mixed price scenarios
     let flowPrices: [UFix64] = [1.0, 0.5, 1.5, 0.3, 2.0, 1.0, 0.1, 1.0]
     let yieldPrices: [UFix64] = [1.0, 1.2, 0.8, 0.5, 2.0, 0.1, 1.0, 1.0]
+    let moetPrices: [UFix64] = [1.0, 1.0, 1.0, 0.95, 1.0, 1.0, 0.9, 1.0]  // Adding MOET depeg scenarios
     let descriptions: [String] = [
         "Baseline",
         "FLOW crash, YieldToken rise", 
         "FLOW rise, YieldToken drop",
-        "Both crash",
+        "Both crash (MOET slightly depegged)",
         "Both moon",
         "FLOW stable, YieldToken crash",
-        "FLOW crash, YieldToken stable",
+        "FLOW crash, YieldToken stable (MOET depegged)",
         "Return to baseline"
     ]
     
@@ -114,22 +107,49 @@ access(all) fun testMixedScenario() {
     while i < flowPrices.length {
         let flowPrice = flowPrices[i]
         let yieldPrice = yieldPrices[i]
+        let moetPrice = moetPrices[i]
         let description = descriptions[i]
         
         logSeparator(title: "Stage ".concat(i.toString()).concat(": ").concat(description))
         
-        // Update both prices
+        // Update all prices
         setMockOraclePriceWithLog(signer: protocolAccount, forTokenIdentifier: Type<@FlowToken.Vault>().identifier, price: flowPrice, tokenName: "FLOW")
         setMockOraclePriceWithLog(signer: tidalYieldAccount, forTokenIdentifier: Type<@YieldToken.Vault>().identifier, price: yieldPrice, tokenName: "YieldToken")
+        if moetPrice != 1.0 {
+            setMockOraclePriceWithLog(signer: protocolAccount, forTokenIdentifier: Type<@MOET.Vault>().identifier, price: moetPrice, tokenName: "MOET")
+        }
         
-        // Check states before rebalancing
-        let borrowHealthBefore = getPositionHealth(pid: 0, beFailed: false)
-        let balancerBalanceBefore = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
-        
+        // Log comprehensive state before rebalancing
         log("")
-        log("BEFORE REBALANCING:")
-        log("  Auto-Borrow Health: ".concat(borrowHealthBefore.toString()))
-        log("  Auto-Balancer Balance: ".concat(balancerBalanceBefore.toString()).concat(" YieldToken"))
+        log("━━━━━━━━━━━━━━━━━━━━ BEFORE REBALANCING ━━━━━━━━━━━━━━━━━━━━")
+        
+        // Get position details for comprehensive logging
+        let positionDetailsBefore = getPositionDetails(pid: 0, beFailed: false)
+        var collateralBefore: UFix64 = 0.0
+        var debtBefore: UFix64 = 0.0
+        
+        for bal in positionDetailsBefore.balances {
+            if bal.vaultType == Type<@FlowToken.Vault>() {
+                collateralBefore = bal.balance
+            } else if bal.vaultType == Type<@MOET.Vault>() {
+                debtBefore = bal.balance
+            }
+        }
+        
+        let healthBefore = getPositionHealth(pid: 0, beFailed: false)
+        let yieldBalanceBefore = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
+        
+        // Log comprehensive states
+        logCompatiblePositionState(pid: 0, stage: "Before Rebalance", flowPrice: flowPrice, moetPrice: moetPrice)
+        logCompatibleAutoBalancerState(
+            id: autoBalancerID,
+            tideID: tideID,
+            stage: "Before Rebalance",
+            flowPrice: flowPrice,
+            yieldPrice: yieldPrice,
+            moetPrice: moetPrice,
+            initialDeposit: 1000.0
+        )
         
         // Trigger both rebalances
         log("")
@@ -137,72 +157,110 @@ access(all) fun testMixedScenario() {
         rebalancePosition(signer: protocolAccount, pid: 0, force: true, beFailed: false)
         rebalanceTide(signer: tidalYieldAccount, id: tideID, force: true, beFailed: false)
         
-        // Check states after rebalancing
-        let borrowHealthAfter = getPositionHealth(pid: 0, beFailed: false)
-        let balancerBalanceAfter = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
-        
+        // Log comprehensive state after rebalancing
         log("")
-        log("AFTER REBALANCING:")
-        log("  Auto-Borrow Health: ".concat(borrowHealthAfter.toString()))
-        log("  Auto-Balancer Balance: ".concat(balancerBalanceAfter.toString()).concat(" YieldToken"))
+        log("━━━━━━━━━━━━━━━━━━━━ AFTER REBALANCING ━━━━━━━━━━━━━━━━━━━━")
         
-        // Calculate changes
-        var healthChange: UFix64 = 0.0
-        var healthImproved = false
-        if borrowHealthAfter > borrowHealthBefore {
-            healthChange = borrowHealthAfter - borrowHealthBefore
-            healthImproved = true
-        } else if borrowHealthBefore > borrowHealthAfter {
-            healthChange = borrowHealthBefore - borrowHealthAfter
-            healthImproved = false
-        }
-        var balanceChange: UFix64 = 0.0
-        var balanceIncreased = false
-        if balancerBalanceAfter > balancerBalanceBefore {
-            balanceChange = balancerBalanceAfter - balancerBalanceBefore
-            balanceIncreased = true
-        } else if balancerBalanceBefore > balancerBalanceAfter {
-            balanceChange = balancerBalanceBefore - balancerBalanceAfter
-            balanceIncreased = false
-        }
+        // Get position details after rebalancing
+        let positionDetailsAfter = getPositionDetails(pid: 0, beFailed: false)
+        var collateralAfter: UFix64 = 0.0
+        var debtAfter: UFix64 = 0.0
         
-        log("")
-        log("CHANGES:")
-        if healthChange > 0.0 {
-            log("  Health ".concat(healthImproved ? "IMPROVED" : "DETERIORATED").concat(" by: ".concat(healthChange.toString())))
-        } else {
-            log("  Health UNCHANGED")
-        }
-        if balanceChange > 0.0 {
-            if balanceIncreased {
-                log("  Balance INCREASED by: ".concat(balanceChange.toString()))
-            } else {
-                log("  Balance DECREASED by: ".concat(balanceChange.toString()))
+        for bal in positionDetailsAfter.balances {
+            if bal.vaultType == Type<@FlowToken.Vault>() {
+                collateralAfter = bal.balance
+            } else if bal.vaultType == Type<@MOET.Vault>() {
+                debtAfter = bal.balance
             }
-        } else {
-            log("  Balance UNCHANGED")
         }
+        
+        let healthAfter = getPositionHealth(pid: 0, beFailed: false)
+        let yieldBalanceAfter = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
+        
+        // Log comprehensive states
+        logCompatiblePositionState(pid: 0, stage: "After Rebalance", flowPrice: flowPrice, moetPrice: moetPrice)
+        logCompatibleAutoBalancerState(
+            id: autoBalancerID,
+            tideID: tideID,
+            stage: "After Rebalance",
+            flowPrice: flowPrice,
+            yieldPrice: yieldPrice,
+            moetPrice: moetPrice,
+            initialDeposit: 1000.0
+        )
+        
+        // Create state snapshots and log changes
+        let beforeSnapshot = StateSnapshot(
+            health: healthBefore,
+            collateralAmount: collateralBefore,
+            debtAmount: debtBefore,
+            yieldBalance: yieldBalanceBefore,
+            flowPrice: flowPrice,
+            yieldPrice: yieldPrice,
+            moetPrice: moetPrice
+        )
+        
+        let afterSnapshot = StateSnapshot(
+            health: healthAfter,
+            collateralAmount: collateralAfter,
+            debtAmount: debtAfter,
+            yieldBalance: yieldBalanceAfter,
+            flowPrice: flowPrice,
+            yieldPrice: yieldPrice,
+            moetPrice: moetPrice
+        )
+        
+        logStateChanges(before: beforeSnapshot, after: afterSnapshot, operation: "Rebalancing")
         
         // Check for any interaction effects
         if i > 0 {
-            if borrowHealthBefore < 0.5 && balancerBalanceAfter < balancerBalanceBefore {
+            if healthBefore < 0.5 && yieldBalanceAfter < yieldBalanceBefore {
                 log("")
                 log("[INTERACTION] Low borrow health may have affected available liquidity for balancer")
             }
-            if yieldPrices[i-1] < 0.5 && healthImproved {
+            if yieldPrices[i-1] < 0.5 && healthAfter > healthBefore {
                 log("")
                 log("[INTERACTION] YieldToken crash improved borrow position (cheaper debt repayment)")
+            }
+            if moetPrice < 1.0 {
+                log("")
+                log("[INTERACTION] MOET depeg affects both systems - all values impacted")
             }
         }
         
         i = i + 1
     }
     
+    // Final comprehensive summary
     logSeparator(title: "Final State Summary")
-    log("Auto-Borrow Final Health: ".concat(getPositionHealth(pid: 0, beFailed: false).toString()))
-    log("Auto-Balancer Final Balance: ".concat(getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false).toString()))
+    
+    let finalPositionDetails = getPositionDetails(pid: 0, beFailed: false)
+    var finalCollateral: UFix64 = 0.0
+    var finalDebt: UFix64 = 0.0
+    
+    for bal in finalPositionDetails.balances {
+        if bal.vaultType == Type<@FlowToken.Vault>() {
+            finalCollateral = bal.balance
+        } else if bal.vaultType == Type<@MOET.Vault>() {
+            finalDebt = bal.balance
+        }
+    }
+    
+    let finalHealth = getPositionHealth(pid: 0, beFailed: false)
+    let finalYieldBalance = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
+    
+    log("AUTO-BORROW POSITION:")
+    log("  Final Health: ".concat(finalHealth.toString()))
+    log("  Final Collateral: ".concat(finalCollateral.toString()).concat(" FLOW"))
+    log("  Final Debt: ".concat(finalDebt.toString()).concat(" MOET"))
     log("")
-    log("Initial vs Final:")
-    log("  Borrow Health: ".concat(initialBorrowHealth.toString()).concat(" -> ").concat(getPositionHealth(pid: 0, beFailed: false).toString()))
-    log("  Balancer Balance: ".concat(initialBalancerBalance.toString()).concat(" -> ").concat(getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false).toString()))
+    log("AUTO-BALANCER:")
+    log("  Final YieldToken Balance: ".concat(finalYieldBalance.toString()))
+    log("  Final Value: ".concat((finalYieldBalance * 1.0).toString()).concat(" MOET (at current price)"))
+    log("")
+    log("CHANGES FROM START:")
+    log("  Health: 1.3 → ".concat(finalHealth.toString()))
+    log("  Collateral: 1000 → ".concat(finalCollateral.toString()))
+    log("  Debt: ~615.38 → ".concat(finalDebt.toString()))
+    log("  YieldToken: ~615.38 → ".concat(finalYieldBalance.toString()))
 } 
