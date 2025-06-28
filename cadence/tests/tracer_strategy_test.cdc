@@ -7,6 +7,7 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "TidalYieldStrategies"
+import "TidalProtocol"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let tidalYieldAccount = Test.getAccount(0x0000000000000009)
@@ -17,9 +18,15 @@ access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
-access(all) let collateralFactor = 0.8
+access(all) let flowCollateralFactor = 0.8
+access(all) let flowBorrowFactor = 1.0
 access(all) let targetHealthFactor = 1.3
 
+// starting token prices
+access(all) let startingFlowPrice = 1.0
+access(all) let startingYieldPrice = 1.0
+
+// used to reset test state - should be assigned at the end of setup()
 access(all) var snapshot: UInt64 = 0
 
 access(all)
@@ -27,8 +34,8 @@ fun setup() {
     deployContracts()
 
     // set mocked token prices
-    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
-    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
+    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: startingYieldPrice)
+    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: startingFlowPrice)
 
     // mint tokens & set liquidity in mock swapper contract
     let reserveAmount = 100_000_00.0
@@ -45,8 +52,8 @@ fun setup() {
     addSupportedTokenSimpleInterestCurve(
         signer: protocolAccount,
         tokenTypeIdentifier: flowTokenIdentifier,
-        collateralFactor: 0.8,
-        borrowFactor: 1.0,
+        collateralFactor: flowCollateralFactor,
+        borrowFactor: flowBorrowFactor,
         depositRate: 1_000_000.0,
         depositCapacityCap: 1_000_000.0
     )
@@ -134,7 +141,7 @@ fun test_RebalanceTideSucceeds() {
     Test.reset(to: snapshot)
 
     let fundingAmount = 100.0
-    let priceIncrease = 1.5
+    let priceIncrease = 0.2
 
     let user = Test.createAccount()
 
@@ -142,45 +149,56 @@ fun test_RebalanceTideSucceeds() {
     let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
     mintFlow(to: user, amount: fundingAmount)
 
-    createTide(
-        signer: user,
+    createTide(signer: user,
         strategyIdentifier: strategyIdentifier,
         vaultIdentifier: flowTokenIdentifier,
         amount: fundingAmount,
         beFailed: false
     )
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<TidalProtocol.Opened>())) as! TidalProtocol.Opened).pid
 
     var tideIDs = getTideIDs(address: user.address)
     Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
     Test.assertEqual(1, tideIDs!.length)
+    let tideID = tideIDs![0]
 
-    var tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+    let autoBalancerValueBefore = getAutoBalancerCurrentValue(id: tideID)!
+    let tideBalanceBeforePriceIncrease = getTideBalance(address: user.address, tideID: tideID)
 
-    log("Tide balance before yield increase: \(tideBalance ?? 0.0)")
+    setMockOraclePrice(signer: tidalYieldAccount,
+        forTokenIdentifier: yieldTokenIdentifier,
+        price: startingYieldPrice * (1.0 + priceIncrease)
+    )
 
-    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: priceIncrease)
+    let autoBalancerValueAfter = getAutoBalancerCurrentValue(id: tideID)!
+    let tideBalanceAfterPriceIncrease = getTideBalance(address: user.address, tideID: tideID)
 
-    tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+    rebalanceTide(signer: tidalYieldAccount, id: tideID, force: true, beFailed: false)
 
-    log("Tide balance before rebalance: \(tideBalance ?? 0.0)")
+    // TODO - assert against pre- and post- getTideBalance() diff once protocol assesses balance correctly
+    //      for now we can use events to intercept fund flows between pre- and post- Position & AutoBalancer state
 
-    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-    rebalancePosition(signer: protocolAccount, pid: 1, force: true, beFailed: false)
+    // assess how much FLOW was deposited into the position
+    let autoBalancerRecollateralizeEvent = getLastPositionDepositedEvent(Test.eventsOfType(Type<TidalProtocol.Deposited>())) as! TidalProtocol.Deposited
+    Test.assertEqual(positionID, autoBalancerRecollateralizeEvent.pid)
+    Test.assertEqual(autoBalancerRecollateralizeEvent.amount,
+        (autoBalancerValueAfter - autoBalancerValueBefore) / startingFlowPrice
+    )
 
+    rebalancePosition(signer: protocolAccount, pid: positionID, force: true, beFailed: false)
 
-    let positionDetails = getPositionDetails(pid: 1, beFailed: false)
-
+    let positionDetails = getPositionDetails(pid: positionID, beFailed: false)
     let positionFlowBalance = positionDetails.balances[1]
-    log(positionFlowBalance)
 
     // The math here is a little off, expected amount is around 130, but the final value of the tide is 127
-    let initialLoan = fundingAmount * (collateralFactor / targetHealthFactor)
-    let expectedBalance = (initialLoan * priceIncrease - initialLoan) + fundingAmount
+    let initialLoan = fundingAmount * (flowCollateralFactor / targetHealthFactor)
+    let expectedBalance = (initialLoan * (1.0 + priceIncrease) - initialLoan) + fundingAmount
     log("Position Flow balance after rebalance: \(positionFlowBalance.balance)")
     Test.assert(positionFlowBalance.balance > fundingAmount,
         message: "Expected user's Flow balance in their position after rebalance to be more than \(fundingAmount) but got \(positionFlowBalance.balance)"
     )
 
+    // TODO - position balance causing error here - need to fix position balance calculation
     closeTide(signer: user, id: tideIDs![0], beFailed: false)
 
     tideIDs = getTideIDs(address: user.address)
@@ -275,7 +293,7 @@ fun test_RebalanceTideSucceedsAfterCollateralPriceIncrease() {
     // This should cause the rebalance to increase the amount of Yield tokens held in the Tide
     setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: collateralPriceIncrease)
 
-    let yieldTokensBefore = getAutoBalancerBalance(address: user.address, id: tideIDs![0])!
+    let yieldTokensBefore = getAutoBalancerBalance(id: tideIDs![0])!
 
     log("Yield token balance before rebalance: \(yieldTokensBefore)")
 
@@ -287,7 +305,7 @@ fun test_RebalanceTideSucceedsAfterCollateralPriceIncrease() {
     // if there is a better way to get the position ID, please let me know
     rebalancePosition(signer: protocolAccount, pid: 1, force: true, beFailed: false)
 
-    let yieldTokensAfter = getAutoBalancerBalance(address: user.address, id: tideIDs![0])!
+    let yieldTokensAfter = getAutoBalancerBalance(id: tideIDs![0])!
 
     log("Yield token balance after rebalance: \(yieldTokensAfter)")
 
