@@ -39,6 +39,12 @@ class MathematicalAnalyzer:
         self.price_impacts = []
         self.critical_findings = []
         self.price_history = []  # Track all price changes
+        self.balance_history = []  # Track all balance changes
+        
+        # Patterns for comprehensive logging format (handles both Unicode and escaped formats)
+        self.comprehensive_price_pattern = re.compile(r'(?:║|\\u\{2551\})\s*(FLOW|YieldToken|MOET):\s*([0-9.,]+)')
+        self.comprehensive_balance_pattern = re.compile(r'(?:║|\\u\{2551\})\s*(FLOW Collateral|MOET Debt|YieldToken Balance):\s*([0-9.,]+)')
+        self.comprehensive_value_pattern = re.compile(r'(?:║|\\u\{2551\})\s*(?:→|\\u\{2192\})\s*Value(?:\s+in MOET)?:\s*([0-9.,]+)')
         
     def analyze(self):
         """Extract and analyze mathematical relationships"""
@@ -136,6 +142,41 @@ class MathematicalAnalyzer:
                     self._verify_value_calculation(
                         balance, price_to_use, calculated_value, expected, scenario_name
                     )
+                    
+            # Comprehensive logging format parsing
+            if "POSITION STATE:" in line or "AUTO-BALANCER STATE:" in line:
+                # Look ahead for the full state block
+                state_lines = []
+                j = i
+                while j < min(i+30, len(lines)) and "╚" not in lines[j]:
+                    state_lines.append(lines[j])
+                    j += 1
+                state_text = '\n'.join(state_lines)
+                
+                # Extract all prices from comprehensive format
+                price_matches = self.comprehensive_price_pattern.findall(state_text)
+                for token, price in price_matches:
+                    price_val = parse_decimal(price)
+                    self.price_history.append({
+                        "line": i,
+                        "token": token,
+                        "price": price_val,
+                        "scenario": scenario_name,
+                        "format": "comprehensive"
+                    })
+                
+                # Extract all balances from comprehensive format
+                balance_matches = self.comprehensive_balance_pattern.findall(state_text)
+                for balance_type, amount in balance_matches:
+                    amount_val = parse_decimal(amount)
+                    token_name = "FLOW" if "FLOW" in balance_type else ("MOET" if "MOET" in balance_type else "YieldToken")
+                    self.balance_history.append({
+                        "line": i,
+                        "token": token_name,
+                        "balance": amount_val,
+                        "type": balance_type,
+                        "scenario": scenario_name
+                    })
                     
     def _extract_price_update(self, lines):
         """Extract token and price from price update lines"""
@@ -344,6 +385,27 @@ class MathematicalAnalyzer:
                 print(f"  {r['scenario']}: {r['after']:.6f} (from {r['before']:.6f}, distance: {r['distance_from_target']:.6f})")
                 print(f"    FLOW price at time: {r['flow_price']}")
                 
+        # Balance history summary for all 3 tokens
+        if self.balance_history:
+            print("\n" + "="*80)
+            print("BALANCE HISTORY SUMMARY (All 3 Tokens):")
+            print("="*80)
+            
+            # Group by token
+            by_token = defaultdict(list)
+            for b in self.balance_history:
+                by_token[b["token"]].append(b)
+            
+            for token in ["FLOW", "MOET", "YieldToken"]:
+                if token in by_token:
+                    balances = [Decimal(b["balance"]) for b in by_token[token]]
+                    print(f"\n{token}:")
+                    print(f"  Total observations: {len(balances)}")
+                    print(f"  Range: {min(balances)} to {max(balances)}")
+                    zero_count = sum(1 for b in balances if b == 0)
+                    if zero_count > 0:
+                        print(f"  Zero balances: {zero_count}")
+        
         # Save detailed results
         results = {
             "critical_findings": self.critical_findings,
@@ -367,11 +429,25 @@ class MathematicalAnalyzer:
                 }
                 for p in self.price_history
             ],
+            "balance_history": [
+                {
+                    "token": b["token"],
+                    "balance": str(b["balance"]),
+                    "type": b["type"],
+                    "scenario": b["scenario"]
+                }
+                for b in self.balance_history
+            ],
             "summary": {
                 "total_critical_findings": len(self.critical_findings),
                 "total_rebalances": len(self.rebalance_effects),
                 "rebalances_correct_direction": sum(1 for r in self.rebalance_effects if r['direction_improved']),
-                "rebalances_optimal_range": sum(1 for r in self.rebalance_effects if Decimal('1.1') <= r['after'] <= Decimal('1.5'))
+                "rebalances_optimal_range": sum(1 for r in self.rebalance_effects if Decimal('1.1') <= r['after'] <= Decimal('1.5')),
+                "tokens_tracked": {
+                    "FLOW": len([b for b in self.balance_history if b["token"] == "FLOW"]),
+                    "MOET": len([b for b in self.balance_history if b["token"] == "MOET"]),
+                    "YieldToken": len([b for b in self.balance_history if b["token"] == "YieldToken"])
+                }
             }
         }
         

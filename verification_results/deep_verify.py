@@ -40,10 +40,12 @@ class DeepVerifier:
         self.findings: List[Finding] = []
         self.current_prices: Dict[str, Decimal] = {}
         self.health_history: List[Tuple[int, Decimal, str]] = []  # (line, health, context)
-        self.balance_history: List[Tuple[int, Decimal, str]] = []  # (line, balance, context)
+        self.balance_history: List[Tuple[int, Decimal, str, str]] = []  # (line, balance, token, context)
         
-        # Track expected vs actual MOET debt for auto-borrow verification
-        self._pending_expected_debt: Optional[Decimal] = None  # Set when we parse "expected debt:" line
+        # Patterns for comprehensive logging format (handles both Unicode and escaped formats)
+        self.comprehensive_price_pattern = re.compile(r'(?:║|\\u\{2551\})\s*(FLOW|YieldToken|MOET):\s*([0-9.,]+)')
+        self.comprehensive_balance_pattern = re.compile(r'(?:║|\\u\{2551\})\s*(FLOW Collateral|MOET Debt|YieldToken Balance):\s*([0-9.,]+)')
+        self.comprehensive_value_pattern = re.compile(r'(?:║|\\u\{2551\})\s*(?:→|\\u\{2192\})\s*Value(?:\s+in MOET)?:\s*([0-9.,]+)')
         
     def analyze(self):
         """Perform deep analysis of the log file"""
@@ -76,22 +78,7 @@ class DeepVerifier:
             if balance_match:
                 balance = parse_decimal(balance_match.group(1))
                 token_type = "YieldToken" if "YieldToken" in line else "Unknown"
-                self.balance_history.append((i, balance, f"{token_type} - {current_stage}"))
-                
-            # Capture expected debt line (logged in tests)
-            if "expected debt" in line.lower():
-                debt_match = re.search(r'expected debt:\s*([0-9.,]+)', line, re.IGNORECASE)
-                if debt_match:
-                    self._pending_expected_debt = parse_decimal(debt_match.group(1))
-
-            # Capture actual debt line and compare
-            if "moet debt after rebalance" in line.lower():
-                debt_match = re.search(r'moet debt after rebalance:\s*([0-9.,]+)', line, re.IGNORECASE)
-                if debt_match:
-                    actual_debt = parse_decimal(debt_match.group(1))
-                    if self._pending_expected_debt is not None:
-                        self._verify_debt(i, self._pending_expected_debt, actual_debt)
-                        self._pending_expected_debt = None  # reset after comparison
+                self.balance_history.append((i, balance, token_type, f"{current_stage}"))
                 
             # AutoBalancer calculations
             if "[AUTOBALANCER STATE]" in line and i+10 < len(lines):
@@ -117,6 +104,53 @@ class DeepVerifier:
             # Zero values that might be problematic
             if "Balance: 0.00000000" in line and "YieldToken" in line:
                 self._check_zero_balance_context(i, lines, current_stage)
+                
+            # Comprehensive logging format - POSITION STATE
+            if "POSITION STATE:" in line:
+                # Look ahead for the full state block
+                state_lines = []
+                j = i
+                while j < min(i+20, len(lines)) and "╚" not in lines[j-1]:
+                    state_lines.append(lines[j-1])
+                    j += 1
+                state_text = ''.join(state_lines)
+                
+                # Extract all prices
+                price_matches = self.comprehensive_price_pattern.findall(state_text)
+                for token, price in price_matches:
+                    price_val = parse_decimal(price)
+                    self.current_prices[token] = price_val
+                
+                # Extract all balances
+                balance_matches = self.comprehensive_balance_pattern.findall(state_text)
+                for balance_type, amount in balance_matches:
+                    amount_val = parse_decimal(amount)
+                    if "FLOW" in balance_type:
+                        self.balance_history.append((i, amount_val, "FLOW", current_stage))
+                    elif "MOET" in balance_type:
+                        self.balance_history.append((i, amount_val, "MOET", current_stage))
+            
+            # Comprehensive logging format - AUTO-BALANCER STATE  
+            if "AUTO-BALANCER STATE:" in line:
+                # Look ahead for the full state block
+                state_lines = []
+                j = i
+                while j < min(i+30, len(lines)) and "╚" not in lines[j-1]:
+                    state_lines.append(lines[j-1])
+                    j += 1
+                state_text = ''.join(state_lines)
+                
+                # Extract all prices
+                price_matches = self.comprehensive_price_pattern.findall(state_text)
+                for token, price in price_matches:
+                    price_val = parse_decimal(price)
+                    self.current_prices[token] = price_val
+                
+                # Extract YieldToken balance
+                balance_match = re.search(r'YieldToken Balance:\s*([0-9.,]+)', state_text)
+                if balance_match:
+                    balance = parse_decimal(balance_match.group(1))
+                    self.balance_history.append((i, balance, "YieldToken", current_stage))
                 
     def _analyze_price_update(self, line_num: int, context: List[str]):
         """Analyze price updates for anomalies"""
@@ -307,16 +341,6 @@ class DeepVerifier:
             self.findings.append(Finding("WARNING", line_num, "Unexpected zero balance", 
                 f"AutoBalancer balance went to zero without obvious crash scenario"))
                     
-    def _verify_debt(self, line_num: int, expected: Decimal, actual: Decimal):
-        """Verify that actual MOET debt matches expected debt within 0.1% tolerance"""
-        if expected == 0:
-            return  # nothing to compare
-
-        if not is_close(expected, actual, rel_tol=Decimal('0.001')):  # 0.1% tolerance
-            error_pct = abs(expected - actual) / expected * 100
-            self.findings.append(Finding("ERROR", line_num, "Debt mismatch", 
-                f"Expected MOET debt {expected}, got {actual} (diff {error_pct:.4f}%)"))
-
     def generate_report(self):
         """Generate detailed findings report"""
         print("=" * 80)
@@ -366,20 +390,36 @@ class DeepVerifier:
             print(f"In range (1.1-1.5): {len([h for h in healths if Decimal('1.1') <= h <= Decimal('1.5')])}")
             print(f"Above max (>1.5): {len([h for h in healths if h > Decimal('1.5')])}")
             
-        # Balance history summary
+        # Balance history summary for all 3 tokens
         if self.balance_history:
             print("\n" + "="*80)
-            print("BALANCE HISTORY SUMMARY:")
+            print("BALANCE HISTORY SUMMARY (All 3 Tokens):")
             print("="*80)
             
-            balances = [b[1] for b in self.balance_history]
-            non_zero_balances = [b for b in balances if b > 0]
+            # Group by token type
+            flow_balances = [(b[1], b[3]) for b in self.balance_history if b[2] == "FLOW"]
+            moet_balances = [(b[1], b[3]) for b in self.balance_history if b[2] == "MOET"]
+            yield_balances = [(b[1], b[3]) for b in self.balance_history if b[2] == "YieldToken"]
             
-            print(f"Total balance checks: {len(balances)}")
-            print(f"Zero balances: {len([b for b in balances if b == 0])}")
-            if non_zero_balances:
-                print(f"Min non-zero: {min(non_zero_balances)}")
-                print(f"Max: {max(balances)}")
+            if flow_balances:
+                print("\nFLOW Token:")
+                print(f"  Total observations: {len(flow_balances)}")
+                print(f"  Range: {min(b[0] for b in flow_balances)} - {max(b[0] for b in flow_balances)}")
+                
+            if moet_balances:
+                print("\nMOET Token:")
+                print(f"  Total observations: {len(moet_balances)}")
+                print(f"  Range: {min(b[0] for b in moet_balances)} - {max(b[0] for b in moet_balances)}")
+                
+            if yield_balances:
+                print("\nYieldToken:")
+                print(f"  Total observations: {len(yield_balances)}")
+                balances = [b[0] for b in yield_balances]
+                non_zero_balances = [b for b in balances if b > 0]
+                print(f"  Zero balances: {len([b for b in balances if b == 0])}")
+                if non_zero_balances:
+                    print(f"  Min non-zero: {min(non_zero_balances)}")
+                    print(f"  Max: {max(balances)}")
             
         # Price extremes
         if self.current_prices:

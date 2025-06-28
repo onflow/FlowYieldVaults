@@ -149,7 +149,7 @@ fun testCustomPriceScenario() {{
         let healthAfter = getPositionHealth(pid: 0, beFailed: false)
         log("Health after rebalance: ".concat(healthAfter.toString()))
         
-        logPositionDetails(pid: 0, stage: "After price = ".concat(price.toString()))
+        logComprehensivePositionState(pid: 0, stage: "After price = ".concat(price.toString()), flowPrice: price, moetPrice: 1.0)
         
         i = i + 1
     }}
@@ -207,13 +207,29 @@ fun testCustomPriceScenario() {{
             tokenName: balancerScenario.token
         )
         
-        logAutoBalancerState(id: autoBalancerID, yieldPrice: price, stage: "Before Rebalance")
+        logComprehensiveAutoBalancerState(
+            id: autoBalancerID,
+            tideID: tideID,
+            stage: "Before Rebalance",
+            flowPrice: 1.0,
+            yieldPrice: price,
+            moetPrice: 1.0,
+            initialDeposit: 1000.0
+        )
         
         log("Triggering rebalance...")
         rebalanceTide(signer: tidalYieldAccount, id: tideID, force: true, beFailed: false)
         
         let balanceAfter = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
-        logAutoBalancerState(id: autoBalancerID, yieldPrice: price, stage: "After Rebalance")
+        logComprehensiveAutoBalancerState(
+            id: autoBalancerID,
+            tideID: tideID,
+            stage: "After Rebalance",
+            flowPrice: 1.0,
+            yieldPrice: price,
+            moetPrice: 1.0,
+            initialDeposit: 1000.0
+        )
         
         if balanceAfter != initialBalance {{
             let change = safeSubtract(a: balanceAfter, b: initialBalance, context: "balance change")

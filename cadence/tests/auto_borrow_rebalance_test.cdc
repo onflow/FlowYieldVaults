@@ -74,7 +74,7 @@ fun testAutoBorrowRebalancesOnCollateralPriceChanges() {
     log("  Expected Auto-Borrow: ".concat(debt0.toString()).concat(" MOET"))
     
     // Log actual position state
-    logPositionDetails(pid: 0, stage: "After Auto-Borrow Creation")
+    logComprehensivePositionState(pid: 0, stage: "After Auto-Borrow Creation", flowPrice: 1.0, moetPrice: 1.0)
 
     // ---------- Stage 1 – FLOW price drops 20 % ----------
     logSeparator(title: "STAGE 1: FLOW Price Drops 20%")
@@ -82,7 +82,7 @@ fun testAutoBorrowRebalancesOnCollateralPriceChanges() {
     setMockOraclePriceWithLog(signer: protocolAccount, forTokenIdentifier: flowTokenIdentifier, price: 0.8, tokenName: "FLOW")
     
     // Log position details before rebalance
-    logPositionDetails(pid: 0, stage: "Before Rebalance (FLOW @ 0.8)")
+    logComprehensivePositionState(pid: 0, stage: "Before Rebalance (FLOW @ 0.8)", flowPrice: 0.8, moetPrice: 1.0)
     
     log("Triggering rebalance with force=true...")
     rebalancePosition(signer: protocolAccount, pid: 0, force: true, beFailed: false)
@@ -104,7 +104,7 @@ fun testAutoBorrowRebalancesOnCollateralPriceChanges() {
     }
     
     // Log actual results
-    logPositionDetails(pid: 0, stage: "After Rebalance (FLOW @ 0.8)")
+    logComprehensivePositionState(pid: 0, stage: "After Rebalance (FLOW @ 0.8)", flowPrice: 0.8, moetPrice: 1.0)
     log("[ACTUAL RESULTS]")
     log("   MOET debt after rebalance: ".concat(debt1Actual.toString()))
     log("   MOET debt before rebalance: ".concat(debt0.toString()))
@@ -135,7 +135,7 @@ fun testAutoBorrowRebalancesOnCollateralPriceChanges() {
     setMockOraclePriceWithLog(signer: protocolAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.25, tokenName: "FLOW")
     
     // Log position details before rebalance
-    logPositionDetails(pid: 0, stage: "Before Rebalance (FLOW @ 1.25)")
+    logComprehensivePositionState(pid: 0, stage: "Before Rebalance (FLOW @ 1.25)", flowPrice: 1.25, moetPrice: 1.0)
     
     log("Triggering rebalance with force=true...")
     rebalancePosition(signer: protocolAccount, pid: 0, force: true, beFailed: false)

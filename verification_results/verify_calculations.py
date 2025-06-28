@@ -62,7 +62,7 @@ class TestLogVerifier:
         self.errors: List[str] = []
         self.current_prices: Dict[str, Decimal] = {}
         
-        # Improved regex patterns - more flexible with whitespace
+        # Improved regex patterns - supports both old and new comprehensive logging formats
         self.price_pattern = re.compile(r'\[PRICE UPDATE\]')
         self.token_pattern = re.compile(r'Token Identifier:\s*([^\s]+)')
         self.price_value_pattern = re.compile(r'New Price:\s*([0-9.,]+)')
@@ -71,6 +71,13 @@ class TestLogVerifier:
         self.balance_pattern = re.compile(r'(?:Balance|balance).*?:\s*([0-9.,]+)')
         self.position_health_pattern = re.compile(r'Position ID:\s*(\d+).*?Health Ratio:\s*([0-9.,]+)', re.DOTALL)
         self.autobalancer_state_pattern = re.compile(r'\[AUTOBALANCER STATE\].*?YieldToken Balance:\s*([0-9.,]+).*?Total Value in MOET:\s*([0-9.,]+)', re.DOTALL)
+        
+        # New patterns for comprehensive logging format
+        self.comprehensive_price_pattern = re.compile(r'║\s*(FLOW|YieldToken|MOET):\s*([0-9.,]+)')
+        self.comprehensive_balance_pattern = re.compile(r'║\s*(FLOW Collateral|MOET Debt|YieldToken Balance):\s*([0-9.,]+)')
+        self.comprehensive_value_pattern = re.compile(r'║\s*→\s*Value(?:\s+in MOET)?:\s*([0-9.,]+)')
+        self.position_state_pattern = re.compile(r'POSITION STATE:.*?(?=╚)', re.DOTALL)
+        self.autobalancer_state_comprehensive_pattern = re.compile(r'AUTO-BALANCER STATE:.*?(?=╚)', re.DOTALL)
         
         # Token address to name mapping
         self.token_mapping = {
@@ -161,7 +168,7 @@ class TestLogVerifier:
                 balance = self.parse_decimal(balance_match.group(1))
                 self.balance_checks.append(BalanceCheck(i+1, balance, "YieldToken", current_stage))
             
-            # AutoBalancer state with calculations
+            # AutoBalancer state with calculations (old format)
             if "[AUTOBALANCER STATE]" in line:
                 # Look ahead for balance and value
                 state_text = ""
@@ -188,6 +195,69 @@ class TestLogVerifier:
                         )
                         self.verify_calculation(calc)
                         self.calculations.append(calc)
+            
+            # Comprehensive logging format - POSITION STATE
+            if "POSITION STATE:" in line:
+                # Look ahead for the full state block
+                state_text = ""
+                j = i
+                while j < min(i+20, len(lines)) and "╚" not in lines[j]:
+                    state_text += lines[j]
+                    j += 1
+                
+                # Extract prices from comprehensive format
+                price_matches = self.comprehensive_price_pattern.findall(state_text)
+                for token, price in price_matches:
+                    price_val = self.parse_decimal(price)
+                    self.current_prices[token] = price_val
+                    self.price_updates.append(PriceUpdate(i+1, token, price_val))
+                
+                # Extract balances and values
+                balance_matches = self.comprehensive_balance_pattern.findall(state_text)
+                for balance_type, amount in balance_matches:
+                    amount_val = self.parse_decimal(amount)
+                    if "FLOW" in balance_type:
+                        self.balance_checks.append(BalanceCheck(i+1, amount_val, "FLOW", current_stage))
+                    elif "MOET" in balance_type:
+                        self.balance_checks.append(BalanceCheck(i+1, amount_val, "MOET", current_stage))
+                    elif "YieldToken" in balance_type:
+                        self.balance_checks.append(BalanceCheck(i+1, amount_val, "YieldToken", current_stage))
+            
+            # Comprehensive logging format - AUTO-BALANCER STATE
+            if "AUTO-BALANCER STATE:" in line:
+                # Look ahead for the full state block
+                state_text = ""
+                j = i
+                while j < min(i+30, len(lines)) and "╚" not in lines[j]:
+                    state_text += lines[j]
+                    j += 1
+                
+                # Extract all prices from comprehensive format
+                price_matches = self.comprehensive_price_pattern.findall(state_text)
+                for token, price in price_matches:
+                    price_val = self.parse_decimal(price)
+                    self.current_prices[token] = price_val
+                    self.price_updates.append(PriceUpdate(i+1, token, price_val))
+                
+                # Extract YieldToken balance and verify calculation
+                balance_match = re.search(r'YieldToken Balance:\s*([0-9.,]+)', state_text)
+                value_match = re.search(r'→\s*Value in MOET:\s*([0-9.,]+)', state_text)
+                
+                if balance_match and value_match and "YieldToken" in self.current_prices:
+                    balance = self.parse_decimal(balance_match.group(1))
+                    total_value = self.parse_decimal(value_match.group(1))
+                    
+                    expected_value = balance * self.current_prices["YieldToken"]
+                    calc = Calculation(
+                        line_number=i+1,
+                        description="AutoBalancer value verification (comprehensive)",
+                        formula=f"{balance} * {self.current_prices['YieldToken']}",
+                        operand1=balance,
+                        operand2=self.current_prices["YieldToken"],
+                        expected_result=total_value
+                    )
+                    self.verify_calculation(calc)
+                    self.calculations.append(calc)
             
             i += 1
     
@@ -299,6 +369,31 @@ class TestLogVerifier:
             if update.token not in current_prices or current_prices[update.token] != update.price:
                 print(f"Line {update.line_number}: {update.token} = {update.price}")
                 current_prices[update.token] = update.price
+        
+        # Token balance summary
+        print("\n" + "="*80)
+        print("TOKEN BALANCE SUMMARY:")
+        print("="*80)
+        
+        # Group balances by token
+        flow_balances = [b for b in self.balance_checks if b.token == "FLOW"]
+        moet_balances = [b for b in self.balance_checks if b.token == "MOET"]
+        yield_balances = [b for b in self.balance_checks if b.token == "YieldToken"]
+        
+        if flow_balances:
+            print(f"\nFLOW Token:")
+            print(f"  Total observations: {len(flow_balances)}")
+            print(f"  Range: {min(b.balance for b in flow_balances)} - {max(b.balance for b in flow_balances)}")
+            
+        if moet_balances:
+            print(f"\nMOET Token:")
+            print(f"  Total observations: {len(moet_balances)}")
+            print(f"  Range: {min(b.balance for b in moet_balances)} - {max(b.balance for b in moet_balances)}")
+            
+        if yield_balances:
+            print(f"\nYieldToken:")
+            print(f"  Total observations: {len(yield_balances)}")
+            print(f"  Range: {min(b.balance for b in yield_balances)} - {max(b.balance for b in yield_balances)}")
         
         # Health ratio analysis
         print("\n" + "="*80)

@@ -77,8 +77,24 @@ REPORT_FILE="test_reports/comprehensive_report_$(date +%Y%m%d_%H%M%S).txt"
     }'
     echo ""
     
-    # 5. Price Scenarios Tested
-    echo "5. PRICE SCENARIOS COVERAGE"
+    # 5. All Token Summary (FLOW, MOET, YieldToken)
+    echo "5. ALL TOKEN SUMMARY"
+    echo "-------------------"
+    echo "FLOW Token:"
+    echo "  Price updates: $(grep -E "(FLOW|FlowToken).*New Price:" full_test_output.log | wc -l)"
+    echo "  Balance observations: $(grep -E "FLOW Collateral:" full_test_output.log | wc -l)"
+    echo ""
+    echo "MOET Token:"
+    echo "  Price updates: $(grep -E "MOET.*New Price:" full_test_output.log | wc -l)"
+    echo "  Balance observations: $(grep -E "MOET Debt:" full_test_output.log | wc -l)"
+    echo ""
+    echo "YieldToken:"
+    echo "  Price updates: $(grep -E "YieldToken.*New Price:" full_test_output.log | wc -l)"
+    echo "  Balance observations: $(grep -E "YieldToken Balance:" full_test_output.log | wc -l)"
+    echo ""
+    
+    # 6. Price Scenarios Tested
+    echo "6. PRICE SCENARIOS COVERAGE"
     echo "--------------------------"
     echo "Price updates detected:"
     grep -c "\[PRICE UPDATE\]" full_test_output.log || echo "0"
@@ -87,22 +103,22 @@ REPORT_FILE="test_reports/comprehensive_report_$(date +%Y%m%d_%H%M%S).txt"
     grep "New Price:" full_test_output.log | grep -oE "[0-9.]+" | sort -nu | head -10
     echo ""
     
-    # 6. Rebalancing Effectiveness
-    echo "6. REBALANCING EFFECTIVENESS"
+    # 7. Rebalancing Effectiveness
+    echo "7. REBALANCING EFFECTIVENESS"
     echo "---------------------------"
     REBALANCES=$(grep -c "Triggering rebalance" full_test_output.log || echo "0")
     echo "Total rebalance operations: $REBALANCES"
     echo ""
     
-    # 7. Error Summary
-    echo "7. ERROR AND WARNING SUMMARY"
+    # 8. Error Summary
+    echo "8. ERROR AND WARNING SUMMARY"
     echo "---------------------------"
     echo "Checking for runtime errors..."
     grep -i "error\|panic\|fail" full_test_output.log | grep -v "Test.*Error" | head -5 || echo "No runtime errors detected"
     echo ""
     
-    # 8. Performance Metrics
-    echo "8. PERFORMANCE METRICS"
+    # 9. Performance Metrics
+    echo "9. PERFORMANCE METRICS"
     echo "---------------------"
     if [ -f "full_test_output.log" ]; then
         START_TIME=$(head -1 full_test_output.log | grep -oE "[0-9]+:[0-9]+[AP]M" | head -1)
@@ -112,9 +128,9 @@ REPORT_FILE="test_reports/comprehensive_report_$(date +%Y%m%d_%H%M%S).txt"
     fi
     echo ""
     
-    # 9. Final Verification Status
-    echo "9. FINAL VERIFICATION STATUS"
-    echo "---------------------------"
+    # 10. Final Verification Status
+    echo "10. FINAL VERIFICATION STATUS"
+    echo "----------------------------"
     
     CRITICAL_ERRORS=0
     if [ -f "deep_verification_report.json" ]; then
@@ -134,8 +150,8 @@ REPORT_FILE="test_reports/comprehensive_report_$(date +%Y%m%d_%H%M%S).txt"
     fi
     echo ""
     
-    # 10. Recommendations
-    echo "10. RECOMMENDATIONS"
+    # 11. Recommendations
+    echo "11. RECOMMENDATIONS"
     echo "------------------"
     echo "1. Investigate the 1000x price multiplier health calculation overflow"
     echo "2. Ensure all AutoBalancers have configured rebalanceSource"
@@ -163,6 +179,8 @@ cat > test_reports/summary.json << EOF
   "key_findings": [
     "All basic calculations verified correct",
     "Rebalancing logic works as designed",
+    "All 3 tokens (FLOW, MOET, YieldToken) tracked comprehensively",
+    "Both prices and balances shown for all tokens",
     "1000x price causes display overflow",
     "Zero balance edge cases in concurrent tests"
   ],

@@ -81,5 +81,5 @@ access(all) fun testMOETDepegScenario() {
     let healthAfter3 = getPositionHealth(pid: 0, beFailed: false)
     log("Health after rebalance: ".concat(healthAfter3.toString()))
     
-    logPositionDetails(pid: 0, stage: "After extreme MOET depeg")
+    logComprehensivePositionState(pid: 0, stage: "After extreme MOET depeg", flowPrice: 0.5, moetPrice: 0.1)
 }

@@ -129,8 +129,15 @@ access(all) fun testMixedPriceScenario() {{
     let initialBorrowHealth = getPositionHealth(pid: 0, beFailed: false)
     let initialBalancerBalance = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
     
-    log("Auto-Borrow Position Health: ".concat(initialBorrowHealth.toString()))
-    log("Auto-Balancer YieldToken Balance: ".concat(initialBalancerBalance.toString()))
+    logMixedScenarioState(
+        pid: 0,
+        autoBalancerID: autoBalancerID,
+        tideID: tideID,
+        stage: "Initial State",
+        flowPrice: 1.0,
+        yieldPrice: 1.0,
+        moetPrice: 1.0
+    )
     
     var i = 0
     while i < flowPrices.length {{
@@ -148,10 +155,15 @@ access(all) fun testMixedPriceScenario() {{
         let borrowHealthBefore = getPositionHealth(pid: 0, beFailed: false)
         let balancerBalanceBefore = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
         
-        log("")
-        log("BEFORE REBALANCING:")
-        log("  Auto-Borrow Health: ".concat(borrowHealthBefore.toString()))
-        log("  Auto-Balancer Balance: ".concat(balancerBalanceBefore.toString()).concat(" YieldToken"))
+        logMixedScenarioState(
+            pid: 0,
+            autoBalancerID: autoBalancerID,
+            tideID: tideID,
+            stage: "Before Rebalancing",
+            flowPrice: flowPrice,
+            yieldPrice: yieldPrice,
+            moetPrice: 1.0
+        )
         
         // Trigger both rebalances
         log("")
@@ -163,10 +175,15 @@ access(all) fun testMixedPriceScenario() {{
         let borrowHealthAfter = getPositionHealth(pid: 0, beFailed: false)
         let balancerBalanceAfter = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
         
-        log("")
-        log("AFTER REBALANCING:")
-        log("  Auto-Borrow Health: ".concat(borrowHealthAfter.toString()))
-        log("  Auto-Balancer Balance: ".concat(balancerBalanceAfter.toString()).concat(" YieldToken"))
+        logMixedScenarioState(
+            pid: 0,
+            autoBalancerID: autoBalancerID,
+            tideID: tideID,
+            stage: "After Rebalancing",
+            flowPrice: flowPrice,
+            yieldPrice: yieldPrice,
+            moetPrice: 1.0
+        )
         
         // Calculate changes
         var healthChange: UFix64 = 0.0
@@ -209,12 +226,29 @@ access(all) fun testMixedPriceScenario() {{
     }}
     
     logSeparator(title: "Final State Summary")
-    log("Auto-Borrow Final Health: ".concat(getPositionHealth(pid: 0, beFailed: false).toString()))
-    log("Auto-Balancer Final Balance: ".concat(getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false).toString()))
+    
+    // Use the last prices from the arrays
+    let finalFlowPrice = flowPrices[flowPrices.length - 1]
+    let finalYieldPrice = yieldPrices[yieldPrices.length - 1]
+    
+    logMixedScenarioState(
+        pid: 0,
+        autoBalancerID: autoBalancerID,
+        tideID: tideID,
+        stage: "Final State",
+        flowPrice: finalFlowPrice,
+        yieldPrice: finalYieldPrice,
+        moetPrice: 1.0
+    )
+    
+    // Log state changes summary
+    let finalBorrowHealth = getPositionHealth(pid: 0, beFailed: false)
+    let finalBalancerBalance = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
+    
     log("")
-    log("Initial vs Final:")
-    log("  Borrow Health: ".concat(initialBorrowHealth.toString()).concat(" -> ").concat(getPositionHealth(pid: 0, beFailed: false).toString()))
-    log("  Balancer Balance: ".concat(initialBalancerBalance.toString()).concat(" -> ").concat(getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false).toString()))
+    log("OVERALL CHANGES:")
+    log("  Borrow Health: ".concat(initialBorrowHealth.toString()).concat(" -> ").concat(finalBorrowHealth.toString()))
+    log("  Balancer Balance: ".concat(initialBalancerBalance.toString()).concat(" -> ").concat(finalBalancerBalance.toString()).concat(" YieldToken"))
 }}
 '''
     

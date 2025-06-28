@@ -120,7 +120,15 @@ fun testAutoBalancerRebalancesOnYieldTokenPriceChanges() {
     // Get initial AutoBalancer state
     let autoBalancerID = getAutoBalancerIDByTideID(tideID: tideID, beFailed: false)
     let balance0 = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
-    logAutoBalancerState(id: autoBalancerID, yieldPrice: 1.0, stage: "Initial State")
+    logComprehensiveAutoBalancerState(
+        id: autoBalancerID,
+        tideID: tideID,
+        stage: "Initial State",
+        flowPrice: 1.0,
+        yieldPrice: 1.0,
+        moetPrice: 1.0,
+        initialDeposit: 1000.0
+    )
     
     // ---------- Stage 1 – YieldToken price rises 20% ----------
     logSeparator(title: "STAGE 1: YieldToken Price Rises 20%")
@@ -128,7 +136,15 @@ fun testAutoBalancerRebalancesOnYieldTokenPriceChanges() {
     setMockOraclePriceWithLog(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2, tokenName: "YieldToken")
     
     // Log before rebalance
-    logAutoBalancerState(id: autoBalancerID, yieldPrice: 1.2, stage: "Before Rebalance")
+    logComprehensiveAutoBalancerState(
+        id: autoBalancerID,
+        tideID: tideID,
+        stage: "Before Rebalance",
+        flowPrice: 1.0,
+        yieldPrice: 1.2,
+        moetPrice: 1.0,
+        initialDeposit: 1000.0
+    )
     
     log("Triggering rebalance with force=true...")
     rebalanceTide(signer: tidalYieldAccount, id: tideID, force: true, beFailed: false)

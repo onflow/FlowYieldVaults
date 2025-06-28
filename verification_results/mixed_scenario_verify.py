@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
 """
-Mixed Scenario Verification Script
-Analyzes test results from mixed price scenarios where FLOW and YieldToken move independently
+Mixed Scenario Verification Script for Tidal Protocol
+
+This script analyzes mixed scenario test outputs where both auto-borrow
+and auto-balancer are tested simultaneously with independent price movements.
 """
 
 import re
-import sys
 import json
-from decimal import Decimal, getcontext
-from collections import defaultdict
-
-# Set precision for financial calculations
-getcontext().prec = 28
-
-def strip_ansi_codes(text):
-    """Remove ANSI color codes from text"""
-    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-    return ansi_escape.sub('', text)
+import sys
+from decimal import Decimal
+from datetime import datetime
 
 def parse_mixed_scenario_log(log_file):
     """Parse mixed scenario test output and extract key data"""
@@ -28,122 +22,194 @@ def parse_mixed_scenario_log(log_file):
         'final_state': {},
         'interactions': [],
         'critical_events': [],
-        'price_correlations': []
+        'price_correlations': [],
+        'all_token_data': {
+            'FLOW': [],
+            'MOET': [],
+            'YieldToken': []
+        }
     }
     
     current_stage = None
     in_stage = False
     stage_data = {}
     
+    # Comprehensive format patterns (handles escaped Unicode)
+    mixed_state_pattern = re.compile(r'MIXED SCENARIO STATE: (Initial State|Before Rebalancing|After Rebalancing)')
+    
+    # Price patterns
+    flow_price_pattern = re.compile(r'(?:║|\\u\{2551\})\s*FLOW:\s*([0-9.,]+)\s*MOET')
+    yield_price_pattern = re.compile(r'(?:║|\\u\{2551\})\s*YieldToken:\s*([0-9.,]+)\s*MOET')
+    
+    # Balance patterns 
+    health_ratio_pattern = re.compile(r'(?:║|\\u\{2551\})\s*Health Ratio:\s*([0-9.,]+)')
+    moet_debt_pattern = re.compile(r'(?:║|\\u\{2551\})\s*MOET Debt:\s*([0-9.,]+)')
+    yield_balance_pattern = re.compile(r'(?:║|\\u\{2551\})\s*YieldToken Balance:\s*([0-9.,]+)')
+    
+    # Stage patterns
+    stage_pattern = re.compile(r'== Stage (\d+):\s*(.+)')
+    scenario_pattern = re.compile(r'== MIXED SCENARIO:\s*(.+)')
+    
+    # State tracking
+    current_state_type = None  # 'initial', 'before', 'after'
+    temp_before_data = {}
+    temp_after_data = {}
+    
     with open(log_file, 'r') as f:
-        for line in f:
-            line = strip_ansi_codes(line.strip())
+        lines = f.readlines()
+        
+    for i, line in enumerate(lines):
+        line = line.strip()
+        
+        # Check for scenario name
+        scenario_match = scenario_pattern.search(line)
+        if scenario_match:
+            results['scenario_name'] = scenario_match.group(1)
+            continue
             
-            # Extract content from LOG: "..." format
-            if 'LOG: "' in line:
-                try:
-                    line = line.split('LOG: "')[1].rstrip('"')
-                except IndexError:
-                    continue
-            
-            # Extract scenario name
-            if "MIXED SCENARIO:" in line:
-                results['scenario_name'] = line.split("MIXED SCENARIO:")[1].strip()
-            
-            # Parse initial state
-            elif "Initial State" in line:
-                current_stage = "initial"
-            elif current_stage == "initial" and "Auto-Borrow Position Health:" in line:
-                results['initial_state']['borrow_health'] = Decimal(line.split(":")[1].strip())
-            elif current_stage == "initial" and "Auto-Balancer YieldToken Balance:" in line:
-                results['initial_state']['balancer_balance'] = Decimal(line.split(":")[1].strip())
-                current_stage = None
-            
-            # Parse stage data
-            elif re.match(r"== Stage \d+:", line):
-                if stage_data:
-                    results['stages'].append(stage_data)
-                stage_match = re.search(r"Stage (\d+):", line)
-                stage_data = {
-                    'stage_num': int(stage_match.group(1)) if stage_match else 0,
-                    'description': line.split(":", 1)[1].strip(),
-                    'flow_price': None,
-                    'yield_price': None,
-                    'health_before': None,
-                    'health_after': None,
-                    'balance_before': None,
-                    'balance_after': None,
+        # Check for stage start
+        stage_match = stage_pattern.search(line)
+        if stage_match:
+            # Save any pending stage data
+            if current_stage is not None and temp_before_data:
+                stage_entry = {
+                    'stage_num': current_stage['num'],
+                    'description': current_stage['desc'],
+                    'flow_price': temp_before_data.get('flow_price'),
+                    'yield_price': temp_before_data.get('yield_price'),
+                    'health_before': temp_before_data.get('health'),
+                    'health_after': temp_after_data.get('health'),
+                    'balance_before': temp_before_data.get('yield_balance'),
+                    'balance_after': temp_after_data.get('yield_balance'),
                     'health_change': None,
                     'balance_change': None
                 }
-                in_stage = True
+                
+                # Calculate changes
+                if stage_entry['health_before'] and stage_entry['health_after']:
+                    stage_entry['health_change'] = str(
+                        Decimal(stage_entry['health_after']) - Decimal(stage_entry['health_before'])
+                    )
+                if stage_entry['balance_before'] and stage_entry['balance_after']:
+                    stage_entry['balance_change'] = str(
+                        Decimal(stage_entry['balance_after']) - Decimal(stage_entry['balance_before'])
+                    )
+                    
+                results['stages'].append(stage_entry)
+                
+            # Reset for new stage
+            current_stage = {
+                'num': int(stage_match.group(1)),
+                'desc': stage_match.group(2)
+            }
+            temp_before_data = {}
+            temp_after_data = {}
+            continue
             
+        # Check for state markers
+        state_match = mixed_state_pattern.search(line)
+        if state_match:
+            state_type = state_match.group(1)
+            if state_type == "Initial State":
+                current_state_type = 'initial'
+            elif state_type == "Before Rebalancing":
+                current_state_type = 'before'
+            elif state_type == "After Rebalancing":
+                current_state_type = 'after'
+            continue
+            
+        # Extract data based on current state
+        if current_state_type:
             # Extract prices
-            elif in_stage and "[PRICE UPDATE] Setting FLOW price" in line:
-                current_stage = "flow_price"
-            elif current_stage == "flow_price" and "New Price:" in line:
-                price_match = re.search(r"New Price: ([\d.]+)", line)
-                if price_match:
-                    stage_data['flow_price'] = Decimal(price_match.group(1))
-                current_stage = None
-            elif in_stage and "[PRICE UPDATE] Setting YieldToken price" in line:
-                current_stage = "yield_price"
-            elif current_stage == "yield_price" and "New Price:" in line:
-                price_match = re.search(r"New Price: ([\d.]+)", line)
-                if price_match:
-                    stage_data['yield_price'] = Decimal(price_match.group(1))
-                current_stage = None
+            flow_match = flow_price_pattern.search(line)
+            if flow_match:
+                price = flow_match.group(1)
+                if current_state_type == 'initial':
+                    results['initial_state']['flow_price'] = price
+                elif current_state_type == 'before':
+                    temp_before_data['flow_price'] = price
+                elif current_state_type == 'after':
+                    temp_after_data['flow_price'] = price
+                    
+            yield_match = yield_price_pattern.search(line)
+            if yield_match:
+                price = yield_match.group(1)
+                if current_state_type == 'initial':
+                    results['initial_state']['yield_price'] = price
+                elif current_state_type == 'before':
+                    temp_before_data['yield_price'] = price
+                elif current_state_type == 'after':
+                    temp_after_data['yield_price'] = price
+                    
+            # Extract health ratio
+            health_match = health_ratio_pattern.search(line)
+            if health_match:
+                health = health_match.group(1)
+                if current_state_type == 'initial':
+                    results['initial_state']['borrow_health'] = health
+                elif current_state_type == 'before':
+                    temp_before_data['health'] = health
+                elif current_state_type == 'after':
+                    temp_after_data['health'] = health
+                    
+            # Extract MOET debt
+            debt_match = moet_debt_pattern.search(line)
+            if debt_match:
+                debt = debt_match.group(1)
+                if current_state_type == 'initial':
+                    results['initial_state']['moet_debt'] = debt
+                elif current_state_type == 'before':
+                    temp_before_data['moet_debt'] = debt
+                elif current_state_type == 'after':
+                    temp_after_data['moet_debt'] = debt
+                    
+            # Extract YieldToken balance
+            yield_bal_match = yield_balance_pattern.search(line)
+            if yield_bal_match:
+                balance = yield_bal_match.group(1)
+                if current_state_type == 'initial':
+                    results['initial_state']['balancer_balance'] = balance
+                elif current_state_type == 'before':
+                    temp_before_data['yield_balance'] = balance
+                elif current_state_type == 'after':
+                    temp_after_data['yield_balance'] = balance
+                    
+    # Save final stage if any
+    if current_stage is not None and temp_before_data:
+        stage_entry = {
+            'stage_num': current_stage['num'],
+            'description': current_stage['desc'],
+            'flow_price': temp_before_data.get('flow_price'),
+            'yield_price': temp_before_data.get('yield_price'),
+            'health_before': temp_before_data.get('health'),
+            'health_after': temp_after_data.get('health'),
+            'balance_before': temp_before_data.get('yield_balance'),
+            'balance_after': temp_after_data.get('yield_balance'),
+            'health_change': None,
+            'balance_change': None
+        }
+        
+        # Calculate changes
+        if stage_entry['health_before'] and stage_entry['health_after']:
+            stage_entry['health_change'] = str(
+                Decimal(stage_entry['health_after']) - Decimal(stage_entry['health_before'])
+            )
+        if stage_entry['balance_before'] and stage_entry['balance_after']:
+            stage_entry['balance_change'] = str(
+                Decimal(stage_entry['balance_after']) - Decimal(stage_entry['balance_before'])
+            )
             
-            # Before rebalancing
-            elif in_stage and "BEFORE REBALANCING:" in line:
-                current_stage = "before"
-            elif current_stage == "before" and "Auto-Borrow Health:" in line:
-                stage_data['health_before'] = Decimal(line.split(":")[1].strip())
-            elif current_stage == "before" and "Auto-Balancer Balance:" in line:
-                balance_str = line.split(":")[1].strip().split()[0]
-                stage_data['balance_before'] = Decimal(balance_str)
-            
-            # After rebalancing
-            elif in_stage and "AFTER REBALANCING:" in line:
-                current_stage = "after"
-            elif current_stage == "after" and "Auto-Borrow Health:" in line:
-                stage_data['health_after'] = Decimal(line.split(":")[1].strip())
-            elif current_stage == "after" and "Auto-Balancer Balance:" in line:
-                balance_str = line.split(":")[1].strip().split()[0]
-                stage_data['balance_after'] = Decimal(balance_str)
-            
-            # Changes
-            elif in_stage and "Health" in line and ("IMPROVED" in line or "DETERIORATED" in line or "UNCHANGED" in line):
-                if "IMPROVED" in line:
-                    change = Decimal(line.split("by:")[1].strip())
-                    stage_data['health_change'] = change
-                elif "DETERIORATED" in line:
-                    change = Decimal(line.split("by:")[1].strip())
-                    stage_data['health_change'] = -change
-                else:
-                    stage_data['health_change'] = Decimal('0')
-            
-            elif in_stage and "Balance" in line and ("INCREASED" in line or "DECREASED" in line or "UNCHANGED" in line):
-                if "INCREASED" in line:
-                    change = Decimal(line.split("by:")[1].strip())
-                    stage_data['balance_change'] = change
-                elif "DECREASED" in line:
-                    change = Decimal(line.split("by:")[1].strip())
-                    stage_data['balance_change'] = -change
-                else:
-                    stage_data['balance_change'] = Decimal('0')
-                current_stage = None
-            
-            # Final state
-            elif "Final State Summary" in line:
-                in_stage = False
-                if stage_data:
-                    results['stages'].append(stage_data)
-                    stage_data = {}
-            elif "Auto-Borrow Final Health:" in line:
-                results['final_state']['borrow_health'] = Decimal(line.split(":")[1].strip())
-            elif "Auto-Balancer Final Balance:" in line:
-                results['final_state']['balancer_balance'] = Decimal(line.split(":")[1].strip())
+        results['stages'].append(stage_entry)
+        
+    # Set final state from last stage
+    if results['stages']:
+        last_stage = results['stages'][-1]
+        results['final_state'] = {
+            'flow_price': last_stage.get('flow_price'),
+            'yield_price': last_stage.get('yield_price'),
+            'borrow_health': last_stage.get('health_after'),
+            'balancer_balance': last_stage.get('balance_after')
+        }
     
     return results
 
@@ -154,37 +220,42 @@ def analyze_interactions(results):
     
     for i, stage in enumerate(results['stages']):
         # Check for critical conditions
-        if stage['health_after'] and stage['health_after'] < Decimal('0.5'):
-            if stage['balance_after'] == Decimal('0'):
-                interactions.append({
-                    'stage': i,
-                    'type': 'critical_both',
-                    'description': f"Stage {i}: Both systems in critical state - health {stage['health_after']}, balance wiped out",
-                    'flow_price': str(stage['flow_price']) if stage['flow_price'] else 'N/A',
-                    'yield_price': str(stage['yield_price']) if stage['yield_price'] else 'N/A'
-                })
+        health_after = stage.get('health_after')
+        balance_after = stage.get('balance_after')
+        balance_before = stage.get('balance_before')
         
-        # Check for inverse effects
-        if stage['health_change'] and stage['balance_change']:
-            if (stage['health_change'] > 0 and stage['balance_change'] < 0) or \
-               (stage['health_change'] < 0 and stage['balance_change'] > 0):
-                                 interactions.append({
-                     'stage': i,
-                     'type': 'inverse_effect',
-                     'description': f"Stage {i}: Inverse effects - health {'improved' if stage['health_change'] > 0 else 'deteriorated'}, balance {'decreased' if stage['balance_change'] < 0 else 'increased'}",
-                     'flow_price': str(stage['flow_price']) if stage['flow_price'] else 'N/A',
-                     'yield_price': str(stage['yield_price']) if stage['yield_price'] else 'N/A'
-                 })
-        
-        # Check for wipeout events
-        if stage['balance_before'] and stage['balance_before'] > 0 and stage['balance_after'] == 0:
-                            interactions.append({
-                    'stage': i,
-                    'type': 'balancer_wipeout',
-                    'description': f"Stage {i}: Auto-balancer wiped out from {stage['balance_before']} to 0",
-                    'flow_price': str(stage['flow_price']) if stage['flow_price'] else 'N/A',
-                    'yield_price': str(stage['yield_price']) if stage['yield_price'] else 'N/A'
-                })
+        if health_after:
+            health_val = Decimal(health_after)
+            if health_val < Decimal('0.5'):
+                if balance_after and Decimal(balance_after) == Decimal('0'):
+                    interactions.append({
+                        'stage': i,
+                        'type': 'critical_both',
+                        'description': f"Stage {i}: Both systems in critical state - health {health_after}, balance wiped out",
+                        'flow_price': str(stage.get('flow_price', 'N/A')),
+                        'yield_price': str(stage.get('yield_price', 'N/A'))
+                    })
+                else:
+                    interactions.append({
+                        'stage': i,
+                        'type': 'critical_borrow',
+                        'description': f"Stage {i}: Auto-borrow critical - health {health_after}",
+                        'flow_price': str(stage.get('flow_price', 'N/A'))
+                    })
+            
+        # Check for large balance changes
+        if balance_before and balance_after:
+            before_val = Decimal(balance_before)
+            after_val = Decimal(balance_after)
+            if before_val > 0:
+                change_pct = abs((after_val - before_val) / before_val * 100)
+                if change_pct > 50:
+                    interactions.append({
+                        'stage': i,
+                        'type': 'large_balance_change',
+                        'description': f"Stage {i}: Large balance change {change_pct:.2f}%",
+                        'yield_price': str(stage.get('yield_price', 'N/A'))
+                    })
     
     return interactions
 
@@ -197,30 +268,40 @@ def calculate_correlations(results):
         prev = results['stages'][i-1]
         curr = results['stages'][i]
         
-        if prev['flow_price'] and curr['flow_price'] and prev['yield_price'] and curr['yield_price']:
-            flow_change = (curr['flow_price'] - prev['flow_price']) / prev['flow_price']
-            yield_change = (curr['yield_price'] - prev['yield_price']) / prev['yield_price']
+        prev_flow = prev.get('flow_price')
+        curr_flow = curr.get('flow_price')
+        prev_yield = prev.get('yield_price')
+        curr_yield = curr.get('yield_price')
+        
+        if prev_flow and curr_flow and prev_yield and curr_yield:
+            prev_flow_dec = Decimal(prev_flow)
+            curr_flow_dec = Decimal(curr_flow)
+            prev_yield_dec = Decimal(prev_yield)
+            curr_yield_dec = Decimal(curr_yield)
             
-            # Determine correlation type
-            if abs(flow_change) < Decimal('0.05') and abs(yield_change) > Decimal('0.2'):
-                corr_type = 'flow_stable_yield_volatile'
-            elif abs(yield_change) < Decimal('0.05') and abs(flow_change) > Decimal('0.2'):
-                corr_type = 'yield_stable_flow_volatile'
-            elif flow_change * yield_change < 0:
-                corr_type = 'inverse'
-            elif flow_change * yield_change > 0:
-                corr_type = 'positive'
-            else:
+            if prev_flow_dec > 0 and prev_yield_dec > 0:
+                flow_change = (curr_flow_dec - prev_flow_dec) / prev_flow_dec
+                yield_change = (curr_yield_dec - prev_yield_dec) / prev_yield_dec
+                
+                # Determine correlation type
                 corr_type = 'neutral'
-            
-            correlations.append({
-                'stage': i,
-                'flow_change_pct': float(flow_change * 100),
-                'yield_change_pct': float(yield_change * 100),
-                'correlation_type': corr_type,
-                'health_impact': float(curr['health_change']) if curr['health_change'] else 0,
-                'balance_impact': float(curr['balance_change']) if curr['balance_change'] else 0
-            })
+                if abs(flow_change) < Decimal('0.05') and abs(yield_change) > Decimal('0.2'):
+                    corr_type = 'flow_stable_yield_volatile'
+                elif abs(yield_change) < Decimal('0.05') and abs(flow_change) > Decimal('0.2'):
+                    corr_type = 'yield_stable_flow_volatile'
+                elif flow_change * yield_change < 0 and abs(flow_change) > Decimal('0.1') and abs(yield_change) > Decimal('0.1'):
+                    corr_type = 'inverse'
+                elif flow_change * yield_change > 0 and abs(flow_change) > Decimal('0.1') and abs(yield_change) > Decimal('0.1'):
+                    corr_type = 'positive'
+                
+                correlations.append({
+                    'stage': i,
+                    'flow_change_pct': float(flow_change * 100),
+                    'yield_change_pct': float(yield_change * 100),
+                    'correlation_type': corr_type,
+                    'health_impact': float(curr.get('health_change') or 0),
+                    'balance_impact': float(curr.get('balance_change') or 0)
+                })
     
     return correlations
 
@@ -235,78 +316,66 @@ def generate_report(results):
     
     # Initial vs Final
     print("\n### Initial vs Final State ###")
-    print(f"Auto-Borrow Health: {results['initial_state']['borrow_health']} → {results['final_state']['borrow_health']}")
-    print(f"Auto-Balancer Balance: {results['initial_state']['balancer_balance']} → {results['final_state']['balancer_balance']}")
+    initial_health = results['initial_state'].get('borrow_health', 'N/A')
+    final_health = results['final_state'].get('borrow_health', 'N/A')
+    initial_balance = results['initial_state'].get('balancer_balance', 'N/A')
+    final_balance = results['final_state'].get('balancer_balance', 'N/A')
     
-    # Key Metrics
-    print("\n### Key Metrics ###")
-    health_changes = [s['health_change'] for s in results['stages'] if s['health_change']]
-    balance_changes = [s['balance_change'] for s in results['stages'] if s['balance_change']]
+    print(f"Auto-Borrow Health: {initial_health} → {final_health}")
+    print(f"Auto-Balancer Balance: {initial_balance} → {final_balance}")
     
-    if health_changes:
-        print(f"Average Health Change: {sum(health_changes)/len(health_changes):.8f}")
-        print(f"Max Health Improvement: {max(health_changes):.8f}")
-        print(f"Max Health Deterioration: {min(health_changes):.8f}")
+    # Price movements
+    print("\n### Price Movements ###")
+    for stage in results['stages']:
+        if stage['flow_price'] or stage['yield_price']:
+            print(f"Stage {stage['stage_num']}: {stage['description']}")
+            if stage['flow_price']:
+                print(f"  FLOW: {stage['flow_price']} MOET")
+            if stage['yield_price']:
+                print(f"  YieldToken: {stage['yield_price']} MOET")
+            print(f"  Health: {stage.get('health_before', 'N/A')} → {stage.get('health_after', 'N/A')}")
+            print(f"  Balance: {stage.get('balance_before', 'N/A')} → {stage.get('balance_after', 'N/A')}")
     
-    if balance_changes:
-        print(f"Average Balance Change: {sum(balance_changes)/len(balance_changes):.8f}")
-        print(f"Max Balance Increase: {max(balance_changes):.8f}")
-        print(f"Max Balance Decrease: {min(balance_changes):.8f}")
-    
-    # Interactions
-    interactions = analyze_interactions(results)
-    if interactions:
-        print("\n### Critical Interactions ###")
-        for interaction in interactions:
-            print(f"- {interaction['description']}")
-            print(f"  FLOW: {interaction['flow_price']}, Yield: {interaction['yield_price']}")
+    # Critical events
+    if results.get('critical_events'):
+        print("\n### Critical Events ###")
+        for event in results['critical_events']:
+            print(f"- {event['description']}")
     
     # Correlations
-    correlations = calculate_correlations(results)
-    if correlations:
-        print("\n### Price Correlation Analysis ###")
-        corr_types = defaultdict(int)
-        for corr in correlations:
-            corr_types[corr['correlation_type']] += 1
+    if results.get('correlations'):
+        print("\n### Price Correlations ###")
+        correlation_types = {}
+        for corr in results['correlations']:
+            corr_type = corr['correlation_type']
+            correlation_types[corr_type] = correlation_types.get(corr_type, 0) + 1
         
-        for corr_type, count in corr_types.items():
+        for corr_type, count in correlation_types.items():
             print(f"- {corr_type}: {count} occurrences")
     
-    # Critical Events
-    print("\n### Critical Events ###")
-    critical_count = 0
-    for i, stage in enumerate(results['stages']):
-        if stage['health_after'] and stage['health_after'] < Decimal('0.5'):
-            print(f"- Stage {i}: Critical health level {stage['health_after']}")
-            critical_count += 1
-        if stage['balance_after'] == Decimal('0') and stage['balance_before'] and stage['balance_before'] > 0:
-            print(f"- Stage {i}: Auto-balancer wiped out")
-            critical_count += 1
+    print("\n" + "=" * 80)
+
+def save_results(results, output_file):
+    """Save analysis results to JSON"""
     
-    if critical_count == 0:
-        print("- No critical events detected")
-    
-    # Save detailed results
-    output_data = {
-        'scenario_name': results['scenario_name'],
-        'initial_state': {k: str(v) for k, v in results['initial_state'].items()},
-        'final_state': {k: str(v) for k, v in results['final_state'].items()},
-        'stages': [{k: str(v) if isinstance(v, Decimal) else v for k, v in stage.items()} 
-                   for stage in results['stages']],
-        'interactions': interactions,
-        'correlations': correlations,
-        'summary': {
-            'total_stages': len(results['stages']),
-            'critical_events': critical_count,
-            'final_health_status': 'healthy' if results['final_state']['borrow_health'] >= Decimal('1.1') else 'unhealthy',
-            'balancer_status': 'active' if results['final_state']['balancer_balance'] > 0 else 'wiped_out'
+    summary = {
+        'total_stages': len(results['stages']),
+        'critical_events': len(results.get('critical_events', [])),
+        'final_health_status': 'healthy' if results['final_state'].get('borrow_health') and Decimal(results['final_state']['borrow_health']) > Decimal('1.0') else 'unhealthy',
+        'balancer_status': 'active' if results['final_state'].get('balancer_balance') and Decimal(results['final_state']['balancer_balance']) > 0 else 'empty',
+        'tokens_tracked': {
+            'FLOW': len([s for s in results['stages'] if s.get('flow_price')]),
+            'YieldToken': len([s for s in results['stages'] if s.get('yield_price')]),
+            'MOET': len(results['all_token_data'].get('MOET', []))
         }
     }
     
-    with open('mixed_scenario_analysis.json', 'w') as f:
-        json.dump(output_data, f, indent=2)
+    results['summary'] = summary
     
-    print("\nDetailed results saved to mixed_scenario_analysis.json")
+    with open(output_file, 'w') as f:
+        json.dump(results, f, indent=2)
+    
+    print(f"\nResults saved to: {output_file}")
 
 def main():
     if len(sys.argv) < 2:
@@ -314,8 +383,23 @@ def main():
         sys.exit(1)
     
     log_file = sys.argv[1]
+    
+    print(f"Analyzing mixed scenario log: {log_file}")
+    
+    # Parse log
     results = parse_mixed_scenario_log(log_file)
+    
+    # Analyze interactions
+    results['interactions'] = analyze_interactions(results)
+    
+    # Calculate correlations
+    results['correlations'] = calculate_correlations(results)
+    
+    # Generate report
     generate_report(results)
+    
+    # Save results
+    save_results(results, 'mixed_scenario_analysis.json')
 
 if __name__ == "__main__":
     main() 

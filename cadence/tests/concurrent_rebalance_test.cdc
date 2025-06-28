@@ -77,7 +77,7 @@ access(all) fun testConcurrentRebalancing() {
     }
     
     logSeparator(title: "Final State")
-    logPositionDetails(pid: 0, stage: "After rapid changes")
+    logComprehensivePositionState(pid: 0, stage: "After rapid changes", flowPrice: 0.5, moetPrice: 1.0)
     
     // Check final state
     log("Checking final position state...")
