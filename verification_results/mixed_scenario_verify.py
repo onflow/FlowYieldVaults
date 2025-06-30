@@ -34,27 +34,37 @@ def parse_mixed_scenario_log(log_file):
     in_stage = False
     stage_data = {}
     
-    # Comprehensive format patterns (handles escaped Unicode)
-    mixed_state_pattern = re.compile(r'MIXED SCENARIO STATE: (Initial State|Before Rebalancing|After Rebalancing)')
+    # Updated patterns to match actual log format
+    before_rebalancing_pattern = re.compile(r'={20,}\s*BEFORE REBALANCING\s*={20,}')
+    after_rebalancing_pattern = re.compile(r'POSITION STATE: After Rebalance')
     
-    # Price patterns
-    flow_price_pattern = re.compile(r'\*\s*FLOW:\s*([0-9.,]+)\s*MOET')
-    yield_price_pattern = re.compile(r'\*\s*YieldToken:\s*([0-9.,]+)\s*MOET')
-    moet_price_pattern = re.compile(r'\*\s*MOET:\s*([0-9.,]+)')
+    # Price patterns - updated to match actual format
+    flow_price_pattern = re.compile(r'FLOW:\s*([0-9.]+)\s*MOET')
+    yield_price_pattern = re.compile(r'YieldToken:\s*([0-9.]+)\s*MOET')
+    # MOET price pattern - only matches depegged prices
+    moet_price_pattern = re.compile(r'MOET:\s*([0-9.]+)\s*\((?:DEPEGGED|pegged)\)')
     
-    # Balance patterns 
-    health_ratio_pattern = re.compile(r'\|\s*Health Ratio:\s*([0-9.,]+)')
-    moet_debt_pattern = re.compile(r'\|\s*MOET Debt:\s*([0-9.,]+)')
-    yield_balance_pattern = re.compile(r'\|\s*YieldToken Balance:\s*([0-9.,]+)')
+    # Balance patterns - updated to match actual format
+    health_ratio_pattern = re.compile(r'Health Ratio:\s*([0-9.]+)')
+    moet_debt_pattern = re.compile(r'MOET Debt:\s*([0-9.]+)')
+    yield_balance_pattern = re.compile(r'YieldToken Balance:\s*([0-9.]+)')
+    flow_collateral_pattern = re.compile(r'FLOW Collateral:\s*([0-9.]+)')
     
     # Stage patterns
-    stage_pattern = re.compile(r'== Stage (\d+):\s*(.+)')
+    stage_pattern = re.compile(r'\|== Stage (\d+):\s*(.+)')
     scenario_pattern = re.compile(r'\|== MIXED SCENARIO:\s*(.+)')
     
+    # Additional patterns
+    auto_borrow_health_pattern = re.compile(r'Auto-Borrow Health:\s*([0-9.]+)')
+    auto_balancer_balance_pattern = re.compile(r'Auto-Balancer Balance:\s*([0-9.]+)')
+    
     # State tracking
-    current_state_type = None  # 'initial', 'before', 'after'
+    current_state_type = None  # 'before', 'after'
     temp_before_data = {}
     temp_after_data = {}
+    in_position_state = False
+    in_balancer_state = False
+    in_mixed_scenario = False  # Only capture data after finding mixed scenario marker
     
     with open(log_file, 'r') as f:
         lines = f.readlines()
@@ -62,39 +72,81 @@ def parse_mixed_scenario_log(log_file):
     for i, line in enumerate(lines):
         line = line.strip()
         
-        # Check for scenario name
+        # Check for scenario name - this marks the start of mixed scenario test
         scenario_match = scenario_pattern.search(line)
         if scenario_match:
             results['scenario_name'] = scenario_match.group(1)
+            in_mixed_scenario = True
+            # Clear any previously captured stages from other tests
+            results['stages'] = []
+            results['all_token_data'] = {
+                'FLOW': [],
+                'MOET': [],
+                'YieldToken': []
+            }
+            continue
+            
+        # Skip if not in mixed scenario test
+        if not in_mixed_scenario:
             continue
             
         # Check for stage start
         stage_match = stage_pattern.search(line)
         if stage_match:
             # Save any pending stage data
-            if current_stage is not None and temp_before_data:
+            if current_stage is not None and (temp_before_data or temp_after_data):
                 stage_entry = {
                     'stage_num': current_stage['num'],
                     'description': current_stage['desc'],
                     'flow_price': temp_before_data.get('flow_price'),
                     'yield_price': temp_before_data.get('yield_price'),
+                    'moet_price': temp_before_data.get('moet_price', '1.00000000'),
                     'health_before': temp_before_data.get('health'),
                     'health_after': temp_after_data.get('health'),
-                    'balance_before': temp_before_data.get('yield_balance'),
-                    'balance_after': temp_after_data.get('yield_balance'),
+                    'flow_collateral_before': temp_before_data.get('flow_collateral'),
+                    'flow_collateral_after': temp_after_data.get('flow_collateral'),
+                    'moet_debt_before': temp_before_data.get('moet_debt'),
+                    'moet_debt_after': temp_after_data.get('moet_debt'),
+                    'yield_balance_before': temp_before_data.get('yield_balance'),
+                    'yield_balance_after': temp_after_data.get('yield_balance'),
                     'health_change': None,
-                    'balance_change': None
+                    'flow_collateral_change': None,
+                    'moet_debt_change': None,
+                    'yield_balance_change': None
                 }
                 
-                # Calculate changes
+                # Calculate changes only if both values exist
                 if stage_entry['health_before'] and stage_entry['health_after']:
-                    stage_entry['health_change'] = str(
-                        Decimal(stage_entry['health_after']) - Decimal(stage_entry['health_before'])
-                    )
-                if stage_entry['balance_before'] and stage_entry['balance_after']:
-                    stage_entry['balance_change'] = str(
-                        Decimal(stage_entry['balance_after']) - Decimal(stage_entry['balance_before'])
-                    )
+                    try:
+                        stage_entry['health_change'] = str(
+                            Decimal(stage_entry['health_after']) - Decimal(stage_entry['health_before'])
+                        )
+                    except:
+                        pass
+                        
+                if stage_entry['flow_collateral_before'] and stage_entry['flow_collateral_after']:
+                    try:
+                        stage_entry['flow_collateral_change'] = str(
+                            Decimal(stage_entry['flow_collateral_after']) - Decimal(stage_entry['flow_collateral_before'])
+                        )
+                    except:
+                        pass
+                        
+                if stage_entry['moet_debt_before'] and stage_entry['moet_debt_after']:
+                    try:
+                        stage_entry['moet_debt_change'] = str(
+                            Decimal(stage_entry['moet_debt_after']) - Decimal(stage_entry['moet_debt_before'])
+                        )
+                    except:
+                        pass
+                        
+                if stage_entry['yield_balance_before'] and stage_entry['yield_balance_after']:
+                    try:
+                        stage_entry['yield_balance_change'] = str(
+                            Decimal(stage_entry['yield_balance_after']) - Decimal(stage_entry['yield_balance_before'])
+                        )
+                    except:
+                        pass
                     
                 results['stages'].append(stage_entry)
                 
@@ -107,16 +159,33 @@ def parse_mixed_scenario_log(log_file):
             temp_after_data = {}
             continue
             
-        # Check for state markers
-        state_match = mixed_state_pattern.search(line)
-        if state_match:
-            state_type = state_match.group(1)
-            if state_type == "Initial State":
-                current_state_type = 'initial'
-            elif state_type == "Before Rebalancing":
-                current_state_type = 'before'
-            elif state_type == "After Rebalancing":
-                current_state_type = 'after'
+        # Check for before/after rebalancing markers
+        if before_rebalancing_pattern.search(line):
+            current_state_type = 'before'
+            continue
+            
+        if 'POSITION STATE: After Rebalance' in line:
+            current_state_type = 'after'
+            in_position_state = True
+            in_balancer_state = False
+            continue
+            
+        if 'AUTO-BALANCER STATE: After Rebalance' in line:
+            current_state_type = 'after'
+            in_position_state = False
+            in_balancer_state = True
+            continue
+            
+        if 'POSITION STATE: Before Rebalance' in line:
+            current_state_type = 'before'
+            in_position_state = True
+            in_balancer_state = False
+            continue
+            
+        if 'AUTO-BALANCER STATE: Before Rebalance' in line:
+            current_state_type = 'before'
+            in_position_state = False
+            in_balancer_state = True
             continue
             
         # Extract data based on current state
@@ -125,96 +194,165 @@ def parse_mixed_scenario_log(log_file):
             flow_match = flow_price_pattern.search(line)
             if flow_match:
                 price = flow_match.group(1)
-                if current_state_type == 'initial':
-                    results['initial_state']['flow_price'] = price
-                elif current_state_type == 'before':
+                if current_state_type == 'before':
                     temp_before_data['flow_price'] = price
                 elif current_state_type == 'after':
                     temp_after_data['flow_price'] = price
+                results['all_token_data']['FLOW'].append(price)
                     
             yield_match = yield_price_pattern.search(line)
             if yield_match:
                 price = yield_match.group(1)
-                if current_state_type == 'initial':
-                    results['initial_state']['yield_price'] = price
-                elif current_state_type == 'before':
+                if current_state_type == 'before':
                     temp_before_data['yield_price'] = price
                 elif current_state_type == 'after':
                     temp_after_data['yield_price'] = price
+                results['all_token_data']['YieldToken'].append(price)
                     
+            # Only capture MOET price when it's explicitly stated (depegged)
             moet_match = moet_price_pattern.search(line)
             if moet_match:
                 price = moet_match.group(1)
+                if current_state_type == 'before':
+                    temp_before_data['moet_price'] = price
+                elif current_state_type == 'after':
+                    temp_after_data['moet_price'] = price
                 results['all_token_data']['MOET'].append(price)
                     
-            # Extract health ratio
-            health_match = health_ratio_pattern.search(line)
-            if health_match:
-                health = health_match.group(1)
-                if current_state_type == 'initial':
-                    results['initial_state']['borrow_health'] = health
-                elif current_state_type == 'before':
-                    temp_before_data['health'] = health
-                elif current_state_type == 'after':
-                    temp_after_data['health'] = health
+            # Extract balances and health (from position state)
+            if in_position_state:
+                health_match = health_ratio_pattern.search(line)
+                if health_match:
+                    health = health_match.group(1)
+                    if current_state_type == 'before':
+                        temp_before_data['health'] = health
+                    elif current_state_type == 'after':
+                        temp_after_data['health'] = health
+                        
+                flow_collateral_match = flow_collateral_pattern.search(line)
+                if flow_collateral_match:
+                    collateral = flow_collateral_match.group(1)
+                    if current_state_type == 'before':
+                        temp_before_data['flow_collateral'] = collateral
+                    elif current_state_type == 'after':
+                        temp_after_data['flow_collateral'] = collateral
+                        
+                moet_debt_match = moet_debt_pattern.search(line)
+                if moet_debt_match:
+                    debt = moet_debt_match.group(1)
+                    if current_state_type == 'before':
+                        temp_before_data['moet_debt'] = debt
+                    elif current_state_type == 'after':
+                        temp_after_data['moet_debt'] = debt
                     
-            # Extract MOET debt
-            debt_match = moet_debt_pattern.search(line)
-            if debt_match:
-                debt = debt_match.group(1)
-                if current_state_type == 'initial':
-                    results['initial_state']['moet_debt'] = debt
-                elif current_state_type == 'before':
-                    temp_before_data['moet_debt'] = debt
-                elif current_state_type == 'after':
-                    temp_after_data['moet_debt'] = debt
-                    
-            # Extract YieldToken balance
-            yield_bal_match = yield_balance_pattern.search(line)
-            if yield_bal_match:
-                balance = yield_bal_match.group(1)
-                if current_state_type == 'initial':
-                    results['initial_state']['balancer_balance'] = balance
-                elif current_state_type == 'before':
-                    temp_before_data['yield_balance'] = balance
-                elif current_state_type == 'after':
-                    temp_after_data['yield_balance'] = balance
-                    
+            # Extract YieldToken balance (from balancer state)
+            if in_balancer_state:
+                yield_bal_match = yield_balance_pattern.search(line)
+                if yield_bal_match:
+                    balance = yield_bal_match.group(1)
+                    if current_state_type == 'before':
+                        temp_before_data['yield_balance'] = balance
+                    elif current_state_type == 'after':
+                        temp_after_data['yield_balance'] = balance
+                        
+        # Also check for summary lines
+        auto_health_match = auto_borrow_health_pattern.search(line)
+        if auto_health_match and current_state_type:
+            health = auto_health_match.group(1)
+            if current_state_type == 'before':
+                temp_before_data['health'] = health
+            elif current_state_type == 'after':
+                temp_after_data['health'] = health
+                
+        auto_balance_match = auto_balancer_balance_pattern.search(line)
+        if auto_balance_match and current_state_type:
+            balance = auto_balance_match.group(1)
+            if current_state_type == 'before':
+                temp_before_data['yield_balance'] = balance
+            elif current_state_type == 'after':
+                temp_after_data['yield_balance'] = balance
+                
     # Save final stage if any
-    if current_stage is not None and temp_before_data:
+    if current_stage is not None and (temp_before_data or temp_after_data):
         stage_entry = {
             'stage_num': current_stage['num'],
             'description': current_stage['desc'],
             'flow_price': temp_before_data.get('flow_price'),
             'yield_price': temp_before_data.get('yield_price'),
+            'moet_price': temp_before_data.get('moet_price', '1.00000000'),
             'health_before': temp_before_data.get('health'),
             'health_after': temp_after_data.get('health'),
-            'balance_before': temp_before_data.get('yield_balance'),
-            'balance_after': temp_after_data.get('yield_balance'),
+            'flow_collateral_before': temp_before_data.get('flow_collateral'),
+            'flow_collateral_after': temp_after_data.get('flow_collateral'),
+            'moet_debt_before': temp_before_data.get('moet_debt'),
+            'moet_debt_after': temp_after_data.get('moet_debt'),
+            'yield_balance_before': temp_before_data.get('yield_balance'),
+            'yield_balance_after': temp_after_data.get('yield_balance'),
             'health_change': None,
-            'balance_change': None
+            'flow_collateral_change': None,
+            'moet_debt_change': None,
+            'yield_balance_change': None
         }
         
-        # Calculate changes
+        # Calculate changes only if both values exist
         if stage_entry['health_before'] and stage_entry['health_after']:
-            stage_entry['health_change'] = str(
-                Decimal(stage_entry['health_after']) - Decimal(stage_entry['health_before'])
-            )
-        if stage_entry['balance_before'] and stage_entry['balance_after']:
-            stage_entry['balance_change'] = str(
-                Decimal(stage_entry['balance_after']) - Decimal(stage_entry['balance_before'])
-            )
+            try:
+                stage_entry['health_change'] = str(
+                    Decimal(stage_entry['health_after']) - Decimal(stage_entry['health_before'])
+                )
+            except:
+                pass
+                
+        if stage_entry['flow_collateral_before'] and stage_entry['flow_collateral_after']:
+            try:
+                stage_entry['flow_collateral_change'] = str(
+                    Decimal(stage_entry['flow_collateral_after']) - Decimal(stage_entry['flow_collateral_before'])
+                )
+            except:
+                pass
+                
+        if stage_entry['moet_debt_before'] and stage_entry['moet_debt_after']:
+            try:
+                stage_entry['moet_debt_change'] = str(
+                    Decimal(stage_entry['moet_debt_after']) - Decimal(stage_entry['moet_debt_before'])
+                )
+            except:
+                pass
+                
+        if stage_entry['yield_balance_before'] and stage_entry['yield_balance_after']:
+            try:
+                stage_entry['yield_balance_change'] = str(
+                    Decimal(stage_entry['yield_balance_after']) - Decimal(stage_entry['yield_balance_before'])
+                )
+            except:
+                pass
             
         results['stages'].append(stage_entry)
         
-    # Set final state from last stage
+    # Set initial and final state
     if results['stages']:
+        # Initial state from first stage before values
+        first_stage = results['stages'][0]
+        results['initial_state'] = {
+            'flow_price': first_stage.get('flow_price'),
+            'yield_price': first_stage.get('yield_price'),
+            'moet_price': first_stage.get('moet_price', '1.00000000'),
+            'borrow_health': first_stage.get('health_before'),
+            'flow_collateral': first_stage.get('flow_collateral_before'),
+            'moet_debt': first_stage.get('moet_debt_before'),
+            'yield_balance': first_stage.get('yield_balance_before')
+        }
+        
+        # Final state from last stage after values (if available)
         last_stage = results['stages'][-1]
         results['final_state'] = {
             'flow_price': last_stage.get('flow_price'),
             'yield_price': last_stage.get('yield_price'),
-            'borrow_health': last_stage.get('health_after'),
-            'balancer_balance': last_stage.get('balance_after')
+            'moet_price': last_stage.get('moet_price', '1.00000000'),
+            'borrow_health': last_stage.get('health_after', last_stage.get('health_before')),
+            'flow_collateral': last_stage.get('flow_collateral_after', last_stage.get('flow_collateral_before')),
+            'moet_debt': last_stage.get('moet_debt_after', last_stage.get('moet_debt_before')),
+            'yield_balance': last_stage.get('yield_balance_after', last_stage.get('yield_balance_before'))
         }
     
     return results
@@ -227,8 +365,8 @@ def analyze_interactions(results):
     for i, stage in enumerate(results['stages']):
         # Check for critical conditions
         health_after = stage.get('health_after')
-        balance_after = stage.get('balance_after')
-        balance_before = stage.get('balance_before')
+        balance_after = stage.get('yield_balance_after')
+        balance_before = stage.get('yield_balance_before')
         
         if health_after:
             health_val = Decimal(health_after)
@@ -306,7 +444,9 @@ def calculate_correlations(results):
                     'yield_change_pct': float(yield_change * 100),
                     'correlation_type': corr_type,
                     'health_impact': float(curr.get('health_change') or 0),
-                    'balance_impact': float(curr.get('balance_change') or 0)
+                    'flow_collateral_impact': float(curr.get('flow_collateral_change') or 0),
+                    'moet_debt_impact': float(curr.get('moet_debt_change') or 0),
+                    'yield_balance_impact': float(curr.get('yield_balance_change') or 0)
                 })
     
     return correlations
@@ -324,11 +464,11 @@ def generate_report(results):
     print("\n### Initial vs Final State ###")
     initial_health = results['initial_state'].get('borrow_health', 'N/A')
     final_health = results['final_state'].get('borrow_health', 'N/A')
-    initial_balance = results['initial_state'].get('balancer_balance', 'N/A')
-    final_balance = results['final_state'].get('balancer_balance', 'N/A')
+    initial_balance = results['initial_state'].get('yield_balance', 'N/A')
+    final_balance = results['final_state'].get('yield_balance', 'N/A')
     
     print(f"Auto-Borrow Health: {initial_health} → {final_health}")
-    print(f"Auto-Balancer Balance: {initial_balance} → {final_balance}")
+    print(f"YieldToken Balance: {initial_balance} → {final_balance}")
     
     # Price movements
     print("\n### Price Movements ###")
@@ -340,7 +480,7 @@ def generate_report(results):
             if stage['yield_price']:
                 print(f"  YieldToken: {stage['yield_price']} MOET")
             print(f"  Health: {stage.get('health_before', 'N/A')} → {stage.get('health_after', 'N/A')}")
-            print(f"  Balance: {stage.get('balance_before', 'N/A')} → {stage.get('balance_after', 'N/A')}")
+            print(f"  Balance: {stage.get('yield_balance_before', 'N/A')} → {stage.get('yield_balance_after', 'N/A')}")
     
     # Critical events
     if results.get('critical_events'):
@@ -368,7 +508,7 @@ def save_results(results, output_file):
         'total_stages': len(results['stages']),
         'critical_events': len(results.get('critical_events', [])),
         'final_health_status': 'healthy' if results['final_state'].get('borrow_health') and Decimal(results['final_state']['borrow_health']) > Decimal('1.0') else 'unhealthy',
-        'balancer_status': 'active' if results['final_state'].get('balancer_balance') and Decimal(results['final_state']['balancer_balance']) > 0 else 'empty',
+        'yield_balance_status': 'healthy' if results['final_state'].get('yield_balance') and Decimal(results['final_state']['yield_balance']) > Decimal('0') else 'unhealthy',
         'tokens_tracked': {
             'FLOW': len([s for s in results['stages'] if s.get('flow_price')]),
             'YieldToken': len([s for s in results['stages'] if s.get('yield_price')]),
