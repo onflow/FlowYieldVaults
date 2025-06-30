@@ -55,10 +55,11 @@ class MathematicalAnalyzer:
         content = strip_ansi_codes(content)
             
         # Split by test scenarios
-        scenarios = content.split("Running test:")
+        # Look for test scenarios marked with |== 
+        scenario_pattern = re.compile(r'\|== (AUTO-BORROW SCENARIO|AUTO-BALANCER SCENARIO):\s*([^=]+)')
         
-        for scenario in scenarios[1:]:  # Skip first empty split
-            self._analyze_scenario(scenario)
+        # Also treat the entire content as one scenario for simpler logs
+        self._analyze_scenario(content)
             
     def _analyze_scenario(self, scenario: str):
         """Analyze a single test scenario"""
@@ -114,7 +115,7 @@ class MathematicalAnalyzer:
                         break
                         
             # Balance calculations  
-            if "[AUTOBALANCER STATE]" in line:
+            if "AUTO-BALANCER STATE:" in line:
                 # Extract balance, value, and price from the state itself
                 balance = None
                 calculated_value = None

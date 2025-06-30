@@ -156,10 +156,14 @@ def main() -> None:
         # Track rebalancing events
         if rebalance_trigger_re.search(line):
             # Check if this is an auto-balancer rebalance (we should skip these)
-            # Look backward for context
+            # Look backward for context to identify test type
             is_auto_balancer = False
-            for j in range(max(0, i-10), i):
-                if "AUTO-BALANCER STATE:" in lines[j]:
+            for j in range(max(0, i-50), i):
+                if "AUTO-BALANCER STATE:" in lines[j] or "AUTO-BALANCER SCENARIO:" in lines[j]:
+                    is_auto_balancer = True
+                    break
+                # Also check for TracerStrategy which indicates auto-balancer
+                if "Creating Tide with TracerStrategy" in lines[j]:
                     is_auto_balancer = True
                     break
             
