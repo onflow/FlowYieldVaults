@@ -1259,7 +1259,7 @@ access(all) contract TidalProtocol {
 					// We will hit the health target before using up all of the withdraw token credit. We can easily
 					// compute how many units of the token would bring the position down to the target health.
 					let availableHealth = healthAfterDeposit - targetHealth
-					let availableEffectiveValue = availableHealth * effectiveDebtAfterDeposit
+					let availableEffectiveValue = effectiveDebtAfterDeposit == 0.0 ? effectiveCollateralAfterDeposit : availableHealth * effectiveDebtAfterDeposit
 
 					// The amount of the token we can take using that amount of health
 					let availableTokenCount = availableEffectiveValue / self.collateralFactor[withdrawType]! / self.priceOracle.price(ofToken: withdrawType)!
