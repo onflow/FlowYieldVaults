@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Tidal Protocol Comprehensive Test Suite
-# This script runs all the test scenarios that were verified during development
-# Now includes 10 comprehensive test scenarios + automatic verification
+# This script runs various test scenarios with different options
+# Supports: --happy-path, --full, --preset, --edge, --mixed, --verify, --help
 
 set -e
 
@@ -10,62 +10,291 @@ set -e
 export NO_COLOR=1
 export FORCE_COLOR=0
 
-echo "=================================================================="
-echo "Running Comprehensive Tidal Protocol Test Suite"
-echo "=================================================================="
+# Default values
+MODE="full"
+LOG_FILE="fresh_test_output.log"
+CLEAN_LOG_FILE="clean_test_output.log"
+SKIP_VERIFICATION=false
+
+# Function to display usage
+show_usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  --happy-path    Run only basic scenarios with common values (fast, ~2 min)"
+    echo "  --full          Run all test scenarios (default, ~10 min)"
+    echo "  --preset        Run only preset scenarios (extreme, gradual, volatile)"
+    echo "  --edge          Run only edge case tests"
+    echo "  --mixed         Run only mixed scenario tests"
+    echo "  --verify        Run only verification on existing logs"
+    echo "  --skip-verify   Skip verification after tests"
+    echo "  --help          Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0 --happy-path           # Quick test with common scenarios"
+    echo "  $0 --preset --skip-verify # Run preset scenarios without verification"
+    echo "  $0 --verify               # Run verification on existing logs"
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --happy-path)
+            MODE="happy"
+            LOG_FILE="happy_path_test_output.log"
+            CLEAN_LOG_FILE="clean_happy_path_output.log"
+            shift
+            ;;
+        --full)
+            MODE="full"
+            shift
+            ;;
+        --preset)
+            MODE="preset"
+            LOG_FILE="preset_test_output.log"
+            CLEAN_LOG_FILE="clean_preset_output.log"
+            shift
+            ;;
+        --edge)
+            MODE="edge"
+            LOG_FILE="edge_test_output.log"
+            CLEAN_LOG_FILE="clean_edge_output.log"
+            shift
+            ;;
+        --mixed)
+            MODE="mixed"
+            LOG_FILE="mixed_test_output.log"
+            CLEAN_LOG_FILE="clean_mixed_output.log"
+            shift
+            ;;
+        --verify)
+            MODE="verify"
+            shift
+            ;;
+        --skip-verify)
+            SKIP_VERIFICATION=true
+            shift
+            ;;
+        --help)
+            show_usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            show_usage
+            exit 1
+            ;;
+    esac
+done
+
+# Function to run happy path tests
+run_happy_path() {
+    echo "=================================================================="
+    echo "Running Happy Path Test Suite (Common Scenarios)"
+    echo "=================================================================="
+    
+    {
+        echo -e "\n[1/4] Testing baseline scenario..."
+        python3 verification_results/run_price_test.py --prices 1.0 \
+                                 --descriptions "Baseline" \
+                                 --name "Baseline" \
+                                 --type auto-borrow
+
+        echo -e "\n[2/4] Testing small price movements..."
+        python3 verification_results/run_price_test.py --prices 1.0,0.8,1.2,1.0 \
+                                 --descriptions "Start,Drop20%,Rise50%,Stabilize" \
+                                 --name "Small Movements" \
+                                 --type auto-borrow
+
+        echo -e "\n[3/4] Testing moderate price movements..."
+        python3 verification_results/run_price_test.py --prices 1.0,0.5,1.5,2.0,1.0 \
+                                 --descriptions "Start,Drop50%,Rise3x,Double,Stabilize" \
+                                 --name "Moderate Movements" \
+                                 --type auto-borrow
+
+        echo -e "\n[4/4] Testing basic auto-balancer scenario..."
+        python3 verification_results/run_price_test.py --prices 1.0,1.1,1.2,0.9,0.8,1.0 \
+                                 --descriptions "Start,Up10%,Up20%,Down25%,Down11%,Stabilize" \
+                                 --name "Auto-Balancer Basic" \
+                                 --type auto-balancer
+
+        echo -e "\n=================================================================="
+        echo "Happy path tests completed!"
+        echo "=================================================================="
+    } 2>&1 | tee "$LOG_FILE"
+}
+
+# Function to run preset scenarios
+run_preset_tests() {
+    echo "=================================================================="
+    echo "Running Preset Scenarios"
+    echo "=================================================================="
+    
+    {
+        ./run_price_scenarios.sh --scenario all
+    } 2>&1 | tee "$LOG_FILE"
+}
+
+# Function to run edge case tests
+run_edge_tests() {
+    echo "=================================================================="
+    echo "Running Edge Case Tests"
+    echo "=================================================================="
+    
+    {
+        echo -e "\n[1/3] Testing edge cases (zero, micro, extreme prices)..."
+        python3 verification_results/run_price_test.py --prices 0,0.00000001,1000 \
+                                 --descriptions "Zero,Micro,VeryHigh" \
+                                 --name "Edge Prices" \
+                                 --type auto-borrow
+
+        echo -e "\n[2/3] Testing price extremes (0.001 to 500x)..."
+        python3 verification_results/run_price_test.py --prices 0.001,10,100,500 \
+                                 --descriptions "VeryLow,10x,100x,500x" \
+                                 --name "Price Extremes" \
+                                 --type auto-borrow
+
+        echo -e "\n[3/3] Testing black swan event (99% crash)..."
+        python3 verification_results/run_price_test.py --prices 1,0.05,0.01,0.5,1,1.5 \
+                                 --descriptions "Normal,Crash95%,Crash99%,Recovery50%,FullRecovery,Overshoot" \
+                                 --name "Black Swan Event" \
+                                 --type auto-borrow
+    } 2>&1 | tee "$LOG_FILE"
+}
+
+# Function to run mixed scenario tests
+run_mixed_tests() {
+    echo "=================================================================="
+    echo "Running Mixed Scenario Tests"
+    echo "=================================================================="
+    
+    {
+        echo -e "\n[1/5] Testing MOET depeg scenario..."
+        flow test cadence/tests/moet_depeg_test.cdc --output inline
+
+        echo -e "\n[2/5] Testing concurrent rebalancing..."
+        flow test cadence/tests/concurrent_rebalance_test.cdc --output inline
+
+        echo -e "\n[3/5] Testing mixed scenario (auto-borrow + auto-balancer simultaneous)..."
+        flow test cadence/tests/mixed_scenario_test.cdc --output inline
+
+        echo -e "\n[4/5] Testing inverse correlation scenario..."
+        python3 verification_results/run_mixed_test.py --scenario inverse
+
+        echo -e "\n[5/5] Testing decorrelated price movements..."
+        python3 verification_results/run_mixed_test.py --scenario decorrelated
+    } 2>&1 | tee "$LOG_FILE"
+}
+
+# Function to run all tests
+run_all_tests() {
+    echo "=================================================================="
+    echo "Running Comprehensive Tidal Protocol Test Suite"
+    echo "=================================================================="
+    
+    {
+        echo -e "\n[1/10] Running all preset scenarios (extreme, gradual, volatile)..."
+        ./run_price_scenarios.sh --scenario all
+
+        echo -e "\n[2/10] Testing edge cases (zero, micro, extreme prices)..."
+        python3 verification_results/run_price_test.py --prices 0,0.00000001,1000 \
+                                 --descriptions "Zero,Micro,VeryHigh" \
+                                 --name "Edge Prices" \
+                                 --type auto-borrow
+
+        echo -e "\n[3/10] Testing price extremes (0.001 to 500x)..."
+        python3 verification_results/run_price_test.py --prices 0.001,10,100,500 \
+                                 --descriptions "VeryLow,10x,100x,500x" \
+                                 --name "Price Extremes" \
+                                 --type auto-borrow
+
+        echo -e "\n[4/10] Testing rapid oscillations..."
+        python3 verification_results/run_price_test.py --prices 1,2,0.5,3,0.3,1.5,0.8,2.5,1 \
+                                 --descriptions "Start,2x,Drop50%,3x,Crash70%,Recover1.5x,Drop20%,2.5x,Stabilize" \
+                                 --name "Rapid Oscillations" \
+                                 --type auto-borrow
+
+        echo -e "\n[5/10] Testing black swan event (99% crash)..."
+        python3 verification_results/run_price_test.py --prices 1,0.05,0.01,0.5,1,1.5 \
+                                 --descriptions "Normal,Crash95%,Crash99%,Recovery50%,FullRecovery,Overshoot" \
+                                 --name "Black Swan Event" \
+                                 --type auto-borrow
+
+        echo -e "\n[6/10] Testing MOET depeg scenario..."
+        flow test cadence/tests/moet_depeg_test.cdc --output inline
+
+        echo -e "\n[7/10] Testing concurrent rebalancing..."
+        flow test cadence/tests/concurrent_rebalance_test.cdc --output inline
+
+        echo -e "\n[8/10] Testing mixed scenario (auto-borrow + auto-balancer simultaneous)..."
+        flow test cadence/tests/mixed_scenario_test.cdc --output inline
+
+        echo -e "\n[9/10] Testing inverse correlation scenario (NEW)..."
+        python3 verification_results/run_mixed_test.py --scenario inverse
+
+        echo -e "\n[10/10] Testing decorrelated price movements (NEW)..."
+        python3 verification_results/run_mixed_test.py --scenario decorrelated
+
+        echo -e "\n=================================================================="
+        echo "All tests completed successfully!"
+        echo "=================================================================="
+    } 2>&1 | tee "$LOG_FILE"
+}
+
+# Function to run verification
+run_verification() {
+    if [ -f "$CLEAN_LOG_FILE" ]; then
+        echo "Running verification on: $CLEAN_LOG_FILE"
+    else
+        echo "No clean log file found. Looking for alternative..."
+        if [ -f "clean_test_output.log" ]; then
+            CLEAN_LOG_FILE="clean_test_output.log"
+            echo "Using: $CLEAN_LOG_FILE"
+        else
+            echo "Error: No clean log file found to verify!"
+            echo "Please run tests first or ensure clean_test_output.log exists."
+            exit 1
+        fi
+    fi
+    
+    echo "=================================================================="
+    echo "Running Automated Verification Suite"
+    echo "=================================================================="
+    echo ""
+    
+    cd verification_results
+    ./run_all_verifications.sh "../$CLEAN_LOG_FILE"
+    cd ..
+}
+
+# Main execution
+if [ "$MODE" = "verify" ]; then
+    # Only run verification
+    run_verification
+    exit 0
+fi
 
 # Capture start time
 START_TIME=$(date +%s)
 
-# Run all tests and capture output
-LOG_FILE="fresh_test_output.log"
-{
-    echo -e "\n[1/10] Running all preset scenarios (extreme, gradual, volatile)..."
-    ./run_price_scenarios.sh --scenario all
-
-    echo -e "\n[2/10] Testing edge cases (zero, micro, extreme prices)..."
-    python3 verification_results/run_price_test.py --prices 0,0.00000001,1000 \
-                             --descriptions "Zero,Micro,VeryHigh" \
-                             --name "Edge Prices" \
-                             --type auto-borrow
-
-    echo -e "\n[3/10] Testing price extremes (0.001 to 500x)..."
-    python3 verification_results/run_price_test.py --prices 0.001,10,100,500 \
-                             --descriptions "VeryLow,10x,100x,500x" \
-                             --name "Price Extremes" \
-                             --type auto-borrow
-
-    echo -e "\n[4/10] Testing rapid oscillations..."
-    python3 verification_results/run_price_test.py --prices 1,2,0.5,3,0.3,1.5,0.8,2.5,1 \
-                             --descriptions "Start,2x,Drop50%,3x,Crash70%,Recover1.5x,Drop20%,2.5x,Stabilize" \
-                             --name "Rapid Oscillations" \
-                             --type auto-borrow
-
-    echo -e "\n[5/10] Testing black swan event (99% crash)..."
-    python3 verification_results/run_price_test.py --prices 1,0.05,0.01,0.5,1,1.5 \
-                             --descriptions "Normal,Crash95%,Crash99%,Recovery50%,FullRecovery,Overshoot" \
-                             --name "Black Swan Event" \
-                             --type auto-borrow
-
-    echo -e "\n[6/10] Testing MOET depeg scenario..."
-    flow test cadence/tests/moet_depeg_test.cdc --output inline
-
-    echo -e "\n[7/10] Testing concurrent rebalancing..."
-    flow test cadence/tests/concurrent_rebalance_test.cdc --output inline
-
-    echo -e "\n[8/10] Testing mixed scenario (auto-borrow + auto-balancer simultaneous)..."
-    flow test cadence/tests/mixed_scenario_test.cdc --output inline
-
-    echo -e "\n[9/10] Testing inverse correlation scenario (NEW)..."
-    python3 verification_results/run_mixed_test.py --scenario inverse
-
-    echo -e "\n[10/10] Testing decorrelated price movements (NEW)..."
-    python3 verification_results/run_mixed_test.py --scenario decorrelated
-
-    echo -e "\n=================================================================="
-    echo "All tests completed successfully!"
-    echo "=================================================================="
-} 2>&1 | tee "$LOG_FILE"
+# Run tests based on mode
+case $MODE in
+    happy)
+        run_happy_path
+        ;;
+    preset)
+        run_preset_tests
+        ;;
+    edge)
+        run_edge_tests
+        ;;
+    mixed)
+        run_mixed_tests
+        ;;
+    full)
+        run_all_tests
+        ;;
+esac
 
 # Calculate test duration
 END_TIME=$(date +%s)
@@ -77,44 +306,71 @@ echo ""
 
 # Clean the log file
 echo "Cleaning log file..."
-./clean_logs.sh "$LOG_FILE" "clean_test_output.log"
+./clean_logs.sh "$LOG_FILE" "$CLEAN_LOG_FILE"
 echo ""
 
-# Automatically run verification
+# Run verification unless skipped
+if [ "$SKIP_VERIFICATION" = false ]; then
+    run_verification
+fi
+
+# Final summary based on mode
+echo ""
 echo "=================================================================="
-echo "Running Automated Verification Suite"
+echo "TEST SUMMARY"
 echo "=================================================================="
 echo ""
 
-cd verification_results
-./run_all_verifications.sh "../clean_test_output.log"
-cd ..
+case $MODE in
+    happy)
+        echo "✅ Happy path tests completed"
+        echo "Scenarios tested:"
+        echo "- Baseline operation at 1.0"
+        echo "- Small price movements (±20%)"
+        echo "- Moderate price movements (0.5x to 2x)"
+        echo "- Basic auto-balancer behavior"
+        ;;
+    preset)
+        echo "✅ Preset scenario tests completed"
+        echo "Scenarios tested:"
+        echo "- Extreme price movements"
+        echo "- Gradual price changes"
+        echo "- Volatile market conditions"
+        ;;
+    edge)
+        echo "✅ Edge case tests completed"
+        echo "Scenarios tested:"
+        echo "- Zero and micro prices"
+        echo "- Extreme prices (1000x)"
+        echo "- Black swan events"
+        ;;
+    mixed)
+        echo "✅ Mixed scenario tests completed"
+        echo "Scenarios tested:"
+        echo "- MOET depeg"
+        echo "- Concurrent rebalancing"
+        echo "- Mixed auto-borrow + auto-balancer"
+        echo "- Inverse correlations"
+        echo "- Decorrelated movements"
+        ;;
+    full)
+        echo "✅ All 10 test scenarios completed"
+        echo "✅ Full test coverage achieved"
+        ;;
+esac
 
-# Final summary
+if [ "$SKIP_VERIFICATION" = false ]; then
+    echo "✅ All verification scripts run"
+    echo ""
+    echo "Verification artifacts in verification_results/:"
+    echo "- verification_results.json"
+    echo "- deep_verification_report.json"
+    echo "- mathematical_analysis.json"
+    echo "- mixed_scenario_analysis.json"
+fi
+
 echo ""
-echo "=================================================================="
-echo "COMPLETE TEST & VERIFICATION SUMMARY"
-echo "=================================================================="
-echo ""
-echo "✅ All 10 test scenarios completed"
-echo "✅ All 4 verification scripts run"
-echo ""
-echo "Test coverage achieved:"
-echo "- Preset scenarios: extreme, gradual, volatile price movements"
-echo "- Edge cases: zero, micro (0.00000001), and extreme (1000x) prices"
-echo "- Market scenarios: crashes, recoveries, oscillations"
-echo "- Special cases: MOET depeg, concurrent rebalancing"
-echo "- Mixed scenarios: simultaneous testing with independent FLOW/Yield prices"
-echo "- Inverse correlation: assets moving opposite to each other"
-echo "- Decorrelated movements: one stable while other moves"
-echo ""
-echo "Verification artifacts generated in verification_results/:"
-echo "- verification_results.json"
-echo "- deep_verification_report.json"
-echo "- mathematical_analysis.json"
-echo "- mixed_scenario_analysis.json"
-echo ""
-echo "For custom scenarios, use:"
-echo "  Single token: python3 verification_results/run_price_test.py --prices <prices> --descriptions <descriptions> --name <name>"
-echo "  Mixed tokens: python3 verification_results/run_mixed_test.py --flow-prices <prices> --yield-prices <prices> --name <name>"
+echo "Log files:"
+echo "- Raw output: $LOG_FILE"
+echo "- Cleaned output: $CLEAN_LOG_FILE"
 echo "" 

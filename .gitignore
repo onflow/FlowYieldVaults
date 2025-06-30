@@ -10,3 +10,12 @@ lcov.info
 coverage/
 .coverage
 htmlcov/
+
+# test logs
+*_test_output.log
+clean_*.log
+fresh_test_output.log
+clean_test_output.log
+
+# verification results
+verification_results/*.json
