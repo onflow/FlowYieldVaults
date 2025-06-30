@@ -4,7 +4,8 @@
 # This script runs various test scenarios with different options
 # Supports: --happy-path, --full, --preset, --edge, --mixed, --verify, --help
 
-set -e
+# Don't exit on test failures - we want all tests to run
+set +e
 
 # Disable ANSI colors for cleaner logs
 export NO_COLOR=1
@@ -15,13 +16,38 @@ MODE="full"
 LOG_FILE="fresh_test_output.log"
 CLEAN_LOG_FILE="clean_test_output.log"
 SKIP_VERIFICATION=false
+TEST_FAILURES=0
+TOTAL_TESTS=0
+
+# Function to run a test and track result
+run_test() {
+    local test_name="$1"
+    shift
+    local test_command="$@"
+    
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    echo -e "\n[$TOTAL_TESTS/$EXPECTED_TESTS] Testing $test_name..."
+    
+    # Run the test command
+    eval "$test_command"
+    local exit_code=$?
+    
+    if [ $exit_code -ne 0 ]; then
+        TEST_FAILURES=$((TEST_FAILURES + 1))
+        echo "[FAILED] $test_name (exit code: $exit_code)"
+    else
+        echo "[PASSED] $test_name"
+    fi
+    
+    return 0  # Always return success to continue running tests
+}
 
 # Function to display usage
 show_usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  --happy-path    Run only basic scenarios with common values (fast, ~2 min)"
+    echo "  --happy-path    Run only basic scenarios with common values (fast, ~3 min)"
     echo "  --full          Run all test scenarios (default, ~10 min)"
     echo "  --preset        Run only preset scenarios (extreme, gradual, volatile)"
     echo "  --edge          Run only edge case tests"
@@ -93,33 +119,56 @@ run_happy_path() {
     echo "Running Happy Path Test Suite (Common Scenarios)"
     echo "=================================================================="
     
+    EXPECTED_TESTS=7
+    TEST_FAILURES=0
+    TOTAL_TESTS=0
+    
     {
-        echo -e "\n[1/4] Testing baseline scenario..."
-        python3 verification_results/run_price_test.py --prices 1.0 \
-                                 --descriptions "Baseline" \
-                                 --name "Baseline" \
-                                 --type auto-borrow
+        run_test "auto-borrow baseline scenario" \
+            "python3 verification_results/run_price_test.py --prices 1.0 \
+                                 --descriptions \"Baseline\" \
+                                 --name \"Auto-Borrow Baseline\" \
+                                 --type auto-borrow"
 
-        echo -e "\n[2/4] Testing small price movements..."
-        python3 verification_results/run_price_test.py --prices 1.0,0.8,1.2,1.0 \
-                                 --descriptions "Start,Drop20%,Rise50%,Stabilize" \
-                                 --name "Small Movements" \
-                                 --type auto-borrow
+        run_test "auto-borrow small price movements" \
+            "python3 verification_results/run_price_test.py --prices 1.0,0.8,1.2,1.0 \
+                                 --descriptions \"Start,Drop20%,Rise50%,Stabilize\" \
+                                 --name \"Auto-Borrow Small Movements\" \
+                                 --type auto-borrow"
 
-        echo -e "\n[3/4] Testing moderate price movements..."
-        python3 verification_results/run_price_test.py --prices 1.0,0.5,1.5,2.0,1.0 \
-                                 --descriptions "Start,Drop50%,Rise3x,Double,Stabilize" \
-                                 --name "Moderate Movements" \
-                                 --type auto-borrow
+        run_test "auto-borrow moderate price movements" \
+            "python3 verification_results/run_price_test.py --prices 1.0,0.5,1.5,2.0,1.0 \
+                                 --descriptions \"Start,Drop50%,Rise3x,Double,Stabilize\" \
+                                 --name \"Auto-Borrow Moderate Movements\" \
+                                 --type auto-borrow"
 
-        echo -e "\n[4/4] Testing basic auto-balancer scenario..."
-        python3 verification_results/run_price_test.py --prices 1.0,1.1,1.2,0.9,0.8,1.0 \
-                                 --descriptions "Start,Up10%,Up20%,Down25%,Down11%,Stabilize" \
-                                 --name "Auto-Balancer Basic" \
-                                 --type auto-balancer
+        run_test "auto-balancer baseline scenario" \
+            "python3 verification_results/run_price_test.py --prices 1.0 \
+                                 --descriptions \"Baseline\" \
+                                 --name \"Auto-Balancer Baseline\" \
+                                 --type auto-balancer"
+
+        run_test "auto-balancer small price movements" \
+            "python3 verification_results/run_price_test.py --prices 1.0,0.8,1.2,1.0 \
+                                 --descriptions \"Start,Drop20%,Rise50%,Stabilize\" \
+                                 --name \"Auto-Balancer Small Movements\" \
+                                 --type auto-balancer"
+
+        run_test "auto-balancer moderate price movements" \
+            "python3 verification_results/run_price_test.py --prices 1.0,0.5,1.5,2.0,1.0 \
+                                 --descriptions \"Start,Drop50%,Rise3x,Double,Stabilize\" \
+                                 --name \"Auto-Balancer Moderate Movements\" \
+                                 --type auto-balancer"
+
+        run_test "mixed FLOW/YieldToken scenario" \
+            "python3 verification_results/run_price_test.py --prices 1.0,1.1,1.2,0.9,0.8,1.0 \
+                                 --descriptions \"Start,Up10%,Up20%,Down25%,Down11%,Stabilize\" \
+                                 --name \"Mixed Price Movements\" \
+                                 --type auto-balancer"
 
         echo -e "\n=================================================================="
         echo "Happy path tests completed!"
+        echo "Tests run: $TOTAL_TESTS, Passed: $((TOTAL_TESTS - TEST_FAILURES)), Failed: $TEST_FAILURES"
         echo "=================================================================="
     } 2>&1 | tee "$LOG_FILE"
 }
@@ -314,6 +363,11 @@ if [ "$SKIP_VERIFICATION" = false ]; then
     run_verification
 fi
 
+# Exit with failure code if any tests failed
+if [ -n "$FAILURES" ] && [ "$FAILURES" -gt 0 ]; then
+    exit 1
+fi
+
 # Final summary based on mode
 echo ""
 echo "=================================================================="
@@ -321,14 +375,36 @@ echo "TEST SUMMARY"
 echo "=================================================================="
 echo ""
 
+# Extract test failure count from log if available
+if [ -f "$LOG_FILE" ]; then
+    FAILURES=$(grep -E "Failed: [0-9]+" "$LOG_FILE" | tail -1 | grep -oE "Failed: [0-9]+" | grep -oE "[0-9]+")
+    TOTAL=$(grep -E "Tests run: [0-9]+" "$LOG_FILE" | tail -1 | grep -oE "Tests run: [0-9]+" | grep -oE "[0-9]+")
+    
+    if [ -n "$FAILURES" ] && [ "$FAILURES" -gt 0 ]; then
+        echo "⚠️  WARNING: $FAILURES out of $TOTAL tests failed!"
+        echo ""
+    fi
+fi
+
 case $MODE in
     happy)
-        echo "✅ Happy path tests completed"
+        if [ -n "$FAILURES" ] && [ "$FAILURES" -eq 0 ]; then
+            echo "✅ Happy path tests completed - ALL PASSED"
+        else
+            echo "✅ Happy path tests completed"
+        fi
         echo "Scenarios tested:"
+        echo ""
+        echo "Auto-Borrow:"
         echo "- Baseline operation at 1.0"
         echo "- Small price movements (±20%)"
         echo "- Moderate price movements (0.5x to 2x)"
-        echo "- Basic auto-balancer behavior"
+        echo ""
+        echo "Auto-Balancer:"
+        echo "- Baseline operation at 1.0"
+        echo "- Small price movements (±20%)"
+        echo "- Moderate price movements (0.5x to 2x)"
+        echo "- Mixed price movements scenario"
         ;;
     preset)
         echo "✅ Preset scenario tests completed"
