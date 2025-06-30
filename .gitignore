@@ -1,5 +1,12 @@
 # flow
 *.pkey
 imports
+
+# coverage files
 coverage.lcov
 coverage.json
+lcov.info
+*.lcov
+coverage/
+.coverage
+htmlcov/
