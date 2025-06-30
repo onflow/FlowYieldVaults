@@ -98,7 +98,11 @@ fun runAutoBorrowPriceScenario(scenario: PriceScenario) {
     )
     Test.expect(txRes, Test.beSucceeded())
     
-    let initialHealth = getPositionHealth(pid: 0, beFailed: false)
+    // The user's position will be ID 1 since setup() already created position ID 0
+    let userPositionID: UInt64 = 1
+    log("Using position ID: ".concat(userPositionID.toString()))
+    
+    let initialHealth = getPositionHealth(pid: userPositionID, beFailed: false)
     log("Initial position health: ".concat(initialHealth.toString()))
     
     // Run through price scenarios
@@ -115,18 +119,18 @@ fun runAutoBorrowPriceScenario(scenario: PriceScenario) {
         )
         
         // Show position state before rebalance
-        let healthBefore = getPositionHealth(pid: 0, beFailed: false)
+        let healthBefore = getPositionHealth(pid: userPositionID, beFailed: false)
         log("Health before rebalance: ".concat(healthBefore.toString()))
         
         // Rebalance
         log("Triggering rebalance...")
-        rebalancePosition(signer: protocolAccount, pid: 0, force: true, beFailed: false)
+        rebalancePosition(signer: protocolAccount, pid: userPositionID, force: true, beFailed: false)
         
         // Show position state after rebalance
-        let healthAfter = getPositionHealth(pid: 0, beFailed: false)
+        let healthAfter = getPositionHealth(pid: userPositionID, beFailed: false)
         log("Health after rebalance: ".concat(healthAfter.toString()))
         
-        logComprehensivePositionState(pid: 0, stage: "After price = ".concat(price.toString()), flowPrice: price, moetPrice: 1.0)
+        logComprehensivePositionState(pid: userPositionID, stage: "After price = ".concat(price.toString()), flowPrice: price, moetPrice: 1.0)
         
         i = i + 1
     }

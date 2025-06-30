@@ -6,6 +6,10 @@
 
 set -e
 
+# Disable ANSI colors for cleaner logs
+export NO_COLOR=1
+export FORCE_COLOR=0
+
 echo "=================================================================="
 echo "Running Comprehensive Tidal Protocol Test Suite"
 echo "=================================================================="
@@ -44,13 +48,13 @@ LOG_FILE="fresh_test_output.log"
                              --type auto-borrow
 
     echo -e "\n[6/10] Testing MOET depeg scenario..."
-    flow test cadence/tests/moet_depeg_test.cdc
+    flow test cadence/tests/moet_depeg_test.cdc --output inline
 
     echo -e "\n[7/10] Testing concurrent rebalancing..."
-    flow test cadence/tests/concurrent_rebalance_test.cdc
+    flow test cadence/tests/concurrent_rebalance_test.cdc --output inline
 
     echo -e "\n[8/10] Testing mixed scenario (auto-borrow + auto-balancer simultaneous)..."
-    flow test cadence/tests/mixed_scenario_test.cdc
+    flow test cadence/tests/mixed_scenario_test.cdc --output inline
 
     echo -e "\n[9/10] Testing inverse correlation scenario (NEW)..."
     python3 verification_results/run_mixed_test.py --scenario inverse
@@ -71,6 +75,11 @@ echo ""
 echo "Test execution time: ${TEST_DURATION} seconds"
 echo ""
 
+# Clean the log file
+echo "Cleaning log file..."
+./clean_logs.sh "$LOG_FILE" "clean_test_output.log"
+echo ""
+
 # Automatically run verification
 echo "=================================================================="
 echo "Running Automated Verification Suite"
@@ -78,7 +87,7 @@ echo "=================================================================="
 echo ""
 
 cd verification_results
-./run_all_verifications.sh "../$LOG_FILE"
+./run_all_verifications.sh "../clean_test_output.log"
 cd ..
 
 # Final summary

@@ -73,11 +73,11 @@ class TestLogVerifier:
         self.autobalancer_state_pattern = re.compile(r'\[AUTOBALANCER STATE\].*?YieldToken Balance:\s*([0-9.,]+).*?Total Value in MOET:\s*([0-9.,]+)', re.DOTALL)
         
         # New patterns for comprehensive logging format
-        self.comprehensive_price_pattern = re.compile(r'║\s*(FLOW|YieldToken|MOET):\s*([0-9.,]+)')
-        self.comprehensive_balance_pattern = re.compile(r'║\s*(FLOW Collateral|MOET Debt|YieldToken Balance):\s*([0-9.,]+)')
-        self.comprehensive_value_pattern = re.compile(r'║\s*→\s*Value(?:\s+in MOET)?:\s*([0-9.,]+)')
-        self.position_state_pattern = re.compile(r'POSITION STATE:.*?(?=╚)', re.DOTALL)
-        self.autobalancer_state_comprehensive_pattern = re.compile(r'AUTO-BALANCER STATE:.*?(?=╚)', re.DOTALL)
+        self.comprehensive_price_pattern = re.compile(r'\|\s*(FLOW|YieldToken|MOET):\s*([0-9.,]+)')
+        self.comprehensive_balance_pattern = re.compile(r'\|\s*(FLOW Collateral|MOET Debt|YieldToken Balance):\s*([0-9.,]+)')
+        self.comprehensive_value_pattern = re.compile(r'\|\s*->\s*Value(?:\s+in MOET)?:\s*([0-9.,]+)')
+        self.position_state_pattern = re.compile(r'POSITION STATE:.*?(?====)', re.DOTALL)
+        self.autobalancer_state_comprehensive_pattern = re.compile(r'AUTO-BALANCER STATE:.*?(?====)', re.DOTALL)
         
         # Token address to name mapping
         self.token_mapping = {

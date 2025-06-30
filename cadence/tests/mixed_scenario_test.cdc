@@ -68,12 +68,16 @@ access(all) fun testMixedScenario() {
     
     // Create auto-borrow position
     log("Creating auto-borrow position with 1000 FLOW...")
-    let borrowTx = _executeTransaction(
+    let txRes = _executeTransaction(
         "../transactions/mocks/position/create_wrapped_position.cdc",
         [1_000.0, /storage/flowTokenVault, true],
         borrowUser
     )
-    Test.expect(borrowTx, Test.beSucceeded())
+    Test.expect(txRes, Test.beSucceeded())
+    
+    // Track the actual position ID (will be 1 if setup() created position 0)
+    let userPositionID: UInt64 = 1
+    log("Using position ID: ".concat(userPositionID.toString()))
     
     // Create auto-balancer tide
     log("Creating auto-balancer Tide with 1000 FLOW...")
@@ -121,10 +125,10 @@ access(all) fun testMixedScenario() {
         
         // Log comprehensive state before rebalancing
         log("")
-        log("━━━━━━━━━━━━━━━━━━━━ BEFORE REBALANCING ━━━━━━━━━━━━━━━━━━━━")
+        log("==================== BEFORE REBALANCING ====================")
         
         // Get position details for comprehensive logging
-        let positionDetailsBefore = getPositionDetails(pid: 0, beFailed: false)
+        let positionDetailsBefore = getPositionDetails(pid: userPositionID, beFailed: false)
         var collateralBefore: UFix64 = 0.0
         var debtBefore: UFix64 = 0.0
         
@@ -136,11 +140,11 @@ access(all) fun testMixedScenario() {
             }
         }
         
-        let healthBefore = getPositionHealth(pid: 0, beFailed: false)
+        let healthBefore = getPositionHealth(pid: userPositionID, beFailed: false)
         let yieldBalanceBefore = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
         
         // Log comprehensive states
-        logCompatiblePositionState(pid: 0, stage: "Before Rebalance", flowPrice: flowPrice, moetPrice: moetPrice)
+        logCompatiblePositionState(pid: userPositionID, stage: "Before Rebalance", flowPrice: flowPrice, moetPrice: moetPrice)
         logCompatibleAutoBalancerState(
             id: autoBalancerID,
             tideID: tideID,
@@ -151,21 +155,16 @@ access(all) fun testMixedScenario() {
             initialDeposit: 1000.0
         )
         
-        // Trigger both rebalances
+        // Rebalance both systems
         log("")
-        log("Triggering simultaneous rebalances...")
-        rebalancePosition(signer: protocolAccount, pid: 0, force: true, beFailed: false)
+        log("Triggering rebalances...")
+        rebalancePosition(signer: protocolAccount, pid: userPositionID, force: true, beFailed: false)
         rebalanceTide(signer: tidalYieldAccount, id: tideID, force: true, beFailed: false)
         
-        // Log comprehensive state after rebalancing
-        log("")
-        log("━━━━━━━━━━━━━━━━━━━━ AFTER REBALANCING ━━━━━━━━━━━━━━━━━━━━")
-        
-        // Get position details after rebalancing
-        let positionDetailsAfter = getPositionDetails(pid: 0, beFailed: false)
+        // Get position details after rebalance
+        let positionDetailsAfter = getPositionDetails(pid: userPositionID, beFailed: false)
         var collateralAfter: UFix64 = 0.0
         var debtAfter: UFix64 = 0.0
-        
         for bal in positionDetailsAfter.balances {
             if bal.vaultType == Type<@FlowToken.Vault>() {
                 collateralAfter = bal.balance
@@ -174,11 +173,11 @@ access(all) fun testMixedScenario() {
             }
         }
         
-        let healthAfter = getPositionHealth(pid: 0, beFailed: false)
+        let healthAfter = getPositionHealth(pid: userPositionID, beFailed: false)
         let yieldBalanceAfter = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
         
         // Log comprehensive states
-        logCompatiblePositionState(pid: 0, stage: "After Rebalance", flowPrice: flowPrice, moetPrice: moetPrice)
+        logCompatiblePositionState(pid: userPositionID, stage: "After Rebalance", flowPrice: flowPrice, moetPrice: moetPrice)
         logCompatibleAutoBalancerState(
             id: autoBalancerID,
             tideID: tideID,
@@ -234,7 +233,7 @@ access(all) fun testMixedScenario() {
     // Final comprehensive summary
     logSeparator(title: "Final State Summary")
     
-    let finalPositionDetails = getPositionDetails(pid: 0, beFailed: false)
+    let finalPositionDetails = getPositionDetails(pid: userPositionID, beFailed: false)
     var finalCollateral: UFix64 = 0.0
     var finalDebt: UFix64 = 0.0
     
@@ -246,7 +245,7 @@ access(all) fun testMixedScenario() {
         }
     }
     
-    let finalHealth = getPositionHealth(pid: 0, beFailed: false)
+    let finalHealth = getPositionHealth(pid: userPositionID, beFailed: false)
     let finalYieldBalance = getAutoBalancerBalanceByID(id: autoBalancerID, beFailed: false)
     
     log("AUTO-BORROW POSITION:")
@@ -259,8 +258,8 @@ access(all) fun testMixedScenario() {
     log("  Final Value: ".concat((finalYieldBalance * 1.0).toString()).concat(" MOET (at current price)"))
     log("")
     log("CHANGES FROM START:")
-    log("  Health: 1.3 → ".concat(finalHealth.toString()))
-    log("  Collateral: 1000 → ".concat(finalCollateral.toString()))
-    log("  Debt: ~615.38 → ".concat(finalDebt.toString()))
-    log("  YieldToken: ~615.38 → ".concat(finalYieldBalance.toString()))
+    log("  Health: 1.3 -> ".concat(finalHealth.toString()))
+    log("  Collateral: 1000 -> ".concat(finalCollateral.toString()))
+    log("  Debt: ~615.38 -> ".concat(finalDebt.toString()))
+    log("  YieldToken: ~615.38 -> ".concat(finalYieldBalance.toString()))
 } 

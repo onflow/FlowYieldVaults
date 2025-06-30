@@ -94,7 +94,7 @@ def main() -> None:
     # Regex patterns
     deposit_re = re.compile(r"Creating position with\s*([0-9.,]+)\s*FLOW", re.IGNORECASE)
     # Also look for actual FLOW collateral in comprehensive format
-    flow_collateral_re = re.compile(r'(?:║|\\u\{2551\})\s*FLOW Collateral:\s*([0-9.,]+)')
+    flow_collateral_re = re.compile(r'\|\s*FLOW Collateral:\s*([0-9.,]+)')
     price_block_start_re = re.compile(r"\[PRICE UPDATE]", re.IGNORECASE)
     token_line_re = re.compile(r"FlowToken", re.IGNORECASE)
     price_line_re = re.compile(r"New Price:\s*([0-9.,]+)")
@@ -102,8 +102,8 @@ def main() -> None:
     # For auto-borrow tests, the position state comes after "Health after rebalance"
     health_after_re = re.compile(r"Health after rebalance:\s*([0-9.]+)")
     position_state_re = re.compile(r"POSITION STATE: After price")
-    # Updated pattern: matches both Unicode box-drawing chars and escaped versions
-    moet_re = re.compile(r'(?:║|\\u\{2551\})\s*MOET Debt:\s*([0-9.,]+)')
+    # Updated pattern: matches ASCII pipe character
+    moet_re = re.compile(r'\|\s*MOET Debt:\s*([0-9.,]+)')
     
     deposit_amount = None
     flow_collateral = None

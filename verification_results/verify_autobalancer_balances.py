@@ -131,16 +131,16 @@ def extract_autobalancer_state(lines: List[str], start_idx: int) -> Optional[Aut
         if match:
             yield_price = parse_decimal(match.group(1))
             
-        # Comprehensive format prices (║   YieldToken: 1.20000000 MOET) - handles escaped Unicode
-        match = re.search(r'(?:║|\\u\{2551\})\s*YieldToken:\s*([0-9.,]+)', line)
+        # Comprehensive format prices (|   YieldToken: 1.20000000 MOET) - cleaned format
+        match = re.search(r'\|\s*YieldToken:\s*([0-9.,]+)', line)
         if match and yield_price is None:
             yield_price = parse_decimal(match.group(1))
             
-        match = re.search(r'(?:║|\\u\{2551\})\s*FLOW:\s*([0-9.,]+)', line)
+        match = re.search(r'\|\s*FLOW:\s*([0-9.,]+)', line)
         if match:
             flow_price = parse_decimal(match.group(1))
             
-        match = re.search(r'(?:║|\\u\{2551\})\s*MOET:\s*([0-9.,]+)', line)
+        match = re.search(r'\|\s*MOET:\s*([0-9.,]+)', line)
         if match:
             moet_price = parse_decimal(match.group(1))
             
@@ -149,8 +149,8 @@ def extract_autobalancer_state(lines: List[str], start_idx: int) -> Optional[Aut
         if match:
             moet_value = parse_decimal(match.group(1))
             
-        # Comprehensive format value (║   → Value in MOET: 738.46153846) - handles escaped Unicode
-        match = re.search(r'(?:║|\\u\{2551\})\s*(?:→|\\u\{2192\})\s*Value(?:\s+in MOET)?:\s*([0-9.,]+)', line)
+        # Comprehensive format value (|   -> Value in MOET: 738.46153846) - cleaned format
+        match = re.search(r'\|\s*->\s*Value(?:\s+in MOET)?:\s*([0-9.,]+)', line)
         if match and moet_value is None:
             # This could be for any token, need to check context
             # If it's after YieldToken Balance, it's the YieldToken value

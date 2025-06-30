@@ -1,98 +1,3593 @@
 {
-  "success": true,
+  "success": false,
   "total_calculations": 0,
-  "total_errors": 0,
-  "errors": [],
+  "total_errors": 39,
+  "errors": [
+    "Line 4254: Extremely high health ratio 130081300813.00813008 - possible calculation error",
+    "Line 44: Health still below minHealth (1.1) after rebalance: 0.65000000 \u2192 0.86666666",
+    "Line 83: Health still below minHealth (1.1) after rebalance: 0.17333333 \u2192 0.19597989",
+    "Line 200: Health still below minHealth (1.1) after rebalance: 0.06500000 \u2192 0.06824146",
+    "Line 239: Health still below minHealth (1.1) after rebalance: 0.27296587 \u2192 0.32725200",
+    "Line 1039: Health still below minHealth (1.1) after rebalance: 0.49087800 \u2192 0.64168558",
+    "Line 1078: Health still below minHealth (1.1) after rebalance: 0.29945327 \u2192 0.36398318",
+    "Line 1156: Health still below minHealth (1.1) after rebalance: 0.26051378 \u2192 0.31022297",
+    "Line 1312: Health still below minHealth (1.1) after rebalance: 0.15600000 \u2192 0.17441860",
+    "Line 1351: Health still below minHealth (1.1) after rebalance: 0.58139534 \u2192 0.77232592",
+    "Line 1421: Health still below minHealth (1.1) after rebalance: 0.65000000 \u2192 0.86666666",
+    "Line 1460: Health still below minHealth (1.1) after rebalance: 0.17333333 \u2192 0.19597989",
+    "Line 1577: Health still below minHealth (1.1) after rebalance: 0.06500000 \u2192 0.06824146",
+    "Line 1616: Health still below minHealth (1.1) after rebalance: 0.27296587 \u2192 0.32725200",
+    "Line 2416: Health still below minHealth (1.1) after rebalance: 0.49087800 \u2192 0.64168558",
+    "Line 2455: Health still below minHealth (1.1) after rebalance: 0.29945327 \u2192 0.36398318",
+    "Line 2533: Health still below minHealth (1.1) after rebalance: 0.26051378 \u2192 0.31022297",
+    "Line 2689: Health still below minHealth (1.1) after rebalance: 0.15600000 \u2192 0.17441860",
+    "Line 2728: Health still below minHealth (1.1) after rebalance: 0.58139534 \u2192 0.77232592",
+    "Line 2798: Health still below minHealth (1.1) after rebalance: 0.65000000 \u2192 0.86666666",
+    "Line 2837: Health still below minHealth (1.1) after rebalance: 0.17333333 \u2192 0.19597989",
+    "Line 2954: Health still below minHealth (1.1) after rebalance: 0.06500000 \u2192 0.06824146",
+    "Line 2993: Health still below minHealth (1.1) after rebalance: 0.27296587 \u2192 0.32725200",
+    "Line 3793: Health still below minHealth (1.1) after rebalance: 0.49087800 \u2192 0.64168558",
+    "Line 3832: Health still below minHealth (1.1) after rebalance: 0.29945327 \u2192 0.36398318",
+    "Line 3910: Health still below minHealth (1.1) after rebalance: 0.26051378 \u2192 0.31022297",
+    "Line 4066: Health still below minHealth (1.1) after rebalance: 0.15600000 \u2192 0.17441860",
+    "Line 4105: Health still below minHealth (1.1) after rebalance: 0.58139534 \u2192 0.77232592",
+    "Line 4176: Health still below minHealth (1.1) after rebalance: 0E-8 \u2192 1.00000000",
+    "Line 4332: Health still below minHealth (1.1) after rebalance: 0.00130000 \u2192 0.00130129",
+    "Line 4605: Health still below minHealth (1.1) after rebalance: 0.32500000 \u2192 0.40000000",
+    "Line 4683: Health still below minHealth (1.1) after rebalance: 0.13000000 \u2192 0.14285714",
+    "Line 4722: Health still below minHealth (1.1) after rebalance: 0.71428571 \u2192 0.94928583",
+    "Line 4761: Health still below minHealth (1.1) after rebalance: 0.50628577 \u2192 0.66422424",
+    "Line 4839: Health still below minHealth (1.1) after rebalance: 0.52000000 \u2192 0.68421052",
+    "Line 4956: Health still below minHealth (1.1) after rebalance: 0.06500000 \u2192 0.06824146",
+    "Line 4995: Health still below minHealth (1.1) after rebalance: 0.01364829 \u2192 0.01379156",
+    "Line 5034: Health still below minHealth (1.1) after rebalance: 0.68957835 \u2192 0.91830292",
+    "Line 5206: Health still below minHealth (1.1) after rebalance: 0.65000000 \u2192 0.86666666"
+  ],
   "calculations": [],
   "price_updates": [
     {
-      "line": 14,
+      "line": 12,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
       "line": 21,
-      "token": "YieldToken",
+      "token": "MOET",
       "price": "1.00000000"
     },
     {
-      "line": 149,
+      "line": 37,
       "token": "FLOW",
       "price": "0.50000000"
     },
     {
-      "line": 156,
+      "line": 49,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 49,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 76,
+      "token": "FLOW",
+      "price": "0.10000000"
+    },
+    {
+      "line": 88,
+      "token": "FLOW",
+      "price": "0.10000000"
+    },
+    {
+      "line": 88,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 115,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 127,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 127,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 154,
+      "token": "FLOW",
+      "price": "5.00000000"
+    },
+    {
+      "line": 166,
+      "token": "FLOW",
+      "price": "5.00000000"
+    },
+    {
+      "line": 166,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 193,
+      "token": "FLOW",
+      "price": "0.25000000"
+    },
+    {
+      "line": 205,
+      "token": "FLOW",
+      "price": "0.25000000"
+    },
+    {
+      "line": 205,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 232,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 244,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 244,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 278,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 287,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 287,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 287,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 316,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 316,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 316,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 350,
       "token": "YieldToken",
       "price": "1.20000000"
     },
     {
-      "line": 286,
+      "line": 359,
       "token": "FLOW",
-      "price": "1.50000000"
+      "price": "1.00000000"
     },
     {
-      "line": 293,
+      "line": 359,
       "token": "YieldToken",
-      "price": "0.80000000"
+      "price": "1.20000000"
     },
     {
-      "line": 424,
+      "line": 359,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 388,
       "token": "FLOW",
-      "price": "0.30000000"
+      "price": "1.00000000"
+    },
+    {
+      "line": 388,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 388,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 422,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 431,
+      "token": "FLOW",
+      "price": "1.00000000"
     },
     {
       "line": 431,
       "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 431,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 460,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 460,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 460,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 494,
+      "token": "YieldToken",
+      "price": "1.40000000"
+    },
+    {
+      "line": 503,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 503,
+      "token": "YieldToken",
+      "price": "1.40000000"
+    },
+    {
+      "line": 503,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 532,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 532,
+      "token": "YieldToken",
+      "price": "1.40000000"
+    },
+    {
+      "line": 532,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 566,
+      "token": "YieldToken",
+      "price": "1.50000000"
+    },
+    {
+      "line": 575,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 575,
+      "token": "YieldToken",
+      "price": "1.50000000"
+    },
+    {
+      "line": 575,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 604,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 604,
+      "token": "YieldToken",
+      "price": "1.50000000"
+    },
+    {
+      "line": 604,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 638,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 647,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 647,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 647,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 676,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 676,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 676,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 710,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 719,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 719,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 719,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 748,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 748,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 748,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 782,
+      "token": "YieldToken",
+      "price": "0.90000000"
+    },
+    {
+      "line": 791,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 791,
+      "token": "YieldToken",
+      "price": "0.90000000"
+    },
+    {
+      "line": 791,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 820,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 820,
+      "token": "YieldToken",
+      "price": "0.90000000"
+    },
+    {
+      "line": 820,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 857,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 866,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 866,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 866,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 895,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 895,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 895,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 932,
+      "token": "YieldToken",
       "price": "0.50000000"
     },
     {
-      "line": 438,
+      "line": 941,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 941,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 941,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 970,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 970,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 970,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1007,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1016,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1032,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 1044,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 1044,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1071,
+      "token": "FLOW",
+      "price": "0.70000000"
+    },
+    {
+      "line": 1083,
+      "token": "FLOW",
+      "price": "0.70000000"
+    },
+    {
+      "line": 1083,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1110,
+      "token": "FLOW",
+      "price": "1.80000000"
+    },
+    {
+      "line": 1122,
+      "token": "FLOW",
+      "price": "1.80000000"
+    },
+    {
+      "line": 1122,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1149,
+      "token": "FLOW",
+      "price": "0.40000000"
+    },
+    {
+      "line": 1161,
+      "token": "FLOW",
+      "price": "0.40000000"
+    },
+    {
+      "line": 1161,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1188,
+      "token": "FLOW",
+      "price": "1.20000000"
+    },
+    {
+      "line": 1200,
+      "token": "FLOW",
+      "price": "1.20000000"
+    },
+    {
+      "line": 1200,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1227,
+      "token": "FLOW",
+      "price": "0.90000000"
+    },
+    {
+      "line": 1239,
+      "token": "FLOW",
+      "price": "0.90000000"
+    },
+    {
+      "line": 1239,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1266,
+      "token": "FLOW",
+      "price": "2.50000000"
+    },
+    {
+      "line": 1278,
+      "token": "FLOW",
+      "price": "2.50000000"
+    },
+    {
+      "line": 1278,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1305,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 1317,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 1317,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1344,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1356,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1356,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1389,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1398,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1414,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 1426,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 1426,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1453,
+      "token": "FLOW",
+      "price": "0.10000000"
+    },
+    {
+      "line": 1465,
+      "token": "FLOW",
+      "price": "0.10000000"
+    },
+    {
+      "line": 1465,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1492,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 1504,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 1504,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1531,
+      "token": "FLOW",
+      "price": "5.00000000"
+    },
+    {
+      "line": 1543,
+      "token": "FLOW",
+      "price": "5.00000000"
+    },
+    {
+      "line": 1543,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1570,
+      "token": "FLOW",
+      "price": "0.25000000"
+    },
+    {
+      "line": 1582,
+      "token": "FLOW",
+      "price": "0.25000000"
+    },
+    {
+      "line": 1582,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1609,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1621,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1621,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1655,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 1664,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1664,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 1664,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1693,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1693,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 1693,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1727,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 1736,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1736,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 1736,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1765,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1765,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 1765,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1799,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 1808,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1808,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 1808,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1837,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1837,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 1837,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1871,
+      "token": "YieldToken",
+      "price": "1.40000000"
+    },
+    {
+      "line": 1880,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1880,
+      "token": "YieldToken",
+      "price": "1.40000000"
+    },
+    {
+      "line": 1880,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1909,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1909,
+      "token": "YieldToken",
+      "price": "1.40000000"
+    },
+    {
+      "line": 1909,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1943,
+      "token": "YieldToken",
+      "price": "1.50000000"
+    },
+    {
+      "line": 1952,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1952,
+      "token": "YieldToken",
+      "price": "1.50000000"
+    },
+    {
+      "line": 1952,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1981,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 1981,
+      "token": "YieldToken",
+      "price": "1.50000000"
+    },
+    {
+      "line": 1981,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2015,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 2024,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2024,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 2024,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2053,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2053,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 2053,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2087,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 2096,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2096,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 2096,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2125,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2125,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 2125,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2159,
+      "token": "YieldToken",
+      "price": "0.90000000"
+    },
+    {
+      "line": 2168,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2168,
+      "token": "YieldToken",
+      "price": "0.90000000"
+    },
+    {
+      "line": 2168,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2197,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2197,
+      "token": "YieldToken",
+      "price": "0.90000000"
+    },
+    {
+      "line": 2197,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2234,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 2243,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2243,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 2243,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2272,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2272,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 2272,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2309,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 2318,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2318,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 2318,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2347,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2347,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 2347,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2384,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2393,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2409,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 2421,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 2421,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2448,
+      "token": "FLOW",
+      "price": "0.70000000"
+    },
+    {
+      "line": 2460,
+      "token": "FLOW",
+      "price": "0.70000000"
+    },
+    {
+      "line": 2460,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2487,
+      "token": "FLOW",
+      "price": "1.80000000"
+    },
+    {
+      "line": 2499,
+      "token": "FLOW",
+      "price": "1.80000000"
+    },
+    {
+      "line": 2499,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2526,
+      "token": "FLOW",
+      "price": "0.40000000"
+    },
+    {
+      "line": 2538,
+      "token": "FLOW",
+      "price": "0.40000000"
+    },
+    {
+      "line": 2538,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2565,
+      "token": "FLOW",
+      "price": "1.20000000"
+    },
+    {
+      "line": 2577,
+      "token": "FLOW",
+      "price": "1.20000000"
+    },
+    {
+      "line": 2577,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2604,
+      "token": "FLOW",
+      "price": "0.90000000"
+    },
+    {
+      "line": 2616,
+      "token": "FLOW",
+      "price": "0.90000000"
+    },
+    {
+      "line": 2616,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2643,
+      "token": "FLOW",
+      "price": "2.50000000"
+    },
+    {
+      "line": 2655,
+      "token": "FLOW",
+      "price": "2.50000000"
+    },
+    {
+      "line": 2655,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2682,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 2694,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 2694,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2721,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2733,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2733,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2766,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2775,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2791,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 2803,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 2803,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2830,
+      "token": "FLOW",
+      "price": "0.10000000"
+    },
+    {
+      "line": 2842,
+      "token": "FLOW",
+      "price": "0.10000000"
+    },
+    {
+      "line": 2842,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2869,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 2881,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 2881,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2908,
+      "token": "FLOW",
+      "price": "5.00000000"
+    },
+    {
+      "line": 2920,
+      "token": "FLOW",
+      "price": "5.00000000"
+    },
+    {
+      "line": 2920,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2947,
+      "token": "FLOW",
+      "price": "0.25000000"
+    },
+    {
+      "line": 2959,
+      "token": "FLOW",
+      "price": "0.25000000"
+    },
+    {
+      "line": 2959,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2986,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2998,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 2998,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3032,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 3041,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3041,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 3041,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3070,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3070,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 3070,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3104,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 3113,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3113,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 3113,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3142,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3142,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 3142,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3176,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 3185,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3185,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 3185,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3214,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3214,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 3214,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3248,
+      "token": "YieldToken",
+      "price": "1.40000000"
+    },
+    {
+      "line": 3257,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3257,
+      "token": "YieldToken",
+      "price": "1.40000000"
+    },
+    {
+      "line": 3257,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3286,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3286,
+      "token": "YieldToken",
+      "price": "1.40000000"
+    },
+    {
+      "line": 3286,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3320,
+      "token": "YieldToken",
+      "price": "1.50000000"
+    },
+    {
+      "line": 3329,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3329,
+      "token": "YieldToken",
+      "price": "1.50000000"
+    },
+    {
+      "line": 3329,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3358,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3358,
+      "token": "YieldToken",
+      "price": "1.50000000"
+    },
+    {
+      "line": 3358,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3392,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 3401,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3401,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 3401,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3430,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3430,
+      "token": "YieldToken",
+      "price": "1.30000000"
+    },
+    {
+      "line": 3430,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3464,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 3473,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3473,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 3473,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3502,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3502,
+      "token": "YieldToken",
+      "price": "1.10000000"
+    },
+    {
+      "line": 3502,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3536,
+      "token": "YieldToken",
+      "price": "0.90000000"
+    },
+    {
+      "line": 3545,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3545,
+      "token": "YieldToken",
+      "price": "0.90000000"
+    },
+    {
+      "line": 3545,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3574,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3574,
+      "token": "YieldToken",
+      "price": "0.90000000"
+    },
+    {
+      "line": 3574,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3611,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 3620,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3620,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 3620,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3649,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3649,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 3649,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3686,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 3695,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3695,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 3695,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3724,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3724,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 3724,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3761,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3770,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3786,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 3798,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 3798,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3825,
+      "token": "FLOW",
+      "price": "0.70000000"
+    },
+    {
+      "line": 3837,
+      "token": "FLOW",
+      "price": "0.70000000"
+    },
+    {
+      "line": 3837,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3864,
+      "token": "FLOW",
+      "price": "1.80000000"
+    },
+    {
+      "line": 3876,
+      "token": "FLOW",
+      "price": "1.80000000"
+    },
+    {
+      "line": 3876,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3903,
+      "token": "FLOW",
+      "price": "0.40000000"
+    },
+    {
+      "line": 3915,
+      "token": "FLOW",
+      "price": "0.40000000"
+    },
+    {
+      "line": 3915,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3942,
+      "token": "FLOW",
+      "price": "1.20000000"
+    },
+    {
+      "line": 3954,
+      "token": "FLOW",
+      "price": "1.20000000"
+    },
+    {
+      "line": 3954,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 3981,
+      "token": "FLOW",
+      "price": "0.90000000"
+    },
+    {
+      "line": 3993,
+      "token": "FLOW",
+      "price": "0.90000000"
+    },
+    {
+      "line": 3993,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4020,
+      "token": "FLOW",
+      "price": "2.50000000"
+    },
+    {
+      "line": 4032,
+      "token": "FLOW",
+      "price": "2.50000000"
+    },
+    {
+      "line": 4032,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4059,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 4071,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 4071,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4098,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4110,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4110,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4144,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4153,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4181,
+      "token": "FLOW",
+      "price": "0E-8"
+    },
+    {
+      "line": 4181,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4208,
+      "token": "FLOW",
+      "price": "1E-8"
+    },
+    {
+      "line": 4220,
+      "token": "FLOW",
+      "price": "1E-8"
+    },
+    {
+      "line": 4220,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4247,
+      "token": "FLOW",
+      "price": "1000.00000000"
+    },
+    {
+      "line": 4259,
+      "token": "FLOW",
+      "price": "1000.00000000"
+    },
+    {
+      "line": 4259,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4300,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4309,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4325,
+      "token": "FLOW",
+      "price": "0.00100000"
+    },
+    {
+      "line": 4337,
+      "token": "FLOW",
+      "price": "0.00100000"
+    },
+    {
+      "line": 4337,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4364,
+      "token": "FLOW",
+      "price": "10.00000000"
+    },
+    {
+      "line": 4376,
+      "token": "FLOW",
+      "price": "10.00000000"
+    },
+    {
+      "line": 4376,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4403,
+      "token": "FLOW",
+      "price": "100.00000000"
+    },
+    {
+      "line": 4415,
+      "token": "FLOW",
+      "price": "100.00000000"
+    },
+    {
+      "line": 4415,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4442,
+      "token": "FLOW",
+      "price": "500.00000000"
+    },
+    {
+      "line": 4454,
+      "token": "FLOW",
+      "price": "500.00000000"
+    },
+    {
+      "line": 4454,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4495,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4504,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4520,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4532,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4532,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4559,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 4571,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 4571,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4598,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 4610,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 4610,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4637,
+      "token": "FLOW",
+      "price": "3.00000000"
+    },
+    {
+      "line": 4649,
+      "token": "FLOW",
+      "price": "3.00000000"
+    },
+    {
+      "line": 4649,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4676,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 4688,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 4688,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4715,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 4727,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 4727,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4754,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 4766,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 4766,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4793,
+      "token": "FLOW",
+      "price": "2.50000000"
+    },
+    {
+      "line": 4805,
+      "token": "FLOW",
+      "price": "2.50000000"
+    },
+    {
+      "line": 4805,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4832,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4844,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4844,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4885,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4894,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4910,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4922,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4922,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4949,
+      "token": "FLOW",
+      "price": "0.05000000"
+    },
+    {
+      "line": 4961,
+      "token": "FLOW",
+      "price": "0.05000000"
+    },
+    {
+      "line": 4961,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 4988,
+      "token": "FLOW",
+      "price": "0.01000000"
+    },
+    {
+      "line": 5000,
+      "token": "FLOW",
+      "price": "0.01000000"
+    },
+    {
+      "line": 5000,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5027,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5039,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5039,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5066,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5078,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5078,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5105,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 5117,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 5117,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5158,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5167,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5182,
+      "token": "MOET",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5199,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5216,
+      "token": "MOET",
+      "price": "0.10000000"
+    },
+    {
+      "line": 5228,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5228,
+      "token": "MOET",
+      "price": "0.10000000"
+    },
+    {
+      "line": 5259,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5268,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5286,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 5301,
+      "token": "FLOW",
+      "price": "1.20000000"
+    },
+    {
+      "line": 5314,
+      "token": "FLOW",
+      "price": "0.90000000"
+    },
+    {
+      "line": 5329,
+      "token": "FLOW",
+      "price": "1.10000000"
+    },
+    {
+      "line": 5342,
+      "token": "FLOW",
+      "price": "0.70000000"
+    },
+    {
+      "line": 5357,
+      "token": "FLOW",
+      "price": "1.30000000"
+    },
+    {
+      "line": 5373,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5373,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5413,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5422,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5433,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5433,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5456,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5456,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5456,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5489,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5489,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5512,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5512,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5512,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5552,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5561,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 5572,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5572,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5595,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5595,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 5595,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5628,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5628,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5651,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5651,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 5651,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5693,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 5702,
+      "token": "YieldToken",
+      "price": "0.80000000"
+    },
+    {
+      "line": 5713,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 5713,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5736,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 5736,
+      "token": "YieldToken",
+      "price": "0.80000000"
+    },
+    {
+      "line": 5736,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5769,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 5769,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5792,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 5792,
+      "token": "YieldToken",
+      "price": "0.80000000"
+    },
+    {
+      "line": 5792,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 5835,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 5844,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5853,
       "token": "MOET",
       "price": "0.95000000"
     },
     {
-      "line": 573,
+      "line": 5864,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 5864,
+      "token": "MOET",
+      "price": "0.95000000"
+    },
+    {
+      "line": 5887,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 5887,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5887,
+      "token": "MOET",
+      "price": "0.95000000"
+    },
+    {
+      "line": 5920,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 5920,
+      "token": "MOET",
+      "price": "0.95000000"
+    },
+    {
+      "line": 5943,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 5943,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 5943,
+      "token": "MOET",
+      "price": "0.95000000"
+    },
+    {
+      "line": 5990,
       "token": "FLOW",
       "price": "2.00000000"
     },
     {
-      "line": 580,
+      "line": 5999,
       "token": "YieldToken",
       "price": "2.00000000"
     },
     {
-      "line": 710,
+      "line": 6010,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 6010,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6033,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 6033,
+      "token": "YieldToken",
+      "price": "2.00000000"
+    },
+    {
+      "line": 6033,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6066,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 6066,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6089,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 6089,
+      "token": "YieldToken",
+      "price": "2.00000000"
+    },
+    {
+      "line": 6089,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6131,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 717,
+      "line": 6140,
       "token": "YieldToken",
       "price": "0.10000000"
     },
     {
-      "line": 847,
+      "line": 6151,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6151,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6174,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6174,
+      "token": "YieldToken",
+      "price": "0.10000000"
+    },
+    {
+      "line": 6174,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6207,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6207,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6230,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6230,
+      "token": "YieldToken",
+      "price": "0.10000000"
+    },
+    {
+      "line": 6230,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6272,
       "token": "FLOW",
       "price": "0.10000000"
     },
     {
-      "line": 854,
+      "line": 6281,
       "token": "YieldToken",
       "price": "1.00000000"
     },
     {
-      "line": 861,
+      "line": 6290,
       "token": "MOET",
       "price": "0.90000000"
     },
     {
-      "line": 995,
+      "line": 6301,
+      "token": "FLOW",
+      "price": "0.10000000"
+    },
+    {
+      "line": 6301,
+      "token": "MOET",
+      "price": "0.90000000"
+    },
+    {
+      "line": 6324,
+      "token": "FLOW",
+      "price": "0.10000000"
+    },
+    {
+      "line": 6324,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6324,
+      "token": "MOET",
+      "price": "0.90000000"
+    },
+    {
+      "line": 6357,
+      "token": "FLOW",
+      "price": "0.10000000"
+    },
+    {
+      "line": 6357,
+      "token": "MOET",
+      "price": "0.90000000"
+    },
+    {
+      "line": 6380,
+      "token": "FLOW",
+      "price": "0.10000000"
+    },
+    {
+      "line": 6380,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6380,
+      "token": "MOET",
+      "price": "0.90000000"
+    },
+    {
+      "line": 6426,
       "token": "FLOW",
       "price": "1.00000000"
     },
     {
-      "line": 1002,
+      "line": 6435,
       "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6446,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6446,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6469,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6469,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6469,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6502,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6502,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6525,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6525,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6525,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6606,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6606,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6628,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6628,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6628,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6661,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6670,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6688,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6688,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6710,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6710,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6710,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6749,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6749,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6771,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6771,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6771,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6808,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 6817,
+      "token": "YieldToken",
+      "price": "2.00000000"
+    },
+    {
+      "line": 6835,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 6835,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6857,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 6857,
+      "token": "YieldToken",
+      "price": "2.00000000"
+    },
+    {
+      "line": 6857,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6896,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 6896,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6918,
+      "token": "FLOW",
+      "price": "0.50000000"
+    },
+    {
+      "line": 6918,
+      "token": "YieldToken",
+      "price": "2.00000000"
+    },
+    {
+      "line": 6918,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 6955,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 6964,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 6982,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 6982,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7004,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 7004,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 7004,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7043,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 7043,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7065,
+      "token": "FLOW",
+      "price": "2.00000000"
+    },
+    {
+      "line": 7065,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 7065,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7102,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 7111,
+      "token": "YieldToken",
+      "price": "3.00000000"
+    },
+    {
+      "line": 7129,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 7129,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7151,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 7151,
+      "token": "YieldToken",
+      "price": "3.00000000"
+    },
+    {
+      "line": 7151,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7190,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 7190,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7212,
+      "token": "FLOW",
+      "price": "0.30000000"
+    },
+    {
+      "line": 7212,
+      "token": "YieldToken",
+      "price": "3.00000000"
+    },
+    {
+      "line": 7212,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7249,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 7258,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 7276,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 7276,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7298,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 7298,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 7298,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7337,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 7337,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7359,
+      "token": "FLOW",
+      "price": "1.50000000"
+    },
+    {
+      "line": 7359,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 7359,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7396,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 7405,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 7423,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 7423,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7445,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 7445,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 7445,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7484,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 7484,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7506,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 7506,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 7506,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7552,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 7552,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7574,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 7574,
+      "token": "YieldToken",
+      "price": "1.20000000"
+    },
+    {
+      "line": 7574,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7642,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7642,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7664,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7664,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7664,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7697,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7706,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7724,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7724,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7746,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7746,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7746,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7785,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7785,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7807,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7807,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7807,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7844,
+      "token": "FLOW",
+      "price": "1.10000000"
+    },
+    {
+      "line": 7853,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7871,
+      "token": "FLOW",
+      "price": "1.10000000"
+    },
+    {
+      "line": 7871,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7893,
+      "token": "FLOW",
+      "price": "1.10000000"
+    },
+    {
+      "line": 7893,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7893,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7932,
+      "token": "FLOW",
+      "price": "1.10000000"
+    },
+    {
+      "line": 7932,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7954,
+      "token": "FLOW",
+      "price": "1.10000000"
+    },
+    {
+      "line": 7954,
+      "token": "YieldToken",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7954,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 7991,
+      "token": "FLOW",
+      "price": "0.90000000"
+    },
+    {
+      "line": 8000,
+      "token": "YieldToken",
+      "price": "1.50000000"
+    },
+    {
+      "line": 8018,
+      "token": "FLOW",
+      "price": "0.90000000"
+    },
+    {
+      "line": 8018,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8040,
+      "token": "FLOW",
+      "price": "0.90000000"
+    },
+    {
+      "line": 8040,
+      "token": "YieldToken",
+      "price": "1.50000000"
+    },
+    {
+      "line": 8040,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8079,
+      "token": "FLOW",
+      "price": "0.90000000"
+    },
+    {
+      "line": 8079,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8101,
+      "token": "FLOW",
+      "price": "0.90000000"
+    },
+    {
+      "line": 8101,
+      "token": "YieldToken",
+      "price": "1.50000000"
+    },
+    {
+      "line": 8101,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8138,
+      "token": "FLOW",
+      "price": "1.20000000"
+    },
+    {
+      "line": 8147,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 8165,
+      "token": "FLOW",
+      "price": "1.20000000"
+    },
+    {
+      "line": 8165,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8187,
+      "token": "FLOW",
+      "price": "1.20000000"
+    },
+    {
+      "line": 8187,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 8187,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8226,
+      "token": "FLOW",
+      "price": "1.20000000"
+    },
+    {
+      "line": 8226,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8248,
+      "token": "FLOW",
+      "price": "1.20000000"
+    },
+    {
+      "line": 8248,
+      "token": "YieldToken",
+      "price": "0.70000000"
+    },
+    {
+      "line": 8248,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8285,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 8294,
+      "token": "YieldToken",
+      "price": "2.00000000"
+    },
+    {
+      "line": 8312,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 8312,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8334,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 8334,
+      "token": "YieldToken",
+      "price": "2.00000000"
+    },
+    {
+      "line": 8334,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8373,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 8373,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8395,
+      "token": "FLOW",
+      "price": "0.80000000"
+    },
+    {
+      "line": 8395,
+      "token": "YieldToken",
+      "price": "2.00000000"
+    },
+    {
+      "line": 8395,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8432,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8441,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 8459,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8459,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8481,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8481,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 8481,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8520,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8520,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8542,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8542,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 8542,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8588,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8588,
+      "token": "MOET",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8610,
+      "token": "FLOW",
+      "price": "1.00000000"
+    },
+    {
+      "line": 8610,
+      "token": "YieldToken",
+      "price": "0.50000000"
+    },
+    {
+      "line": 8610,
+      "token": "MOET",
       "price": "1.00000000"
     }
   ]

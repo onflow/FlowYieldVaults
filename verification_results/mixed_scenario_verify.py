@@ -38,17 +38,18 @@ def parse_mixed_scenario_log(log_file):
     mixed_state_pattern = re.compile(r'MIXED SCENARIO STATE: (Initial State|Before Rebalancing|After Rebalancing)')
     
     # Price patterns
-    flow_price_pattern = re.compile(r'(?:║|\\u\{2551\})\s*FLOW:\s*([0-9.,]+)\s*MOET')
-    yield_price_pattern = re.compile(r'(?:║|\\u\{2551\})\s*YieldToken:\s*([0-9.,]+)\s*MOET')
+    flow_price_pattern = re.compile(r'\*\s*FLOW:\s*([0-9.,]+)\s*MOET')
+    yield_price_pattern = re.compile(r'\*\s*YieldToken:\s*([0-9.,]+)\s*MOET')
+    moet_price_pattern = re.compile(r'\*\s*MOET:\s*([0-9.,]+)')
     
     # Balance patterns 
-    health_ratio_pattern = re.compile(r'(?:║|\\u\{2551\})\s*Health Ratio:\s*([0-9.,]+)')
-    moet_debt_pattern = re.compile(r'(?:║|\\u\{2551\})\s*MOET Debt:\s*([0-9.,]+)')
-    yield_balance_pattern = re.compile(r'(?:║|\\u\{2551\})\s*YieldToken Balance:\s*([0-9.,]+)')
+    health_ratio_pattern = re.compile(r'\|\s*Health Ratio:\s*([0-9.,]+)')
+    moet_debt_pattern = re.compile(r'\|\s*MOET Debt:\s*([0-9.,]+)')
+    yield_balance_pattern = re.compile(r'\|\s*YieldToken Balance:\s*([0-9.,]+)')
     
     # Stage patterns
     stage_pattern = re.compile(r'== Stage (\d+):\s*(.+)')
-    scenario_pattern = re.compile(r'== MIXED SCENARIO:\s*(.+)')
+    scenario_pattern = re.compile(r'\|== MIXED SCENARIO:\s*(.+)')
     
     # State tracking
     current_state_type = None  # 'initial', 'before', 'after'
@@ -140,6 +141,11 @@ def parse_mixed_scenario_log(log_file):
                     temp_before_data['yield_price'] = price
                 elif current_state_type == 'after':
                     temp_after_data['yield_price'] = price
+                    
+            moet_match = moet_price_pattern.search(line)
+            if moet_match:
+                price = moet_match.group(1)
+                results['all_token_data']['MOET'].append(price)
                     
             # Extract health ratio
             health_match = health_ratio_pattern.search(line)

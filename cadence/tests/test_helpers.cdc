@@ -301,10 +301,11 @@ fun logPositionDetails(pid: UInt64, stage: String) {
     // Since we can't access TidalProtocol types here, we'll use a simpler approach
     let health = getPositionHealth(pid: pid, beFailed: false)
     log("")
-    log("==================== POSITION DETAILS: ".concat(stage).concat(" ===================="))
-    log("Position ID: ".concat(pid.toString()))
-    log("Health Ratio: ".concat(health.toString()))
-    log("=================================================================")
+    log("======================================================================")
+    log("| POSITION DETAILS: ".concat(stage).concat(" ======================================================================"))
+    log("| Position ID: ".concat(pid.toString()))
+    log("| Health Ratio: ".concat(health.toString()))
+    log("======================================================================")
     log("")
 }
 
@@ -314,16 +315,18 @@ fun logAutoBalancerState(id: UInt64, yieldPrice: UFix64, stage: String) {
     let balance = getAutoBalancerBalanceByID(id: id, beFailed: false)
     
     log("")
-    log("[AUTOBALANCER STATE] ".concat(stage))
-    log("   AutoBalancer ID: ".concat(id.toString()))
-    log("   YieldToken Balance: ".concat(balance.toString()))
-    log("   YieldToken Price: ".concat(yieldPrice.toString()).concat(" MOET"))
+    log("======================================================================")
+    log("| [AUTOBALANCER STATE] ".concat(stage))
+    log("|    AutoBalancer ID: ".concat(id.toString()))
+    log("|    YieldToken Balance: ".concat(balance.toString()))
+    log("|    YieldToken Price: ".concat(yieldPrice.toString()).concat(" MOET"))
     
     // Explicit value calculation
     let value = balance * yieldPrice
-    log("   [CALCULATION] Total Value = Balance * Price")
-    log("   [CALCULATION] ".concat(balance.toString()).concat(" * ").concat(yieldPrice.toString()).concat(" = ").concat(value.toString()))
-    log("   Total Value in MOET: ".concat(value.toString()))
+    log("|    [CALCULATION] Total Value = Balance * Price")
+    log("|    [CALCULATION] ".concat(balance.toString()).concat(" * ").concat(yieldPrice.toString()).concat(" = ").concat(value.toString()))
+    log("|    Total Value in MOET: ".concat(value.toString()))
+    log("======================================================================")
     log("")
 }
 
@@ -331,10 +334,11 @@ fun logAutoBalancerState(id: UInt64, yieldPrice: UFix64, stage: String) {
 access(all)
 fun setMockOraclePriceWithLog(signer: Test.TestAccount, forTokenIdentifier: String, price: UFix64, tokenName: String) {
     log("")
-    log("[PRICE UPDATE] Setting ".concat(tokenName).concat(" price"))
-    log("   Token Identifier: ".concat(forTokenIdentifier))
-    log("   New Price: ".concat(price.toString()).concat(" MOET"))
-    log("   Previous Price: (not tracked - consider adding if needed)")
+    log("======================================================================")
+    log("| [PRICE UPDATE] Setting ".concat(tokenName).concat(" price"))
+    log("|    Token Identifier: ".concat(forTokenIdentifier))
+    log("|    New Price: ".concat(price.toString()).concat(" MOET"))
+    log("|    Previous Price: (not tracked - consider adding if needed)")
     
     // Execute the price update
     let setRes = _executeTransaction(
@@ -344,13 +348,14 @@ fun setMockOraclePriceWithLog(signer: Test.TestAccount, forTokenIdentifier: Stri
     )
     
     if setRes.status != Test.ResultStatus.succeeded {
-        log("   [ERROR] Price update FAILED!")
+        log("|    [ERROR] Price update FAILED!")
         if setRes.error != nil {
-            log("   [ERROR] Message: ".concat(setRes.error!.message))
+            log("|    [ERROR] Message: ".concat(setRes.error!.message))
         }
     } else {
-        log("   Price update successful")
+        log("|    Price update successful")
     }
+    log("======================================================================")
     log("")
 }
 
@@ -358,12 +363,14 @@ fun setMockOraclePriceWithLog(signer: Test.TestAccount, forTokenIdentifier: Stri
 access(all)
 fun logTransactionResult(result: Test.TransactionResult, operation: String) {
     log("")
-    log("[TRANSACTION] ".concat(operation))
-    log("   Status: ".concat(result.status == Test.ResultStatus.succeeded ? "SUCCEEDED" : "FAILED"))
+    log("======================================================================")
+    log("| [TRANSACTION] ".concat(operation))
+    log("|    Status: ".concat(result.status == Test.ResultStatus.succeeded ? "SUCCEEDED" : "FAILED"))
     if result.error != nil {
-        log("   ERROR MESSAGE: ".concat(result.error!.message))
-        log("   ERROR TYPE: Transaction execution failed")
+        log("|    ERROR MESSAGE: ".concat(result.error!.message))
+        log("|    ERROR TYPE: Transaction execution failed")
     }
+    log("======================================================================")
     log("")
 }
 
@@ -371,9 +378,9 @@ fun logTransactionResult(result: Test.TransactionResult, operation: String) {
 access(all)
 fun logSeparator(title: String) {
     log("")
-    log("==================================================================")
-    log("== ".concat(title))
-    log("==================================================================")
+    log("======================================================================")
+    log("|== ".concat(title))
+    log("======================================================================")
     log("")
 }
 
@@ -382,8 +389,8 @@ access(all)
 fun safeSubtract(a: UFix64, b: UFix64, context: String): UFix64 {
     if a < b {
         log("[WARNING] Potential underflow in ".concat(context))
-        log("   Attempting: ".concat(a.toString()).concat(" - ").concat(b.toString()))
-        log("   Result would be negative, returning absolute difference")
+        log("|    Attempting: ".concat(a.toString()).concat(" - ").concat(b.toString()))
+        log("|    Result would be negative, returning absolute difference")
         return b - a
     }
     return a - b
@@ -392,9 +399,11 @@ fun safeSubtract(a: UFix64, b: UFix64, context: String): UFix64 {
 // Helper to log calculations explicitly
 access(all)
 fun logCalculation(description: String, formula: String, result: UFix64) {
-    log("[CALCULATION] ".concat(description))
-    log("   Formula: ".concat(formula))
-    log("   Result: ".concat(result.toString()))
+    log("======================================================================")
+    log("| [CALCULATION] ".concat(description))
+    log("|    Formula: ".concat(formula))
+    log("|    Result: ".concat(result.toString()))
+    log("======================================================================")
 }
 
 // Helper to validate and log division operations
@@ -402,14 +411,16 @@ access(all)
 fun safeDivide(numerator: UFix64, denominator: UFix64, context: String): UFix64 {
     if denominator == 0.0 {
         log("[ERROR] Division by zero attempted in ".concat(context))
-        log("   Numerator: ".concat(numerator.toString()))
-        log("   Denominator: 0.0")
+        log("|    Numerator: ".concat(numerator.toString()))
+        log("|    Denominator: 0.0")
         panic("Division by zero error")
     }
     
     let result = numerator / denominator
-    log("[SAFE DIVISION] ".concat(context))
-    log("   ".concat(numerator.toString()).concat(" / ").concat(denominator.toString()).concat(" = ").concat(result.toString()))
+    log("======================================================================")
+    log("| [SAFE DIVISION] ".concat(context))
+    log("|    ".concat(numerator.toString()).concat(" / ").concat(denominator.toString()).concat(" = ").concat(result.toString()))
+    log("======================================================================")
     return result
 }
 
@@ -471,17 +482,17 @@ fun logComprehensivePositionState(pid: UInt64, stage: String, flowPrice: UFix64,
     let health = getPositionHealth(pid: pid, beFailed: false)
     
     log("")
-    log("╔═══════════════════════════════════════════════════════════════════╗")
-    log("║ POSITION STATE: ".concat(stage))
-    log("╠═══════════════════════════════════════════════════════════════════╣")
-    log("║ Position ID: ".concat(pid.toString()))
-    log("║ Health Ratio: ".concat(health.toString()))
-    log("╠═══════════════════════════════════════════════════════════════════╣")
-    log("║ PRICES:")
-    log("║   FLOW: ".concat(flowPrice.toString()).concat(" MOET"))
-    log("║   MOET: ".concat(moetPrice.toString()).concat(" (").concat(moetPrice == 1.0 ? "pegged" : "DEPEGGED").concat(")"))
-    log("╠═══════════════════════════════════════════════════════════════════╣")
-    log("║ BALANCES:")
+    log("======================================================================")
+    log("| POSITION STATE: ".concat(stage))
+    log("======================================================================")
+    log("| Position ID: ".concat(pid.toString()))
+    log("| Health Ratio: ".concat(health.toString()))
+    log("======================================================================")
+    log("| PRICES:")
+    log("|   FLOW: ".concat(flowPrice.toString()).concat(" MOET"))
+    log("|   MOET: ".concat(moetPrice.toString()).concat(" (").concat(moetPrice == 1.0 ? "pegged" : "DEPEGGED").concat(")"))
+    log("======================================================================")
+    log("| BALANCES:")
     
     var collateralAmount: UFix64 = 0.0
     var debtAmount: UFix64 = 0.0
@@ -490,12 +501,12 @@ fun logComprehensivePositionState(pid: UInt64, stage: String, flowPrice: UFix64,
         if bal.vaultType == Type<@FlowToken.Vault>() {
             collateralAmount = bal.balance
             let collateralValue = bal.balance * flowPrice * moetPrice
-            log("║   FLOW Collateral: ".concat(bal.balance.toString()))
-            log("║   → Value: ".concat(collateralValue.toString()).concat(" MOET"))
+            log("|   FLOW Collateral: ".concat(bal.balance.toString()))
+            log("|   -> Value: ".concat(collateralValue.toString()).concat(" MOET"))
         } else if bal.vaultType == Type<@MOET.Vault>() {
             debtAmount = bal.balance
-            log("║   MOET Debt: ".concat(bal.balance.toString()).concat(" (").concat(bal.direction == TidalProtocol.BalanceDirection.Debit ? "BORROWED" : "DEPOSITED").concat(")"))
-            log("║   → Value: ".concat(bal.balance.toString()).concat(" MOET"))
+            log("|   MOET Debt: ".concat(bal.balance.toString()).concat(" (").concat(bal.direction == TidalProtocol.BalanceDirection.Debit ? "BORROWED" : "DEPOSITED").concat(")"))
+            log("|   -> Value: ".concat(bal.balance.toString()).concat(" MOET"))
         }
     }
     
@@ -503,11 +514,11 @@ fun logComprehensivePositionState(pid: UInt64, stage: String, flowPrice: UFix64,
     let effectiveCollateral = collateralAmount * flowPrice * moetPrice * 0.8  // assuming 0.8 collateral factor
     let utilizationRate = debtAmount > 0.0 ? (debtAmount / effectiveCollateral) * 100.0 : 0.0
     
-    log("╠═══════════════════════════════════════════════════════════════════╣")
-    log("║ METRICS:")
-    log("║   Effective Collateral: ".concat(effectiveCollateral.toString()).concat(" MOET"))
-    log("║   Utilization Rate: ".concat(utilizationRate.toString()).concat("%"))
-    log("╚═══════════════════════════════════════════════════════════════════╝")
+    log("======================================================================")
+    log("| METRICS:")
+    log("|   Effective Collateral: ".concat(effectiveCollateral.toString()).concat(" MOET"))
+    log("|   Utilization Rate: ".concat(utilizationRate.toString()).concat("%"))
+    log("======================================================================")
     log("")
 }
 
@@ -525,47 +536,47 @@ fun logComprehensiveAutoBalancerState(
     let balance = getAutoBalancerBalanceByID(id: id, beFailed: false)
     
     log("")
-    log("╔═══════════════════════════════════════════════════════════════════╗")
-    log("║ AUTO-BALANCER STATE: ".concat(stage))
-    log("╠═══════════════════════════════════════════════════════════════════╣")
-    log("║ Tide ID: ".concat(tideID.toString()))
-    log("║ AutoBalancer ID: ".concat(id.toString()))
-    log("╠═══════════════════════════════════════════════════════════════════╣")
-    log("║ PRICES:")
-    log("║   FLOW: ".concat(flowPrice.toString()).concat(" MOET"))
-    log("║   YieldToken: ".concat(yieldPrice.toString()).concat(" MOET"))
-    log("║   MOET: ".concat(moetPrice.toString()).concat(" (").concat(moetPrice == 1.0 ? "pegged" : "DEPEGGED").concat(")"))
-    log("╠═══════════════════════════════════════════════════════════════════╣")
-    log("║ HOLDINGS:")
-    log("║   YieldToken Balance: ".concat(balance.toString()))
-    log("║   → Value in MOET: ".concat((balance * yieldPrice).toString()))
-    log("║   → Value in USD: ".concat((balance * yieldPrice * moetPrice).toString()))
-    log("╠═══════════════════════════════════════════════════════════════════╣")
-    log("║ POSITION METRICS:")
-    log("║   Initial FLOW Deposit: ".concat(initialDeposit.toString()))
-    log("║   Initial Value: ".concat((initialDeposit * flowPrice).toString()).concat(" MOET"))
+    log("======================================================================")
+    log("| AUTO-BALANCER STATE: ".concat(stage))
+    log("======================================================================")
+    log("| Tide ID: ".concat(tideID.toString()))
+    log("| AutoBalancer ID: ".concat(id.toString()))
+    log("======================================================================")
+    log("| PRICES:")
+    log("|   FLOW: ".concat(flowPrice.toString()).concat(" MOET"))
+    log("|   YieldToken: ".concat(yieldPrice.toString()).concat(" MOET"))
+    log("|   MOET: ".concat(moetPrice.toString()).concat(" (").concat(moetPrice == 1.0 ? "pegged" : "DEPEGGED").concat(")"))
+    log("======================================================================")
+    log("| HOLDINGS:")
+    log("|   YieldToken Balance: ".concat(balance.toString()))
+    log("|   -> Value in MOET: ".concat((balance * yieldPrice).toString()))
+    log("|   -> Value in USD: ".concat((balance * yieldPrice * moetPrice).toString()))
+    log("======================================================================")
+    log("| POSITION METRICS:")
+    log("|   Initial FLOW Deposit: ".concat(initialDeposit.toString()))
+    log("|   Initial Value: ".concat((initialDeposit * flowPrice).toString()).concat(" MOET"))
     
     // Calculate expected auto-borrow amount (assuming 1.3 target health)
     let expectedBorrow = (initialDeposit * flowPrice * 0.8) / 1.3
-    log("║   Expected MOET Borrowed: ~".concat(expectedBorrow.toString()))
-    log("║   Expected YieldTokens: ~".concat((expectedBorrow / yieldPrice).toString()))
+    log("|   Expected MOET Borrowed: ~".concat(expectedBorrow.toString()))
+    log("|   Expected YieldTokens: ~".concat((expectedBorrow / yieldPrice).toString()))
     
     // Performance metrics
     let currentValue = balance * yieldPrice
     let performanceRatio = currentValue / expectedBorrow * 100.0
-    log("╠═══════════════════════════════════════════════════════════════════╣")
-    log("║ PERFORMANCE:")
-    log("║   Current/Expected Value: ".concat(performanceRatio.toString()).concat("%"))
+    log("======================================================================")
+    log("| PERFORMANCE:")
+    log("|   Current/Expected Value: ".concat(performanceRatio.toString()).concat("%"))
     
     if performanceRatio > 105.0 {
-        log("║   Status: ABOVE threshold (>105%) - should rebalance DOWN")
+        log("|   Status: ABOVE threshold (>105%) - should rebalance DOWN")
     } else if performanceRatio < 95.0 {
-        log("║   Status: BELOW threshold (<95%) - should rebalance UP")
+        log("|   Status: BELOW threshold (<95%) - should rebalance UP")
     } else {
-        log("║   Status: WITHIN threshold (95-105%) - no rebalance needed")
+        log("|   Status: WITHIN threshold (95-105%) - no rebalance needed")
     }
     
-    log("╚═══════════════════════════════════════════════════════════════════╝")
+    log("======================================================================")
     log("")
 }
 
@@ -581,14 +592,14 @@ fun logMixedScenarioState(
     moetPrice: UFix64
 ) {
     log("")
-    log("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-    log("┃ MIXED SCENARIO STATE: ".concat(stage))
-    log("┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")
-    log("┃ CURRENT PRICES:")
-    log("┃   FLOW: ".concat(flowPrice.toString()).concat(" MOET"))
-    log("┃   YieldToken: ".concat(yieldPrice.toString()).concat(" MOET"))
-    log("┃   MOET: ".concat(moetPrice.toString()).concat(" (").concat(moetPrice == 1.0 ? "pegged" : "DEPEGGED").concat(")"))
-    log("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+    log("**********************************************************************")
+    log("* MIXED SCENARIO STATE: ".concat(stage))
+    log("**********************************************************************")
+    log("* CURRENT PRICES:")
+    log("*   FLOW: ".concat(flowPrice.toString()).concat(" MOET"))
+    log("*   YieldToken: ".concat(yieldPrice.toString()).concat(" MOET"))
+    log("*   MOET: ".concat(moetPrice.toString()).concat(" (").concat(moetPrice == 1.0 ? "pegged" : "DEPEGGED").concat(")"))
+    log("**********************************************************************")
     
     // Log auto-borrow position
     logComprehensivePositionState(pid: pid, stage: "Auto-Borrow", flowPrice: flowPrice, moetPrice: moetPrice)
@@ -639,14 +650,14 @@ struct StateSnapshot {
 access(all)
 fun logStateChanges(before: StateSnapshot, after: StateSnapshot, operation: String) {
     log("")
-    log("┌─────────────────────────────────────────────────────────────────┐")
-    log("│ STATE CHANGES AFTER: ".concat(operation))
-    log("├─────────────────────────────────────────────────────────────────┤")
+    log("----------------------------------------------------------------------")
+    log("| STATE CHANGES AFTER: ".concat(operation))
+    log("----------------------------------------------------------------------")
     
     // Health changes
     if after.health != before.health {
         let healthDiff = after.health > before.health ? after.health - before.health : before.health - after.health
-        log("│ Health: ".concat(before.health.toString()).concat(" → ").concat(after.health.toString())
+        log("| Health: ".concat(before.health.toString()).concat(" -> ").concat(after.health.toString())
             .concat(" (").concat(after.health > before.health ? "+" : "-").concat(healthDiff.toString()).concat(")"))
     }
     
@@ -654,7 +665,7 @@ fun logStateChanges(before: StateSnapshot, after: StateSnapshot, operation: Stri
     if after.collateralAmount != before.collateralAmount {
         let collDiff = after.collateralAmount > before.collateralAmount ? 
             after.collateralAmount - before.collateralAmount : before.collateralAmount - after.collateralAmount
-        log("│ Collateral: ".concat(before.collateralAmount.toString()).concat(" → ").concat(after.collateralAmount.toString())
+        log("| Collateral: ".concat(before.collateralAmount.toString()).concat(" -> ").concat(after.collateralAmount.toString())
             .concat(" (").concat(after.collateralAmount > before.collateralAmount ? "+" : "-").concat(collDiff.toString()).concat(")"))
     }
     
@@ -662,7 +673,7 @@ fun logStateChanges(before: StateSnapshot, after: StateSnapshot, operation: Stri
     if after.debtAmount != before.debtAmount {
         let debtDiff = after.debtAmount > before.debtAmount ? 
             after.debtAmount - before.debtAmount : before.debtAmount - after.debtAmount
-        log("│ MOET Debt: ".concat(before.debtAmount.toString()).concat(" → ").concat(after.debtAmount.toString())
+        log("| MOET Debt: ".concat(before.debtAmount.toString()).concat(" -> ").concat(after.debtAmount.toString())
             .concat(" (").concat(after.debtAmount > before.debtAmount ? "+" : "-").concat(debtDiff.toString()).concat(")"))
     }
     
@@ -670,11 +681,11 @@ fun logStateChanges(before: StateSnapshot, after: StateSnapshot, operation: Stri
     if after.yieldBalance != before.yieldBalance {
         let yieldDiff = after.yieldBalance > before.yieldBalance ? 
             after.yieldBalance - before.yieldBalance : before.yieldBalance - after.yieldBalance
-        log("│ YieldToken: ".concat(before.yieldBalance.toString()).concat(" → ").concat(after.yieldBalance.toString())
+        log("| YieldToken: ".concat(before.yieldBalance.toString()).concat(" -> ").concat(after.yieldBalance.toString())
             .concat(" (").concat(after.yieldBalance > before.yieldBalance ? "+" : "-").concat(yieldDiff.toString()).concat(")"))
     }
     
-    log("└─────────────────────────────────────────────────────────────────┘")
+    log("----------------------------------------------------------------------")
     log("")
 }
 

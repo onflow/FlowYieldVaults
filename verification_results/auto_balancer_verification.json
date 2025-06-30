@@ -1,0 +1,1865 @@
+{
+  "test_file": "../clean_test_output.log",
+  "parameters": {
+    "collateral_factor": "0.8",
+    "target_health": "1.3",
+    "tolerance": "0.001",
+    "rebalance_threshold": "0.05",
+    "deposit_amount": "1000",
+    "initial_moet_borrowed": "615.3846153846153846153846154"
+  },
+  "summary": {
+    "total_price_changes": 46,
+    "actual_rebalances": 4,
+    "skipped": 42,
+    "passed": 2,
+    "failed": 2,
+    "pass_rate": 50.0
+  },
+  "states": [
+    {
+      "line": 287,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.10000000",
+      "moet_value": "676.92307691",
+      "stage": "|== Stage 0: YieldToken +10% to 1.1"
+    },
+    {
+      "line": 316,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.10000000",
+      "moet_value": "676.92307691",
+      "stage": "|== Stage 0: YieldToken +10% to 1.1"
+    },
+    {
+      "line": 359,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.20000000",
+      "moet_value": "738.46153845",
+      "stage": "|== Stage 1: YieldToken +20% to 1.2"
+    },
+    {
+      "line": 388,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.20000000",
+      "moet_value": "738.46153845",
+      "stage": "|== Stage 1: YieldToken +20% to 1.2"
+    },
+    {
+      "line": 431,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.30000000",
+      "moet_value": "799.99999999",
+      "stage": "|== Stage 2: YieldToken +30% to 1.3"
+    },
+    {
+      "line": 460,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.30000000",
+      "moet_value": "799.99999999",
+      "stage": "|== Stage 2: YieldToken +30% to 1.3"
+    },
+    {
+      "line": 503,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.40000000",
+      "moet_value": "861.53846153",
+      "stage": "|== Stage 3: YieldToken +40% to 1.4"
+    },
+    {
+      "line": 532,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.40000000",
+      "moet_value": "861.53846153",
+      "stage": "|== Stage 3: YieldToken +40% to 1.4"
+    },
+    {
+      "line": 575,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.50000000",
+      "moet_value": "923.07692307",
+      "stage": "|== Stage 4: YieldToken +50% to 1.5"
+    },
+    {
+      "line": 604,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.50000000",
+      "moet_value": "923.07692307",
+      "stage": "|== Stage 4: YieldToken +50% to 1.5"
+    },
+    {
+      "line": 647,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.30000000",
+      "moet_value": "799.99999999",
+      "stage": "|== Stage 5: YieldToken drops to 1.3"
+    },
+    {
+      "line": 676,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.30000000",
+      "moet_value": "799.99999999",
+      "stage": "|== Stage 5: YieldToken drops to 1.3"
+    },
+    {
+      "line": 719,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.10000000",
+      "moet_value": "676.92307691",
+      "stage": "|== Stage 6: YieldToken drops to 1.1"
+    },
+    {
+      "line": 748,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.10000000",
+      "moet_value": "676.92307691",
+      "stage": "|== Stage 6: YieldToken drops to 1.1"
+    },
+    {
+      "line": 791,
+      "yield_balance": "615.38461538",
+      "yield_price": "0.90000000",
+      "moet_value": "553.84615384",
+      "stage": "|== Stage 7: YieldToken drops to 0.9"
+    },
+    {
+      "line": 820,
+      "yield_balance": "589.08612750",
+      "yield_price": "0.90000000",
+      "moet_value": "530.17751475",
+      "stage": "|== Stage 7: YieldToken drops to 0.9"
+    },
+    {
+      "line": 866,
+      "yield_balance": "589.08612750",
+      "yield_price": "0.70000000",
+      "moet_value": "412.36028925",
+      "stage": "|== Stage 8: YieldToken drops to 0.7"
+    },
+    {
+      "line": 895,
+      "yield_balance": "456.72670393",
+      "yield_price": "0.70000000",
+      "moet_value": "319.70869275",
+      "stage": "|== Stage 8: YieldToken drops to 0.7"
+    },
+    {
+      "line": 941,
+      "yield_balance": "456.72670393",
+      "yield_price": "0.50000000",
+      "moet_value": "228.36335196",
+      "stage": "|== Stage 9: YieldToken drops to 0.5"
+    },
+    {
+      "line": 970,
+      "yield_balance": "281.06258702",
+      "yield_price": "0.50000000",
+      "moet_value": "140.53129351",
+      "stage": "|== Stage 9: YieldToken drops to 0.5"
+    },
+    {
+      "line": 1664,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.10000000",
+      "moet_value": "676.92307691",
+      "stage": "|== Stage 0: YieldToken +10% to 1.1"
+    },
+    {
+      "line": 1693,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.10000000",
+      "moet_value": "676.92307691",
+      "stage": "|== Stage 0: YieldToken +10% to 1.1"
+    },
+    {
+      "line": 1736,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.20000000",
+      "moet_value": "738.46153845",
+      "stage": "|== Stage 1: YieldToken +20% to 1.2"
+    },
+    {
+      "line": 1765,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.20000000",
+      "moet_value": "738.46153845",
+      "stage": "|== Stage 1: YieldToken +20% to 1.2"
+    },
+    {
+      "line": 1808,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.30000000",
+      "moet_value": "799.99999999",
+      "stage": "|== Stage 2: YieldToken +30% to 1.3"
+    },
+    {
+      "line": 1837,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.30000000",
+      "moet_value": "799.99999999",
+      "stage": "|== Stage 2: YieldToken +30% to 1.3"
+    },
+    {
+      "line": 1880,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.40000000",
+      "moet_value": "861.53846153",
+      "stage": "|== Stage 3: YieldToken +40% to 1.4"
+    },
+    {
+      "line": 1909,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.40000000",
+      "moet_value": "861.53846153",
+      "stage": "|== Stage 3: YieldToken +40% to 1.4"
+    },
+    {
+      "line": 1952,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.50000000",
+      "moet_value": "923.07692307",
+      "stage": "|== Stage 4: YieldToken +50% to 1.5"
+    },
+    {
+      "line": 1981,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.50000000",
+      "moet_value": "923.07692307",
+      "stage": "|== Stage 4: YieldToken +50% to 1.5"
+    },
+    {
+      "line": 2024,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.30000000",
+      "moet_value": "799.99999999",
+      "stage": "|== Stage 5: YieldToken drops to 1.3"
+    },
+    {
+      "line": 2053,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.30000000",
+      "moet_value": "799.99999999",
+      "stage": "|== Stage 5: YieldToken drops to 1.3"
+    },
+    {
+      "line": 2096,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.10000000",
+      "moet_value": "676.92307691",
+      "stage": "|== Stage 6: YieldToken drops to 1.1"
+    },
+    {
+      "line": 2125,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.10000000",
+      "moet_value": "676.92307691",
+      "stage": "|== Stage 6: YieldToken drops to 1.1"
+    },
+    {
+      "line": 2168,
+      "yield_balance": "615.38461538",
+      "yield_price": "0.90000000",
+      "moet_value": "553.84615384",
+      "stage": "|== Stage 7: YieldToken drops to 0.9"
+    },
+    {
+      "line": 2197,
+      "yield_balance": "589.08612750",
+      "yield_price": "0.90000000",
+      "moet_value": "530.17751475",
+      "stage": "|== Stage 7: YieldToken drops to 0.9"
+    },
+    {
+      "line": 2243,
+      "yield_balance": "589.08612750",
+      "yield_price": "0.70000000",
+      "moet_value": "412.36028925",
+      "stage": "|== Stage 8: YieldToken drops to 0.7"
+    },
+    {
+      "line": 2272,
+      "yield_balance": "456.72670393",
+      "yield_price": "0.70000000",
+      "moet_value": "319.70869275",
+      "stage": "|== Stage 8: YieldToken drops to 0.7"
+    },
+    {
+      "line": 2318,
+      "yield_balance": "456.72670393",
+      "yield_price": "0.50000000",
+      "moet_value": "228.36335196",
+      "stage": "|== Stage 9: YieldToken drops to 0.5"
+    },
+    {
+      "line": 2347,
+      "yield_balance": "281.06258702",
+      "yield_price": "0.50000000",
+      "moet_value": "140.53129351",
+      "stage": "|== Stage 9: YieldToken drops to 0.5"
+    },
+    {
+      "line": 3041,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.10000000",
+      "moet_value": "676.92307691",
+      "stage": "|== Stage 0: YieldToken +10% to 1.1"
+    },
+    {
+      "line": 3070,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.10000000",
+      "moet_value": "676.92307691",
+      "stage": "|== Stage 0: YieldToken +10% to 1.1"
+    },
+    {
+      "line": 3113,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.20000000",
+      "moet_value": "738.46153845",
+      "stage": "|== Stage 1: YieldToken +20% to 1.2"
+    },
+    {
+      "line": 3142,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.20000000",
+      "moet_value": "738.46153845",
+      "stage": "|== Stage 1: YieldToken +20% to 1.2"
+    },
+    {
+      "line": 3185,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.30000000",
+      "moet_value": "799.99999999",
+      "stage": "|== Stage 2: YieldToken +30% to 1.3"
+    },
+    {
+      "line": 3214,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.30000000",
+      "moet_value": "799.99999999",
+      "stage": "|== Stage 2: YieldToken +30% to 1.3"
+    },
+    {
+      "line": 3257,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.40000000",
+      "moet_value": "861.53846153",
+      "stage": "|== Stage 3: YieldToken +40% to 1.4"
+    },
+    {
+      "line": 3286,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.40000000",
+      "moet_value": "861.53846153",
+      "stage": "|== Stage 3: YieldToken +40% to 1.4"
+    },
+    {
+      "line": 3329,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.50000000",
+      "moet_value": "923.07692307",
+      "stage": "|== Stage 4: YieldToken +50% to 1.5"
+    },
+    {
+      "line": 3358,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.50000000",
+      "moet_value": "923.07692307",
+      "stage": "|== Stage 4: YieldToken +50% to 1.5"
+    },
+    {
+      "line": 3401,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.30000000",
+      "moet_value": "799.99999999",
+      "stage": "|== Stage 5: YieldToken drops to 1.3"
+    },
+    {
+      "line": 3430,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.30000000",
+      "moet_value": "799.99999999",
+      "stage": "|== Stage 5: YieldToken drops to 1.3"
+    },
+    {
+      "line": 3473,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.10000000",
+      "moet_value": "676.92307691",
+      "stage": "|== Stage 6: YieldToken drops to 1.1"
+    },
+    {
+      "line": 3502,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.10000000",
+      "moet_value": "676.92307691",
+      "stage": "|== Stage 6: YieldToken drops to 1.1"
+    },
+    {
+      "line": 3545,
+      "yield_balance": "615.38461538",
+      "yield_price": "0.90000000",
+      "moet_value": "553.84615384",
+      "stage": "|== Stage 7: YieldToken drops to 0.9"
+    },
+    {
+      "line": 3574,
+      "yield_balance": "589.08612750",
+      "yield_price": "0.90000000",
+      "moet_value": "530.17751475",
+      "stage": "|== Stage 7: YieldToken drops to 0.9"
+    },
+    {
+      "line": 3620,
+      "yield_balance": "589.08612750",
+      "yield_price": "0.70000000",
+      "moet_value": "412.36028925",
+      "stage": "|== Stage 8: YieldToken drops to 0.7"
+    },
+    {
+      "line": 3649,
+      "yield_balance": "456.72670393",
+      "yield_price": "0.70000000",
+      "moet_value": "319.70869275",
+      "stage": "|== Stage 8: YieldToken drops to 0.7"
+    },
+    {
+      "line": 3695,
+      "yield_balance": "456.72670393",
+      "yield_price": "0.50000000",
+      "moet_value": "228.36335196",
+      "stage": "|== Stage 9: YieldToken drops to 0.5"
+    },
+    {
+      "line": 3724,
+      "yield_balance": "281.06258702",
+      "yield_price": "0.50000000",
+      "moet_value": "140.53129351",
+      "stage": "|== Stage 9: YieldToken drops to 0.5"
+    },
+    {
+      "line": 5456,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.00000000",
+      "moet_value": "615.38461538",
+      "stage": "|== Stage 0: Baseline"
+    },
+    {
+      "line": 5512,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.00000000",
+      "moet_value": "615.38461538",
+      "stage": "|== Stage 0: Baseline"
+    },
+    {
+      "line": 5595,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.20000000",
+      "moet_value": "738.46153845",
+      "stage": "|== Stage 1: FLOW crash, YieldToken rise"
+    },
+    {
+      "line": 5651,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.20000000",
+      "moet_value": "738.46153845",
+      "stage": "|== Stage 1: FLOW crash, YieldToken rise"
+    },
+    {
+      "line": 5736,
+      "yield_balance": "615.38461538",
+      "yield_price": "0.80000000",
+      "moet_value": "492.30769230",
+      "stage": "|== Stage 2: FLOW rise, YieldToken drop"
+    },
+    {
+      "line": 5792,
+      "yield_balance": "940.82840175",
+      "yield_price": "0.80000000",
+      "moet_value": "752.66272140",
+      "stage": "|== Stage 2: FLOW rise, YieldToken drop"
+    },
+    {
+      "line": 5887,
+      "yield_balance": "940.82840175",
+      "yield_price": "0.50000000",
+      "moet_value": "470.41420087",
+      "stage": "|== Stage 3: Both crash (MOET slightly depegged)"
+    },
+    {
+      "line": 5943,
+      "yield_balance": "0E-8",
+      "yield_price": "0.50000000",
+      "moet_value": "0E-8",
+      "stage": "|== Stage 3: Both crash (MOET slightly depegged)"
+    },
+    {
+      "line": 6033,
+      "yield_balance": "0E-8",
+      "yield_price": "2.00000000",
+      "moet_value": "0E-8",
+      "stage": "|== Stage 4: Both moon"
+    },
+    {
+      "line": 6089,
+      "yield_balance": "0E-8",
+      "yield_price": "2.00000000",
+      "moet_value": "0E-8",
+      "stage": "|== Stage 4: Both moon"
+    },
+    {
+      "line": 6174,
+      "yield_balance": "0E-8",
+      "yield_price": "0.10000000",
+      "moet_value": "0E-8",
+      "stage": "|== Stage 5: FLOW stable, YieldToken crash"
+    },
+    {
+      "line": 6230,
+      "yield_balance": "0E-8",
+      "yield_price": "0.10000000",
+      "moet_value": "0E-8",
+      "stage": "|== Stage 5: FLOW stable, YieldToken crash"
+    },
+    {
+      "line": 6324,
+      "yield_balance": "0E-8",
+      "yield_price": "1.00000000",
+      "moet_value": "0E-8",
+      "stage": "|== Stage 6: FLOW crash, YieldToken stable (MOET depegged)"
+    },
+    {
+      "line": 6380,
+      "yield_balance": "0E-8",
+      "yield_price": "1.00000000",
+      "moet_value": "0E-8",
+      "stage": "|== Stage 6: FLOW crash, YieldToken stable (MOET depegged)"
+    },
+    {
+      "line": 6469,
+      "yield_balance": "0E-8",
+      "yield_price": "1.00000000",
+      "moet_value": "0E-8",
+      "stage": "|== Stage 7: Return to baseline"
+    },
+    {
+      "line": 6525,
+      "yield_balance": "0E-8",
+      "yield_price": "1.00000000",
+      "moet_value": "0E-8",
+      "stage": "|== Stage 7: Return to baseline"
+    },
+    {
+      "line": 6628,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.00000000",
+      "moet_value": "615.38461538",
+      "stage": "|== Stage 7: Return to baseline"
+    },
+    {
+      "line": 6710,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.00000000",
+      "moet_value": "615.38461538",
+      "stage": "|== Stage 0: Baseline"
+    },
+    {
+      "line": 6771,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.00000000",
+      "moet_value": "615.38461538",
+      "stage": "|== Stage 0: Baseline"
+    },
+    {
+      "line": 6857,
+      "yield_balance": "615.38461538",
+      "yield_price": "2.00000000",
+      "moet_value": "1230.76923076",
+      "stage": "|== Stage 1: Inverse correlation begins"
+    },
+    {
+      "line": 6918,
+      "yield_balance": "615.38461538",
+      "yield_price": "2.00000000",
+      "moet_value": "1230.76923076",
+      "stage": "|== Stage 1: Inverse correlation begins"
+    },
+    {
+      "line": 7004,
+      "yield_balance": "615.38461538",
+      "yield_price": "0.50000000",
+      "moet_value": "307.69230769",
+      "stage": "|== Stage 2: Inverse continues"
+    },
+    {
+      "line": 7065,
+      "yield_balance": "1609.46745560",
+      "yield_price": "0.50000000",
+      "moet_value": "804.73372780",
+      "stage": "|== Stage 2: Inverse continues"
+    },
+    {
+      "line": 7151,
+      "yield_balance": "1609.46745560",
+      "yield_price": "3.00000000",
+      "moet_value": "4828.40236680",
+      "stage": "|== Stage 3: FLOW crashes, Yield moons"
+    },
+    {
+      "line": 7212,
+      "yield_balance": "1609.46745560",
+      "yield_price": "3.00000000",
+      "moet_value": "4828.40236680",
+      "stage": "|== Stage 3: FLOW crashes, Yield moons"
+    },
+    {
+      "line": 7298,
+      "yield_balance": "1609.46745560",
+      "yield_price": "0.70000000",
+      "moet_value": "1126.62721892",
+      "stage": "|== Stage 4: Partial recovery"
+    },
+    {
+      "line": 7359,
+      "yield_balance": "971.62677300",
+      "yield_price": "0.70000000",
+      "moet_value": "680.13874110",
+      "stage": "|== Stage 4: Partial recovery"
+    },
+    {
+      "line": 7445,
+      "yield_balance": "971.62677300",
+      "yield_price": "1.20000000",
+      "moet_value": "1165.95212760",
+      "stage": "|== Stage 5: Stabilization"
+    },
+    {
+      "line": 7506,
+      "yield_balance": "971.62677300",
+      "yield_price": "1.20000000",
+      "moet_value": "1165.95212760",
+      "stage": "|== Stage 5: Stabilization"
+    },
+    {
+      "line": 7574,
+      "yield_balance": "971.62677300",
+      "yield_price": "1.20000000",
+      "moet_value": "1165.95212760",
+      "stage": "|== Stage 5: Stabilization"
+    },
+    {
+      "line": 7664,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.00000000",
+      "moet_value": "615.38461538",
+      "stage": "|== Stage 5: Stabilization"
+    },
+    {
+      "line": 7746,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.00000000",
+      "moet_value": "615.38461538",
+      "stage": "|== Stage 0: Baseline"
+    },
+    {
+      "line": 7807,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.00000000",
+      "moet_value": "615.38461538",
+      "stage": "|== Stage 0: Baseline"
+    },
+    {
+      "line": 7893,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.00000000",
+      "moet_value": "615.38461538",
+      "stage": "|== Stage 1: FLOW stable, Yield stable"
+    },
+    {
+      "line": 7954,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.00000000",
+      "moet_value": "615.38461538",
+      "stage": "|== Stage 1: FLOW stable, Yield stable"
+    },
+    {
+      "line": 8040,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.50000000",
+      "moet_value": "923.07692307",
+      "stage": "|== Stage 2: FLOW stable, Yield pumps"
+    },
+    {
+      "line": 8101,
+      "yield_balance": "615.38461538",
+      "yield_price": "1.50000000",
+      "moet_value": "923.07692307",
+      "stage": "|== Stage 2: FLOW stable, Yield pumps"
+    },
+    {
+      "line": 8187,
+      "yield_balance": "615.38461538",
+      "yield_price": "0.70000000",
+      "moet_value": "430.76923076",
+      "stage": "|== Stage 3: FLOW rises, Yield crashes"
+    },
+    {
+      "line": 8248,
+      "yield_balance": "689.77176372",
+      "yield_price": "0.70000000",
+      "moet_value": "482.84023460",
+      "stage": "|== Stage 3: FLOW rises, Yield crashes"
+    },
+    {
+      "line": 8334,
+      "yield_balance": "689.77176372",
+      "yield_price": "2.00000000",
+      "moet_value": "1379.54352744",
+      "stage": "|== Stage 4: FLOW drops, Yield moons"
+    },
+    {
+      "line": 8395,
+      "yield_balance": "689.77176372",
+      "yield_price": "2.00000000",
+      "moet_value": "1379.54352744",
+      "stage": "|== Stage 4: FLOW drops, Yield moons"
+    },
+    {
+      "line": 8481,
+      "yield_balance": "689.77176372",
+      "yield_price": "0.50000000",
+      "moet_value": "344.88588186",
+      "stage": "|== Stage 5: Return to baseline"
+    },
+    {
+      "line": 8542,
+      "yield_balance": "140.45126308",
+      "yield_price": "0.50000000",
+      "moet_value": "70.22563154",
+      "stage": "|== Stage 5: Return to baseline"
+    },
+    {
+      "line": 8610,
+      "yield_balance": "140.45126308",
+      "yield_price": "0.50000000",
+      "moet_value": "70.22563154",
+      "stage": "|== Stage 5: Return to baseline"
+    }
+  ],
+  "verifications": [
+    {
+      "before_state": {
+        "line": 316,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.10000000",
+        "moet_value": "676.92307691",
+        "stage": "|== Stage 0: YieldToken +10% to 1.1"
+      },
+      "after_state": {
+        "line": 359,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.20000000",
+        "moet_value": "738.46153845",
+        "stage": "|== Stage 1: YieldToken +20% to 1.2"
+      },
+      "expected_balance": "512.8205128205128205128205128",
+      "price_change_factor": 1.0909090909090908,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 388,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.20000000",
+        "moet_value": "738.46153845",
+        "stage": "|== Stage 1: YieldToken +20% to 1.2"
+      },
+      "after_state": {
+        "line": 431,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.30000000",
+        "moet_value": "799.99999999",
+        "stage": "|== Stage 2: YieldToken +30% to 1.3"
+      },
+      "expected_balance": "473.3727810650887573964497042",
+      "price_change_factor": 1.0833333333333333,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 460,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.30000000",
+        "moet_value": "799.99999999",
+        "stage": "|== Stage 2: YieldToken +30% to 1.3"
+      },
+      "after_state": {
+        "line": 503,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.40000000",
+        "moet_value": "861.53846153",
+        "stage": "|== Stage 3: YieldToken +40% to 1.4"
+      },
+      "expected_balance": "439.5604395604395604395604396",
+      "price_change_factor": 1.0769230769230769,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 532,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.40000000",
+        "moet_value": "861.53846153",
+        "stage": "|== Stage 3: YieldToken +40% to 1.4"
+      },
+      "after_state": {
+        "line": 575,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.50000000",
+        "moet_value": "923.07692307",
+        "stage": "|== Stage 4: YieldToken +50% to 1.5"
+      },
+      "expected_balance": "410.2564102564102564102564103",
+      "price_change_factor": 1.0714285714285714,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 604,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.50000000",
+        "moet_value": "923.07692307",
+        "stage": "|== Stage 4: YieldToken +50% to 1.5"
+      },
+      "after_state": {
+        "line": 647,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.30000000",
+        "moet_value": "799.99999999",
+        "stage": "|== Stage 5: YieldToken drops to 1.3"
+      },
+      "expected_balance": "473.3727810650887573964497042",
+      "price_change_factor": 0.8666666666666667,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 676,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.30000000",
+        "moet_value": "799.99999999",
+        "stage": "|== Stage 5: YieldToken drops to 1.3"
+      },
+      "after_state": {
+        "line": 719,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.10000000",
+        "moet_value": "676.92307691",
+        "stage": "|== Stage 6: YieldToken drops to 1.1"
+      },
+      "expected_balance": "559.4405594405594405594405595",
+      "price_change_factor": 0.8461538461538461,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 748,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.10000000",
+        "moet_value": "676.92307691",
+        "stage": "|== Stage 6: YieldToken drops to 1.1"
+      },
+      "after_state": {
+        "line": 791,
+        "yield_balance": "615.38461538",
+        "yield_price": "0.90000000",
+        "moet_value": "553.84615384",
+        "stage": "|== Stage 7: YieldToken drops to 0.9"
+      },
+      "expected_balance": "683.7606837606837606837606838",
+      "price_change_factor": 0.8181818181818182,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 820,
+        "yield_balance": "589.08612750",
+        "yield_price": "0.90000000",
+        "moet_value": "530.17751475",
+        "stage": "|== Stage 7: YieldToken drops to 0.9"
+      },
+      "after_state": {
+        "line": 866,
+        "yield_balance": "589.08612750",
+        "yield_price": "0.70000000",
+        "moet_value": "412.36028925",
+        "stage": "|== Stage 8: YieldToken drops to 0.7"
+      },
+      "expected_balance": "879.1208791208791208791208791",
+      "price_change_factor": 0.7777777777777778,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 895,
+        "yield_balance": "456.72670393",
+        "yield_price": "0.70000000",
+        "moet_value": "319.70869275",
+        "stage": "|== Stage 8: YieldToken drops to 0.7"
+      },
+      "after_state": {
+        "line": 941,
+        "yield_balance": "456.72670393",
+        "yield_price": "0.50000000",
+        "moet_value": "228.36335196",
+        "stage": "|== Stage 9: YieldToken drops to 0.5"
+      },
+      "expected_balance": "1230.769230769230769230769231",
+      "price_change_factor": 0.7142857142857143,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 970,
+        "yield_balance": "281.06258702",
+        "yield_price": "0.50000000",
+        "moet_value": "140.53129351",
+        "stage": "|== Stage 9: YieldToken drops to 0.5"
+      },
+      "after_state": {
+        "line": 1664,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.10000000",
+        "moet_value": "676.92307691",
+        "stage": "|== Stage 0: YieldToken +10% to 1.1"
+      },
+      "expected_balance": "559.4405594405594405594405595",
+      "price_change_factor": 2.2,
+      "actual_rebalanced": true,
+      "difference": "55.9440559394405594405594405",
+      "difference_pct": 9.999999999175,
+      "verified": false,
+      "status": "fail"
+    },
+    {
+      "before_state": {
+        "line": 1693,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.10000000",
+        "moet_value": "676.92307691",
+        "stage": "|== Stage 0: YieldToken +10% to 1.1"
+      },
+      "after_state": {
+        "line": 1736,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.20000000",
+        "moet_value": "738.46153845",
+        "stage": "|== Stage 1: YieldToken +20% to 1.2"
+      },
+      "expected_balance": "512.8205128205128205128205128",
+      "price_change_factor": 1.0909090909090908,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 1765,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.20000000",
+        "moet_value": "738.46153845",
+        "stage": "|== Stage 1: YieldToken +20% to 1.2"
+      },
+      "after_state": {
+        "line": 1808,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.30000000",
+        "moet_value": "799.99999999",
+        "stage": "|== Stage 2: YieldToken +30% to 1.3"
+      },
+      "expected_balance": "473.3727810650887573964497042",
+      "price_change_factor": 1.0833333333333333,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 1837,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.30000000",
+        "moet_value": "799.99999999",
+        "stage": "|== Stage 2: YieldToken +30% to 1.3"
+      },
+      "after_state": {
+        "line": 1880,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.40000000",
+        "moet_value": "861.53846153",
+        "stage": "|== Stage 3: YieldToken +40% to 1.4"
+      },
+      "expected_balance": "439.5604395604395604395604396",
+      "price_change_factor": 1.0769230769230769,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 1909,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.40000000",
+        "moet_value": "861.53846153",
+        "stage": "|== Stage 3: YieldToken +40% to 1.4"
+      },
+      "after_state": {
+        "line": 1952,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.50000000",
+        "moet_value": "923.07692307",
+        "stage": "|== Stage 4: YieldToken +50% to 1.5"
+      },
+      "expected_balance": "410.2564102564102564102564103",
+      "price_change_factor": 1.0714285714285714,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 1981,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.50000000",
+        "moet_value": "923.07692307",
+        "stage": "|== Stage 4: YieldToken +50% to 1.5"
+      },
+      "after_state": {
+        "line": 2024,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.30000000",
+        "moet_value": "799.99999999",
+        "stage": "|== Stage 5: YieldToken drops to 1.3"
+      },
+      "expected_balance": "473.3727810650887573964497042",
+      "price_change_factor": 0.8666666666666667,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 2053,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.30000000",
+        "moet_value": "799.99999999",
+        "stage": "|== Stage 5: YieldToken drops to 1.3"
+      },
+      "after_state": {
+        "line": 2096,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.10000000",
+        "moet_value": "676.92307691",
+        "stage": "|== Stage 6: YieldToken drops to 1.1"
+      },
+      "expected_balance": "559.4405594405594405594405595",
+      "price_change_factor": 0.8461538461538461,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 2125,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.10000000",
+        "moet_value": "676.92307691",
+        "stage": "|== Stage 6: YieldToken drops to 1.1"
+      },
+      "after_state": {
+        "line": 2168,
+        "yield_balance": "615.38461538",
+        "yield_price": "0.90000000",
+        "moet_value": "553.84615384",
+        "stage": "|== Stage 7: YieldToken drops to 0.9"
+      },
+      "expected_balance": "683.7606837606837606837606838",
+      "price_change_factor": 0.8181818181818182,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 2197,
+        "yield_balance": "589.08612750",
+        "yield_price": "0.90000000",
+        "moet_value": "530.17751475",
+        "stage": "|== Stage 7: YieldToken drops to 0.9"
+      },
+      "after_state": {
+        "line": 2243,
+        "yield_balance": "589.08612750",
+        "yield_price": "0.70000000",
+        "moet_value": "412.36028925",
+        "stage": "|== Stage 8: YieldToken drops to 0.7"
+      },
+      "expected_balance": "879.1208791208791208791208791",
+      "price_change_factor": 0.7777777777777778,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 2272,
+        "yield_balance": "456.72670393",
+        "yield_price": "0.70000000",
+        "moet_value": "319.70869275",
+        "stage": "|== Stage 8: YieldToken drops to 0.7"
+      },
+      "after_state": {
+        "line": 2318,
+        "yield_balance": "456.72670393",
+        "yield_price": "0.50000000",
+        "moet_value": "228.36335196",
+        "stage": "|== Stage 9: YieldToken drops to 0.5"
+      },
+      "expected_balance": "1230.769230769230769230769231",
+      "price_change_factor": 0.7142857142857143,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 2347,
+        "yield_balance": "281.06258702",
+        "yield_price": "0.50000000",
+        "moet_value": "140.53129351",
+        "stage": "|== Stage 9: YieldToken drops to 0.5"
+      },
+      "after_state": {
+        "line": 3041,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.10000000",
+        "moet_value": "676.92307691",
+        "stage": "|== Stage 0: YieldToken +10% to 1.1"
+      },
+      "expected_balance": "559.4405594405594405594405595",
+      "price_change_factor": 2.2,
+      "actual_rebalanced": true,
+      "difference": "55.9440559394405594405594405",
+      "difference_pct": 9.999999999175,
+      "verified": false,
+      "status": "fail"
+    },
+    {
+      "before_state": {
+        "line": 3070,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.10000000",
+        "moet_value": "676.92307691",
+        "stage": "|== Stage 0: YieldToken +10% to 1.1"
+      },
+      "after_state": {
+        "line": 3113,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.20000000",
+        "moet_value": "738.46153845",
+        "stage": "|== Stage 1: YieldToken +20% to 1.2"
+      },
+      "expected_balance": "512.8205128205128205128205128",
+      "price_change_factor": 1.0909090909090908,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 3142,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.20000000",
+        "moet_value": "738.46153845",
+        "stage": "|== Stage 1: YieldToken +20% to 1.2"
+      },
+      "after_state": {
+        "line": 3185,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.30000000",
+        "moet_value": "799.99999999",
+        "stage": "|== Stage 2: YieldToken +30% to 1.3"
+      },
+      "expected_balance": "473.3727810650887573964497042",
+      "price_change_factor": 1.0833333333333333,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 3214,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.30000000",
+        "moet_value": "799.99999999",
+        "stage": "|== Stage 2: YieldToken +30% to 1.3"
+      },
+      "after_state": {
+        "line": 3257,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.40000000",
+        "moet_value": "861.53846153",
+        "stage": "|== Stage 3: YieldToken +40% to 1.4"
+      },
+      "expected_balance": "439.5604395604395604395604396",
+      "price_change_factor": 1.0769230769230769,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 3286,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.40000000",
+        "moet_value": "861.53846153",
+        "stage": "|== Stage 3: YieldToken +40% to 1.4"
+      },
+      "after_state": {
+        "line": 3329,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.50000000",
+        "moet_value": "923.07692307",
+        "stage": "|== Stage 4: YieldToken +50% to 1.5"
+      },
+      "expected_balance": "410.2564102564102564102564103",
+      "price_change_factor": 1.0714285714285714,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 3358,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.50000000",
+        "moet_value": "923.07692307",
+        "stage": "|== Stage 4: YieldToken +50% to 1.5"
+      },
+      "after_state": {
+        "line": 3401,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.30000000",
+        "moet_value": "799.99999999",
+        "stage": "|== Stage 5: YieldToken drops to 1.3"
+      },
+      "expected_balance": "473.3727810650887573964497042",
+      "price_change_factor": 0.8666666666666667,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 3430,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.30000000",
+        "moet_value": "799.99999999",
+        "stage": "|== Stage 5: YieldToken drops to 1.3"
+      },
+      "after_state": {
+        "line": 3473,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.10000000",
+        "moet_value": "676.92307691",
+        "stage": "|== Stage 6: YieldToken drops to 1.1"
+      },
+      "expected_balance": "559.4405594405594405594405595",
+      "price_change_factor": 0.8461538461538461,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 3502,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.10000000",
+        "moet_value": "676.92307691",
+        "stage": "|== Stage 6: YieldToken drops to 1.1"
+      },
+      "after_state": {
+        "line": 3545,
+        "yield_balance": "615.38461538",
+        "yield_price": "0.90000000",
+        "moet_value": "553.84615384",
+        "stage": "|== Stage 7: YieldToken drops to 0.9"
+      },
+      "expected_balance": "683.7606837606837606837606838",
+      "price_change_factor": 0.8181818181818182,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 3574,
+        "yield_balance": "589.08612750",
+        "yield_price": "0.90000000",
+        "moet_value": "530.17751475",
+        "stage": "|== Stage 7: YieldToken drops to 0.9"
+      },
+      "after_state": {
+        "line": 3620,
+        "yield_balance": "589.08612750",
+        "yield_price": "0.70000000",
+        "moet_value": "412.36028925",
+        "stage": "|== Stage 8: YieldToken drops to 0.7"
+      },
+      "expected_balance": "879.1208791208791208791208791",
+      "price_change_factor": 0.7777777777777778,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 3649,
+        "yield_balance": "456.72670393",
+        "yield_price": "0.70000000",
+        "moet_value": "319.70869275",
+        "stage": "|== Stage 8: YieldToken drops to 0.7"
+      },
+      "after_state": {
+        "line": 3695,
+        "yield_balance": "456.72670393",
+        "yield_price": "0.50000000",
+        "moet_value": "228.36335196",
+        "stage": "|== Stage 9: YieldToken drops to 0.5"
+      },
+      "expected_balance": "1230.769230769230769230769231",
+      "price_change_factor": 0.7142857142857143,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 3724,
+        "yield_balance": "281.06258702",
+        "yield_price": "0.50000000",
+        "moet_value": "140.53129351",
+        "stage": "|== Stage 9: YieldToken drops to 0.5"
+      },
+      "after_state": {
+        "line": 5456,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.00000000",
+        "moet_value": "615.38461538",
+        "stage": "|== Stage 0: Baseline"
+      },
+      "expected_balance": "615.3846153846153846153846154",
+      "price_change_factor": 2.0,
+      "actual_rebalanced": true,
+      "difference": "4.6153846153846154E-9",
+      "difference_pct": 7.5e-10,
+      "verified": true,
+      "status": "pass"
+    },
+    {
+      "before_state": {
+        "line": 5512,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.00000000",
+        "moet_value": "615.38461538",
+        "stage": "|== Stage 0: Baseline"
+      },
+      "after_state": {
+        "line": 5595,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.20000000",
+        "moet_value": "738.46153845",
+        "stage": "|== Stage 1: FLOW crash, YieldToken rise"
+      },
+      "expected_balance": "512.8205128205128205128205128",
+      "price_change_factor": 1.2,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 5651,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.20000000",
+        "moet_value": "738.46153845",
+        "stage": "|== Stage 1: FLOW crash, YieldToken rise"
+      },
+      "after_state": {
+        "line": 5736,
+        "yield_balance": "615.38461538",
+        "yield_price": "0.80000000",
+        "moet_value": "492.30769230",
+        "stage": "|== Stage 2: FLOW rise, YieldToken drop"
+      },
+      "expected_balance": "769.2307692307692307692307692",
+      "price_change_factor": 0.6666666666666666,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 5792,
+        "yield_balance": "940.82840175",
+        "yield_price": "0.80000000",
+        "moet_value": "752.66272140",
+        "stage": "|== Stage 2: FLOW rise, YieldToken drop"
+      },
+      "after_state": {
+        "line": 5887,
+        "yield_balance": "940.82840175",
+        "yield_price": "0.50000000",
+        "moet_value": "470.41420087",
+        "stage": "|== Stage 3: Both crash (MOET slightly depegged)"
+      },
+      "expected_balance": "1230.769230769230769230769231",
+      "price_change_factor": 0.625,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 5943,
+        "yield_balance": "0E-8",
+        "yield_price": "0.50000000",
+        "moet_value": "0E-8",
+        "stage": "|== Stage 3: Both crash (MOET slightly depegged)"
+      },
+      "after_state": {
+        "line": 6033,
+        "yield_balance": "0E-8",
+        "yield_price": "2.00000000",
+        "moet_value": "0E-8",
+        "stage": "|== Stage 4: Both moon"
+      },
+      "expected_balance": "307.6923076923076923076923077",
+      "price_change_factor": 4.0,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 6089,
+        "yield_balance": "0E-8",
+        "yield_price": "2.00000000",
+        "moet_value": "0E-8",
+        "stage": "|== Stage 4: Both moon"
+      },
+      "after_state": {
+        "line": 6174,
+        "yield_balance": "0E-8",
+        "yield_price": "0.10000000",
+        "moet_value": "0E-8",
+        "stage": "|== Stage 5: FLOW stable, YieldToken crash"
+      },
+      "expected_balance": "6153.846153846153846153846154",
+      "price_change_factor": 0.05,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 6230,
+        "yield_balance": "0E-8",
+        "yield_price": "0.10000000",
+        "moet_value": "0E-8",
+        "stage": "|== Stage 5: FLOW stable, YieldToken crash"
+      },
+      "after_state": {
+        "line": 6324,
+        "yield_balance": "0E-8",
+        "yield_price": "1.00000000",
+        "moet_value": "0E-8",
+        "stage": "|== Stage 6: FLOW crash, YieldToken stable (MOET depegged)"
+      },
+      "expected_balance": "615.3846153846153846153846154",
+      "price_change_factor": 10.0,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 6771,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.00000000",
+        "moet_value": "615.38461538",
+        "stage": "|== Stage 0: Baseline"
+      },
+      "after_state": {
+        "line": 6857,
+        "yield_balance": "615.38461538",
+        "yield_price": "2.00000000",
+        "moet_value": "1230.76923076",
+        "stage": "|== Stage 1: Inverse correlation begins"
+      },
+      "expected_balance": "307.6923076923076923076923077",
+      "price_change_factor": 2.0,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 6918,
+        "yield_balance": "615.38461538",
+        "yield_price": "2.00000000",
+        "moet_value": "1230.76923076",
+        "stage": "|== Stage 1: Inverse correlation begins"
+      },
+      "after_state": {
+        "line": 7004,
+        "yield_balance": "615.38461538",
+        "yield_price": "0.50000000",
+        "moet_value": "307.69230769",
+        "stage": "|== Stage 2: Inverse continues"
+      },
+      "expected_balance": "1230.769230769230769230769231",
+      "price_change_factor": 0.25,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 7065,
+        "yield_balance": "1609.46745560",
+        "yield_price": "0.50000000",
+        "moet_value": "804.73372780",
+        "stage": "|== Stage 2: Inverse continues"
+      },
+      "after_state": {
+        "line": 7151,
+        "yield_balance": "1609.46745560",
+        "yield_price": "3.00000000",
+        "moet_value": "4828.40236680",
+        "stage": "|== Stage 3: FLOW crashes, Yield moons"
+      },
+      "expected_balance": "205.1282051282051282051282051",
+      "price_change_factor": 6.0,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 7212,
+        "yield_balance": "1609.46745560",
+        "yield_price": "3.00000000",
+        "moet_value": "4828.40236680",
+        "stage": "|== Stage 3: FLOW crashes, Yield moons"
+      },
+      "after_state": {
+        "line": 7298,
+        "yield_balance": "1609.46745560",
+        "yield_price": "0.70000000",
+        "moet_value": "1126.62721892",
+        "stage": "|== Stage 4: Partial recovery"
+      },
+      "expected_balance": "879.1208791208791208791208791",
+      "price_change_factor": 0.23333333333333334,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 7359,
+        "yield_balance": "971.62677300",
+        "yield_price": "0.70000000",
+        "moet_value": "680.13874110",
+        "stage": "|== Stage 4: Partial recovery"
+      },
+      "after_state": {
+        "line": 7445,
+        "yield_balance": "971.62677300",
+        "yield_price": "1.20000000",
+        "moet_value": "1165.95212760",
+        "stage": "|== Stage 5: Stabilization"
+      },
+      "expected_balance": "512.8205128205128205128205128",
+      "price_change_factor": 1.7142857142857142,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 7574,
+        "yield_balance": "971.62677300",
+        "yield_price": "1.20000000",
+        "moet_value": "1165.95212760",
+        "stage": "|== Stage 5: Stabilization"
+      },
+      "after_state": {
+        "line": 7664,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.00000000",
+        "moet_value": "615.38461538",
+        "stage": "|== Stage 5: Stabilization"
+      },
+      "expected_balance": "615.3846153846153846153846154",
+      "price_change_factor": 0.8333333333333334,
+      "actual_rebalanced": true,
+      "difference": "4.6153846153846154E-9",
+      "difference_pct": 7.5e-10,
+      "verified": true,
+      "status": "pass"
+    },
+    {
+      "before_state": {
+        "line": 7954,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.00000000",
+        "moet_value": "615.38461538",
+        "stage": "|== Stage 1: FLOW stable, Yield stable"
+      },
+      "after_state": {
+        "line": 8040,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.50000000",
+        "moet_value": "923.07692307",
+        "stage": "|== Stage 2: FLOW stable, Yield pumps"
+      },
+      "expected_balance": "410.2564102564102564102564103",
+      "price_change_factor": 1.5,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 8101,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.50000000",
+        "moet_value": "923.07692307",
+        "stage": "|== Stage 2: FLOW stable, Yield pumps"
+      },
+      "after_state": {
+        "line": 8187,
+        "yield_balance": "615.38461538",
+        "yield_price": "0.70000000",
+        "moet_value": "430.76923076",
+        "stage": "|== Stage 3: FLOW rises, Yield crashes"
+      },
+      "expected_balance": "879.1208791208791208791208791",
+      "price_change_factor": 0.4666666666666667,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 8248,
+        "yield_balance": "689.77176372",
+        "yield_price": "0.70000000",
+        "moet_value": "482.84023460",
+        "stage": "|== Stage 3: FLOW rises, Yield crashes"
+      },
+      "after_state": {
+        "line": 8334,
+        "yield_balance": "689.77176372",
+        "yield_price": "2.00000000",
+        "moet_value": "1379.54352744",
+        "stage": "|== Stage 4: FLOW drops, Yield moons"
+      },
+      "expected_balance": "307.6923076923076923076923077",
+      "price_change_factor": 2.857142857142857,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    },
+    {
+      "before_state": {
+        "line": 8395,
+        "yield_balance": "689.77176372",
+        "yield_price": "2.00000000",
+        "moet_value": "1379.54352744",
+        "stage": "|== Stage 4: FLOW drops, Yield moons"
+      },
+      "after_state": {
+        "line": 8481,
+        "yield_balance": "689.77176372",
+        "yield_price": "0.50000000",
+        "moet_value": "344.88588186",
+        "stage": "|== Stage 5: Return to baseline"
+      },
+      "expected_balance": "1230.769230769230769230769231",
+      "price_change_factor": 0.25,
+      "actual_rebalanced": false,
+      "difference": "0",
+      "difference_pct": 0.0,
+      "verified": true,
+      "status": "skipped"
+    }
+  ],
+  "failures": [
+    {
+      "before_state": {
+        "line": 970,
+        "yield_balance": "281.06258702",
+        "yield_price": "0.50000000",
+        "moet_value": "140.53129351",
+        "stage": "|== Stage 9: YieldToken drops to 0.5"
+      },
+      "after_state": {
+        "line": 1664,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.10000000",
+        "moet_value": "676.92307691",
+        "stage": "|== Stage 0: YieldToken +10% to 1.1"
+      },
+      "expected_balance": "559.4405594405594405594405595",
+      "price_change_factor": 2.2,
+      "actual_rebalanced": true,
+      "difference": "55.9440559394405594405594405",
+      "difference_pct": 9.999999999175,
+      "verified": false,
+      "status": "fail"
+    },
+    {
+      "before_state": {
+        "line": 2347,
+        "yield_balance": "281.06258702",
+        "yield_price": "0.50000000",
+        "moet_value": "140.53129351",
+        "stage": "|== Stage 9: YieldToken drops to 0.5"
+      },
+      "after_state": {
+        "line": 3041,
+        "yield_balance": "615.38461538",
+        "yield_price": "1.10000000",
+        "moet_value": "676.92307691",
+        "stage": "|== Stage 0: YieldToken +10% to 1.1"
+      },
+      "expected_balance": "559.4405594405594405594405595",
+      "price_change_factor": 2.2,
+      "actual_rebalanced": true,
+      "difference": "55.9440559394405594405594405",
+      "difference_pct": 9.999999999175,
+      "verified": false,
+      "status": "fail"
+    }
+  ],
+  "price_range": {
+    "min": "0.10000000",
+    "max": "3.00000000"
+  },
+  "balance_range": {
+    "min": "0E-8",
+    "max": "1609.46745560"
+  }
+}

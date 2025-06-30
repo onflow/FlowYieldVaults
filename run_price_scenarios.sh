@@ -81,7 +81,7 @@ done
 run_test() {
     local test_name=$1
     echo -e "${YELLOW}Running test: $test_name${NC}"
-    flow test --cover "./cadence/tests/price_scenario_test.cdc" | cat
+    flow test --cover "./cadence/tests/price_scenario_test.cdc" --output inline | cat
 }
 
 # Handle preset scenarios
@@ -195,12 +195,12 @@ EOF
     echo -e "Prices: $PRICES"
     echo -e "Type: $TEST_TYPE"
     
-    flow test --cover "./cadence/tests/custom_price_test.cdc" | cat
+    flow test --cover "./cadence/tests/custom_price_test.cdc" --output inline | cat
     
     # Clean up
     rm -f ./cadence/tests/custom_price_test.cdc
 else
     # Run default tests
     echo -e "${GREEN}Running default price scenario tests...${NC}"
-    flow test --cover "./cadence/tests/price_scenario_test.cdc" | cat
+    flow test --cover "./cadence/tests/price_scenario_test.cdc" --output inline | cat
 fi 

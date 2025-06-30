@@ -924,7 +924,27 @@
     },
     {
       "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
       "price": "0.10000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.10000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testExtremePriceMovements"
     },
     {
@@ -934,7 +954,27 @@
     },
     {
       "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
       "price": "5.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "5.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testExtremePriceMovements"
     },
     {
@@ -944,6 +984,26 @@
     },
     {
       "token": "FLOW",
+      "price": "0.25000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
       "price": "1.00000000",
       "scenario": "testExtremePriceMovements"
     },
@@ -953,28 +1013,8 @@
       "scenario": "testExtremePriceMovements"
     },
     {
-      "token": "YieldToken",
-      "price": "1.20000000",
-      "scenario": "testExtremePriceMovements"
-    },
-    {
-      "token": "YieldToken",
-      "price": "1.30000000",
-      "scenario": "testExtremePriceMovements"
-    },
-    {
-      "token": "YieldToken",
-      "price": "1.40000000",
-      "scenario": "testExtremePriceMovements"
-    },
-    {
-      "token": "YieldToken",
-      "price": "1.50000000",
-      "scenario": "testExtremePriceMovements"
-    },
-    {
-      "token": "YieldToken",
-      "price": "1.30000000",
+      "token": "FLOW",
+      "price": "1.00000000",
       "scenario": "testExtremePriceMovements"
     },
     {
@@ -983,8 +1023,268 @@
       "scenario": "testExtremePriceMovements"
     },
     {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.40000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.40000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.40000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
       "token": "YieldToken",
       "price": "0.90000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.90000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.90000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testExtremePriceMovements"
     },
     {
@@ -993,8 +1293,68 @@
       "scenario": "testExtremePriceMovements"
     },
     {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
       "token": "YieldToken",
       "price": "0.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testExtremePriceMovements"
     },
     {
@@ -1014,7 +1374,27 @@
     },
     {
       "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
       "price": "0.70000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.70000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testExtremePriceMovements"
     },
     {
@@ -1024,7 +1404,27 @@
     },
     {
       "token": "FLOW",
+      "price": "1.80000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
       "price": "0.40000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.40000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testExtremePriceMovements"
     },
     {
@@ -1034,7 +1434,27 @@
     },
     {
       "token": "FLOW",
+      "price": "1.20000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
       "price": "0.90000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.90000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testExtremePriceMovements"
     },
     {
@@ -1044,11 +1464,41 @@
     },
     {
       "token": "FLOW",
+      "price": "2.50000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
       "price": "0.30000000",
       "scenario": "testExtremePriceMovements"
     },
     {
       "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
       "price": "1.00000000",
       "scenario": "testExtremePriceMovements"
     },
@@ -1065,6 +1515,16 @@
     {
       "token": "FLOW",
       "price": "0.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testGradualPriceChanges"
     },
     {
@@ -1074,7 +1534,27 @@
     },
     {
       "token": "FLOW",
+      "price": "0.10000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
       "price": "2.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testGradualPriceChanges"
     },
     {
@@ -1084,7 +1564,47 @@
     },
     {
       "token": "FLOW",
+      "price": "5.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
       "price": "0.25000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.25000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
       "scenario": "testGradualPriceChanges"
     },
     {
@@ -1098,28 +1618,13 @@
       "scenario": "testGradualPriceChanges"
     },
     {
-      "token": "YieldToken",
-      "price": "1.20000000",
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testGradualPriceChanges"
     },
     {
-      "token": "YieldToken",
-      "price": "1.30000000",
-      "scenario": "testGradualPriceChanges"
-    },
-    {
-      "token": "YieldToken",
-      "price": "1.40000000",
-      "scenario": "testGradualPriceChanges"
-    },
-    {
-      "token": "YieldToken",
-      "price": "1.50000000",
-      "scenario": "testGradualPriceChanges"
-    },
-    {
-      "token": "YieldToken",
-      "price": "1.30000000",
+      "token": "FLOW",
+      "price": "1.00000000",
       "scenario": "testGradualPriceChanges"
     },
     {
@@ -1128,8 +1633,253 @@
       "scenario": "testGradualPriceChanges"
     },
     {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.40000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.40000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.40000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
       "token": "YieldToken",
       "price": "0.90000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.90000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.90000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testGradualPriceChanges"
     },
     {
@@ -1138,8 +1888,68 @@
       "scenario": "testGradualPriceChanges"
     },
     {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
       "token": "YieldToken",
       "price": "0.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testGradualPriceChanges"
     },
     {
@@ -1159,7 +1969,27 @@
     },
     {
       "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
       "price": "0.70000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.70000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testGradualPriceChanges"
     },
     {
@@ -1169,7 +1999,27 @@
     },
     {
       "token": "FLOW",
+      "price": "1.80000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
       "price": "0.40000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.40000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testGradualPriceChanges"
     },
     {
@@ -1179,7 +2029,27 @@
     },
     {
       "token": "FLOW",
+      "price": "1.20000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
       "price": "0.90000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.90000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testGradualPriceChanges"
     },
     {
@@ -1189,11 +2059,41 @@
     },
     {
       "token": "FLOW",
+      "price": "2.50000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
       "price": "0.30000000",
       "scenario": "testGradualPriceChanges"
     },
     {
       "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
       "price": "1.00000000",
       "scenario": "testGradualPriceChanges"
     },
@@ -1210,6 +2110,16 @@
     {
       "token": "FLOW",
       "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1219,7 +2129,27 @@
     },
     {
       "token": "FLOW",
+      "price": "0.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1229,7 +2159,47 @@
     },
     {
       "token": "FLOW",
+      "price": "5.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "0.25000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.25000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1243,28 +2213,13 @@
       "scenario": "testVolatilePriceSwings"
     },
     {
-      "token": "YieldToken",
-      "price": "1.20000000",
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
-      "token": "YieldToken",
-      "price": "1.30000000",
-      "scenario": "testVolatilePriceSwings"
-    },
-    {
-      "token": "YieldToken",
-      "price": "1.40000000",
-      "scenario": "testVolatilePriceSwings"
-    },
-    {
-      "token": "YieldToken",
-      "price": "1.50000000",
-      "scenario": "testVolatilePriceSwings"
-    },
-    {
-      "token": "YieldToken",
-      "price": "1.30000000",
+      "token": "FLOW",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1273,8 +2228,253 @@
       "scenario": "testVolatilePriceSwings"
     },
     {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.40000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.40000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.40000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
       "token": "YieldToken",
       "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1283,8 +2483,68 @@
       "scenario": "testVolatilePriceSwings"
     },
     {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
       "token": "YieldToken",
       "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1304,7 +2564,27 @@
     },
     {
       "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1314,7 +2594,27 @@
     },
     {
       "token": "FLOW",
+      "price": "1.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "0.40000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.40000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1324,7 +2624,27 @@
     },
     {
       "token": "FLOW",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1334,17 +2654,57 @@
     },
     {
       "token": "FLOW",
+      "price": "2.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "0.30000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
       "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
       "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
       "token": "FLOW",
       "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0E-8",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1359,7 +2719,27 @@
     },
     {
       "token": "FLOW",
+      "price": "1E-8",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "1000.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1000.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1379,7 +2759,27 @@
     },
     {
       "token": "FLOW",
+      "price": "0.00100000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "10.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "10.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1389,7 +2789,27 @@
     },
     {
       "token": "FLOW",
+      "price": "100.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "500.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "500.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1404,6 +2824,16 @@
     },
     {
       "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
       "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
@@ -1414,7 +2844,27 @@
     },
     {
       "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1424,7 +2874,27 @@
     },
     {
       "token": "FLOW",
+      "price": "3.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1434,12 +2904,42 @@
     },
     {
       "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "0.80000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
       "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "2.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1459,6 +2959,26 @@
     },
     {
       "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
       "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
@@ -1469,7 +2989,27 @@
     },
     {
       "token": "FLOW",
+      "price": "0.05000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "0.01000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.01000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1479,6 +3019,26 @@
     },
     {
       "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
       "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
@@ -1489,6 +3049,16 @@
     },
     {
       "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
@@ -1500,6 +3070,16 @@
     {
       "token": "MOET",
       "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "0.10000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1554,11 +3134,81 @@
     },
     {
       "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
       "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
       "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
@@ -1574,12 +3224,132 @@
     },
     {
       "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "1.50000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
       "token": "YieldToken",
       "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1593,6 +3363,71 @@
       "scenario": "testVolatilePriceSwings"
     },
     {
+      "token": "MOET",
+      "price": "0.95000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "0.95000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "0.95000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "0.95000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "0.95000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
       "token": "FLOW",
       "price": "2.00000000",
       "scenario": "testVolatilePriceSwings"
@@ -1600,6 +3435,66 @@
     {
       "token": "YieldToken",
       "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1614,6 +3509,66 @@
     },
     {
       "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "0.10000000",
       "scenario": "testVolatilePriceSwings"
     },
@@ -1623,6 +3578,151 @@
       "scenario": "testVolatilePriceSwings"
     },
     {
+      "token": "MOET",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
       "token": "FLOW",
       "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
@@ -1639,6 +3739,91 @@
     },
     {
       "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
       "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
@@ -1654,12 +3839,152 @@
     },
     {
       "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "2.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
       "token": "YieldToken",
       "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1674,12 +3999,152 @@
     },
     {
       "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "3.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "3.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "3.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.30000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "3.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "1.50000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
       "token": "YieldToken",
       "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1694,7 +4159,247 @@
     },
     {
       "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
       "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.10000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1713,6 +4418,46 @@
       "scenario": "testVolatilePriceSwings"
     },
     {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.10000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
       "token": "FLOW",
       "price": "0.90000000",
       "scenario": "testVolatilePriceSwings"
@@ -1720,6 +4465,76 @@
     {
       "token": "YieldToken",
       "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.90000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "1.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1734,12 +4549,152 @@
     },
     {
       "token": "FLOW",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.20000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.70000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
       "price": "0.80000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
       "token": "YieldToken",
       "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "0.80000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "2.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
       "scenario": "testVolatilePriceSwings"
     },
     {
@@ -1751,12 +4706,2104 @@
       "token": "YieldToken",
       "price": "0.50000000",
       "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "price": "0.50000000",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "price": "1.00000000",
+      "scenario": "testVolatilePriceSwings"
+    }
+  ],
+  "balance_history": [
+    {
+      "token": "MOET",
+      "balance": "23076.92307693",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "20410.25640238",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "61538.46153846",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "153846.15384615",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "146538.46153846",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "122229.96142012",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "589.08612750",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "589.08612750",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "456.72670393",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "456.72670393",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "281.06258702",
+      "type": "YieldToken Balance",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "93503.73656805",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "76926.63098226",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "61417.09607102",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "51575.80641422",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "41085.92930180",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "32058.50071009",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "76923.07692307",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "68800.00000000",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "51791.60568048",
+      "type": "MOET Debt",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testExtremePriceMovements"
+    },
+    {
+      "token": "MOET",
+      "balance": "23076.92307693",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "20410.25640238",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "61538.46153846",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "153846.15384615",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "146538.46153846",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "122229.96142012",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "589.08612750",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "589.08612750",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "456.72670393",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "456.72670393",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "281.06258702",
+      "type": "YieldToken Balance",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "93503.73656805",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "76926.63098226",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "61417.09607102",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "51575.80641422",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "41085.92930180",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "32058.50071009",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "76923.07692307",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "68800.00000000",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "51791.60568048",
+      "type": "MOET Debt",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testGradualPriceChanges"
+    },
+    {
+      "token": "MOET",
+      "balance": "23076.92307693",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "20410.25640238",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "61538.46153846",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "153846.15384615",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "146538.46153846",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "122229.96142012",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "589.08612750",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "589.08612750",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "456.72670393",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "456.72670393",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "281.06258702",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "93503.73656805",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "76926.63098226",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "61417.09607102",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "51575.80641422",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "41085.92930180",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "32058.50071009",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "76923.07692307",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "68800.00000000",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "51791.60568048",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "50000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "0E-8",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "0.00000615",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615384.61538461",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "614.76984615",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "6153.84615384",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "61538.46153846",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "307692.30769230",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "1230.76923076",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "1000.00000000",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "1846.15384615",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "1680.00000000",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "1264.10819645",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "963.53002651",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "1538.46153846",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "1169.23076923",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "586.15384615",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "580.06460729",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "435.58611025",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "923.07692307",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "358.97435740",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "800.00000000",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "461.53846154",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "461.53846154",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "923.07692307",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "940.82840175",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "923.07692307",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "940.82840175",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "775.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "0E-8",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "775.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "0E-8",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "1230.76923076",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "0E-8",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "1230.76923076",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "0E-8",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "923.07692307",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "0E-8",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "923.07692307",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "0E-8",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "865.64102532",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "0E-8",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "865.64102532",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "0E-8",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "687.73362177",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "0E-8",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "461.53846154",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "461.53846154",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "1230.76923076",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "1609.46745560",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "1230.76923076",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "1609.46745560",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "1073.84615384",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "1609.46745560",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "1073.84615384",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "1609.46745560",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "944.24509586",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "971.62677300",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "944.24509586",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "971.62677300",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "708.61531882",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "971.62677300",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "708.61531882",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "971.62677300",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "676.92307692",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "676.92307692",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "576.22377468",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "576.22377468",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "615.38461538",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "738.46153846",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "689.77176372",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "738.46153846",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "689.77176372",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "574.35897184",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "689.77176372",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "574.35897184",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "689.77176372",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "140.45126308",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "MOET",
+      "balance": "615.38461538",
+      "type": "MOET Debt",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "FLOW",
+      "balance": "1000.00000000",
+      "type": "FLOW Collateral",
+      "scenario": "testVolatilePriceSwings"
+    },
+    {
+      "token": "YieldToken",
+      "balance": "140.45126308",
+      "type": "YieldToken Balance",
+      "scenario": "testVolatilePriceSwings"
     }
   ],
   "summary": {
     "total_critical_findings": 39,
     "total_rebalances": 70,
     "rebalances_correct_direction": 70,
-    "rebalances_optimal_range": 32
+    "rebalances_optimal_range": 32,
+    "tokens_tracked": {
+      "FLOW": 113,
+      "MOET": 113,
+      "YieldToken": 104
+    }
   }
 }

@@ -42,9 +42,9 @@ class MathematicalAnalyzer:
         self.balance_history = []  # Track all balance changes
         
         # Patterns for comprehensive logging format (handles both Unicode and escaped formats)
-        self.comprehensive_price_pattern = re.compile(r'(?:║|\\u\{2551\})\s*(FLOW|YieldToken|MOET):\s*([0-9.,]+)')
-        self.comprehensive_balance_pattern = re.compile(r'(?:║|\\u\{2551\})\s*(FLOW Collateral|MOET Debt|YieldToken Balance):\s*([0-9.,]+)')
-        self.comprehensive_value_pattern = re.compile(r'(?:║|\\u\{2551\})\s*(?:→|\\u\{2192\})\s*Value(?:\s+in MOET)?:\s*([0-9.,]+)')
+        self.comprehensive_price_pattern = re.compile(r'\|\s*(FLOW|YieldToken|MOET):\s*([0-9.,]+)')
+        self.comprehensive_balance_pattern = re.compile(r'\|\s*(FLOW Collateral|MOET Debt|YieldToken Balance):\s*([0-9.,]+)')
+        self.comprehensive_value_pattern = re.compile(r'\|\s*->\s*Value(?:\s+in MOET)?:\s*([0-9.,]+)')
         
     def analyze(self):
         """Extract and analyze mathematical relationships"""

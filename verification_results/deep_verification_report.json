@@ -3,363 +3,465 @@
   "findings": [
     {
       "severity": "WARNING",
-      "line": 40,
+      "line": 46,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.65000000 \u2192 0.86666666"
     },
     {
       "severity": "WARNING",
-      "line": 61,
+      "line": 85,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.17333333 \u2192 0.19597989"
     },
     {
       "severity": "WARNING",
-      "line": 124,
+      "line": 202,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.06500000 \u2192 0.06824146"
     },
     {
       "severity": "WARNING",
-      "line": 145,
+      "line": 241,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.27296587 \u2192 0.32725200"
     },
     {
       "severity": "WARNING",
-      "line": 452,
+      "line": 849,
       "issue": "Balance change mismatch",
-      "details": "Stated change 158.65791145 doesn't match calculated 132.35942357 (before: 589.08612750, after: 456.72670393)"
+      "details": "Stated change 26.29848788 doesn't match calculated 0E-8 (before: 589.08612750, after: 589.08612750)"
     },
     {
       "severity": "WARNING",
-      "line": 487,
+      "line": 924,
       "issue": "Balance change mismatch",
-      "details": "Stated change 334.32202836 doesn't match calculated 175.66411691 (before: 456.72670393, after: 281.06258702)"
+      "details": "Stated change 158.65791145 doesn't match calculated 0E-8 (before: 456.72670393, after: 456.72670393)"
     },
     {
       "severity": "WARNING",
-      "line": 523,
+      "line": 999,
+      "issue": "Balance change mismatch",
+      "details": "Stated change 334.32202836 doesn't match calculated 0E-8 (before: 281.06258702, after: 281.06258702)"
+    },
+    {
+      "severity": "WARNING",
+      "line": 1041,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.49087800 \u2192 0.64168558"
     },
     {
       "severity": "WARNING",
-      "line": 544,
+      "line": 1080,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.29945327 \u2192 0.36398318"
     },
     {
       "severity": "WARNING",
-      "line": 586,
+      "line": 1158,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.26051378 \u2192 0.31022297"
     },
     {
       "severity": "WARNING",
-      "line": 670,
+      "line": 1314,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.15600000 \u2192 0.17441860"
     },
     {
       "severity": "WARNING",
-      "line": 691,
+      "line": 1353,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.58139534 \u2192 0.77232592"
     },
     {
       "severity": "WARNING",
-      "line": 741,
+      "line": 1423,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.65000000 \u2192 0.86666666"
     },
     {
       "severity": "WARNING",
-      "line": 762,
+      "line": 1462,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.17333333 \u2192 0.19597989"
     },
     {
       "severity": "WARNING",
-      "line": 825,
+      "line": 1579,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.06500000 \u2192 0.06824146"
     },
     {
       "severity": "WARNING",
-      "line": 846,
+      "line": 1618,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.27296587 \u2192 0.32725200"
     },
     {
       "severity": "WARNING",
-      "line": 1153,
+      "line": 2226,
       "issue": "Balance change mismatch",
-      "details": "Stated change 158.65791145 doesn't match calculated 132.35942357 (before: 589.08612750, after: 456.72670393)"
+      "details": "Stated change 26.29848788 doesn't match calculated 0E-8 (before: 589.08612750, after: 589.08612750)"
     },
     {
       "severity": "WARNING",
-      "line": 1188,
+      "line": 2301,
       "issue": "Balance change mismatch",
-      "details": "Stated change 334.32202836 doesn't match calculated 175.66411691 (before: 456.72670393, after: 281.06258702)"
+      "details": "Stated change 158.65791145 doesn't match calculated 0E-8 (before: 456.72670393, after: 456.72670393)"
     },
     {
       "severity": "WARNING",
-      "line": 1224,
+      "line": 2376,
+      "issue": "Balance change mismatch",
+      "details": "Stated change 334.32202836 doesn't match calculated 0E-8 (before: 281.06258702, after: 281.06258702)"
+    },
+    {
+      "severity": "WARNING",
+      "line": 2418,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.49087800 \u2192 0.64168558"
     },
     {
       "severity": "WARNING",
-      "line": 1245,
+      "line": 2457,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.29945327 \u2192 0.36398318"
     },
     {
       "severity": "WARNING",
-      "line": 1287,
+      "line": 2535,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.26051378 \u2192 0.31022297"
     },
     {
       "severity": "WARNING",
-      "line": 1371,
+      "line": 2691,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.15600000 \u2192 0.17441860"
     },
     {
       "severity": "WARNING",
-      "line": 1392,
+      "line": 2730,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.58139534 \u2192 0.77232592"
     },
     {
       "severity": "WARNING",
-      "line": 1442,
+      "line": 2800,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.65000000 \u2192 0.86666666"
     },
     {
       "severity": "WARNING",
-      "line": 1463,
+      "line": 2839,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.17333333 \u2192 0.19597989"
     },
     {
       "severity": "WARNING",
-      "line": 1526,
+      "line": 2956,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.06500000 \u2192 0.06824146"
     },
     {
       "severity": "WARNING",
-      "line": 1547,
+      "line": 2995,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.27296587 \u2192 0.32725200"
     },
     {
       "severity": "WARNING",
-      "line": 1854,
+      "line": 3603,
       "issue": "Balance change mismatch",
-      "details": "Stated change 158.65791145 doesn't match calculated 132.35942357 (before: 589.08612750, after: 456.72670393)"
+      "details": "Stated change 26.29848788 doesn't match calculated 0E-8 (before: 589.08612750, after: 589.08612750)"
     },
     {
       "severity": "WARNING",
-      "line": 1889,
+      "line": 3678,
       "issue": "Balance change mismatch",
-      "details": "Stated change 334.32202836 doesn't match calculated 175.66411691 (before: 456.72670393, after: 281.06258702)"
+      "details": "Stated change 158.65791145 doesn't match calculated 0E-8 (before: 456.72670393, after: 456.72670393)"
     },
     {
       "severity": "WARNING",
-      "line": 1925,
+      "line": 3753,
+      "issue": "Balance change mismatch",
+      "details": "Stated change 334.32202836 doesn't match calculated 0E-8 (before: 281.06258702, after: 281.06258702)"
+    },
+    {
+      "severity": "WARNING",
+      "line": 3795,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.49087800 \u2192 0.64168558"
     },
     {
       "severity": "WARNING",
-      "line": 1946,
+      "line": 3834,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.29945327 \u2192 0.36398318"
     },
     {
       "severity": "WARNING",
-      "line": 1988,
+      "line": 3912,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.26051378 \u2192 0.31022297"
     },
     {
       "severity": "WARNING",
-      "line": 2072,
+      "line": 4068,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.15600000 \u2192 0.17441860"
     },
     {
       "severity": "WARNING",
-      "line": 2093,
+      "line": 4107,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.58139534 \u2192 0.77232592"
     },
     {
       "severity": "WARNING",
-      "line": 2136,
+      "line": 4169,
       "issue": "Zero price set",
       "details": "FlowToken price set to 0 - this will cause division by zero in calculations"
     },
     {
       "severity": "WARNING",
-      "line": 2144,
+      "line": 4178,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0E-8 \u2192 1.00000000"
     },
     {
       "severity": "INFO",
-      "line": 2157,
+      "line": 4208,
       "issue": "Micro price",
       "details": "FlowToken price set to 1E-8 - may cause precision issues"
     },
     {
       "severity": "ERROR",
-      "line": 2184,
+      "line": 4254,
       "issue": "Impossible health value",
       "details": "Health ratio impossibly high: 130081300813.00813008"
     },
     {
       "severity": "WARNING",
-      "line": 2242,
+      "line": 4334,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.00130000 \u2192 0.00130129"
     },
     {
       "severity": "INFO",
-      "line": 2360,
+      "line": 4528,
       "issue": "Rebalance in target range",
       "details": "Rebalancing triggered with health 1.30000000 already in target range [1.1, 1.5]"
     },
     {
       "severity": "WARNING",
-      "line": 2403,
+      "line": 4607,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.32500000 \u2192 0.40000000"
     },
     {
       "severity": "WARNING",
-      "line": 2445,
+      "line": 4685,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.13000000 \u2192 0.14285714"
     },
     {
       "severity": "WARNING",
-      "line": 2466,
+      "line": 4724,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.71428571 \u2192 0.94928583"
     },
     {
       "severity": "WARNING",
-      "line": 2487,
+      "line": 4763,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.50628577 \u2192 0.66422424"
     },
     {
       "severity": "WARNING",
-      "line": 2529,
+      "line": 4841,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.52000000 \u2192 0.68421052"
     },
     {
       "severity": "INFO",
-      "line": 2584,
+      "line": 4918,
       "issue": "Rebalance in target range",
       "details": "Rebalancing triggered with health 1.30000000 already in target range [1.1, 1.5]"
     },
     {
       "severity": "WARNING",
-      "line": 2606,
+      "line": 4958,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.06500000 \u2192 0.06824146"
     },
     {
       "severity": "WARNING",
-      "line": 2627,
+      "line": 4997,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.01364829 \u2192 0.01379156"
     },
     {
       "severity": "WARNING",
-      "line": 2648,
+      "line": 5036,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.68957835 \u2192 0.91830292"
     },
     {
       "severity": "WARNING",
-      "line": 2759,
+      "line": 5207,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.65000000 \u2192 0.86666666"
     },
     {
       "severity": "WARNING",
-      "line": 2874,
+      "line": 5351,
       "issue": "Ineffective rebalance",
       "details": "Health still below MIN_HEALTH (1.1) after rebalance: 0.86666666 \u2192 1.07634409"
     },
     {
       "severity": "WARNING",
-      "line": 3048,
+      "line": 5954,
       "issue": "Unexpected zero balance",
       "details": "AutoBalancer balance went to zero without obvious crash scenario"
     },
     {
       "severity": "WARNING",
-      "line": 3077,
+      "line": 5969,
       "issue": "Unexpected zero balance",
       "details": "AutoBalancer balance went to zero without obvious crash scenario"
     },
     {
       "severity": "WARNING",
-      "line": 3083,
+      "line": 6044,
       "issue": "Unexpected zero balance",
       "details": "AutoBalancer balance went to zero without obvious crash scenario"
     },
     {
       "severity": "WARNING",
-      "line": 3110,
+      "line": 6059,
       "issue": "Unexpected zero balance",
       "details": "AutoBalancer balance went to zero without obvious crash scenario"
     },
     {
       "severity": "WARNING",
-      "line": 3116,
+      "line": 6100,
       "issue": "Unexpected zero balance",
       "details": "AutoBalancer balance went to zero without obvious crash scenario"
     },
     {
       "severity": "WARNING",
-      "line": 3143,
+      "line": 6115,
       "issue": "Unexpected zero balance",
       "details": "AutoBalancer balance went to zero without obvious crash scenario"
     },
     {
       "severity": "WARNING",
-      "line": 3149,
+      "line": 6185,
       "issue": "Unexpected zero balance",
       "details": "AutoBalancer balance went to zero without obvious crash scenario"
     },
     {
       "severity": "WARNING",
-      "line": 3178,
+      "line": 6200,
       "issue": "Unexpected zero balance",
       "details": "AutoBalancer balance went to zero without obvious crash scenario"
     },
     {
       "severity": "WARNING",
-      "line": 3184,
+      "line": 6241,
       "issue": "Unexpected zero balance",
       "details": "AutoBalancer balance went to zero without obvious crash scenario"
+    },
+    {
+      "severity": "WARNING",
+      "line": 6256,
+      "issue": "Unexpected zero balance",
+      "details": "AutoBalancer balance went to zero without obvious crash scenario"
+    },
+    {
+      "severity": "WARNING",
+      "line": 6335,
+      "issue": "Unexpected zero balance",
+      "details": "AutoBalancer balance went to zero without obvious crash scenario"
+    },
+    {
+      "severity": "WARNING",
+      "line": 6350,
+      "issue": "Unexpected zero balance",
+      "details": "AutoBalancer balance went to zero without obvious crash scenario"
+    },
+    {
+      "severity": "WARNING",
+      "line": 6391,
+      "issue": "Unexpected zero balance",
+      "details": "AutoBalancer balance went to zero without obvious crash scenario"
+    },
+    {
+      "severity": "WARNING",
+      "line": 6406,
+      "issue": "Unexpected zero balance",
+      "details": "AutoBalancer balance went to zero without obvious crash scenario"
+    },
+    {
+      "severity": "WARNING",
+      "line": 6480,
+      "issue": "Unexpected zero balance",
+      "details": "AutoBalancer balance went to zero without obvious crash scenario"
+    },
+    {
+      "severity": "WARNING",
+      "line": 6495,
+      "issue": "Unexpected zero balance",
+      "details": "AutoBalancer balance went to zero without obvious crash scenario"
+    },
+    {
+      "severity": "WARNING",
+      "line": 6536,
+      "issue": "Unexpected zero balance",
+      "details": "AutoBalancer balance went to zero without obvious crash scenario"
+    },
+    {
+      "severity": "WARNING",
+      "line": 6551,
+      "issue": "Unexpected zero balance",
+      "details": "AutoBalancer balance went to zero without obvious crash scenario"
+    },
+    {
+      "severity": "WARNING",
+      "line": 6571,
+      "issue": "Unexpected zero balance",
+      "details": "AutoBalancer balance went to zero without obvious crash scenario"
+    },
+    {
+      "severity": "WARNING",
+      "line": 7094,
+      "issue": "Balance change mismatch",
+      "details": "Stated change 994.08284022 doesn't match calculated 0E-8 (before: 1609.46745560, after: 1609.46745560)"
+    },
+    {
+      "severity": "WARNING",
+      "line": 7388,
+      "issue": "Balance change mismatch",
+      "details": "Stated change 637.84068260 doesn't match calculated 0E-8 (before: 971.62677300, after: 971.62677300)"
+    },
+    {
+      "severity": "WARNING",
+      "line": 8277,
+      "issue": "Balance change mismatch",
+      "details": "Stated change 74.38714834 doesn't match calculated 0E-8 (before: 689.77176372, after: 689.77176372)"
+    },
+    {
+      "severity": "WARNING",
+      "line": 8571,
+      "issue": "Balance change mismatch",
+      "details": "Stated change 549.32050064 doesn't match calculated 0E-8 (before: 140.45126308, after: 140.45126308)"
     }
   ],
   "summary": {
-    "total_findings": 59,
+    "total_findings": 76,
     "errors": 1,
-    "warnings": 55,
+    "warnings": 72,
     "info": 3
   }
 }
