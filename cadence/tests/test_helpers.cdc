@@ -189,6 +189,21 @@ fun getReserveBalanceForType(vaultIdentifier: String): UFix64 {
     return res.returnValue as! UFix64
 }
 
+access(all)
+fun positionAvailableBalance(
+    pid: UInt64,
+    type: String,
+    pullFromSource: Bool,
+    beFailed: Bool
+): UFix64 {
+    let res = _executeScript(
+        "../scripts/tidal-protocol/get_available_balance.cdc",
+            [pid, type, pullFromSource]
+        )
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+
+    return res.returnValue as! UFix64
+}
 
 /* --- Transaction Helpers --- */
 
