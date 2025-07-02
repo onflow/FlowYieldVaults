@@ -171,7 +171,7 @@ fun main(address: Address): CompleteUserSummary {
             // Get YieldToken holdings first (this shouldn't trigger overflow)
             let autoBalancer = TidalYieldAutoBalancers.borrowAutoBalancer(id: tideId)
             let yieldTokenBalance = autoBalancer?.vaultBalance() ?? 0.0
-            let yieldTokenIdentifier = autoBalancer?.getVaultType()?.identifier ?? "Unknown"
+            let yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
             let yieldTokenValue = yieldTokenBalance * yieldTokenPrice
             let isActive = autoBalancer != nil
             
