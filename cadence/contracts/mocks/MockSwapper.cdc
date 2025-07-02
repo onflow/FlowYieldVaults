@@ -93,11 +93,22 @@ access(all) contract MockSwapper {
             let inTokenPrice = self.oracle.price(ofToken: self.inType())
                 ?? panic("Price for token \(self.inType().identifier) is currently unavailable")
             let price = reverse  ? outTokenPrice / inTokenPrice : inTokenPrice / outTokenPrice
+            var inAmount = 0.0
+            var outAmount = 0.0
+            if out {
+                inAmount = amount
+                outAmount = amount == UFix64.max ? amount : amount * price
+            } else {
+                inAmount = amount == UFix64.max && price < 1.0 ? amount : amount / price
+                outAmount = amount
+            }
+            // let inAmount = out ? amount : amount / price
+            // let outAmount = out ? amount * price : amount
             return SwapStack.BasicQuote(
-                inType: reverse ? self.outType() : self.inType(),
-                outType: reverse ? self.inType() : self.outType(),
-                inAmount: out ? amount : amount / price,
-                outAmount: out ? amount * price : amount
+                inType: reverse ? self.outVault : self.inVault,
+                outType: reverse ? self.inVault : self.outVault,
+                inAmount: inAmount,
+                outAmount: outAmount
             )
         }
 
@@ -105,10 +116,8 @@ access(all) contract MockSwapper {
             let inAmount = from.balance
             var swapInVault = reverse ? MockSwapper.liquidityConnectors[from.getType()]! : MockSwapper.liquidityConnectors[self.inType()]!
             var swapOutVault = reverse ? MockSwapper.liquidityConnectors[self.inType()]! : MockSwapper.liquidityConnectors[self.outType()]!
-
             swapInVault.depositCapacity(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})            
             Burner.burn(<-from)
-
             let outAmount = self.quoteOut(forProvided: inAmount, reverse: reverse).outAmount
             var outVault <- swapOutVault.withdrawAvailable(maxAmount: outAmount)
 
