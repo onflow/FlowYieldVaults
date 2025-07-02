@@ -45,12 +45,14 @@ access(all) struct YieldTokenInfo {
     access(all) let yieldTokenBalance: UFix64
     access(all) let yieldTokenValue: UFix64
     access(all) let yieldTokenPrice: UFix64
+    access(all) let yieldTokenIdentifier: String
     access(all) let isActive: Bool
     
-    init(yieldTokenBalance: UFix64, yieldTokenValue: UFix64, yieldTokenPrice: UFix64, isActive: Bool) {
+    init(yieldTokenBalance: UFix64, yieldTokenValue: UFix64, yieldTokenPrice: UFix64, yieldTokenIdentifier: String, isActive: Bool) {
         self.yieldTokenBalance = yieldTokenBalance
         self.yieldTokenValue = yieldTokenValue
         self.yieldTokenPrice = yieldTokenPrice
+        self.yieldTokenIdentifier = yieldTokenIdentifier
         self.isActive = isActive
     }
 }
@@ -59,11 +61,13 @@ access(all) struct DebtInfo {
     access(all) let estimatedMoetDebt: UFix64
     access(all) let estimatedDebtValue: UFix64
     access(all) let moetPrice: UFix64
+    access(all) let loanTokenIdentifier: String
     
-    init(estimatedMoetDebt: UFix64, estimatedDebtValue: UFix64, moetPrice: UFix64) {
+    init(estimatedMoetDebt: UFix64, estimatedDebtValue: UFix64, moetPrice: UFix64, loanTokenIdentifier: String) {
         self.estimatedMoetDebt = estimatedMoetDebt
         self.estimatedDebtValue = estimatedDebtValue
         self.moetPrice = moetPrice
+        self.loanTokenIdentifier = loanTokenIdentifier
     }
 }
 
@@ -167,6 +171,7 @@ fun main(address: Address): CompleteUserSummary {
             // Get YieldToken holdings first (this shouldn't trigger overflow)
             let autoBalancer = TidalYieldAutoBalancers.borrowAutoBalancer(id: tideId)
             let yieldTokenBalance = autoBalancer?.vaultBalance() ?? 0.0
+            let yieldTokenIdentifier = autoBalancer?.getVaultType()?.identifier ?? "Unknown"
             let yieldTokenValue = yieldTokenBalance * yieldTokenPrice
             let isActive = autoBalancer != nil
             
@@ -201,6 +206,7 @@ fun main(address: Address): CompleteUserSummary {
             // Estimate debt based on YieldToken holdings (assumes 1:1 MOET borrowing for YieldToken purchases)
             let estimatedMoetDebt = yieldTokenBalance * yieldTokenPrice / moetPrice
             let estimatedDebtValue = estimatedMoetDebt * moetPrice
+            let loanTokenIdentifier = Type<@MOET.Vault>().identifier
             
             // Calculate position health and risk metrics
             let netWorth = collateralValue + yieldTokenValue - estimatedDebtValue
@@ -222,12 +228,14 @@ fun main(address: Address): CompleteUserSummary {
                     yieldTokenBalance: yieldTokenBalance,
                     yieldTokenValue: yieldTokenValue,
                     yieldTokenPrice: yieldTokenPrice,
+                    yieldTokenIdentifier: yieldTokenIdentifier,
                     isActive: isActive
                 ),
                 debtInfo: DebtInfo(
                     estimatedMoetDebt: estimatedMoetDebt,
                     estimatedDebtValue: estimatedDebtValue,
-                    moetPrice: moetPrice
+                    moetPrice: moetPrice,
+                    loanTokenIdentifier: loanTokenIdentifier
                 ),
                 healthMetrics: HealthMetrics(
                     netWorth: netWorth,
