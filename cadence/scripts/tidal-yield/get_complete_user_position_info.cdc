@@ -79,14 +79,18 @@ access(all) struct HealthMetrics {
     access(all) let maxHealth: UFix64
     access(all) let lowerThreshold: UFix64
     access(all) let upperThreshold: UFix64
-    access(all) let estimatedLeverageRatio: UFix64
-    access(all) let autoBalancerValueRatio: UFix64
+    access(all) let netWorth: UFix64
+    access(all) let leverageRatio: UFix64
+    access(all) let yieldTokenRatio: UFix64
+    access(all) let estimatedHealth: UFix64
     
     init(
         realAvailableBalance: UFix64,
         estimatedCollateralValue: UFix64,
-        estimatedLeverageRatio: UFix64,
-        autoBalancerValueRatio: UFix64
+        netWorth: UFix64,
+        leverageRatio: UFix64,
+        yieldTokenRatio: UFix64,
+        estimatedHealth: UFix64
     ) {
         self.realAvailableBalance = realAvailableBalance
         self.estimatedCollateralValue = estimatedCollateralValue
@@ -95,8 +99,10 @@ access(all) struct HealthMetrics {
         self.maxHealth = 1.5
         self.lowerThreshold = 1.1 
         self.upperThreshold = 1.5
-        self.estimatedLeverageRatio = estimatedLeverageRatio
-        self.autoBalancerValueRatio = autoBalancerValueRatio
+        self.netWorth = netWorth
+        self.leverageRatio = leverageRatio
+        self.yieldTokenRatio = yieldTokenRatio
+        self.estimatedHealth = estimatedHealth
     }
 }
 
@@ -122,27 +128,27 @@ access(all) struct CompleteUserSummary {
 }
 
 access(all) struct PortfolioSummary {
-    access(all) let totalAvailableBalance: UFix64
+    access(all) let totalCollateralValue: UFix64
     access(all) let totalYieldTokenValue: UFix64
     access(all) let totalEstimatedDebtValue: UFix64
-    access(all) let totalEstimatedNetWorth: UFix64
+    access(all) let totalNetWorth: UFix64
     access(all) let averageLeverageRatio: UFix64
-    access(all) let averageAutoBalancerRatio: UFix64
+    access(all) let portfolioHealthRatio: UFix64
     
     init(
-        totalAvailableBalance: UFix64,
+        totalCollateralValue: UFix64,
         totalYieldTokenValue: UFix64,
         totalEstimatedDebtValue: UFix64,
-        totalEstimatedNetWorth: UFix64,
+        totalNetWorth: UFix64,
         averageLeverageRatio: UFix64,
-        averageAutoBalancerRatio: UFix64
+        portfolioHealthRatio: UFix64
     ) {
-        self.totalAvailableBalance = totalAvailableBalance
+        self.totalCollateralValue = totalCollateralValue
         self.totalYieldTokenValue = totalYieldTokenValue
         self.totalEstimatedDebtValue = totalEstimatedDebtValue
-        self.totalEstimatedNetWorth = totalEstimatedNetWorth
+        self.totalNetWorth = totalNetWorth
         self.averageLeverageRatio = averageLeverageRatio
-        self.averageAutoBalancerRatio = averageAutoBalancerRatio
+        self.portfolioHealthRatio = portfolioHealthRatio
     }
 }
 
@@ -155,12 +161,12 @@ fun main(address: Address): CompleteUserSummary {
             userAddress: address,
             totalPositions: 0,
             portfolioSummary: PortfolioSummary(
-                totalAvailableBalance: 0.0,
+                totalCollateralValue: 0.0,
                 totalYieldTokenValue: 0.0,
                 totalEstimatedDebtValue: 0.0,
-                totalEstimatedNetWorth: 0.0,
+                totalNetWorth: 0.0,
                 averageLeverageRatio: 0.0,
-                averageAutoBalancerRatio: 0.0
+                portfolioHealthRatio: 0.0
             ),
             positions: []
         )
@@ -174,11 +180,11 @@ fun main(address: Address): CompleteUserSummary {
     let moetPrice = oracle.price(ofToken: Type<@MOET.Vault>()) ?? 1.0
     let flowPrice = oracle.price(ofToken: Type<@FlowToken.Vault>()) ?? 1.0
     
-    var totalAvailableBalance = 0.0
+    var totalCollateralValue = 0.0
     var totalYieldTokenValue = 0.0
     var totalEstimatedDebtValue = 0.0
     var totalLeverageRatio = 0.0
-    var totalAutoBalancerRatio = 0.0
+    var totalYieldTokenRatio = 0.0
     
     for tideId in tideIds {
         if let tide = tideManager!.borrowTide(id: tideId) {
@@ -209,18 +215,24 @@ fun main(address: Address): CompleteUserSummary {
             let loanTokenIdentifier = Type<@MOET.Vault>().identifier
             
             let expectedYieldTokenValue = estimatedMoetDebt * moetPrice
-            let autoBalancerValueRatio = expectedYieldTokenValue > 0.0 ? 
+            let yieldTokenRatio = expectedYieldTokenValue > 0.0 ? 
                 yieldTokenValue / expectedYieldTokenValue : 1.0
             
             let totalPositionValue = estimatedCollateralValue + yieldTokenValue
             let estimatedLeverageRatio = estimatedCollateralValue > 0.0 ? 
                 totalPositionValue / estimatedCollateralValue : 1.0
             
+            let netWorth = estimatedCollateralValue + yieldTokenValue - estimatedDebtValue
+            let estimatedHealth = estimatedDebtValue > 0.0 ? 
+                (estimatedCollateralValue + yieldTokenValue) / estimatedDebtValue : 999.0
+            
             let healthMetrics = HealthMetrics(
                 realAvailableBalance: realAvailableBalance,
                 estimatedCollateralValue: estimatedCollateralValue,
-                estimatedLeverageRatio: estimatedLeverageRatio,
-                autoBalancerValueRatio: autoBalancerValueRatio
+                netWorth: netWorth,
+                leverageRatio: estimatedLeverageRatio,
+                yieldTokenRatio: yieldTokenRatio,
+                estimatedHealth: estimatedHealth
             )
             
             positions.append(CompletePositionInfo(
@@ -247,28 +259,28 @@ fun main(address: Address): CompleteUserSummary {
                 healthMetrics: healthMetrics
             ))
             
-            totalAvailableBalance = totalAvailableBalance + realAvailableBalance
+            totalCollateralValue = totalCollateralValue + realAvailableBalance
             totalYieldTokenValue = totalYieldTokenValue + yieldTokenValue
             totalEstimatedDebtValue = totalEstimatedDebtValue + estimatedDebtValue
             totalLeverageRatio = totalLeverageRatio + estimatedLeverageRatio
-            totalAutoBalancerRatio = totalAutoBalancerRatio + autoBalancerValueRatio
+            totalYieldTokenRatio = totalYieldTokenRatio + yieldTokenRatio
         }
     }
     
-    let totalEstimatedNetWorth = totalAvailableBalance + totalYieldTokenValue - totalEstimatedDebtValue
+    let totalNetWorth = totalCollateralValue + totalYieldTokenValue - totalEstimatedDebtValue
     let averageLeverageRatio = tideIds.length > 0 ? totalLeverageRatio / UFix64(tideIds.length) : 0.0
-    let averageAutoBalancerRatio = tideIds.length > 0 ? totalAutoBalancerRatio / UFix64(tideIds.length) : 0.0
+    let portfolioHealthRatio = tideIds.length > 0 ? totalYieldTokenRatio / UFix64(tideIds.length) : 0.0
     
     return CompleteUserSummary(
         userAddress: address,
         totalPositions: tideIds.length,
         portfolioSummary: PortfolioSummary(
-            totalAvailableBalance: totalAvailableBalance,
+            totalCollateralValue: totalCollateralValue,
             totalYieldTokenValue: totalYieldTokenValue,
             totalEstimatedDebtValue: totalEstimatedDebtValue,
-            totalEstimatedNetWorth: totalEstimatedNetWorth,
+            totalNetWorth: totalNetWorth,
             averageLeverageRatio: averageLeverageRatio,
-            averageAutoBalancerRatio: averageAutoBalancerRatio
+            portfolioHealthRatio: portfolioHealthRatio
         ),
         positions: positions
     )
