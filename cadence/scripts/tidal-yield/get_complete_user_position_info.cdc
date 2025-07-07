@@ -31,12 +31,14 @@ access(all) struct CollateralInfo {
     access(all) let collateralType: String
     access(all) let availableBalance: UFix64
     access(all) let collateralValue: UFix64
+    access(all) let collateralPrice: UFix64
     access(all) let supportedTypes: [String]
     
-    init(collateralType: String, availableBalance: UFix64, collateralValue: UFix64, supportedTypes: [String]) {
+    init(collateralType: String, availableBalance: UFix64, collateralValue: UFix64, collateralPrice: UFix64, supportedTypes: [String]) {
         self.collateralType = collateralType
         self.availableBalance = availableBalance
         self.collateralValue = collateralValue
+        self.collateralPrice = collateralPrice
         self.supportedTypes = supportedTypes
     }
 }
@@ -74,11 +76,10 @@ access(all) struct DebtInfo {
 access(all) struct HealthMetrics {
     access(all) let realAvailableBalance: UFix64
     access(all) let estimatedCollateralValue: UFix64
-    access(all) let minHealth: UFix64
-    access(all) let targetHealth: UFix64
-    access(all) let maxHealth: UFix64
-    access(all) let lowerThreshold: UFix64
-    access(all) let upperThreshold: UFix64
+    access(all) let liquidationRiskThreshold: UFix64    // DANGER: Below this risks liquidation
+    access(all) let autoRebalanceThreshold: UFix64      // AUTO: Triggers rebalancing
+    access(all) let optimalHealthRatio: UFix64          // TARGET: Ideal health ratio
+    access(all) let maxEfficiencyThreshold: UFix64      // MAX: Upper limit for efficiency
     access(all) let netWorth: UFix64
     access(all) let leverageRatio: UFix64
     access(all) let yieldTokenRatio: UFix64
@@ -94,11 +95,10 @@ access(all) struct HealthMetrics {
     ) {
         self.realAvailableBalance = realAvailableBalance
         self.estimatedCollateralValue = estimatedCollateralValue
-        self.minHealth = 1.1
-        self.targetHealth = 1.3
-        self.maxHealth = 1.5
-        self.lowerThreshold = 1.1 
-        self.upperThreshold = 1.5
+        self.liquidationRiskThreshold = 1.1    // DANGER: Below this risks liquidation
+        self.autoRebalanceThreshold = 1.1      // AUTO: Triggers rebalancing
+        self.optimalHealthRatio = 1.3          // TARGET: Ideal health ratio
+        self.maxEfficiencyThreshold = 1.5      // MAX: Upper limit for efficiency
         self.netWorth = netWorth
         self.leverageRatio = leverageRatio
         self.yieldTokenRatio = yieldTokenRatio
@@ -180,6 +180,9 @@ fun main(address: Address): CompleteUserSummary {
     let moetPrice = oracle.price(ofToken: Type<@MOET.Vault>()) ?? 1.0
     let flowPrice = oracle.price(ofToken: Type<@FlowToken.Vault>()) ?? 1.0
     
+    // Note: TidalProtocol positions and Tidal tides use different ID systems
+    // We'll calculate health manually since tide IDs don't correspond to TidalProtocol position IDs
+    
     var totalCollateralValue = 0.0
     var totalYieldTokenValue = 0.0
     var totalEstimatedDebtValue = 0.0
@@ -223,8 +226,16 @@ fun main(address: Address): CompleteUserSummary {
                 totalPositionValue / estimatedCollateralValue : 1.0
             
             let netWorth = estimatedCollateralValue + yieldTokenValue - estimatedDebtValue
+            
+            // Apply collateral factor to match TidalProtocol health calculation
+            // FlowToken collateral factor is 0.8 (80%)
+            let flowCollateralFactor = 0.8
+            let effectiveCollateral = estimatedCollateralValue * flowCollateralFactor
+            
+            // Note: Yield tokens may not count as collateral in TidalProtocol health calculation
+            // TODO: Replace with tide.getPositionHealth() once contracts are updated
             let estimatedHealth = estimatedDebtValue > 0.0 ? 
-                (estimatedCollateralValue + yieldTokenValue) / estimatedDebtValue : 999.0
+                effectiveCollateral / estimatedDebtValue : 999.0
             
             let healthMetrics = HealthMetrics(
                 realAvailableBalance: realAvailableBalance,
@@ -241,6 +252,7 @@ fun main(address: Address): CompleteUserSummary {
                     collateralType: collateralType,
                     availableBalance: realAvailableBalance,
                     collateralValue: estimatedCollateralValue,
+                    collateralPrice: flowPrice,
                     supportedTypes: supportedTypes
                 ),
                 yieldTokenInfo: YieldTokenInfo(
