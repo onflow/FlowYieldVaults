@@ -132,7 +132,7 @@ fun test_CloseTideSucceeds() {
 
 access(all)
 fun test_RebalanceTideSucceeds() {
-	// Test.reset(to: snapshot)
+	Test.reset(to: snapshot)
 
 	let fundingAmount = 100.0
 	let priceIncrease = 1.5
