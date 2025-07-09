@@ -353,6 +353,7 @@ fun test_RebalanceTideScenario2() {
 
 		log("[TEST] Tide balance before flow price \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
 
+		log("[TEST] NO REBALANCE YET")
 		rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: false, beFailed: false)
 		rebalancePosition(signer: protocolAccount, pid: pid, force: false, beFailed: false)
 

@@ -93,6 +93,14 @@ access(all) contract MockSwapper {
             let inTokenPrice = self.oracle.price(ofToken: self.inType())
                 ?? panic("Price for token \(self.inType().identifier) is currently unavailable")
             let price = reverse  ? outTokenPrice / inTokenPrice : inTokenPrice / outTokenPrice
+            if amount == UFix64.max {
+                return SwapStack.BasicQuote(
+                    inType: reverse ? self.outType() : self.inType(),
+                    outType: reverse ? self.inType() : self.outType(),
+                    inAmount: UFix64.max,
+                    outAmount: UFix64.max
+                )
+            }
             return SwapStack.BasicQuote(
                 inType: reverse ? self.outType() : self.inType(),
                 outType: reverse ? self.inType() : self.outType(),
