@@ -342,30 +342,157 @@ fun test_RebalanceTideScenario2() {
 	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
-	for yieldTokenPrice in yieldPriceIncreases {
-		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+	// for yieldTokenPrice in yieldPriceIncreases {
+	// 	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+	//
+	// 	log("[TEST] Tide balance before yield price \(yieldTokenPrice): \(tideBalance ?? 0.0)")
+	//
+	// 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldTokenPrice)
+	//
+	// 	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+	//
+	// 	log("[TEST] Tide balance before yield price \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+	//
+	// 	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: false, beFailed: false)
+	// 	rebalancePosition(signer: protocolAccount, pid: pid, force: false, beFailed: false)
+	//
+	// 	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+	//
+	// 	log("[TEST] Tide balance after yield before \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+	//
+	// }
 
-		log("[TEST] Tide balance before flow price \(yieldTokenPrice) \(tideBalance ?? 0.0)")
+	var yieldTokenPrice = 1.1
 
-		setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldTokenPrice)
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
 
-		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+	log("[TEST] Tide balance before yield price \(yieldTokenPrice): \(tideBalance ?? 0.0)")
 
-		log("[TEST] Tide balance before flow price \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldTokenPrice)
 
-		log("[TEST] NO REBALANCE YET")
-		rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: false, beFailed: false)
-		rebalancePosition(signer: protocolAccount, pid: pid, force: false, beFailed: false)
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
 
-		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+	log("[TEST] Tide balance before yield price \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
 
-		log("[TEST] Tide balance after yield before \(yieldTokenPrice): \(tideBalance ?? 0.0)")
+	log("[TEST] NO REBALANCE YET")
+	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: false, beFailed: false)
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+	log("[TEST] Tide balance after yield before \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
 
 
-	}
+
+	yieldTokenPrice = 1.2
+
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+	log("[TEST] Tide balance before yield price \(yieldTokenPrice): \(tideBalance ?? 0.0)")
+
+	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldTokenPrice)
+
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+	log("[TEST] Tide balance before yield price \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+
+	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: false, beFailed: false)
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+	log("[TEST] Tide balance after yield before \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+
+
+
+
+	yieldTokenPrice = 1.3
+
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+	log("[TEST] Tide balance before yield price \(yieldTokenPrice): \(tideBalance ?? 0.0)")
+
+	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldTokenPrice)
+
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+	log("[TEST] Tide balance before yield price \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+
+
+	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: false, beFailed: false)
+	rebalancePosition(signer: protocolAccount, pid: pid, force: false, beFailed: false)
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+	log("[TEST] Tide balance after yield before \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+
+
+
 
 	closeTide(signer: user, id: tideIDs![0], beFailed: false)
 
 	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	log("[TEST] flow balance after \(flowBalanceAfter)")
 }
+
+
+// access(all) var testSnapshot: UInt64 = 0
+// access(all)
+// fun test_RebalanceTideScenario1() {
+// 	// Test.reset(to: snapshot)
+//
+// 	let fundingAmount = 1000.0
+//
+// 	let user = Test.createAccount()
+//
+// 	let flowPrices = [0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0, 5.0]
+//
+// 	// Likely 0.0
+// 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+// 	mintFlow(to: user, amount: fundingAmount)
+//
+// 	createTide(
+// 		signer: user,
+// 		strategyIdentifier: strategyIdentifier,
+// 		vaultIdentifier: flowTokenIdentifier,
+// 		amount: fundingAmount,
+// 		beFailed: false
+// 	)
+//
+// 	var tideIDs = getTideIDs(address: user.address)
+// 	var pid  = 1 as UInt64
+// 	log("[TEST] Tide ID: \(tideIDs![0])")
+// 	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+// 	Test.assertEqual(1, tideIDs!.length)
+//
+// 	var tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+//
+// 	log("[TEST] Initial tide balance: \(tideBalance ?? 0.0)")
+//
+// 	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+// 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+//
+// 	testSnapshot = getCurrentBlockHeight()
+//
+// 	for flowPrice in flowPrices {
+// 		if (getCurrentBlockHeight() > testSnapshot) {
+// 			Test.reset(to: testSnapshot)
+// 		}
+// 		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+//
+// 		log("[TEST] Tide balance before flow price \(flowPrice) \(tideBalance ?? 0.0)")
+//
+// 		setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPrice)
+//
+// 		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+//
+// 		log("[TEST] Tide balance before flow price \(flowPrice) rebalance: \(tideBalance ?? 0.0)")
+//
+// 		rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: false, beFailed: false)
+// 		rebalancePosition(signer: protocolAccount, pid: pid, force: false, beFailed: false)
+//
+// 		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+//
+// 		log("[TEST] Tide balance after flow before \(flowPrice): \(tideBalance ?? 0.0)")
+// 	}
+//
+// 	closeTide(signer: user, id: tideIDs![0], beFailed: false)
+//
+// 	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+// 	log("[TEST] flow balance after \(flowBalanceAfter)")
+// }
