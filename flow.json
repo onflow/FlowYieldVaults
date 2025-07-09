@@ -24,6 +24,7 @@
 		"MOET": {
 			"source": "./lib/TidalProtocol/cadence/contracts/MOET.cdc",
 			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000008"
 			}
 		},

@@ -31,12 +31,14 @@ access(all) struct CollateralInfo {
     access(all) let collateralType: String
     access(all) let availableBalance: UFix64
     access(all) let collateralValue: UFix64
+    access(all) let collateralPrice: UFix64
     access(all) let supportedTypes: [String]
     
-    init(collateralType: String, availableBalance: UFix64, collateralValue: UFix64, supportedTypes: [String]) {
+    init(collateralType: String, availableBalance: UFix64, collateralValue: UFix64, collateralPrice: UFix64, supportedTypes: [String]) {
         self.collateralType = collateralType
         self.availableBalance = availableBalance
         self.collateralValue = collateralValue
+        self.collateralPrice = collateralPrice
         self.supportedTypes = supportedTypes
     }
 }
@@ -45,12 +47,14 @@ access(all) struct YieldTokenInfo {
     access(all) let yieldTokenBalance: UFix64
     access(all) let yieldTokenValue: UFix64
     access(all) let yieldTokenPrice: UFix64
+    access(all) let yieldTokenIdentifier: String
     access(all) let isActive: Bool
     
-    init(yieldTokenBalance: UFix64, yieldTokenValue: UFix64, yieldTokenPrice: UFix64, isActive: Bool) {
+    init(yieldTokenBalance: UFix64, yieldTokenValue: UFix64, yieldTokenPrice: UFix64, yieldTokenIdentifier: String, isActive: Bool) {
         self.yieldTokenBalance = yieldTokenBalance
         self.yieldTokenValue = yieldTokenValue
         self.yieldTokenPrice = yieldTokenPrice
+        self.yieldTokenIdentifier = yieldTokenIdentifier
         self.isActive = isActive
     }
 }
@@ -59,21 +63,42 @@ access(all) struct DebtInfo {
     access(all) let estimatedMoetDebt: UFix64
     access(all) let estimatedDebtValue: UFix64
     access(all) let moetPrice: UFix64
+    access(all) let loanTokenIdentifier: String
     
-    init(estimatedMoetDebt: UFix64, estimatedDebtValue: UFix64, moetPrice: UFix64) {
+    init(estimatedMoetDebt: UFix64, estimatedDebtValue: UFix64, moetPrice: UFix64, loanTokenIdentifier: String) {
         self.estimatedMoetDebt = estimatedMoetDebt
         self.estimatedDebtValue = estimatedDebtValue
         self.moetPrice = moetPrice
+        self.loanTokenIdentifier = loanTokenIdentifier
     }
 }
 
 access(all) struct HealthMetrics {
+    access(all) let realAvailableBalance: UFix64
+    access(all) let estimatedCollateralValue: UFix64
+    access(all) let liquidationRiskThreshold: UFix64    // DANGER: Below this risks liquidation
+    access(all) let autoRebalanceThreshold: UFix64      // AUTO: Triggers rebalancing
+    access(all) let optimalHealthRatio: UFix64          // TARGET: Ideal health ratio
+    access(all) let maxEfficiencyThreshold: UFix64      // MAX: Upper limit for efficiency
     access(all) let netWorth: UFix64
     access(all) let leverageRatio: UFix64
     access(all) let yieldTokenRatio: UFix64
     access(all) let estimatedHealth: UFix64
     
-    init(netWorth: UFix64, leverageRatio: UFix64, yieldTokenRatio: UFix64, estimatedHealth: UFix64) {
+    init(
+        realAvailableBalance: UFix64,
+        estimatedCollateralValue: UFix64,
+        netWorth: UFix64,
+        leverageRatio: UFix64,
+        yieldTokenRatio: UFix64,
+        estimatedHealth: UFix64
+    ) {
+        self.realAvailableBalance = realAvailableBalance
+        self.estimatedCollateralValue = estimatedCollateralValue
+        self.liquidationRiskThreshold = 1.1    // DANGER: Below this risks liquidation
+        self.autoRebalanceThreshold = 1.1      // AUTO: Triggers rebalancing
+        self.optimalHealthRatio = 1.3          // TARGET: Ideal health ratio
+        self.maxEfficiencyThreshold = 1.5      // MAX: Upper limit for efficiency
         self.netWorth = netWorth
         self.leverageRatio = leverageRatio
         self.yieldTokenRatio = yieldTokenRatio
@@ -150,30 +175,31 @@ fun main(address: Address): CompleteUserSummary {
     let tideIds = tideManager!.getIDs()
     let positions: [CompletePositionInfo] = []
     
-    // Get oracle prices with defaults
     let oracle = MockOracle.PriceOracle()
     let yieldTokenPrice = oracle.price(ofToken: Type<@YieldToken.Vault>()) ?? 2.0
     let moetPrice = oracle.price(ofToken: Type<@MOET.Vault>()) ?? 1.0
     let flowPrice = oracle.price(ofToken: Type<@FlowToken.Vault>()) ?? 1.0
     
-    // Portfolio totals
+    // Note: TidalProtocol positions and Tidal tides use different ID systems
+    // We'll calculate health manually since tide IDs don't correspond to TidalProtocol position IDs
+    
     var totalCollateralValue = 0.0
     var totalYieldTokenValue = 0.0
     var totalEstimatedDebtValue = 0.0
     var totalLeverageRatio = 0.0
+    var totalYieldTokenRatio = 0.0
     
     for tideId in tideIds {
         if let tide = tideManager!.borrowTide(id: tideId) {
-            // Get YieldToken holdings first (this shouldn't trigger overflow)
+            let realAvailableBalance = tide.getTideBalance()
+            
             let autoBalancer = TidalYieldAutoBalancers.borrowAutoBalancer(id: tideId)
             let yieldTokenBalance = autoBalancer?.vaultBalance() ?? 0.0
+            let yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
             let yieldTokenValue = yieldTokenBalance * yieldTokenPrice
             let isActive = autoBalancer != nil
             
-            // Get supported vault types (basic metadata, shouldn't cause overflow)
             let supportedVaultTypes = tide.getSupportedVaultTypes()
-            
-            // Extract primary collateral type
             var collateralType = "Unknown"
             let supportedTypes: [String] = []
             
@@ -186,70 +212,76 @@ fun main(address: Address): CompleteUserSummary {
                 }
             }
             
-            // Estimate collateral value from YieldToken holdings if available balance calculation fails
-            // Use YieldToken value as proxy for position size when direct balance is unavailable
-            var availableBalance = 0.0
-            var collateralValue = 0.0
-            
-            if yieldTokenBalance > 0.0 {
-                // Estimate collateral based on leverage assumption (YieldTokens represent ~50% of total position value)
-                let estimatedPositionSize = yieldTokenValue * 2.0
-                availableBalance = estimatedPositionSize
-                collateralValue = estimatedPositionSize
-            }
-            
-            // Estimate debt based on YieldToken holdings (assumes 1:1 MOET borrowing for YieldToken purchases)
+            let estimatedCollateralValue = realAvailableBalance * flowPrice
             let estimatedMoetDebt = yieldTokenBalance * yieldTokenPrice / moetPrice
             let estimatedDebtValue = estimatedMoetDebt * moetPrice
+            let loanTokenIdentifier = Type<@MOET.Vault>().identifier
             
-            // Calculate position health and risk metrics
-            let netWorth = collateralValue + yieldTokenValue - estimatedDebtValue
-            let totalPositionValue = collateralValue + yieldTokenValue
-            let leverageRatio = totalPositionValue > 0.0 ? totalPositionValue / collateralValue : 1.0
-            let yieldTokenRatio = totalPositionValue > 0.0 ? yieldTokenValue / totalPositionValue : 0.0
-            let estimatedHealth = estimatedDebtValue > 0.0 ? (collateralValue + yieldTokenValue) / estimatedDebtValue : 999.0
+            let expectedYieldTokenValue = estimatedMoetDebt * moetPrice
+            let yieldTokenRatio = expectedYieldTokenValue > 0.0 ? 
+                yieldTokenValue / expectedYieldTokenValue : 1.0
             
-            // Create position info
+            let totalPositionValue = estimatedCollateralValue + yieldTokenValue
+            let estimatedLeverageRatio = estimatedCollateralValue > 0.0 ? 
+                totalPositionValue / estimatedCollateralValue : 1.0
+            
+            let netWorth = estimatedCollateralValue + yieldTokenValue - estimatedDebtValue
+            
+            // Apply collateral factor to match TidalProtocol health calculation
+            // FlowToken collateral factor is 0.8 (80%)
+            let flowCollateralFactor = 0.8
+            let effectiveCollateral = estimatedCollateralValue * flowCollateralFactor
+            
+            // Note: Yield tokens may not count as collateral in TidalProtocol health calculation
+            // TODO: Replace with tide.getPositionHealth() once contracts are updated
+            let estimatedHealth = estimatedDebtValue > 0.0 ? 
+                effectiveCollateral / estimatedDebtValue : 999.0
+            
+            let healthMetrics = HealthMetrics(
+                realAvailableBalance: realAvailableBalance,
+                estimatedCollateralValue: estimatedCollateralValue,
+                netWorth: netWorth,
+                leverageRatio: estimatedLeverageRatio,
+                yieldTokenRatio: yieldTokenRatio,
+                estimatedHealth: estimatedHealth
+            )
+            
             positions.append(CompletePositionInfo(
                 tideId: tideId,
                 collateralInfo: CollateralInfo(
                     collateralType: collateralType,
-                    availableBalance: availableBalance,
-                    collateralValue: collateralValue,
+                    availableBalance: realAvailableBalance,
+                    collateralValue: estimatedCollateralValue,
+                    collateralPrice: flowPrice,
                     supportedTypes: supportedTypes
                 ),
                 yieldTokenInfo: YieldTokenInfo(
                     yieldTokenBalance: yieldTokenBalance,
                     yieldTokenValue: yieldTokenValue,
                     yieldTokenPrice: yieldTokenPrice,
+                    yieldTokenIdentifier: yieldTokenIdentifier,
                     isActive: isActive
                 ),
                 debtInfo: DebtInfo(
                     estimatedMoetDebt: estimatedMoetDebt,
                     estimatedDebtValue: estimatedDebtValue,
-                    moetPrice: moetPrice
+                    moetPrice: moetPrice,
+                    loanTokenIdentifier: loanTokenIdentifier
                 ),
-                healthMetrics: HealthMetrics(
-                    netWorth: netWorth,
-                    leverageRatio: leverageRatio,
-                    yieldTokenRatio: yieldTokenRatio,
-                    estimatedHealth: estimatedHealth
-                )
+                healthMetrics: healthMetrics
             ))
             
-            // Aggregate values for portfolio-level summary
-            totalCollateralValue = totalCollateralValue + collateralValue
+            totalCollateralValue = totalCollateralValue + realAvailableBalance
             totalYieldTokenValue = totalYieldTokenValue + yieldTokenValue
             totalEstimatedDebtValue = totalEstimatedDebtValue + estimatedDebtValue
-            totalLeverageRatio = totalLeverageRatio + leverageRatio
+            totalLeverageRatio = totalLeverageRatio + estimatedLeverageRatio
+            totalYieldTokenRatio = totalYieldTokenRatio + yieldTokenRatio
         }
     }
     
-    // Calculate portfolio summary
     let totalNetWorth = totalCollateralValue + totalYieldTokenValue - totalEstimatedDebtValue
     let averageLeverageRatio = tideIds.length > 0 ? totalLeverageRatio / UFix64(tideIds.length) : 0.0
-    let portfolioHealthRatio = totalEstimatedDebtValue > 0.0 ? 
-        (totalCollateralValue + totalYieldTokenValue) / totalEstimatedDebtValue : 999.0
+    let portfolioHealthRatio = tideIds.length > 0 ? totalYieldTokenRatio / UFix64(tideIds.length) : 0.0
     
     return CompleteUserSummary(
         userAddress: address,
