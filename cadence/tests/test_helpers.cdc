@@ -1,6 +1,7 @@
 import Test
 
 import "MOET"
+import "TidalProtocol"
 
 /* --- Test execution helpers --- */
 
@@ -153,6 +154,57 @@ fun getTideBalance(address: Address, tideID: UInt64): UFix64? {
     return res.returnValue as! UFix64?
 }
 
+access(all)
+fun getAutoBalancerBalance(id: UInt64): UFix64? {
+    let res = _executeScript("../scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc", [id])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! UFix64?
+}
+
+access(all)
+fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
+    let res = _executeScript("../scripts/tidal-yield/get_auto_balancer_current_value_by_id.cdc", [id])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! UFix64?
+}
+
+access(all)
+fun getPositionDetails(pid: UInt64, beFailed: Bool): TidalProtocol.PositionDetails {
+    let res = _executeScript("../scripts/tidal-protocol/position_details.cdc",
+            [pid]
+        )
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+
+    return res.returnValue as! TidalProtocol.PositionDetails
+}
+
+access(all)
+fun getReserveBalanceForType(vaultIdentifier: String): UFix64 {
+    let res = _executeScript(
+        "../../lib/TidalProtocol/cadence/scripts/tidal-protocol/get_reserve_balance_for_type.cdc",
+            [vaultIdentifier]
+        )
+    Test.expect(res, Test.beSucceeded())
+
+    return res.returnValue as! UFix64
+}
+
+access(all)
+fun positionAvailableBalance(
+    pid: UInt64,
+    type: String,
+    pullFromSource: Bool,
+    beFailed: Bool
+): UFix64 {
+    let res = _executeScript(
+        "../scripts/tidal-protocol/get_available_balance.cdc",
+            [pid, type, pullFromSource]
+        )
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+
+    return res.returnValue as! UFix64
+}
+
 /* --- Transaction Helpers --- */
 
 access(all)
@@ -250,6 +302,26 @@ access(all)
 fun rebalanceTide(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
     let res = _executeTransaction("../transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+// access(all)
+// fun rebalancePosition(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
+//     let res = _executeTransaction("../../lib/TidalProtocol/cadence/transactions/tidal-protocol/pool-management/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
+//     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+// }
+
+/* --- Event helpers --- */
+
+access(all)
+fun getLastPositionOpenedEvent(_ evts: [AnyStruct]): AnyStruct { // can't return event types directly, they must be cast by caller
+    Test.assert(evts.length > 0, message: "Expected at least 1 TidalProtocol.Opened event but found none")
+    return evts[evts.length - 1] as! TidalProtocol.Opened
+}
+
+access(all)
+fun getLastPositionDepositedEvent(_ evts: [AnyStruct]): AnyStruct { // can't return event types directly, they must be cast by caller
+    Test.assert(evts.length > 0, message: "Expected at least 1 TidalProtocol.Deposited event but found none")
+    return evts[evts.length - 1] as! TidalProtocol.Deposited
 }
 
 /* --- Mock helpers --- */
