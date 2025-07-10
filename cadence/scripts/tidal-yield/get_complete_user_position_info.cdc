@@ -191,10 +191,13 @@ fun main(address: Address): CompleteUserSummary {
     
     for tideId in tideIds {
         if let tide = tideManager!.borrowTide(id: tideId) {
-            let realAvailableBalance = tide.getTideBalance()
-            
             let autoBalancer = TidalYieldAutoBalancers.borrowAutoBalancer(id: tideId)
             let yieldTokenBalance = autoBalancer?.vaultBalance() ?? 0.0
+            
+            // Use the AutoBalancer's balance as the primary balance source
+            // This bypasses the TidalProtocol overflow issue
+            let realAvailableBalance = yieldTokenBalance
+            
             let yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
             let yieldTokenValue = yieldTokenBalance * yieldTokenPrice
             let isActive = autoBalancer != nil
