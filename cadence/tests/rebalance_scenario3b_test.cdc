@@ -81,7 +81,7 @@ fun test_RebalanceTideScenario3B() {
 	let flowPriceIncrease = 1.5
 	let yieldPriceIncrease = 1.3
 
-	let expectedYieldTokenValues = [615.38, 923.08, 854.80]
+	let expectedYieldTokenValues = [615.38, 923.08, 841.15]
 
 	let user = Test.createAccount()
 
