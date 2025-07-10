@@ -81,6 +81,8 @@ fun test_RebalanceTideScenario3C() {
 	let flowPriceIncrease = 2.0
 	let yieldPriceIncrease = 2.0
 
+	let expectedYieldTokenValues = [615.38, 1230.77, 1005.92]
+
 	let user = Test.createAccount()
 
 	// Likely 0.0
@@ -118,12 +120,24 @@ fun test_RebalanceTideScenario3C() {
 
 	log("[TEST] Tide balance before flow price increase rebalance: \(tideBalance ?? 0.0)")
 
+	let yieldTokensBefore = getAutoBalancerBalance(id: tideIDs![0])!
+	Test.assert(
+		equalAmounts(a:yieldTokensBefore, b:expectedYieldTokenValues[0], tolerance:0.01),
+		message: "Expected yield tokens after flow price decrease to be \(expectedYieldTokenValues[0]) but got \(yieldTokensBefore)"
+	)
+
 	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
 	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
 
 	log("[TEST] Tide balance after flow price increase rebalance: \(tideBalance ?? 0.0)")
+
+	let yieldTokensAfterFlowPriceIncrease = getAutoBalancerBalance(id: tideIDs![0])!
+	Test.assert(
+		equalAmounts(a:yieldTokensAfterFlowPriceIncrease, b:expectedYieldTokenValues[1], tolerance:0.01),
+		message: "Expected yield tokens after flow price increase to be \(expectedYieldTokenValues[1]) but got \(yieldTokensAfterFlowPriceIncrease)"
+	)
 
 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPriceIncrease)
 
@@ -137,6 +151,12 @@ fun test_RebalanceTideScenario3C() {
 	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
 
 	log("[TEST] Tide balance after yield price increase rebalance: \(tideBalance ?? 0.0)")
+
+	let yieldTokensAfterYieldPriceIncrease = getAutoBalancerBalance(id: tideIDs![0])!
+	Test.assert(
+		equalAmounts(a:yieldTokensAfterYieldPriceIncrease, b:expectedYieldTokenValues[2], tolerance:0.01),
+		message: "Expected yield tokens after yield price increase to be \(expectedYieldTokenValues[2]) but got \(yieldTokensAfterYieldPriceIncrease)"
+	)
 
 	closeTide(signer: user, id: tideIDs![0], beFailed: false)
 

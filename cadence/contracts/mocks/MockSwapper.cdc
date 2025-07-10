@@ -104,8 +104,8 @@ access(all) contract MockSwapper {
             return SwapStack.BasicQuote(
                 inType: reverse ? self.outVault : self.inVault,
                 outType: reverse ? self.inVault : self.outVault,
-                inAmount: inAmount,
-                outAmount: outAmount
+                inAmount: out ? amount : amount / price,
+                outAmount: out ? amount * price : amount
             )
         }
 
