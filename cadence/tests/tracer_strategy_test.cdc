@@ -31,21 +31,21 @@ access(all) var snapshot: UInt64 = 0
 
 access(all)
 fun setup() {
-    deployContracts()
+	deployContracts()
 
     // set mocked token prices
     setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: startingYieldPrice)
     setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: startingFlowPrice)
 
-    // mint tokens & set liquidity in mock swapper contract
-    let reserveAmount = 100_000_00.0
-    setupYieldVault(protocolAccount, beFailed: false)
-    mintFlow(to: protocolAccount, amount: reserveAmount)
-    mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
-    mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
-    setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
-    setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
-    setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
+	// mint tokens & set liquidity in mock swapper contract
+	let reserveAmount = 100_000_00.0
+	setupYieldVault(protocolAccount, beFailed: false)
+	mintFlow(to: protocolAccount, amount: reserveAmount)
+	mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
+	mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
+	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
+	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
+	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
 
     // setup TidalProtocol with a Pool & add FLOW as supported token
     createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
@@ -58,96 +58,97 @@ fun setup() {
         depositCapacityCap: 1_000_000.0
     )
 
-    // open wrapped position (pushToDrawDownSink)
-    // the equivalent of depositing reserves
-    let openRes = executeTransaction(
-        "../transactions/mocks/position/create_wrapped_position.cdc",
-        [reserveAmount/2.0, /storage/flowTokenVault, true],
-        protocolAccount
-    )
-    Test.expect(openRes, Test.beSucceeded())
+	// open wrapped position (pushToDrawDownSink)
+	// the equivalent of depositing reserves
+	let openRes = executeTransaction(
+		"../transactions/mocks/position/create_wrapped_position.cdc",
+		[reserveAmount/2.0, /storage/flowTokenVault, true],
+		protocolAccount
+	)
+	Test.expect(openRes, Test.beSucceeded())
 
-    // enable mocked Strategy creation
-    addStrategyComposer(signer: tidalYieldAccount,
-        strategyIdentifier: strategyIdentifier,
-        composerIdentifier: Type<@TidalYieldStrategies.TracerStrategyComposer>().identifier,
-        issuerStoragePath: TidalYieldStrategies.IssuerStoragePath,
-        beFailed: false
-    )
+	// enable mocked Strategy creation
+	addStrategyComposer(
+		signer: tidalYieldAccount,
+		strategyIdentifier: strategyIdentifier,
+		composerIdentifier: Type<@TidalYieldStrategies.TracerStrategyComposer>().identifier,
+		issuerStoragePath: TidalYieldStrategies.IssuerStoragePath,
+		beFailed: false
+	)
 
 
-    snapshot = getCurrentBlockHeight()
+	snapshot = getCurrentBlockHeight()
 }
 
 access(all)
 fun test_SetupSucceeds() {
-    log("Success: TracerStrategy setup succeeded")
+	log("Success: TracerStrategy setup succeeded")
 }
 
 access(all)
 fun test_CreateTideSucceeds() {
-    let fundingAmount = 100.0
+	let fundingAmount = 100.0
 
-    let user = Test.createAccount()
-    mintFlow(to: user, amount: fundingAmount)
+	let user = Test.createAccount()
+	mintFlow(to: user, amount: fundingAmount)
 
-    createTide(
-        signer: user,
-        strategyIdentifier: strategyIdentifier,
-        vaultIdentifier: flowTokenIdentifier,
-        amount: fundingAmount,
-        beFailed: false
-    )
+	createTide(
+		signer: user,
+		strategyIdentifier: strategyIdentifier,
+		vaultIdentifier: flowTokenIdentifier,
+		amount: fundingAmount,
+		beFailed: false
+	)
 
-    let tideIDs = getTideIDs(address: user.address)
-    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
-    Test.assertEqual(1, tideIDs!.length)
+	let tideIDs = getTideIDs(address: user.address)
+	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+	Test.assertEqual(1, tideIDs!.length)
 }
 
 access(all)
 fun test_CloseTideSucceeds() {
-    Test.reset(to: snapshot)
+	Test.reset(to: snapshot)
 
-    let fundingAmount = 100.0
+	let fundingAmount = 100.0
 
-    let user = Test.createAccount()
-    mintFlow(to: user, amount: fundingAmount)
+	let user = Test.createAccount()
+	mintFlow(to: user, amount: fundingAmount)
 
-    createTide(
-        signer: user,
-        strategyIdentifier: strategyIdentifier,
-        vaultIdentifier: flowTokenIdentifier,
-        amount: fundingAmount,
-        beFailed: false
-    )
+	createTide(
+		signer: user,
+		strategyIdentifier: strategyIdentifier,
+		vaultIdentifier: flowTokenIdentifier,
+		amount: fundingAmount,
+		beFailed: false
+	)
 
-    var tideIDs = getTideIDs(address: user.address)
-    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
-    Test.assertEqual(1, tideIDs!.length)
+	var tideIDs = getTideIDs(address: user.address)
+	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+	Test.assertEqual(1, tideIDs!.length)
 
-    closeTide(signer: user, id: tideIDs![0], beFailed: false)
+	closeTide(signer: user, id: tideIDs![0], beFailed: false)
 
-    tideIDs = getTideIDs(address: user.address)
-    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
-    Test.assertEqual(0, tideIDs!.length)
+	tideIDs = getTideIDs(address: user.address)
+	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+	Test.assertEqual(0, tideIDs!.length)
 
-    let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 
-    Test.assertEqual(fundingAmount, flowBalanceAfter)
+	Test.assertEqual(fundingAmount, flowBalanceAfter)
 }
 
 access(all)
 fun test_RebalanceTideSucceeds() {
-    Test.reset(to: snapshot)
+	Test.reset(to: snapshot)
 
     let fundingAmount = 100.0
     let priceIncrease = 0.2
 
-    let user = Test.createAccount()
+	let user = Test.createAccount()
 
-    // Likely 0.0
-    let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
-    mintFlow(to: user, amount: fundingAmount)
+	// Likely 0.0
+	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	mintFlow(to: user, amount: fundingAmount)
 
     createTide(signer: user,
         strategyIdentifier: strategyIdentifier,
@@ -209,9 +210,9 @@ fun test_RebalanceTideSucceeds() {
     // TODO - position balance causing error here - need to fix position balance calculation
     closeTide(signer: user, id: tideIDs![0], beFailed: false)
 
-    tideIDs = getTideIDs(address: user.address)
-    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
-    Test.assertEqual(0, tideIDs!.length)
+	tideIDs = getTideIDs(address: user.address)
+	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+	Test.assertEqual(0, tideIDs!.length)
 
     let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
     Test.assert((flowBalanceAfter-flowBalanceBefore) >= expectedBalance,
@@ -223,53 +224,54 @@ access(all)
 fun test_RebalanceTideSucceedsAfterYieldPriceDecrease() {
     Test.reset(to: snapshot)
 
-    let fundingAmount = 100.0
-    let priceDecrease = 0.1
+	let fundingAmount = 100.0
+	let priceDecrease = 0.1
 
-    let user = Test.createAccount()
+	let user = Test.createAccount()
 
-    // Likely 0.0
-    let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
-    mintFlow(to: user, amount: fundingAmount)
+	// Likely 0.0
+	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	mintFlow(to: user, amount: fundingAmount)
 
-    createTide(
-        signer: user,
-        strategyIdentifier: strategyIdentifier,
-        vaultIdentifier: flowTokenIdentifier,
-        amount: fundingAmount,
-        beFailed: false
-    )
+	createTide(
+		signer: user,
+		strategyIdentifier: strategyIdentifier,
+		vaultIdentifier: flowTokenIdentifier,
+		amount: fundingAmount,
+		beFailed: false
+	)
 
-    var tideIDs = getTideIDs(address: user.address)
-    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
-    Test.assertEqual(1, tideIDs!.length)
+	var tideIDs = getTideIDs(address: user.address)
+	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+	Test.assertEqual(1, tideIDs!.length)
 
-    var tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+	var tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
 
-    log("Tide balance before yield increase: \(tideBalance ?? 0.0)")
+	log("Tide balance before yield increase: \(tideBalance ?? 0.0)")
 
-    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: priceDecrease)
+	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: priceDecrease)
 
-    tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
 
-    log("Tide balance before rebalance: \(tideBalance ?? 0.0)")
+	log("Tide balance before rebalance: \(tideBalance ?? 0.0)")
 
-    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
 
-    closeTide(signer: user, id: tideIDs![0], beFailed: false)
+	closeTide(signer: user, id: tideIDs![0], beFailed: false)
 
-    tideIDs = getTideIDs(address: user.address)
-    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
-    Test.assertEqual(0, tideIDs!.length)
+	tideIDs = getTideIDs(address: user.address)
+	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+	Test.assertEqual(0, tideIDs!.length)
 
-    let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
-    let expectedBalance = fundingAmount * 0.5
-    Test.assert((flowBalanceAfter-flowBalanceBefore) <= expectedBalance,
-        message: "Expected user's Flow balance after rebalance to be less than the original, due to decrease in yield price but got \(flowBalanceAfter)")
+	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	let expectedBalance = fundingAmount * 0.5
+	Test.assert((flowBalanceAfter-flowBalanceBefore) <= expectedBalance,
+	message: "Expected user's Flow balance after rebalance to be less than the original, due to decrease in yield price but got \(flowBalanceAfter)")
 
-    Test.assert((flowBalanceAfter-flowBalanceBefore) > 0.1,
-        message: "Expected user's Flow balance after rebalance to be more than zero but got \(flowBalanceAfter)"
-    )
+	Test.assert(
+		(flowBalanceAfter-flowBalanceBefore) > 0.1,
+		message: "Expected user's Flow balance after rebalance to be more than zero but got \(flowBalanceAfter)"
+	)
 }
 
 access(all)

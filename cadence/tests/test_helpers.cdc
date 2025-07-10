@@ -345,3 +345,11 @@ fun setMockSwapperLiquidityConnector(signer: Test.TestAccount, vaultStoragePath:
     )
     Test.expect(setRes, Test.beSucceeded())
 }
+
+access(all)
+fun equalAmounts(a: UFix64, b: UFix64, tolerance: UFix64): Bool {
+    if a > b {
+        return a - b <= tolerance
+    }
+    return b - a <= tolerance
+}
