@@ -123,20 +123,27 @@ fun test_RebalanceTideScenario2() {
 
 		setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldTokenPrice)
 
-		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+		let tideBalanceBeforeRebalance = getTideBalance(address: user.address, tideID: tideIDs![0])
 
-		log("[TEST] Tide balance before yield price \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+		log("[TEST] Tide balance before yield price \(yieldTokenPrice) rebalance: \(tideBalanceBeforeRebalance ?? 0.0)")
 
 		rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: false, beFailed: false)
 		rebalancePosition(signer: protocolAccount, pid: pid, force: false, beFailed: false)
 
-		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+		let tideBalanceAfterRebalance = getTideBalance(address: user.address, tideID: tideIDs![0])
 
-		log("[TEST] Tide balance after yield before \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+		log("[TEST] Tide balance after yield before \(yieldTokenPrice) rebalance: \(tideBalanceAfterRebalance ?? 0.0)")
+
+		// Expect the total value of the system to be preserved, even after the rebalance.
+		// Since there are no prices changes and no deposits/withdrawals, value of the Tide should not change
+		// TODO: Expect these to be exactly equal, once precision of calculations are improved
+		Test.assert(
+			equalAmounts(a:tideBalanceAfterRebalance!, b:tideBalanceBeforeRebalance!, tolerance:0.00001),
+			message: "Tide balance before \(tideBalanceBeforeRebalance ?? 0.0) and after \(tideBalanceAfterRebalance ?? 0.0) rebalance should be equal")
 
 		Test.assert(
-			tideBalance == expectedFlowBalance[index],
-			message: "Tide balance of \(tideBalance ?? 0.0) doesn't match an expected value \(expectedFlowBalance[index])"
+			tideBalanceAfterRebalance == expectedFlowBalance[index],
+			message: "Tide balance of \(tideBalanceAfterRebalance ?? 0.0) doesn't match an expected value \(expectedFlowBalance[index])"
 		)
 	}
 
