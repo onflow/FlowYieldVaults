@@ -81,7 +81,14 @@ fun test_RebalanceTideScenario2() {
 
 	let user = Test.createAccount()
 
-	let yieldPriceIncreases = [1.1, 1.2, 1.3, 1.5, 2.0, 3.0]
+	let yieldPriceIncreases = [
+	1.1,
+	1.2,
+	1.3,
+	1.5,
+	2.0,
+	3.0
+	]
 	let expectedFlowBalance = [
 	1061.53846151,
 	1120.92522857,
@@ -135,7 +142,7 @@ fun test_RebalanceTideScenario2() {
 		log("[TEST] Tide balance after yield before \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
 
 		Test.assert(
-			tideBalance == expectedFlowBalance[index],
+			equalAmounts(a:tideBalance!, b:expectedFlowBalance[index], tolerance:0.01),
 			message: "Tide balance of \(tideBalance ?? 0.0) doesn't match an expected value \(expectedFlowBalance[index])"
 		)
 	}

@@ -40,6 +40,9 @@ access(all) contract MockStrategy {
         access(all) fun minimumAvailable(): UFix64 {
             return 0.0
         }
+        access(all) fun liquidationValue(): UFix64 {
+            return 0.0
+        }
         access(FungibleToken.Withdraw) fun withdrawAvailable(maxAmount: UFix64): @{FungibleToken.Vault} {
             return <- DFBUtils.getEmptyVault(self.getSourceType())
         }
@@ -71,6 +74,9 @@ access(all) contract MockStrategy {
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
 
+        access(all) fun liquidationValue(ofToken: Type): UFix64 {
+            return ofToken == self.source.getSourceType() ? self.source.liquidationValue() : 0.0
+        }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
             self.sink.depositCapacity(from: from)
