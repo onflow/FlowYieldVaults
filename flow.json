@@ -14,6 +14,20 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"DFBMathUtils": {
+			"source": "./lib/DeFiBlocks/cadence/contracts/utils/DFBMathUtils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
+		"DFBv2": {
+			"source": "./lib/DeFiBlocks/cadence/contracts/interfaces/DFBv2.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
 		"FungibleTokenStack": {
 			"source": "./lib/DeFiBlocks/cadence/contracts/connectors/FungibleTokenStack.cdc",
 			"aliases": {
@@ -91,8 +105,22 @@
 				"testing": "0000000000000009"
 			}
 		},
+		"TidalYieldAutoBalancersV2": {
+			"source": "cadence/contracts/TidalYieldAutoBalancersV2.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009"
+			}
+		},
 		"TidalYieldStrategies": {
 			"source": "cadence/contracts/TidalYieldStrategies.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009"
+			}
+		},
+		"TidalYieldStrategiesV2": {
+			"source": "cadence/contracts/TidalYieldStrategiesV2.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000009"
