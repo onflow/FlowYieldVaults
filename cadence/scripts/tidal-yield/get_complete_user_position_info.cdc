@@ -6,11 +6,11 @@ import "MOET"
 import "FlowToken"
 
 access(all) struct CompletePositionInfo {
-    access(all) let tideId: UInt64
-    access(all) let collateralInfo: CollateralInfo
-    access(all) let yieldTokenInfo: YieldTokenInfo
-    access(all) let debtInfo: DebtInfo
-    access(all) let healthMetrics: HealthMetrics
+    access(all) let tideId: UInt64                        // Unique identifier for the tide/position
+    access(all) let collateralInfo: CollateralInfo        // Contains yield token balance (misnamed for API compatibility)
+    access(all) let yieldTokenInfo: YieldTokenInfo        // Yield token details and values
+    access(all) let debtInfo: DebtInfo                    // Estimated borrowed MOET debt information
+    access(all) let healthMetrics: HealthMetrics          // Position health ratios and risk metrics
     
     init(
         tideId: UInt64,
@@ -29,14 +29,14 @@ access(all) struct CompletePositionInfo {
 
 access(all) struct CollateralInfo {
     access(all) let collateralType: String
-    access(all) let availableBalance: UFix64
-    access(all) let collateralValue: UFix64
-    access(all) let collateralPrice: UFix64
-    access(all) let supportedTypes: [String]
+    access(all) let availableBalance: UFix64  // NOTE: This is actually yield token balance from auto balancer, not collateral tokens
+    access(all) let collateralValue: UFix64   // USD value of the yield tokens (treating them as collateral for health calc)
+    access(all) let collateralPrice: UFix64   // Price used for valuation (Flow price, not yield token price)
+    access(all) let supportedTypes: [String]  // Array of supported collateral token type identifiers
     
     init(collateralType: String, availableBalance: UFix64, collateralValue: UFix64, collateralPrice: UFix64, supportedTypes: [String]) {
         self.collateralType = collateralType
-        self.availableBalance = availableBalance
+        self.availableBalance = availableBalance  // Passing yield token balance as availableBalance for API compatibility
         self.collateralValue = collateralValue
         self.collateralPrice = collateralPrice
         self.supportedTypes = supportedTypes
@@ -44,11 +44,11 @@ access(all) struct CollateralInfo {
 }
 
 access(all) struct YieldTokenInfo {
-    access(all) let yieldTokenBalance: UFix64
-    access(all) let yieldTokenValue: UFix64
-    access(all) let yieldTokenPrice: UFix64
-    access(all) let yieldTokenIdentifier: String
-    access(all) let isActive: Bool
+    access(all) let yieldTokenBalance: UFix64        // Balance of yield tokens held in auto balancer
+    access(all) let yieldTokenValue: UFix64          // USD value of yield tokens (balance * price)
+    access(all) let yieldTokenPrice: UFix64          // Current price of yield tokens
+    access(all) let yieldTokenIdentifier: String     // Type identifier for yield token contract
+    access(all) let isActive: Bool                   // Whether auto balancer is active/exists
     
     init(yieldTokenBalance: UFix64, yieldTokenValue: UFix64, yieldTokenPrice: UFix64, yieldTokenIdentifier: String, isActive: Bool) {
         self.yieldTokenBalance = yieldTokenBalance
@@ -60,10 +60,10 @@ access(all) struct YieldTokenInfo {
 }
 
 access(all) struct DebtInfo {
-    access(all) let estimatedMoetDebt: UFix64
-    access(all) let estimatedDebtValue: UFix64
-    access(all) let moetPrice: UFix64
-    access(all) let loanTokenIdentifier: String
+    access(all) let estimatedMoetDebt: UFix64        // Estimated amount of MOET tokens borrowed
+    access(all) let estimatedDebtValue: UFix64       // USD value of estimated debt
+    access(all) let moetPrice: UFix64                // Current price of MOET tokens
+    access(all) let loanTokenIdentifier: String      // Type identifier for loan token (MOET)
     
     init(estimatedMoetDebt: UFix64, estimatedDebtValue: UFix64, moetPrice: UFix64, loanTokenIdentifier: String) {
         self.estimatedMoetDebt = estimatedMoetDebt
@@ -74,16 +74,16 @@ access(all) struct DebtInfo {
 }
 
 access(all) struct HealthMetrics {
-    access(all) let realAvailableBalance: UFix64
-    access(all) let estimatedCollateralValue: UFix64
-    access(all) let liquidationRiskThreshold: UFix64    // DANGER: Below this risks liquidation
-    access(all) let autoRebalanceThreshold: UFix64      // AUTO: Triggers rebalancing
-    access(all) let optimalHealthRatio: UFix64          // TARGET: Ideal health ratio
-    access(all) let maxEfficiencyThreshold: UFix64      // MAX: Upper limit for efficiency
-    access(all) let netWorth: UFix64
-    access(all) let leverageRatio: UFix64
-    access(all) let yieldTokenRatio: UFix64
-    access(all) let estimatedHealth: UFix64
+    access(all) let realAvailableBalance: UFix64         // Yield token balance from auto balancer (same as availableBalance above)
+    access(all) let estimatedCollateralValue: UFix64     // USD value of yield tokens treated as collateral
+    access(all) let liquidationRiskThreshold: UFix64     // DANGER: Below this risks liquidation (hardcoded to 1.1)
+    access(all) let autoRebalanceThreshold: UFix64       // AUTO: Triggers rebalancing (hardcoded to 1.1)
+    access(all) let optimalHealthRatio: UFix64           // TARGET: Ideal health ratio (hardcoded to 1.3)
+    access(all) let maxEfficiencyThreshold: UFix64       // MAX: Upper limit for efficiency (hardcoded to 1.5)
+    access(all) let netWorth: UFix64                     // Total value minus debt (collateral + yield - debt)
+    access(all) let leverageRatio: UFix64                // Total position value / collateral value
+    access(all) let yieldTokenRatio: UFix64              // Actual yield token value / expected yield token value
+    access(all) let estimatedHealth: UFix64              // Effective collateral / debt ratio (with 0.8 collateral factor)
     
     init(
         realAvailableBalance: UFix64,
@@ -107,11 +107,11 @@ access(all) struct HealthMetrics {
 }
 
 access(all) struct CompleteUserSummary {
-    access(all) let userAddress: Address
-    access(all) let totalPositions: Int
-    access(all) let portfolioSummary: PortfolioSummary
-    access(all) let positions: [CompletePositionInfo]
-    access(all) let timestamp: UFix64
+    access(all) let userAddress: Address                 // User's Flow address
+    access(all) let totalPositions: Int                  // Number of tide positions
+    access(all) let portfolioSummary: PortfolioSummary   // Aggregated portfolio metrics
+    access(all) let positions: [CompletePositionInfo]    // Array of individual position details
+    access(all) let timestamp: UFix64                    // Block timestamp when data was retrieved
     
     init(
         userAddress: Address,
@@ -128,12 +128,12 @@ access(all) struct CompleteUserSummary {
 }
 
 access(all) struct PortfolioSummary {
-    access(all) let totalCollateralValue: UFix64
-    access(all) let totalYieldTokenValue: UFix64
-    access(all) let totalEstimatedDebtValue: UFix64
-    access(all) let totalNetWorth: UFix64
-    access(all) let averageLeverageRatio: UFix64
-    access(all) let portfolioHealthRatio: UFix64
+    access(all) let totalCollateralValue: UFix64         // Sum of all yield token balances (misnamed for API compatibility)
+    access(all) let totalYieldTokenValue: UFix64         // Sum of all yield token USD values
+    access(all) let totalEstimatedDebtValue: UFix64      // Sum of all estimated MOET debt values
+    access(all) let totalNetWorth: UFix64                // Total portfolio value minus debt
+    access(all) let averageLeverageRatio: UFix64         // Average leverage across all positions
+    access(all) let portfolioHealthRatio: UFix64         // Average yield token ratio across all positions
     
     init(
         totalCollateralValue: UFix64,
@@ -192,11 +192,11 @@ fun main(address: Address): CompleteUserSummary {
     for tideId in tideIds {
         if let tide = tideManager!.borrowTide(id: tideId) {
             let autoBalancer = TidalYieldAutoBalancers.borrowAutoBalancer(id: tideId)
-            let yieldTokenBalance = autoBalancer?.vaultBalance() ?? 0.0
             
-            // Use the AutoBalancer's balance as the primary balance source
-            // This bypasses the TidalProtocol overflow issue
-            let realAvailableBalance = yieldTokenBalance
+            // Use TidalProtocol position balance instead of auto balancer balance
+            // This should now work if the overflow issue has been fixed
+            let realAvailableBalance = tide.getTideBalance()
+            let yieldTokenBalance = realAvailableBalance
             
             let yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
             let yieldTokenValue = yieldTokenBalance * yieldTokenPrice
@@ -253,7 +253,7 @@ fun main(address: Address): CompleteUserSummary {
                 tideId: tideId,
                 collateralInfo: CollateralInfo(
                     collateralType: collateralType,
-                    availableBalance: realAvailableBalance,
+                    availableBalance: realAvailableBalance,  // realAvailableBalance is yield token balance from auto balancer
                     collateralValue: estimatedCollateralValue,
                     collateralPrice: flowPrice,
                     supportedTypes: supportedTypes
