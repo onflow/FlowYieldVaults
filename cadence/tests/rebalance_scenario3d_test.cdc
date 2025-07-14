@@ -83,7 +83,7 @@ fun test_RebalanceTideScenario3D() {
 	let flowPriceDecrease = 0.5
 	let yieldPriceIncrease = 1.5
 
-	let expectedYieldTokenValues = [615.38, 307.69, 268.24]
+	let expectedYieldTokenValues = [615.38461538, 307.69230769, 268.24457594]
 
 	let user = Test.createAccount()
 
@@ -126,7 +126,9 @@ fun test_RebalanceTideScenario3D() {
 	log("\n=== PRECISION COMPARISON (Before Flow Price Decrease) ===")
 	log("Expected Yield Tokens: \(expectedYieldTokenValues[0])")
 	log("Actual Yield Tokens:   \(yieldTokensBefore)")
-	log("Difference:            \(yieldTokensBefore - expectedYieldTokenValues[0])")
+	let diff0 = yieldTokensBefore > expectedYieldTokenValues[0] ? yieldTokensBefore - expectedYieldTokenValues[0] : expectedYieldTokenValues[0] - yieldTokensBefore
+	let sign0 = yieldTokensBefore > expectedYieldTokenValues[0] ? "+" : "-"
+	log("Difference:            \(sign0)\(diff0)")
 	log("=========================================================\n")
 	
 	Test.assert(
