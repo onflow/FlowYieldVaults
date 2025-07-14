@@ -25,6 +25,7 @@ access(all) var snapshot: UInt64 = 0
 access(all)
 fun setup() {
 	deployContracts()
+	
 
 	// set mocked token prices
 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
@@ -32,9 +33,10 @@ fun setup() {
 
 	// mint tokens & set liquidity in mock swapper contract
 	let reserveAmount = 100_000_00.0
+	setupMoetVault(protocolAccount, beFailed: false)
 	setupYieldVault(protocolAccount, beFailed: false)
 	mintFlow(to: protocolAccount, amount: reserveAmount)
-	mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
+	mintMoet(signer: Test.getAccount(0x0000000000000008), to: protocolAccount.address, amount: reserveAmount, beFailed: false)
 	mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)

@@ -25,6 +25,7 @@ access(all) var snapshot: UInt64 = 0
 access(all)
 fun setup() {
 	deployContracts()
+	
 
 	// set mocked token prices
 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
@@ -32,9 +33,10 @@ fun setup() {
 
 	// mint tokens & set liquidity in mock swapper contract
 	let reserveAmount = 100_000_00.0
+	setupMoetVault(protocolAccount, beFailed: false)
 	setupYieldVault(protocolAccount, beFailed: false)
 	mintFlow(to: protocolAccount, amount: reserveAmount)
-	mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
+	mintMoet(signer: Test.getAccount(0x0000000000000008), to: protocolAccount.address, amount: reserveAmount, beFailed: false)
 	mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
@@ -121,6 +123,12 @@ fun test_RebalanceTideScenario3D() {
 	log("[TEST] Tide balance before flow price decrease rebalance: \(tideBalance ?? 0.0)")
 
 	let yieldTokensBefore = getAutoBalancerBalance(id: tideIDs![0])!
+	log("\n=== PRECISION COMPARISON (Before Flow Price Decrease) ===")
+	log("Expected Yield Tokens: \(expectedYieldTokenValues[0])")
+	log("Actual Yield Tokens:   \(yieldTokensBefore)")
+	log("Difference:            \(yieldTokensBefore - expectedYieldTokenValues[0])")
+	log("=========================================================\n")
+	
 	Test.assert(
 		equalAmounts(a:yieldTokensBefore, b:expectedYieldTokenValues[0], tolerance:0.01),
 		message: "Expected yield tokens after flow price decrease to be \(expectedYieldTokenValues[0]) but got \(yieldTokensBefore)"
@@ -134,6 +142,14 @@ fun test_RebalanceTideScenario3D() {
 	log("[TEST] Tide balance after flow price decrease rebalance: \(tideBalance ?? 0.0)")
 
 	let yieldTokensAfterFlowPriceDecrease = getAutoBalancerBalance(id: tideIDs![0])!
+	log("\n=== PRECISION COMPARISON (After Flow Price Decrease) ===")
+	log("Expected Yield Tokens: \(expectedYieldTokenValues[1])")
+	log("Actual Yield Tokens:   \(yieldTokensAfterFlowPriceDecrease)")
+	let diff1 = yieldTokensAfterFlowPriceDecrease > expectedYieldTokenValues[1] ? yieldTokensAfterFlowPriceDecrease - expectedYieldTokenValues[1] : expectedYieldTokenValues[1] - yieldTokensAfterFlowPriceDecrease
+	let sign1 = yieldTokensAfterFlowPriceDecrease > expectedYieldTokenValues[1] ? "+" : "-"
+	log("Difference:            \(sign1)\(diff1)")
+	log("=========================================================\n")
+	
 	Test.assert(
 		equalAmounts(a:yieldTokensAfterFlowPriceDecrease, b:expectedYieldTokenValues[1], tolerance:0.01),
 		message: "Expected yield tokens after flow price decrease to be \(expectedYieldTokenValues[1]) but got \(yieldTokensAfterFlowPriceDecrease)"
@@ -153,6 +169,14 @@ fun test_RebalanceTideScenario3D() {
 	log("[TEST] Tide balance after yield price increase rebalance: \(tideBalance ?? 0.0)")
 
 	let yieldTokensAfterYieldPriceIncrease = getAutoBalancerBalance(id: tideIDs![0])!
+	log("\n=== PRECISION COMPARISON (After Yield Price Increase) ===")
+	log("Expected Yield Tokens: \(expectedYieldTokenValues[2])")
+	log("Actual Yield Tokens:   \(yieldTokensAfterYieldPriceIncrease)")
+	let diff2 = yieldTokensAfterYieldPriceIncrease > expectedYieldTokenValues[2] ? yieldTokensAfterYieldPriceIncrease - expectedYieldTokenValues[2] : expectedYieldTokenValues[2] - yieldTokensAfterYieldPriceIncrease
+	let sign2 = yieldTokensAfterYieldPriceIncrease > expectedYieldTokenValues[2] ? "+" : "-"
+	log("Difference:            \(sign2)\(diff2)")
+	log("=========================================================\n")
+	
 	Test.assert(
 		equalAmounts(a:yieldTokensAfterYieldPriceIncrease, b:expectedYieldTokenValues[2], tolerance:0.01),
 		message: "Expected yield tokens after yield price increase to be \(expectedYieldTokenValues[2]) but got \(yieldTokensAfterYieldPriceIncrease)"
