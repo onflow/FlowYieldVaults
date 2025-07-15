@@ -5,4 +5,4 @@
 [submodule "lib/TidalProtocol"]
 	path = lib/TidalProtocol
 	url = git@github.com:onflow/TidalProtocol.git
-	branch = tracer-bullet
+	branch = main
