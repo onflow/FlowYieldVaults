@@ -1,8 +1,8 @@
 [submodule "lib/DeFiBlocks"]
 	path = lib/DeFiBlocks
 	url = git@github.com:onflow/DeFiBlocks.git
-	branch = main
+	branch = feat/uint256-precision-improvements
 [submodule "lib/TidalProtocol"]
 	path = lib/TidalProtocol
 	url = git@github.com:onflow/TidalProtocol.git
-	branch = integrate-precision-fix
+	branch = gio/update-decimal-precision
