@@ -1,0 +1,198 @@
+import Test
+import BlockchainHelpers
+
+import "test_helpers.cdc"
+
+import "FlowToken"
+import "MOET"
+import "YieldToken"
+import "TidalProtocol"import "TidalYieldStrategiesV2"
+
+access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
+access(all) let tidalYieldAccount = Test.getAccount(0x0000000000000009)
+access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
+
+access(all) var strategyIdentifier = Type<@TidalYieldStrategiesV2.TracerStrategyV2>().identifier
+access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
+access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
+access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
+
+access(all) let collateralFactor = 0.8
+access(all) let targetHealthFactor = 1.3
+
+access(all) var snapshot: UInt64 = 0
+
+access(all)
+fun setup() {
+	deployContractsV2()
+	
+
+	// set mocked token prices
+	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
+	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
+
+	// mint tokens & set liquidity in mock swapper contract
+	let reserveAmount = 100_000_00.0
+	setupMoetVault(protocolAccount, beFailed: false)
+	setupYieldVault(protocolAccount, beFailed: false)
+	mintFlow(to: protocolAccount, amount: reserveAmount)
+	mintMoet(signer: Test.getAccount(0x0000000000000008), to: protocolAccount.address, amount: reserveAmount, beFailed: false)
+	mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
+	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
+	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
+	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
+
+	// setup TidalProtocol with a Pool & add FLOW as supported token
+	createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
+	addSupportedTokenSimpleInterestCurve(
+		signer: protocolAccount,
+		tokenTypeIdentifier: flowTokenIdentifier,
+		collateralFactor: 0.8,
+		borrowFactor: 1.0,
+		depositRate: 1_000_000.0,
+		depositCapacityCap: 1_000_000.0
+	)
+
+	addSupportedTokenSimpleInterestCurve(
+		signer: protocolAccount,
+		tokenTypeIdentifier: yieldTokenIdentifier,
+		collateralFactor: 0.8,
+		borrowFactor: 1.0,
+		depositRate: 1_000_000.0,
+		depositCapacityCap: 1_000_000.0
+	)
+
+	// add YieldToken & AutoBalancer strategy to TidalYield - V2 version
+	addStrategyComposer(
+		signer: tidalYieldAccount,
+		strategyIdentifier: strategyIdentifier,
+		composerIdentifier: Type<@TidalYieldStrategiesV2.TracerStrategyComposerV2>().identifier,
+		issuerStoragePath: TidalYieldStrategiesV2.IssuerStoragePath,
+		beFailed: false
+	)
+
+
+	snapshot = getCurrentBlockHeight()
+}
+
+access(all)
+fun test_RebalanceTideScenario3B_V2() {
+	// Test.reset(to: snapshot)
+
+	let fundingAmount = 1000.0
+	let flowPriceIncrease = 1.5
+	let yieldPriceIncrease = 1.3
+
+	let expectedYieldTokenValues = [615.38461538, 923.07692308, 841.14701866]
+
+	let user = Test.createAccount()
+
+	// Likely 0.0
+	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	mintFlow(to: user, amount: fundingAmount)
+
+	createTide(
+		signer: user,
+		strategyIdentifier: strategyIdentifier,
+		vaultIdentifier: flowTokenIdentifier,
+		amount: fundingAmount,
+		beFailed: false
+	)
+
+	var tideIDs = getTideIDs(address: user.address)
+	// Get the actual position ID from the Opened event
+	let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<TidalProtocol.Opened>())) as! TidalProtocol.Opened).pid
+	var pid = positionID
+	log("[V2 TEST] Tide ID: \(tideIDs![0])")
+	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+	Test.assertEqual(1, tideIDs!.length)
+
+	var tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+	log("[V2 TEST] Initial tide balance: \(tideBalance ?? 0.0)")
+
+	rebalanceTideV2(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+	log("[V2 TEST] Tide balance before flow price increase \(tideBalance ?? 0.0)")
+
+	// Initial yield tokens check
+	let yieldTokensInitial = getAutoBalancerBalanceV2(id: tideIDs![0])!
+	log("\n=== V2 PRECISION COMPARISON (Initial) ===")
+	log("Expected Yield Tokens: \(expectedYieldTokenValues[0])")
+	log("Actual Yield Tokens:   \(yieldTokensInitial)")
+	let diff0 = yieldTokensInitial > expectedYieldTokenValues[0] ? yieldTokensInitial - expectedYieldTokenValues[0] : expectedYieldTokenValues[0] - yieldTokensInitial
+	let sign0 = yieldTokensInitial > expectedYieldTokenValues[0] ? "+" : "-"
+	log("Difference:            \(sign0)\(diff0)")
+	log("==========================================\n")
+
+	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPriceIncrease)
+
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+	log("[V2 TEST] Tide balance before flow price increase rebalance: \(tideBalance ?? 0.0)")
+
+	let yieldTokensBefore = getAutoBalancerBalanceV2(id: tideIDs![0])!
+	Test.assert(
+		equalAmounts(a:yieldTokensBefore, b:expectedYieldTokenValues[0], tolerance:0.01),
+		message: "Expected yield tokens after flow price decrease to be \(expectedYieldTokenValues[0]) but got \(yieldTokensBefore)"
+	)
+
+	rebalanceTideV2(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+	log("[V2 TEST] Tide balance after flow price increase rebalance: \(tideBalance ?? 0.0)")
+
+	let yieldTokensAfterFlowPriceIncrease = getAutoBalancerBalanceV2(id: tideIDs![0])!
+	
+	log("\n=== V2 PRECISION COMPARISON (After Flow Price Increase) ===")
+	log("Expected Yield Tokens: \(expectedYieldTokenValues[1])")
+	log("Actual Yield Tokens:   \(yieldTokensAfterFlowPriceIncrease)")
+	let diff1 = yieldTokensAfterFlowPriceIncrease > expectedYieldTokenValues[1] ? yieldTokensAfterFlowPriceIncrease - expectedYieldTokenValues[1] : expectedYieldTokenValues[1] - yieldTokensAfterFlowPriceIncrease
+	let sign1 = yieldTokensAfterFlowPriceIncrease > expectedYieldTokenValues[1] ? "+" : "-"
+	log("Difference:            \(sign1)\(diff1)")
+	log("============================================================\n")
+
+	Test.assert(
+		equalAmounts(a:yieldTokensAfterFlowPriceIncrease, b:expectedYieldTokenValues[1], tolerance:0.01),
+		message: "Expected yield tokens after flow price increase to be \(expectedYieldTokenValues[1]) but got \(yieldTokensAfterFlowPriceIncrease)"
+	)
+
+	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPriceIncrease)
+
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+	log("[V2 TEST] Tide balance before yield price increase rebalance: \(tideBalance ?? 0.0)")
+
+	rebalanceTideV2(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalancePosition(signer: protocolAccount, pid: 0, force: true, beFailed: false)
+
+	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+
+	log("[V2 TEST] Tide balance after yield price increase rebalance: \(tideBalance ?? 0.0)")
+
+	let yieldTokensAfterYieldPriceIncrease = getAutoBalancerBalanceV2(id: tideIDs![0])!
+	
+	log("\n=== V2 PRECISION COMPARISON (After Yield Price Increase) ===")
+	log("Expected Yield Tokens: \(expectedYieldTokenValues[2])")
+	log("Actual Yield Tokens:   \(yieldTokensAfterYieldPriceIncrease)")
+	let diff2 = yieldTokensAfterYieldPriceIncrease > expectedYieldTokenValues[2] ? yieldTokensAfterYieldPriceIncrease - expectedYieldTokenValues[2] : expectedYieldTokenValues[2] - yieldTokensAfterYieldPriceIncrease
+	let sign2 = yieldTokensAfterYieldPriceIncrease > expectedYieldTokenValues[2] ? "+" : "-"
+	log("Difference:            \(sign2)\(diff2)")
+	log("=============================================================\n")
+
+	Test.assert(
+		equalAmounts(a:yieldTokensAfterYieldPriceIncrease, b:expectedYieldTokenValues[2], tolerance:0.01),
+		message: "Expected yield tokens after yield price increase to be \(expectedYieldTokenValues[2]) but got \(yieldTokensAfterYieldPriceIncrease)"
+	)
+
+
+	closeTide(signer: user, id: tideIDs![0], beFailed: false)
+
+	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	log("[V2 TEST] flow balance after \(flowBalanceAfter)")
+} 
