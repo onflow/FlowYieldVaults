@@ -84,7 +84,6 @@ access(all) struct HealthMetrics {
     access(all) let leverageRatio: UFix64
     access(all) let yieldTokenRatio: UFix64
     access(all) let estimatedHealth: UFix64
-    access(all) let debtToCollateralRatio: UFix64       // NEW: Debt-to-collateral ratio
     
     init(
         realAvailableBalance: UFix64,
@@ -92,8 +91,7 @@ access(all) struct HealthMetrics {
         netWorth: UFix64,
         leverageRatio: UFix64,
         yieldTokenRatio: UFix64,
-        estimatedHealth: UFix64,
-        debtToCollateralRatio: UFix64
+        estimatedHealth: UFix64
     ) {
         self.realAvailableBalance = realAvailableBalance
         self.estimatedCollateralValue = estimatedCollateralValue
@@ -105,7 +103,6 @@ access(all) struct HealthMetrics {
         self.leverageRatio = leverageRatio
         self.yieldTokenRatio = yieldTokenRatio
         self.estimatedHealth = estimatedHealth
-        self.debtToCollateralRatio = debtToCollateralRatio
     }
 }
 
@@ -135,7 +132,7 @@ access(all) struct PortfolioSummary {
     access(all) let totalYieldTokenValue: UFix64
     access(all) let totalEstimatedDebtValue: UFix64
     access(all) let totalNetWorth: UFix64
-    access(all) let averageLeverageRatio: UFix64     // Actually portfolio leverage ratio: Total Assets / Total Net Worth
+    access(all) let averageLeverageRatio: UFix64
     access(all) let portfolioHealthRatio: UFix64
     
     init(
@@ -244,19 +241,13 @@ fun main(address: Address): CompleteUserSummary {
             let estimatedHealth: UFix64 = estimatedDebtValue > 0.0 ? 
                 effectiveCollateral / estimatedDebtValue : 999.0
             
-            // Debt-to-collateral ratio: How much debt relative to collateral
-            // Example: $61.54 debt / $51.28 collateral = 1.20 (120%)
-            let debtToCollateralRatio: UFix64 = estimatedCollateralValue > 0.0 ? 
-                estimatedDebtValue / estimatedCollateralValue : 0.0
-            
             let healthMetrics = HealthMetrics(
                 realAvailableBalance: flowCollateralBalance,
                 estimatedCollateralValue: estimatedCollateralValue,
                 netWorth: netWorth,
                 leverageRatio: estimatedLeverageRatio,
                 yieldTokenRatio: yieldTokenRatio,
-                estimatedHealth: estimatedHealth,
-                debtToCollateralRatio: debtToCollateralRatio
+                estimatedHealth: estimatedHealth
             )
             
             positions.append(CompletePositionInfo(
