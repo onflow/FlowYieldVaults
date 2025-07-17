@@ -3,7 +3,7 @@ import "Burner"
 
 import "MockOracle"
 
-import "DFB"
+import "DeFiActions"
 import "SwapStack"
 
 ///
@@ -13,10 +13,10 @@ import "SwapStack"
 access(all) contract MockSwapper {
 
     /// Mocked liquidity sources
-    access(self) let liquidityConnectors: {Type: {DFB.Sink, DFB.Source}}
+    access(self) let liquidityConnectors: {Type: {DeFiActions.Sink, DeFiActions.Source}}
 
     /// Mock setter enabling the configuration of liquidity sources used by mock swappers
-    access(all) fun setLiquidityConnector(_ connector: {DFB.Sink, DFB.Source}) {
+    access(all) fun setLiquidityConnector(_ connector: {DeFiActions.Sink, DeFiActions.Source}) {
         pre {
             connector.getSinkType() == connector.getSourceType():
             "Connector sink Type \(connector.getSinkType().identifier) != connector source Type \(connector.getSourceType().identifier)"
@@ -26,15 +26,15 @@ access(all) contract MockSwapper {
 
     // Swapper
     //
-    /// Mocked DeFiBlocks Swapper implementation. Be sure to set connectors for Vaults you wish to handle via this mock
+    /// Mocked DeFiActions Swapper implementation. Be sure to set connectors for Vaults you wish to handle via this mock
     /// in MockSwapper.liquidityConnectors via .setLiquidityConnector before instantiating mocks
-    access(all) struct Swapper : DFB.Swapper {
-        access(contract) let uniqueID: DFB.UniqueIdentifier?
+    access(all) struct Swapper : DeFiActions.Swapper {
+        access(contract) let uniqueID: DeFiActions.UniqueIdentifier?
         access(self) let inVault: Type
         access(self) let outVault: Type
-        access(self) let oracle: {DFB.PriceOracle}
+        access(self) let oracle: {DeFiActions.PriceOracle}
 
-        init(inVault: Type, outVault: Type, uniqueID: DFB.UniqueIdentifier?) {
+        init(inVault: Type, outVault: Type, uniqueID: DeFiActions.UniqueIdentifier?) {
             pre {
                 MockSwapper.liquidityConnectors[inVault] != nil:
                 "Invalid inVault - \(inVault.identifier) does not have a MockSwapper connector to handle funds"
@@ -59,12 +59,12 @@ access(all) contract MockSwapper {
 
         /// The estimated amount required to provide a Vault with the desired output balance, sourcing pricing from the
         /// mocked oracle
-        access(all) fun quoteIn(forDesired: UFix64, reverse: Bool): {DFB.Quote} {
+        access(all) fun quoteIn(forDesired: UFix64, reverse: Bool): {DeFiActions.Quote} {
             return self._estimate(amount: forDesired, out: false, reverse: reverse)
         }
 
         /// The estimated amount delivered out for a provided input balance, sourcing pricing from the mocked oracle
-        access(all) fun quoteOut(forProvided: UFix64, reverse: Bool): {DFB.Quote} {
+        access(all) fun quoteOut(forProvided: UFix64, reverse: Bool): {DeFiActions.Quote} {
             return self._estimate(amount: forProvided, out: true, reverse: reverse)
         }
 
@@ -73,7 +73,7 @@ access(all) contract MockSwapper {
         /// to use multiple Flow swap protocols.
         /// NOTE: This mock sources pricing data from the mocked oracle, allowing for pricing to be manually manipulated
         /// for testing and demonstration purposes
-        access(all) fun swap(quote: {DFB.Quote}?, inVault: @{FungibleToken.Vault}): @{FungibleToken.Vault} {
+        access(all) fun swap(quote: {DeFiActions.Quote}?, inVault: @{FungibleToken.Vault}): @{FungibleToken.Vault} {
             return <- self._swap(<-inVault, reverse: false)
         }
 
@@ -82,12 +82,12 @@ access(all) contract MockSwapper {
         /// to use multiple Flow swap protocols.
         /// NOTE: This mock sources pricing data from the mocked oracle, allowing for pricing to be manually manipulated
         /// for testing and demonstration purposes
-        access(all) fun swapBack(quote: {DFB.Quote}?, residual: @{FungibleToken.Vault}): @{FungibleToken.Vault} {
+        access(all) fun swapBack(quote: {DeFiActions.Quote}?, residual: @{FungibleToken.Vault}): @{FungibleToken.Vault} {
             return <- self._swap(<-residual, reverse: true)
         }
 
         /// Internal estimator returning a quote for the amount in/out and in the desired direction
-        access(self) fun _estimate(amount: UFix64, out: Bool, reverse: Bool): {DFB.Quote} {
+        access(self) fun _estimate(amount: UFix64, out: Bool, reverse: Bool): {DeFiActions.Quote} {
             let outTokenPrice = self.oracle.price(ofToken: self.outType())
                 ?? panic("Price for token \(self.outType().identifier) is currently unavailable")
             let inTokenPrice = self.oracle.price(ofToken: self.inType())
