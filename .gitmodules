@@ -1,7 +1,7 @@
 [submodule "lib/TidalProtocol"]
 	path = lib/TidalProtocol
 	url = git@github.com:onflow/TidalProtocol.git
-	branch = tracer-bullet
+	branch = main
 [submodule "lib/DeFiActions"]
 	path = lib/DeFiActions
 	url = git@github.com:onflow/DeFiActions.git
