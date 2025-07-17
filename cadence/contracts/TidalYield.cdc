@@ -8,7 +8,7 @@ import "DFB"
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ///
-access(all) contract Tidal {
+access(all) contract TidalYield {
 
     /* --- FIELDS --- */
 

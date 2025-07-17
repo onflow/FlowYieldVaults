@@ -1,4 +1,4 @@
-import "Tidal"
+import "TidalYield"
 
 /// Retrieves the IDs of Tides configured at the provided address or `nil` if a TideManager is not stored
 ///
@@ -8,6 +8,6 @@ import "Tidal"
 ///
 access(all)
 fun main(address: Address): [UInt64]? {
-    return getAccount(address).capabilities.borrow<&Tidal.TideManager>(Tidal.TideManagerPublicPath)
+    return getAccount(address).capabilities.borrow<&TidalYield.TideManager>(Tidal.TideManagerPublicPath)
         ?.getIDs()
 }
