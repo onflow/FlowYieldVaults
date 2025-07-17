@@ -8,7 +8,7 @@ import "SwapStack"
 // Lending protocol
 import "TidalProtocol"
 // TidalYield platform
-import "Tidal"
+import "TidalYield"
 import "TidalYieldAutoBalancers"
 // tokens
 import "YieldToken"
