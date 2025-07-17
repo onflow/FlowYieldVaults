@@ -70,8 +70,8 @@
 				"testing": "0000000000000008"
 			}
 		},
-		"Tidal": {
-			"source": "cadence/contracts/Tidal.cdc",
+		"TidalYield": {
+			"source": "cadence/contracts/TidalYield.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000009"

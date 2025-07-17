@@ -11,7 +11,7 @@ import "TidalYield"
 ///
 access(all)
 fun main(address: Address, id: UInt64): UFix64? {
-    let tide = getAccount(address).capabilities.borrow<&TidalYield.TideManager>(Tidal.TideManagerPublicPath)
+    let tide = getAccount(address).capabilities.borrow<&TidalYield.TideManager>(TidalYield.TideManagerPublicPath)
         ?.borrowTide(id: id)
         ?? nil
     return tide?.getTideBalance() ?? nil

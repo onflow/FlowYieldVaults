@@ -203,7 +203,7 @@ access(all) contract TidalYield {
         init(strategyType: Type, withVault: @{FungibleToken.Vault}) {
             self.uniqueID = DFB.UniqueIdentifier()
             self.vaultType = withVault.getType()
-            let _strategy <- Tidal.createStrategy(
+            let _strategy <- TidalYield.createStrategy(
                     type: strategyType,
                     uniqueID: self.uniqueID,
                     withFunds: <-withVault

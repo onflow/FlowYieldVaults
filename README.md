@@ -8,7 +8,7 @@ The Tidal platform consists of several interconnected components:
 
 ### Core Contracts
 
-#### 1. Tidal.cdc - Main Platform Contract
+#### 1. TidalYield.cdc - Main Platform Contract
 The main contract that orchestrates the entire yield farming system:
 
 - **Strategy Interface**: Defines yield-generating strategies that can deposit/withdraw tokens

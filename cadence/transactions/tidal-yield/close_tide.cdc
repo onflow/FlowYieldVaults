@@ -15,7 +15,7 @@ transaction(id: UInt64) {
 
     prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability) &Account) {
         // reference the signer's TideManager & underlying Tide
-        self.manager = signer.storage.borrow<auth(FungibleToken.Withdraw) &TidalYield.TideManager>(from: Tidal.TideManagerStoragePath)
+        self.manager = signer.storage.borrow<auth(FungibleToken.Withdraw) &TidalYield.TideManager>(from: TidalYield.TideManagerStoragePath)
             ?? panic("Signer does not have a TideManager stored at path \(TidalYield.TideManagerStoragePath) - configure and retry")
         let tide = self.manager.borrowTide(id: id) ?? panic("Tide with ID \(id) was not found")
         

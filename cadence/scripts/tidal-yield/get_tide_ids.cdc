@@ -8,6 +8,6 @@ import "TidalYield"
 ///
 access(all)
 fun main(address: Address): [UInt64]? {
-    return getAccount(address).capabilities.borrow<&TidalYield.TideManager>(Tidal.TideManagerPublicPath)
+    return getAccount(address).capabilities.borrow<&TidalYield.TideManager>(TidalYield.TideManagerPublicPath)
         ?.getIDs()
 }

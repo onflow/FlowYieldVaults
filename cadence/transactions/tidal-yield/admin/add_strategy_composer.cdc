@@ -25,7 +25,7 @@ transaction(strategyIdentifier: String, composerIdentifier: String, issuerStorag
         self.composer <- issuer.issueComposer(composerType)
 
         // assign StrategyFactory
-        self.factory = signer.storage.borrow<auth(Mutate) &TidalYield.StrategyFactory>(from: Tidal.FactoryStoragePath)
+        self.factory = signer.storage.borrow<auth(Mutate) &TidalYield.StrategyFactory>(from: TidalYield.FactoryStoragePath)
             ?? panic("Could not borrow reference to StrategyFactory from \(TidalYield.FactoryStoragePath)")
     }
 

@@ -40,15 +40,15 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
 
         // configure the TideManager if needed
         if signer.storage.type(at: TidalYield.TideManagerStoragePath) == nil {
-            signer.storage.save(<-TidalYield.createTideManager(), to: Tidal.TideManagerStoragePath)
-            let cap = signer.capabilities.storage.issue<&TidalYield.TideManager>(Tidal.TideManagerStoragePath)
+            signer.storage.save(<-TidalYield.createTideManager(), to: TidalYield.TideManagerStoragePath)
+            let cap = signer.capabilities.storage.issue<&TidalYield.TideManager>(TidalYield.TideManagerStoragePath)
             signer.capabilities.publish(cap, at: TidalYield.TideManagerPublicPath)
             // issue an authorized capability for later access via Capability controller if needed (e.g. via HybridCustody)
             signer.capabilities.storage.issue<&TidalYield.TideManager>(
                     TidalYield.TideManagerStoragePath
                 )
         }
-        self.manager = signer.storage.borrow<&TidalYield.TideManager>(from: Tidal.TideManagerStoragePath)
+        self.manager = signer.storage.borrow<&TidalYield.TideManager>(from: TidalYield.TideManagerStoragePath)
             ?? panic("Signer does not have a TideManager stored at path \(TidalYield.TideManagerStoragePath) - configure and retry")
     }
 
