@@ -232,7 +232,7 @@
 				},
 				"MockSwapper",
 				"TidalYieldAutoBalancers",
-				"Tidal",
+				"TidalYield",
 				"TidalYieldStrategies"
 			]
 		}
