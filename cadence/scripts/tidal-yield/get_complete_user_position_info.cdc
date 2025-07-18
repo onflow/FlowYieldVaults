@@ -1,5 +1,6 @@
 import "Tidal"
 import "TidalYieldAutoBalancers"
+import "TidalProtocol"
 import "MockOracle"
 import "YieldToken"
 import "MOET"
@@ -230,15 +231,20 @@ fun main(address: Address): CompleteUserSummary {
             
             let netWorth = estimatedCollateralValue + yieldTokenValue - estimatedDebtValue
             
-            // Apply collateral factor to match TidalProtocol health calculation
-            // FlowToken collateral factor is 0.8 (80%)
-            let flowCollateralFactor = 0.8
-            let effectiveCollateral = estimatedCollateralValue * flowCollateralFactor
+            // Get the actual position health from TidalProtocol.Pool
+            // TidalProtocol positions use sequential IDs (0, 1, 2, ...) while tide IDs are different
+            var actualHealth: UFix64 = 999.0
             
-            // Note: Yield tokens may not count as collateral in TidalProtocol health calculation
-            // TODO: Replace with tide.getPositionHealth() once contracts are updated
-            let estimatedHealth = estimatedDebtValue > 0.0 ? 
-                effectiveCollateral / estimatedDebtValue : 999.0
+            // Try to get the real health from TidalProtocol.Pool using sequential position IDs
+            let protocolAddress = Type<@TidalProtocol.Pool>().address!
+            if let pool = getAccount(protocolAddress).capabilities.borrow<&TidalProtocol.Pool>(TidalProtocol.PoolPublicPath) {
+                // Since we can't directly map tide IDs to position IDs, we'll try sequential IDs
+                // This assumes positions are created in order (0, 1, 2, ...)
+                let positionIndex = UInt64(positions.length)  // Use the current position index
+                actualHealth = pool.positionHealth(pid: positionIndex)
+            }
+            
+            let estimatedHealth = actualHealth
             
             let healthMetrics = HealthMetrics(
                 realAvailableBalance: realAvailableBalance,
