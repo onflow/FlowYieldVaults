@@ -73,7 +73,7 @@ access(all) contract TidalYieldStrategies {
         /// an empty Vault is returned.
         access(FungibleToken.Withdraw) fun withdraw(maxAmount: UFix64, ofToken: Type): @{FungibleToken.Vault} {
             if ofToken != self.source.getSourceType() {
-                return <- DFBUtils.getEmptyVault(ofToken)
+                return <- DeFiActionsUtils.getEmptyVault(ofToken)
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
         }
