@@ -34,7 +34,7 @@ access(all) fun deployContracts() {
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "DeFiActions",
-        path: "../../lib/DeFiActions/cadence/contracts/DeFiActions.cdc",
+        path: "../../lib/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
