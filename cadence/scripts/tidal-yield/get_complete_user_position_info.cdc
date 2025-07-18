@@ -186,7 +186,6 @@ fun main(address: Address): CompleteUserSummary {
     var totalCollateralValue = 0.0
     var totalYieldTokenValue = 0.0
     var totalEstimatedDebtValue = 0.0
-    var totalLeverageRatio = 0.0
     var totalYieldTokenRatio = 0.0
     
     for tideId in tideIds {
@@ -194,9 +193,8 @@ fun main(address: Address): CompleteUserSummary {
             let autoBalancer = TidalYieldAutoBalancers.borrowAutoBalancer(id: tideId)
             let yieldTokenBalance = autoBalancer?.vaultBalance() ?? 0.0
             
-            // Use the AutoBalancer's balance as the primary balance source
-            // This bypasses the TidalProtocol overflow issue
-            let realAvailableBalance = yieldTokenBalance
+            // Get the actual Flow collateral balance from the tide (not the yield token balance)
+            let flowCollateralBalance = tide.getTideBalance()
             
             let yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
             let yieldTokenValue = yieldTokenBalance * yieldTokenPrice
@@ -215,20 +213,23 @@ fun main(address: Address): CompleteUserSummary {
                 }
             }
             
-            let estimatedCollateralValue = realAvailableBalance * flowPrice
+            let estimatedCollateralValue = flowCollateralBalance * flowPrice
             let estimatedMoetDebt = yieldTokenBalance * yieldTokenPrice / moetPrice
             let estimatedDebtValue = estimatedMoetDebt * moetPrice
             let loanTokenIdentifier = Type<@MOET.Vault>().identifier
             
             let expectedYieldTokenValue = estimatedMoetDebt * moetPrice
-            let yieldTokenRatio = expectedYieldTokenValue > 0.0 ? 
+            let yieldTokenRatio: UFix64 = expectedYieldTokenValue > 0.0 ? 
                 yieldTokenValue / expectedYieldTokenValue : 1.0
             
-            let totalPositionValue = estimatedCollateralValue + yieldTokenValue
-            let estimatedLeverageRatio = estimatedCollateralValue > 0.0 ? 
-                totalPositionValue / estimatedCollateralValue : 1.0
-            
             let netWorth = estimatedCollateralValue + yieldTokenValue - estimatedDebtValue
+            
+            // Correct leverage ratio calculation: Total Assets / Equity (Net Worth)
+            // This shows how much total exposure you have relative to your actual ownership
+            // Example: If you have $100 in assets and $50 in net worth, leverage = 2.0x
+            let totalAssets = estimatedCollateralValue + yieldTokenValue
+            let estimatedLeverageRatio: UFix64 = netWorth > 0.0 ? 
+                totalAssets / netWorth : 1.0
             
             // Apply collateral factor to match TidalProtocol health calculation
             // FlowToken collateral factor is 0.8 (80%)
@@ -237,11 +238,11 @@ fun main(address: Address): CompleteUserSummary {
             
             // Note: Yield tokens may not count as collateral in TidalProtocol health calculation
             // TODO: Replace with tide.getPositionHealth() once contracts are updated
-            let estimatedHealth = estimatedDebtValue > 0.0 ? 
+            let estimatedHealth: UFix64 = estimatedDebtValue > 0.0 ? 
                 effectiveCollateral / estimatedDebtValue : 999.0
             
             let healthMetrics = HealthMetrics(
-                realAvailableBalance: realAvailableBalance,
+                realAvailableBalance: flowCollateralBalance,
                 estimatedCollateralValue: estimatedCollateralValue,
                 netWorth: netWorth,
                 leverageRatio: estimatedLeverageRatio,
@@ -253,7 +254,7 @@ fun main(address: Address): CompleteUserSummary {
                 tideId: tideId,
                 collateralInfo: CollateralInfo(
                     collateralType: collateralType,
-                    availableBalance: realAvailableBalance,
+                    availableBalance: flowCollateralBalance,
                     collateralValue: estimatedCollateralValue,
                     collateralPrice: flowPrice,
                     supportedTypes: supportedTypes
@@ -274,16 +275,19 @@ fun main(address: Address): CompleteUserSummary {
                 healthMetrics: healthMetrics
             ))
             
-            totalCollateralValue = totalCollateralValue + realAvailableBalance
+            totalCollateralValue = totalCollateralValue + flowCollateralBalance
             totalYieldTokenValue = totalYieldTokenValue + yieldTokenValue
             totalEstimatedDebtValue = totalEstimatedDebtValue + estimatedDebtValue
-            totalLeverageRatio = totalLeverageRatio + estimatedLeverageRatio
             totalYieldTokenRatio = totalYieldTokenRatio + yieldTokenRatio
         }
     }
     
     let totalNetWorth = totalCollateralValue + totalYieldTokenValue - totalEstimatedDebtValue
-    let averageLeverageRatio = tideIds.length > 0 ? totalLeverageRatio / UFix64(tideIds.length) : 0.0
+    
+    // Portfolio leverage ratio: Total Assets / Total Net Worth
+    // This shows your overall leverage across all positions
+    let portfolioLeverageRatio: UFix64 = totalNetWorth > 0.0 ? 
+        (totalCollateralValue + totalYieldTokenValue) / totalNetWorth : 0.0
     let portfolioHealthRatio = tideIds.length > 0 ? totalYieldTokenRatio / UFix64(tideIds.length) : 0.0
     
     return CompleteUserSummary(
@@ -294,7 +298,7 @@ fun main(address: Address): CompleteUserSummary {
             totalYieldTokenValue: totalYieldTokenValue,
             totalEstimatedDebtValue: totalEstimatedDebtValue,
             totalNetWorth: totalNetWorth,
-            averageLeverageRatio: averageLeverageRatio,
+            averageLeverageRatio: portfolioLeverageRatio,
             portfolioHealthRatio: portfolioHealthRatio
         ),
         positions: positions
