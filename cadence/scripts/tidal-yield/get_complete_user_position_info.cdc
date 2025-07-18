@@ -1,4 +1,4 @@
-import "Tidal"
+import "TidalYield"
 import "TidalYieldAutoBalancers"
 import "MockOracle"
 import "YieldToken"
@@ -154,7 +154,7 @@ access(all) struct PortfolioSummary {
 
 access(all)
 fun main(address: Address): CompleteUserSummary {
-    let tideManager = getAccount(address).capabilities.borrow<&Tidal.TideManager>(Tidal.TideManagerPublicPath)
+    let tideManager = getAccount(address).capabilities.borrow<&TidalYield.TideManager>(TidalYield.TideManagerPublicPath)
     
     if tideManager == nil {
         return CompleteUserSummary(

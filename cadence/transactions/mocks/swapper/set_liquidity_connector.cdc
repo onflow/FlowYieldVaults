@@ -3,7 +3,6 @@ import "FungibleToken"
 import "MockSwapper"
 
 import "FungibleTokenStack"
-import "DFB"
 
 /// Configures the MockSwapper contract with a liquidity source connected to the signer's Vault at the provided
 /// storage path

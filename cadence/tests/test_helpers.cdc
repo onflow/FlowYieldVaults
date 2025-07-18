@@ -25,28 +25,28 @@ fun _executeTransaction(_ path: String, _ args: [AnyStruct], _ signer: Test.Test
 
 // Common test setup function that deploys all required contracts
 access(all) fun deployContracts() {
-    // DeFiBlocks contracts
+    // DeFiActions contracts
     var err = Test.deployContract(
-        name: "DFBUtils",
-        path: "../../lib/DeFiBlocks/cadence/contracts/utils/DFBUtils.cdc",
+        name: "DeFiActionsUtils",
+        path: "../../lib/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "DFB",
-        path: "../../lib/DeFiBlocks/cadence/contracts/interfaces/DFB.cdc",
+        name: "DeFiActions",
+        path: "../../lib/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "SwapStack",
-        path: "../../lib/DeFiBlocks/cadence/contracts/connectors/SwapStack.cdc",
+        path: "../../lib/DeFiActions/cadence/contracts/connectors/SwapStack.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "FungibleTokenStack",
-        path: "../../lib/DeFiBlocks/cadence/contracts/connectors/FungibleTokenStack.cdc",
+        path: "../../lib/DeFiActions/cadence/contracts/connectors/FungibleTokenStack.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -57,6 +57,12 @@ access(all) fun deployContracts() {
         name: "MOET",
         path: "../../lib/TidalProtocol/cadence/contracts/MOET.cdc",
         arguments: [initialMoetSupply]
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "TidalProtocolUtils",
+        path: "../../lib/TidalProtocol/cadence/contracts/TidalProtocolUtils.cdc",
+        arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
@@ -102,8 +108,8 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "Tidal",
-        path: "../contracts/Tidal.cdc",
+        name: "TidalYield",
+        path: "../contracts/TidalYield.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())

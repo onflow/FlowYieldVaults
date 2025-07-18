@@ -1,6 +1,6 @@
 import "FungibleToken"
 
-import "DFB"
+import "DeFiActions"
 import "TidalProtocol"
 
 /// THIS CONTRACT IS NOT SAFE FOR PRODUCTION - FOR TEST USE ONLY
@@ -19,8 +19,8 @@ access(all) contract MockTidalProtocolConsumer {
     access(all)
     fun createPositionWrapper(
         collateral: @{FungibleToken.Vault},
-        issuanceSink: {DFB.Sink},
-        repaymentSource: {DFB.Source}?,
+        issuanceSink: {DeFiActions.Sink},
+        repaymentSource: {DeFiActions.Source}?,
         pushToDrawDownSink: Bool
     ): @PositionWrapper {
         return <- create PositionWrapper(

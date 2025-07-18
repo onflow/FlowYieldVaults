@@ -1,6 +1,6 @@
 import "FungibleToken"
 
-import "DFB"
+import "DeFiActions"
 
 ///
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
@@ -15,7 +15,7 @@ access(all) contract MockOracle {
     /// bps up or down by which current price moves when bumpPrice is called
     access(self) let bumpVariance: UInt16
 
-    access(all) struct PriceOracle : DFB.PriceOracle {
+    access(all) struct PriceOracle : DeFiActions.PriceOracle {
 
         /// Returns the asset type serving as the price basis - e.g. USD in FLOW/USD
         access(all) view fun unitOfAccount(): Type {
