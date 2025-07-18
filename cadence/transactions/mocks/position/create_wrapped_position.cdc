@@ -1,6 +1,6 @@
 import "FungibleToken"
 
-import "DFB"
+import "DeFiActions"
 import "FungibleTokenStack"
 
 import "MOET"
@@ -15,10 +15,10 @@ transaction(amount: UFix64, vaultStoragePath: StoragePath, pushToDrawDownSink: B
     
     // the funds that will be used as collateral for a TidalProtocol loan
     let collateral: @{FungibleToken.Vault}
-    // this DeFiBlocks Sink that will receive the loaned funds
-    let sink: {DFB.Sink}
-    // DEBUG: this DeFiBlocks Source that will allow for the repayment of a loan if the position becomes undercollateralized
-    let source: {DFB.Source}
+    // this DeFiActions Sink that will receive the loaned funds
+    let sink: {DeFiActions.Sink}
+    // DEBUG: this DeFiActions Source that will allow for the repayment of a loan if the position becomes undercollateralized
+    let source: {DeFiActions.Source}
     // the signer's account in which to store a PositionWrapper
     let account: auth(SaveValue) &Account
 
@@ -45,7 +45,7 @@ transaction(amount: UFix64, vaultStoragePath: StoragePath, pushToDrawDownSink: B
         let collateralSource = signer.storage.borrow<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(from: vaultStoragePath)
             ?? panic("Could not borrow reference to Vault from \(vaultStoragePath)")
         self.collateral <- collateralSource.withdraw(amount: amount)
-        // construct the DeFiBlocks Sink that will receive the loaned amount
+        // construct the DeFiActions Sink that will receive the loaned amount
         self.sink = FungibleTokenStack.VaultSink(
             max: nil,
             depositVault: depositVaultCap,

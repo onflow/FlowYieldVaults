@@ -1,6 +1,6 @@
 import "FungibleToken"
 
-import "DFB"
+import "DeFiActions"
 import "TidalProtocol"
 import "MockOracle"
 
@@ -15,7 +15,7 @@ transaction(defaultTokenIdentifier: String) {
 
     let factory: &TidalProtocol.PoolFactory
     let defaultToken: Type
-    let oracle: {DFB.PriceOracle}
+    let oracle: {DeFiActions.PriceOracle}
 
     prepare(signer: auth(BorrowValue) &Account) {
         self.factory = signer.storage.borrow<&TidalProtocol.PoolFactory>(from: TidalProtocol.PoolFactoryPath)

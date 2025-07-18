@@ -1,8 +1,8 @@
 import "FungibleToken"
 import "FlowToken"
 
-import "DFBUtils"
-import "DFB"
+import "DeFiActionsUtils"
+import "DeFiActions"
 
 import "TidalYield"
 
@@ -14,9 +14,9 @@ access(all) contract MockStrategy {
 
     access(all) let IssuerStoragePath : StoragePath
     
-    access(all) struct Sink : DFB.Sink {
-        access(contract) let uniqueID: DFB.UniqueIdentifier?
-        init(_ id: DFB.UniqueIdentifier?) {
+    access(all) struct Sink : DeFiActions.Sink {
+        access(contract) let uniqueID: DeFiActions.UniqueIdentifier?
+        init(_ id: DeFiActions.UniqueIdentifier?) {
             self.uniqueID = id
         }
         access(all) view fun getSinkType(): Type {
@@ -29,9 +29,9 @@ access(all) contract MockStrategy {
             return
         }
     }
-    access(all) struct Source : DFB.Source {
-        access(contract) let uniqueID: DFB.UniqueIdentifier?
-        init(_ id: DFB.UniqueIdentifier?) {
+    access(all) struct Source : DeFiActions.Source {
+        access(contract) let uniqueID: DeFiActions.UniqueIdentifier?
+        init(_ id: DeFiActions.UniqueIdentifier?) {
             self.uniqueID = id
         }
         access(all) view fun getSourceType(): Type {
@@ -41,18 +41,18 @@ access(all) contract MockStrategy {
             return 0.0
         }
         access(FungibleToken.Withdraw) fun withdrawAvailable(maxAmount: UFix64): @{FungibleToken.Vault} {
-            return <- DFBUtils.getEmptyVault(self.getSourceType())
+            return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
         }
     }
 
     access(all) resource Strategy : TidalYield.Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
-        access(contract) let uniqueID: DFB.UniqueIdentifier?
-        access(self) var sink: {DFB.Sink}
-        access(self) var source: {DFB.Source}
+        access(contract) let uniqueID: DeFiActions.UniqueIdentifier?
+        access(self) var sink: {DeFiActions.Sink}
+        access(self) var source: {DeFiActions.Source}
 
-        init(id: DFB.UniqueIdentifier?, sink: {DFB.Sink}, source: {DFB.Source}) {
+        init(id: DeFiActions.UniqueIdentifier?, sink: {DeFiActions.Sink}, source: {DeFiActions.Source}) {
             self.uniqueID = id
             self.sink = sink
             self.source = source
@@ -80,7 +80,7 @@ access(all) contract MockStrategy {
         /// an empty Vault is returned.
         access(FungibleToken.Withdraw) fun withdraw(maxAmount: UFix64, ofToken: Type): @{FungibleToken.Vault} {
             if ofToken != self.source.getSourceType() {
-                return <- DFBUtils.getEmptyVault(ofToken)
+                return <- DeFiActionsUtils.getEmptyVault(ofToken)
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
         }
@@ -100,10 +100,10 @@ access(all) contract MockStrategy {
         }
         access(all) fun createStrategy(
             _ type: Type,
-            uniqueID: DFB.UniqueIdentifier,
+            uniqueID: DeFiActions.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
         ): @{TidalYield.Strategy} {
-            let id = DFB.UniqueIdentifier()
+            let id = DeFiActions.UniqueIdentifier()
             let strat <- create Strategy(
                 id: id,
                 sink: Sink(id),

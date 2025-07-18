@@ -1,6 +1,6 @@
 # Tidal Smart Contracts
 
-Tidal is a yield farming platform built on the Flow blockchain using Cadence 1.0. The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via TidalProtocol's Active Lending Platform. Tidal aims to support yield-generating strategies, automatically optimizing returns through DeFiBlocks components and auto-balancing mechanisms.
+Tidal is a yield farming platform built on the Flow blockchain using Cadence 1.0. The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via TidalProtocol's Active Lending Platform. Tidal aims to support yield-generating strategies, automatically optimizing returns through DeFiActions components and auto-balancing mechanisms.
 
 ## System Architecture
 
@@ -21,7 +21,7 @@ The main contract that orchestrates the entire yield farming system:
 Implements specific yield strategies:
 
 - **TracerStrategy**: A strategy that uses TidalProtocol lending positions with auto-balancing
-- **TracerStrategyComposer**: Creates TracerStrategy instances with complex DeFiBlocks stacking
+- **TracerStrategyComposer**: Creates TracerStrategy instances with complex DeFiActions stacking
 - **StrategyComposerIssuer**: Controls access to strategy composer creation
 
 #### 3. TidalYieldAutoBalancers.cdc - Auto-Balancing System
@@ -43,7 +43,7 @@ Mock FungibleToken implementations representing:
 #### MockOracle.cdc
 - Provides price feeds for testing and demonstrations
 - Supports price manipulation for testing scenarios
-- Implements DFB.PriceOracle interface
+- Implements DeFiActions.PriceOracle interface
 
 #### MockSwapper.cdc  
 - Simulates token swapping functionality
@@ -55,7 +55,7 @@ Mock FungibleToken implementations representing:
 Below is an overview of the initial prototype Tracer Strategy in the broader context of TidalProtocol and the Tidal platform.
 
 ### 1. Strategy Architecture
-The TracerStrategy demonstrates the power of DeFiBlocks composition:
+The TracerStrategy demonstrates the power of DeFiActions composition:
 
 ```
 User Deposit (FLOW) → TidalProtocol Position → MOET Issuance → Swap to YieldToken → AutoBalancer
@@ -69,8 +69,8 @@ User Deposit (FLOW) → TidalProtocol Position → MOET Issuance → Swap to Yie
 - Excess value flows into position recollateralization
 - Insufficient value triggers position adjustments
 
-### 3. DeFiBlocks Integration
-The system heavily uses DeFiBlocks components:
+### 3. DeFiActions Integration
+The system heavily uses DeFiActions components:
 - **Sinks**: Accept token deposits
 - **Sources**: Provide token withdrawals  
 - **Swappers**: Handle token conversions
@@ -248,9 +248,9 @@ Users can track their position status by comparing:
 3. **Yield Optimization**: Continuously adjusts to market conditions
 4. **User Experience**: No manual intervention required for position maintenance
 
-### Integration with DeFiBlocks
+### Integration with DeFiActions
 
-The rebalancing system leverages DeFiBlocks components:
+The rebalancing system leverages DeFiActions components:
 
 - **Sinks**: Route tokens into rebalancing flows
 - **Sources**: Extract tokens for rebalancing operations
@@ -704,7 +704,7 @@ The TracerStrategy leverages this health system:
 #### Top-Up Source Integration
 ```cadence
 // Position structure includes automatic top-up capability
-access(EImplementation) var topUpSource: {DFB.Source}?
+access(EImplementation) var topUpSource: {DeFiActions.Source}?
 ```
 
 ### Oracle Price Integration
@@ -1441,7 +1441,7 @@ This testing framework allows you to validate that the rebalancing system correc
 ## Key Features
 
 ### 1. Composable Strategies
-- Strategies are built by composing DeFiBlocks components
+- Strategies are built by composing DeFiActions components
 - Each strategy can have different risk/reward profiles
 - New strategies can be added by implementing the Strategy interface
 
