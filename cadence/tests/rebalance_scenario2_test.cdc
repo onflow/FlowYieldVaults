@@ -7,6 +7,7 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "TidalYieldStrategies"
+import "TidalProtocol"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let tidalYieldAccount = Test.getAccount(0x0000000000000009)
@@ -21,6 +22,20 @@ access(all) let collateralFactor = 0.8
 access(all) let targetHealthFactor = 1.3
 
 access(all) var snapshot: UInt64 = 0
+
+// Helper function to get Flow collateral from position
+access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
+    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
+    for balance in positionDetails.balances {
+        if balance.vaultType == Type<@FlowToken.Vault>() {
+            // Credit means it's a deposit (collateral)
+            if balance.direction.rawValue == 0 {  // Credit = 0
+                return balance.balance
+            }
+        }
+    }
+    return 0.0
+}
 
 access(all)
 fun setup() {
@@ -85,12 +100,12 @@ fun test_RebalanceTideScenario2() {
 
 	let yieldPriceIncreases = [1.1, 1.2, 1.3, 1.5, 2.0, 3.0]
 	let expectedFlowBalance = [
-	1061.53846101,
-	1120.92522783,
-	1178.40857224,
-	1289.97387987,
-	1554.58390643,
-	2032.91741190
+	1061.53846154,
+	1120.92522862,
+	1178.40857368,
+	1289.97388243,
+	1554.58390959,
+	2032.91742023
 	]
 
 	// Likely 0.0
@@ -136,18 +151,35 @@ fun test_RebalanceTideScenario2() {
 
 		log("[TEST] Tide balance after yield before \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
 
+		// Get Flow collateral from position
+		let flowCollateralAmount = getFlowCollateralFromPosition(pid: pid)
+		let flowCollateralValue = flowCollateralAmount * 1.0  // Flow price remains at 1.0
+		
 		// Detailed precision comparison
-		let actualBalance = tideBalance ?? 0.0
+		let actualTideBalance = tideBalance ?? 0.0
 		let expectedBalance = expectedFlowBalance[index]
-		let difference = actualBalance > expectedBalance ? actualBalance - expectedBalance : expectedBalance - actualBalance
-		let sign = actualBalance > expectedBalance ? "+" : "-"
-		let percentDiff = (difference / expectedBalance) * 100.0
+		
+		// Calculate differences
+		let tideDiff = actualTideBalance > expectedBalance ? actualTideBalance - expectedBalance : expectedBalance - actualTideBalance
+		let tideSign = actualTideBalance > expectedBalance ? "+" : "-"
+		let tidePercentDiff = (tideDiff / expectedBalance) * 100.0
+		
+		let positionDiff = flowCollateralValue > expectedBalance ? flowCollateralValue - expectedBalance : expectedBalance - flowCollateralValue
+		let positionSign = flowCollateralValue > expectedBalance ? "+" : "-"
+		let positionPercentDiff = (positionDiff / expectedBalance) * 100.0
+		
+		let tideVsPositionDiff = actualTideBalance > flowCollateralValue ? actualTideBalance - flowCollateralValue : flowCollateralValue - actualTideBalance
+		let tideVsPositionSign = actualTideBalance > flowCollateralValue ? "+" : "-"
 		
 		log("\n=== PRECISION COMPARISON for Yield Price \(yieldTokenPrice) ===")
-		log("Expected Balance: \(expectedBalance)")
-		log("Actual Balance:   \(actualBalance)")
-		log("Difference:       \(sign)\(difference)")
-		log("Percent Diff:     \(sign)\(percentDiff)%")
+		log("Expected Value:         \(expectedBalance)")
+		log("Actual Tide Balance:    \(actualTideBalance)")
+		log("Flow Position Value:    \(flowCollateralValue)")
+		log("Flow Position Amount:   \(flowCollateralAmount) tokens")
+		log("")
+		log("Tide vs Expected:       \(tideSign)\(tideDiff) (\(tideSign)\(tidePercentDiff)%)")
+		log("Position vs Expected:   \(positionSign)\(positionDiff) (\(positionSign)\(positionPercentDiff)%)")
+		log("Tide vs Position:       \(tideVsPositionSign)\(tideVsPositionDiff)")
 		log("===============================================\n")
 
 		// Temporarily commented to see all precision differences
@@ -155,6 +187,11 @@ fun test_RebalanceTideScenario2() {
 		// 	tideBalance == expectedFlowBalance[index],
 		// 	message: "Tide balance of \(tideBalance ?? 0.0) doesn't match an expected value \(expectedFlowBalance[index])"
 		// )
+		
+		Test.assert(
+			equalAmounts(a: actualTideBalance, b: expectedBalance, tolerance: 0.01),
+			message: "Expected balance \(expectedBalance) but got \(actualTideBalance) for yield price \(yieldTokenPrice)"
+		)
 	}
 
 	closeTide(signer: user, id: tideIDs![0], beFailed: false)
