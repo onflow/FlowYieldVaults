@@ -1,8 +1,7 @@
-[submodule "lib/DeFiBlocks"]
-	path = lib/DeFiBlocks
-	url = git@github.com:onflow/DeFiBlocks.git
-	branch = feat/uint256-precision-improvements
 [submodule "lib/TidalProtocol"]
 	path = lib/TidalProtocol
 	url = git@github.com:onflow/TidalProtocol.git
-	branch = gio/update-decimal-precision
+	branch = main
+[submodule "lib/DeFiActions"]
+	path = lib/DeFiActions
+	url = git@github.com:onflow/DeFiActions.git

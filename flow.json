@@ -1,14 +1,14 @@
 {
 	"contracts": {
-		"DFB": {
-			"source": "./lib/DeFiBlocks/cadence/contracts/interfaces/DFB.cdc",
+		"DeFiActions": {
+			"source": "./lib/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
-		"DFBUtils": {
-			"source": "./lib/DeFiBlocks/cadence/contracts/utils/DFBUtils.cdc",
+		"DeFiActionsUtils": {
+			"source": "./lib/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -29,7 +29,7 @@
 			}
 		},
 		"FungibleTokenStack": {
-			"source": "./lib/DeFiBlocks/cadence/contracts/connectors/FungibleTokenStack.cdc",
+			"source": "./lib/DeFiActions/cadence/contracts/connectors/FungibleTokenStack.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -71,14 +71,28 @@
 			}
 		},
 		"SwapStack": {
-			"source": "./lib/DeFiBlocks/cadence/contracts/connectors/SwapStack.cdc",
+			"source": "./lib/DeFiActions/cadence/contracts/connectors/SwapStack.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
-		"Tidal": {
-			"source": "cadence/contracts/Tidal.cdc",
+		"TidalProtocolUtils": {
+			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocolUtils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000008"
+			}
+		},
+		"TidalProtocol": {
+			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000008"
+			}
+		},
+		"TidalYield": {
+			"source": "cadence/contracts/TidalYield.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000009"
@@ -240,8 +254,8 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
-				"DFBUtils",
-				"DFB",
+				"DeFiActionsUtils",
+				"DeFiActions",
 				"FungibleTokenStack",
 				"SwapStack",
 				{
@@ -253,6 +267,7 @@
 						}
 					]
 				},
+				"TidalProtocolUtils",
 				"TidalProtocol",
 				{
 					"name": "YieldToken",
@@ -274,7 +289,7 @@
 				},
 				"MockSwapper",
 				"TidalYieldAutoBalancers",
-				"Tidal",
+				"TidalYield",
 				"TidalYieldStrategies"
 			]
 		}

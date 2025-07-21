@@ -2,13 +2,13 @@
 import "FungibleToken"
 import "Burner"
 import "ViewResolver"
-// DeFiBlocks
-import "DFB"
+// DeFiActions
+import "DeFiActions"
 
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ///
-access(all) contract Tidal {
+access(all) contract TidalYield {
 
     /* --- FIELDS --- */
 
@@ -34,12 +34,12 @@ access(all) contract Tidal {
     /// Strategy
     ///
     /// A Strategy is meant to encapsulate the Sink/Source entrypoints allowing for flows into and out of stacked
-    /// DeFiBlocks components. These compositions are intended to capitalize on some yield-bearing opportunity so that
+    /// DeFiActions components. These compositions are intended to capitalize on some yield-bearing opportunity so that
     /// a Strategy bears yield on that which is deposited into it, albeit not without some risk. A Strategy then can be
-    /// thought of as the top-level of a nesting of DeFiBlocks connectors & adapters where one can deposit & withdraw
+    /// thought of as the top-level of a nesting of DeFiActions connectors & adapters where one can deposit & withdraw
     /// funds into the composed DeFi workflows.
     ///
-    /// While two types of strategies may not highly differ with respect to their fields, the stacking of DeFiBlocks
+    /// While two types of strategies may not highly differ with respect to their fields, the stacking of DeFiActions
     /// components & connections they provide access to likely do. This difference in wiring is why the Strategy is a
     /// resource - because the Type and uniqueness of composition of a given Strategy must be preserved as that is its
     /// distinguishing factor. These qualities are preserved by restricting the party who can construct it, which for
@@ -47,7 +47,7 @@ access(all) contract Tidal {
     ///
     /// TODO: Consider making Sink/Source multi-asset - we could then make Strategy a composite Sink, Source & do away
     ///     with the added layer of abstraction introduced by a StrategyComposer.
-    access(all) resource interface Strategy : DFB.IdentifiableResource, Burner.Burnable {
+    access(all) resource interface Strategy : DeFiActions.IdentifiableResource, Burner.Burnable {
         /// Returns the type of Vaults that this Strategy instance can handle
         access(all) view fun getSupportedCollateralTypes(): {Type: Bool}
         /// Returns whether the provided Vault type is supported by this Strategy instance
@@ -55,7 +55,7 @@ access(all) contract Tidal {
             return self.getSupportedCollateralTypes()[type] ?? false
         }
         /// Returns the balance of the given token available for withdrawal. Note that this may be an estimate due to
-        /// the lack of guarantees inherent to DeFiBlocks Sources
+        /// the lack of guarantees inherent to DeFiActions Sources
         access(all) fun availableBalance(ofToken: Type): UFix64
         /// Deposits up to the balance of the referenced Vault into this Strategy
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
@@ -75,10 +75,10 @@ access(all) contract Tidal {
 
     /// StrategyComposer
     ///
-    /// A StrategyComposer is responsible for stacking DeFiBlocks connectors in a manner that composes a final Strategy.
-    /// Since DeFiBlock Sink/Source only support single assets and some Strategies may be multi-asset, we deal with
-    /// building a Strategy distinctly from encapsulating the top-level DFB connectors acting as entrypoints in to the
-    /// DeFiBlocks stack.
+    /// A StrategyComposer is responsible for stacking DeFiActions connectors in a manner that composes a final Strategy.
+    /// Since DeFiActions Sink/Source only support single assets and some Strategies may be multi-asset, we deal with
+    /// building a Strategy distinctly from encapsulating the top-level DFA connectors acting as entrypoints in to the
+    /// DeFiActions stack.
     ///
     /// TODO: Consider making Sink/Source multi-asset - we could then make Strategy a composite Sink, Source & do away
     ///     with the added layer of abstraction introduced by a StrategyComposer.
@@ -93,7 +93,7 @@ access(all) contract Tidal {
         /// Composes a Strategy of the given type with the provided funds
         access(all) fun createStrategy(
             _ type: Type,
-            uniqueID: DFB.UniqueIdentifier,
+            uniqueID: DeFiActions.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
         ): @{Strategy} {
             pre {
@@ -131,10 +131,10 @@ access(all) contract Tidal {
                 ?.getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith)
                 ?? {}
         }
-        /// Initializes a new Strategy of the given type with the provided Vault, identifying all associated DeFiBlocks
+        /// Initializes a new Strategy of the given type with the provided Vault, identifying all associated DeFiActions
         /// components by the provided UniqueIdentifier
         access(all)
-        fun createStrategy(_ type: Type, uniqueID: DFB.UniqueIdentifier, withFunds: @{FungibleToken.Vault}): @{Strategy} {
+        fun createStrategy(_ type: Type, uniqueID: DeFiActions.UniqueIdentifier, withFunds: @{FungibleToken.Vault}): @{Strategy} {
             pre {
                 self.composers[type] != nil: "Strategy \(type.identifier) is unsupported"
             }
@@ -193,17 +193,17 @@ access(all) contract Tidal {
     /// A Tide is a resource enabling the management of a composed Strategy
     ///
     access(all) resource Tide : Burner.Burnable, FungibleToken.Receiver, ViewResolver.Resolver {
-        /// The UniqueIdentifier that identifies all related DeFiBlocks connectors used in the encapsulated Strategy
-        access(contract) let uniqueID: DFB.UniqueIdentifier
+        /// The UniqueIdentifier that identifies all related DeFiActions connectors used in the encapsulated Strategy
+        access(contract) let uniqueID: DeFiActions.UniqueIdentifier
         /// The type of Vault this Tide can receive as a deposit and provides as a withdrawal
         access(self) let vaultType: Type
-        /// The Strategy granting top-level access to the yield-bearing DeFiBlocks stack
+        /// The Strategy granting top-level access to the yield-bearing DeFiActions stack
         access(self) var strategy: @{Strategy}?
 
         init(strategyType: Type, withVault: @{FungibleToken.Vault}) {
-            self.uniqueID = DFB.UniqueIdentifier()
+            self.uniqueID = DeFiActions.UniqueIdentifier()
             self.vaultType = withVault.getType()
-            let _strategy <- Tidal.createStrategy(
+            let _strategy <- TidalYield.createStrategy(
                     type: strategyType,
                     uniqueID: self.uniqueID,
                     withFunds: <-withVault
@@ -213,7 +213,7 @@ access(all) contract Tidal {
             self.strategy <-_strategy
         }
 
-        /// Returns the Tide's ID as defined by it's DFB.UniqueIdentifier.id
+        /// Returns the Tide's ID as defined by it's DeFiActions.UniqueIdentifier.id
         access(all) view fun id(): UInt64 {
             return self.uniqueID.id
         }
@@ -402,7 +402,7 @@ access(all) contract Tidal {
         return self._borrowFactory().getSupportedInstanceVaults(forStrategy: forStrategy, initializedWith: initializedWith)
     }
     /// Creates a Strategy of the requested Type using the provided Vault as an initial deposit
-    access(all) fun createStrategy(type: Type, uniqueID: DFB.UniqueIdentifier, withFunds: @{FungibleToken.Vault}): @{Strategy} {
+    access(all) fun createStrategy(type: Type, uniqueID: DeFiActions.UniqueIdentifier, withFunds: @{FungibleToken.Vault}): @{Strategy} {
         return <- self._borrowFactory().createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds)
     }
     /// Creates a TideManager used to create and manage Tides

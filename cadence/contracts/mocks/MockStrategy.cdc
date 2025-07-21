@@ -1,10 +1,10 @@
 import "FungibleToken"
 import "FlowToken"
 
-import "DFBUtils"
-import "DFB"
+import "DeFiActionsUtils"
+import "DeFiActions"
 
-import "Tidal"
+import "TidalYield"
 
 ///
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
@@ -14,9 +14,9 @@ access(all) contract MockStrategy {
 
     access(all) let IssuerStoragePath : StoragePath
     
-    access(all) struct Sink : DFB.Sink {
-        access(contract) let uniqueID: DFB.UniqueIdentifier?
-        init(_ id: DFB.UniqueIdentifier?) {
+    access(all) struct Sink : DeFiActions.Sink {
+        access(contract) let uniqueID: DeFiActions.UniqueIdentifier?
+        init(_ id: DeFiActions.UniqueIdentifier?) {
             self.uniqueID = id
         }
         access(all) view fun getSinkType(): Type {
@@ -29,9 +29,9 @@ access(all) contract MockStrategy {
             return
         }
     }
-    access(all) struct Source : DFB.Source {
-        access(contract) let uniqueID: DFB.UniqueIdentifier?
-        init(_ id: DFB.UniqueIdentifier?) {
+    access(all) struct Source : DeFiActions.Source {
+        access(contract) let uniqueID: DeFiActions.UniqueIdentifier?
+        init(_ id: DeFiActions.UniqueIdentifier?) {
             self.uniqueID = id
         }
         access(all) view fun getSourceType(): Type {
@@ -41,18 +41,18 @@ access(all) contract MockStrategy {
             return 0.0
         }
         access(FungibleToken.Withdraw) fun withdrawAvailable(maxAmount: UFix64): @{FungibleToken.Vault} {
-            return <- DFBUtils.getEmptyVault(self.getSourceType())
+            return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
         }
     }
 
-    access(all) resource Strategy : Tidal.Strategy {
+    access(all) resource Strategy : TidalYield.Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
-        access(contract) let uniqueID: DFB.UniqueIdentifier?
-        access(self) var sink: {DFB.Sink}
-        access(self) var source: {DFB.Source}
+        access(contract) let uniqueID: DeFiActions.UniqueIdentifier?
+        access(self) var sink: {DeFiActions.Sink}
+        access(self) var source: {DeFiActions.Source}
 
-        init(id: DFB.UniqueIdentifier?, sink: {DFB.Sink}, source: {DFB.Source}) {
+        init(id: DeFiActions.UniqueIdentifier?, sink: {DeFiActions.Sink}, source: {DeFiActions.Source}) {
             self.uniqueID = id
             self.sink = sink
             self.source = source
@@ -80,7 +80,7 @@ access(all) contract MockStrategy {
         /// an empty Vault is returned.
         access(FungibleToken.Withdraw) fun withdraw(maxAmount: UFix64, ofToken: Type): @{FungibleToken.Vault} {
             if ofToken != self.source.getSourceType() {
-                return <- DFBUtils.getEmptyVault(ofToken)
+                return <- DeFiActionsUtils.getEmptyVault(ofToken)
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
         }
@@ -88,7 +88,7 @@ access(all) contract MockStrategy {
         access(contract) fun burnCallback() {} // no-op
     }
 
-    access(all) resource StrategyComposer : Tidal.StrategyComposer {
+    access(all) resource StrategyComposer : TidalYield.StrategyComposer {
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
             return { Type<@Strategy>(): true }
         }
@@ -100,10 +100,10 @@ access(all) contract MockStrategy {
         }
         access(all) fun createStrategy(
             _ type: Type,
-            uniqueID: DFB.UniqueIdentifier,
+            uniqueID: DeFiActions.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
-        ): @{Tidal.Strategy} {
-            let id = DFB.UniqueIdentifier()
+        ): @{TidalYield.Strategy} {
+            let id = DeFiActions.UniqueIdentifier()
             let strat <- create Strategy(
                 id: id,
                 sink: Sink(id),
@@ -118,11 +118,11 @@ access(all) contract MockStrategy {
     /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
     /// may utilize resource consumption (i.e. account storage). Since TracerStrategy creation consumes account storage
     /// via configured AutoBalancers
-    access(all) resource StrategyComposerIssuer : Tidal.StrategyComposerIssuer {
+    access(all) resource StrategyComposerIssuer : TidalYield.StrategyComposerIssuer {
         access(all) view fun getSupportedComposers(): {Type: Bool} {
             return { Type<@StrategyComposer>(): true }
         }
-        access(all) fun issueComposer(_ type: Type): @{Tidal.StrategyComposer} {
+        access(all) fun issueComposer(_ type: Type): @{TidalYield.StrategyComposer} {
             switch type {
             case Type<@StrategyComposer>():
                 return <- create StrategyComposer()
