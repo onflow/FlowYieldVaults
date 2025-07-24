@@ -91,9 +91,9 @@ access(all) contract MockSwapper {
         /// Internal estimator returning a quote for the amount in/out and in the desired direction
         access(self) fun _estimate(amount: UFix64, out: Bool, reverse: Bool): {DeFiActions.Quote} {
             let outTokenPrice = self.oracle.price(ofToken: self.outType())
-            ?? panic("Price for token \(self.outType().identifier) is currently unavailable")
+                ?? panic("Price for token \(self.outType().identifier) is currently unavailable")
             let inTokenPrice = self.oracle.price(ofToken: self.inType())
-            ?? panic("Price for token \(self.inType().identifier) is currently unavailable")
+                ?? panic("Price for token \(self.inType().identifier) is currently unavailable")
 
             let uintOutTokenPrice = TidalProtocolUtils.toUInt256Balance(outTokenPrice)
             let uintInTokenPrice = TidalProtocolUtils.toUInt256Balance(inTokenPrice)
@@ -116,10 +116,6 @@ access(all) contract MockSwapper {
 
             let inAmount = TidalProtocolUtils.toUFix64Balance(uintInAmount)
             let outAmount = TidalProtocolUtils.toUFix64Balance(uintOutAmount)
-            log("inAmount")
-            log(uintInAmount)
-            log("outAmount")
-            log(uintOutAmount)
 
             return SwapStack.BasicQuote(
                 inType: reverse ? self.outVault : self.inVault,
@@ -133,20 +129,13 @@ access(all) contract MockSwapper {
             let inAmount = from.balance
             var swapInVault = reverse ? MockSwapper.liquidityConnectors[from.getType()]! : MockSwapper.liquidityConnectors[self.inType()]!
             var swapOutVault = reverse ? MockSwapper.liquidityConnectors[self.inType()]! : MockSwapper.liquidityConnectors[self.outType()]!
-            log("swapper capacity")
-            log(from.balance)
             swapInVault.depositCapacity(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})            
-            log("afterDepositCapacity")
             Burner.burn(<-from)
             let outAmount = self.quoteOut(forProvided: inAmount, reverse: reverse).outAmount
-            log("outAmount")
-            log(outAmount)
             var outVault <- swapOutVault.withdrawAvailable(maxAmount: outAmount)
-            log("after out vault")
-            log(outVault.balance)
 
             assert(outVault.balance == outAmount,
-            message: "MockSwapper outVault returned invalid balance - expected \(outAmount), received \(outVault.balance)")
+                message: "MockSwapper outVault returned invalid balance - expected \(outAmount), received \(outVault.balance)")
 
             return <- outVault
         }
