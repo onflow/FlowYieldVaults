@@ -97,8 +97,9 @@ access(all) contract MockSwapper {
             let uintOutTokenPrice = TidalProtocolUtils.toUInt256Balance(outTokenPrice)
             let uintInTokenPrice = TidalProtocolUtils.toUInt256Balance(inTokenPrice)
 
+            //original formula is correct, but lacks precision
+            //let price = reverse  ? outTokenPrice / inTokenPrice : inTokenPrice / outTokenPrice
             let uintPrice = reverse ? TidalProtocolUtils.div(uintOutTokenPrice, uintInTokenPrice) : TidalProtocolUtils.div(uintInTokenPrice, uintOutTokenPrice)
-            let price = TidalProtocolUtils.toUFix64Balance(uintPrice)
 
             if amount == UFix64.max {
                 return SwapStack.BasicQuote(
@@ -144,3 +145,4 @@ access(all) contract MockSwapper {
         self.liquidityConnectors = {}
     }    
 }
+
