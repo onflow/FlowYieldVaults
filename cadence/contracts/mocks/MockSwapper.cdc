@@ -5,6 +5,7 @@ import "MockOracle"
 
 import "DeFiActions"
 import "SwapStack"
+import "TidalProtocolUtils"
 
 ///
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
@@ -92,7 +93,14 @@ access(all) contract MockSwapper {
                 ?? panic("Price for token \(self.outType().identifier) is currently unavailable")
             let inTokenPrice = self.oracle.price(ofToken: self.inType())
                 ?? panic("Price for token \(self.inType().identifier) is currently unavailable")
-            let price = reverse  ? outTokenPrice / inTokenPrice : inTokenPrice / outTokenPrice
+
+            let uintOutTokenPrice = TidalProtocolUtils.toUInt256Balance(outTokenPrice)
+            let uintInTokenPrice = TidalProtocolUtils.toUInt256Balance(inTokenPrice)
+
+            // the original formula is correct, but lacks precision
+            // let price = reverse  ? outTokenPrice / inTokenPrice : inTokenPrice / outTokenPrice
+            let uintPrice = reverse ? TidalProtocolUtils.div(uintOutTokenPrice, uintInTokenPrice) : TidalProtocolUtils.div(uintInTokenPrice, uintOutTokenPrice)
+
             if amount == UFix64.max {
                 return SwapStack.BasicQuote(
                     inType: reverse ? self.outType() : self.inType(),
@@ -101,11 +109,19 @@ access(all) contract MockSwapper {
                     outAmount: UFix64.max
                 )
             }
+
+            let uintAmount = TidalProtocolUtils.toUInt256Balance(amount)
+            let uintInAmount = out ? uintAmount : TidalProtocolUtils.div(uintAmount, uintPrice)
+            let uintOutAmount = out ? TidalProtocolUtils.mul(uintAmount, uintPrice) : uintAmount
+
+            let inAmount = TidalProtocolUtils.toUFix64Balance(uintInAmount)
+            let outAmount = TidalProtocolUtils.toUFix64Balance(uintOutAmount)
+
             return SwapStack.BasicQuote(
                 inType: reverse ? self.outVault : self.inVault,
                 outType: reverse ? self.inVault : self.outVault,
-                inAmount: out ? amount : amount / price,
-                outAmount: out ? amount * price : amount
+                inAmount: inAmount,
+                outAmount: outAmount
             )
         }
 
@@ -129,3 +145,4 @@ access(all) contract MockSwapper {
         self.liquidityConnectors = {}
     }    
 }
+
