@@ -98,7 +98,7 @@ access(all) contract MockSwapper {
             let uintInTokenPrice = TidalProtocolUtils.toUInt256Balance(inTokenPrice)
 
             // the original formula is correct, but lacks precision
-            //let price = reverse  ? outTokenPrice / inTokenPrice : inTokenPrice / outTokenPrice
+            // let price = reverse  ? outTokenPrice / inTokenPrice : inTokenPrice / outTokenPrice
             let uintPrice = reverse ? TidalProtocolUtils.div(uintOutTokenPrice, uintInTokenPrice) : TidalProtocolUtils.div(uintInTokenPrice, uintOutTokenPrice)
 
             if amount == UFix64.max {
