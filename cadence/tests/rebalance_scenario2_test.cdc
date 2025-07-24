@@ -8,6 +8,7 @@ import "MOET"
 import "YieldToken"
 import "TidalYieldStrategies"
 import "TidalProtocol"
+import "TidalYield"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let tidalYieldAccount = Test.getAccount(0x0000000000000009)
@@ -35,6 +36,105 @@ access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
         }
     }
     return 0.0
+}
+
+// Formatting helper functions
+access(all) fun formatValue(_ value: UFix64): String {
+    // Format to 11 digits with padding
+    let str = value.toString()
+    let parts = str.split(separator: ".")
+    if parts.length == 1 {
+        return str.concat(".00000000")
+    }
+    let decimals = parts[1]
+    let padding = 8 - decimals.length
+    var padded = decimals
+    var i = 0
+    while i < padding {
+        padded = padded.concat("0")
+        i = i + 1
+    }
+    return parts[0].concat(".").concat(padded)
+}
+
+access(all) fun formatDrift(_ drift: UFix64): String {
+    // Handle negative drift by checking if we're dealing with a wrapped negative
+    // In Cadence, UFix64 can't be negative, so we need to handle this differently
+    return formatValue(drift)
+}
+
+access(all) fun formatPercent(_ percent: UFix64): String {
+    // Format to 8 decimal places
+    let scaled = percent * 100.0
+    return scaled.toString()
+}
+
+// Enhanced diagnostic precision tracking function with full call stack tracing
+access(all) fun performDiagnosticPrecisionTrace(
+    tideID: UInt64,
+    pid: UInt64,
+    yieldPrice: UFix64,
+    expectedValue: UFix64,
+    userAddress: Address
+) {
+    // Get position ground truth
+    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
+    var flowAmount: UFix64 = 0.0
+    
+    for balance in positionDetails.balances {
+        if balance.vaultType.identifier == flowTokenIdentifier { 
+            if balance.direction.rawValue == 0 {  // Credit
+                flowAmount = balance.balance
+            }
+        }
+    }
+    
+    // Values at different layers
+    let positionValue = flowAmount * 1.0  // Flow price = 1.0 in Scenario 2
+    let tideValue = getTideBalance(address: userAddress, tideID: tideID) ?? 0.0
+    
+    // Calculate drifts with proper sign handling
+    let tideDriftAbs = tideValue > expectedValue ? tideValue - expectedValue : expectedValue - tideValue
+    let tideDriftSign = tideValue > expectedValue ? "+" : "-"
+    let positionDriftAbs = positionValue > expectedValue ? positionValue - expectedValue : expectedValue - positionValue
+    let positionDriftSign = positionValue > expectedValue ? "+" : "-"
+    let tideVsPositionAbs = tideValue > positionValue ? tideValue - positionValue : positionValue - tideValue
+    let tideVsPositionSign = tideValue > positionValue ? "+" : "-"
+    
+    // Enhanced logging with intermediate values
+    log("\n+----------------------------------------------------------------+")
+    log("|          PRECISION DRIFT DIAGNOSTIC - Yield Price \(yieldPrice)         |")
+    log("+----------------------------------------------------------------+")
+    log("| Layer          | Value          | Drift         | % Drift      |")
+    log("|----------------|----------------|---------------|--------------|")
+    log("| Position       | \(formatValue(positionValue)) | \(positionDriftSign)\(formatValue(positionDriftAbs)) | \(positionDriftSign)\(formatPercent(positionDriftAbs / expectedValue))% |")
+    log("| Tide Balance   | \(formatValue(tideValue)) | \(tideDriftSign)\(formatValue(tideDriftAbs)) | \(tideDriftSign)\(formatPercent(tideDriftAbs / expectedValue))% |")
+    log("| Expected       | \(formatValue(expectedValue)) | ------------- | ------------ |")
+    log("|----------------|----------------|---------------|--------------|")
+    log("| Tide vs Position: \(tideVsPositionSign)\(formatValue(tideVsPositionAbs))                                   |")
+    log("+----------------------------------------------------------------+")
+    
+    // Log intermediate calculation values
+    log("\n== INTERMEDIATE VALUES TRACE:")
+    
+    // Log position balance details
+    log("- Position Balance Details:")
+    log("  * Flow Amount (trueBalance): \(flowAmount)")
+    
+    // Skip the problematic UInt256 conversion entirely to avoid overflow
+    log("- Expected Value Analysis:")
+    log("  * Expected UFix64: \(expectedValue)")
+    
+    // Log precision loss summary without complex calculations
+    log("- Precision Loss Summary:")
+    log("  * Position vs Expected: \(positionDriftSign)\(formatValue(positionDriftAbs)) (\(positionDriftSign)\(formatPercent(positionDriftAbs / expectedValue))%)")
+    log("  * Tide vs Expected: \(tideDriftSign)\(formatValue(tideDriftAbs)) (\(tideDriftSign)\(formatPercent(tideDriftAbs / expectedValue))%)")
+    log("  * Additional Tide Loss: \(tideVsPositionSign)\(formatValue(tideVsPositionAbs))")
+    
+    // Warning if significant drift
+    if tideDriftAbs > 0.00000100 {
+        log("\n⚠️  WARNING: Significant precision drift detected!")
+    }
 }
 
 access(all)
@@ -150,6 +250,15 @@ fun test_RebalanceTideScenario2() {
 		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
 
 		log("[TEST] Tide balance after yield before \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+
+		// Perform comprehensive diagnostic precision trace
+		performDiagnosticPrecisionTrace(
+			tideID: tideIDs![0],
+			pid: pid,
+			yieldPrice: yieldTokenPrice,
+			expectedValue: expectedFlowBalance[index],
+			userAddress: user.address
+		)
 
 		// Get Flow collateral from position
 		let flowCollateralAmount = getFlowCollateralFromPosition(pid: pid)
