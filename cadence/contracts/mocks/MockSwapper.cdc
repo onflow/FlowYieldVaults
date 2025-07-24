@@ -75,7 +75,6 @@ access(all) contract MockSwapper {
         /// NOTE: This mock sources pricing data from the mocked oracle, allowing for pricing to be manually manipulated
         /// for testing and demonstration purposes
         access(all) fun swap(quote: {DeFiActions.Quote}?, inVault: @{FungibleToken.Vault}): @{FungibleToken.Vault} {
-            log("swap")
             return <- self._swap(<-inVault, reverse: false)
         }
 
