@@ -33,6 +33,12 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
+        name: "DeFiActionsMathUtils",
+        path: "../../lib/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
         name: "DeFiActions",
         path: "../../lib/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
         arguments: []
@@ -99,7 +105,7 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    
+
     // TidalYield contracts
     err = Test.deployContract(
         name: "TidalYieldAutoBalancers",
@@ -132,9 +138,9 @@ access(all) fun deployContracts() {
 access(all)
 fun setupTidalProtocol(signer: Test.TestAccount) {
     let res = _executeTransaction("../transactions/tidal-protocol/create_and_store_pool.cdc",
-            [],
-            signer
-        )
+    [],
+    signer
+)
 }
 
 /* --- Script helpers */
@@ -177,19 +183,19 @@ fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
 access(all)
 fun getPositionDetails(pid: UInt64, beFailed: Bool): TidalProtocol.PositionDetails {
     let res = _executeScript("../scripts/tidal-protocol/position_details.cdc",
-            [pid]
-        )
-    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+    [pid]
+)
+Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 
-    return res.returnValue as! TidalProtocol.PositionDetails
+return res.returnValue as! TidalProtocol.PositionDetails
 }
 
 access(all)
 fun getReserveBalanceForType(vaultIdentifier: String): UFix64 {
     let res = _executeScript(
         "../../lib/TidalProtocol/cadence/scripts/tidal-protocol/get_reserve_balance_for_type.cdc",
-            [vaultIdentifier]
-        )
+        [vaultIdentifier]
+    )
     Test.expect(res, Test.beSucceeded())
 
     return res.returnValue as! UFix64
@@ -204,8 +210,8 @@ fun positionAvailableBalance(
 ): UFix64 {
     let res = _executeScript(
         "../scripts/tidal-protocol/get_available_balance.cdc",
-            [pid, type, pullFromSource]
-        )
+        [pid, type, pullFromSource]
+    )
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 
     return res.returnValue as! UFix64
@@ -277,10 +283,10 @@ fun mintYield(signer: Test.TestAccount, to: Address, amount: UFix64, beFailed: B
 access(all)
 fun addStrategyComposer(signer: Test.TestAccount, strategyIdentifier: String, composerIdentifier: String, issuerStoragePath: StoragePath, beFailed: Bool) {
     let addRes = _executeTransaction("../transactions/tidal-yield/admin/add_strategy_composer.cdc",
-            [ strategyIdentifier, composerIdentifier, issuerStoragePath ],
-            signer
-        )
-    Test.expect(addRes, beFailed ? Test.beFailed() : Test.beSucceeded())
+    [ strategyIdentifier, composerIdentifier, issuerStoragePath ],
+    signer
+)
+Test.expect(addRes, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
 access(all)
@@ -292,10 +298,10 @@ fun createTide(
     beFailed: Bool
 ) {
     let res = _executeTransaction("../transactions/tidal-yield/create_tide.cdc",
-            [ strategyIdentifier, vaultIdentifier, amount ],
-            signer
-        )
-    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+    [ strategyIdentifier, vaultIdentifier, amount ],
+    signer
+)
+Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
 access(all)

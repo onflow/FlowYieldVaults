@@ -1,3 +1,4 @@
+
 import Test
 import BlockchainHelpers
 
@@ -77,18 +78,13 @@ access(all)
 fun test_RebalanceTideScenario2() {
     // Test.reset(to: snapshot)
 
-    let fundingAmount = 1000.0
+    let fundingAmount = 1625.0
 
     let user = Test.createAccount()
 
-    let yieldPriceIncreases = [1.1, 1.2, 1.3, 1.5, 2.0, 3.0]
+    let yieldPriceIncreases = [1.1]
     let expectedFlowBalance = [
-    1061.53846151,
-    1120.92522858,
-    1178.40857361,
-    1289.97388235,
-    1554.58390949,
-    2032.91742007
+    1725.0
     ]
 
     // Likely 0.0

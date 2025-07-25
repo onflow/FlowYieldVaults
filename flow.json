@@ -14,6 +14,13 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"DeFiActionsMathUtils": {
+			"source": "./lib/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
 		"FungibleTokenStack": {
 			"source": "./lib/DeFiActions/cadence/contracts/connectors/FungibleTokenStack.cdc",
 			"aliases": {
