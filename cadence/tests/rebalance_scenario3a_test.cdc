@@ -112,9 +112,9 @@ fun test_RebalanceTideScenario3A() {
 	let flowPriceDecrease = 0.8
 	let yieldPriceIncrease = 1.2
 
-	let expectedYieldTokenValues = [615.38461539, 492.30769231, 460.74950690]
-	let expectedFlowCollateralValues = [1000.0, 800.0, 898.46153846]
-	let expectedDebtValues = [615.38461539, 492.30769231, 552.89940828]
+	let expectedYieldTokenValues = [615.38461538, 492.30769231, 460.74950690]
+	let expectedFlowCollateralValues = [1000.00000000, 800.00000000, 898.46153846]
+	let expectedDebtValues = [615.38461538, 492.30769231, 552.89940828]
 
 	let user = Test.createAccount()
 
@@ -269,11 +269,29 @@ fun test_RebalanceTideScenario3A() {
 		message: "Expected MOET debt after yield price increase to be \(expectedDebtValues[2]) but got \(debtAfterYieldIncrease)"
 	)
 
+	// Check getTideBalance vs actual available balance before closing
+	let tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])!
+	
+	// Get the actual available balance from the position
+	let positionDetails = getPositionDetails(pid: 1, beFailed: false)
+	var positionFlowBalance = 0.0
+	for balance in positionDetails.balances {
+		if balance.vaultType == Type<@FlowToken.Vault>() && balance.direction == TidalProtocol.BalanceDirection.Credit {
+			positionFlowBalance = balance.balance
+			break
+		}
+	}
+	
+	log("\n=== DIAGNOSTIC: Tide Balance vs Position Available ===")
+	log("getTideBalance() reports: \(tideBalance)")
+	log("Position Flow balance: \(positionFlowBalance)")
+	log("Difference: \(positionFlowBalance - tideBalance)")
+	log("========================================\n")
+
 	// Skip closeTide for now due to getTideBalance precision issues
-	// closeTide(signer: user, id: tideIDs![0], beFailed: false)
+	    closeTide(signer: user, id: tideIDs![0], beFailed: false)
 
 	log("\n=== TEST COMPLETE - All precision checks passed ===")
-	log("Note: Skipping closeTide due to known getTideBalance calculation issues")
 }
 
 

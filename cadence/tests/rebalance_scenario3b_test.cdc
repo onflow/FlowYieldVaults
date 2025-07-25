@@ -265,10 +265,29 @@ fun test_RebalanceTideScenario3B() {
 	
 
 
-	// Skip closeTide for now due to getTideBalance precision issues
-	// closeTide(signer: user, id: tideIDs![0], beFailed: false)
+	        	// Check getTideBalance vs actual available balance before closing
+	let tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])!
+	
+	// Get the actual available balance from the position
+	let positionDetails = getPositionDetails(pid: 1, beFailed: false)
+	var positionFlowBalance = 0.0
+	for balance in positionDetails.balances {
+		if balance.vaultType == Type<@FlowToken.Vault>() && balance.direction == TidalProtocol.BalanceDirection.Credit {
+			positionFlowBalance = balance.balance
+			break
+		}
+	}
+	
+	log("\n=== DIAGNOSTIC: Tide Balance vs Position Available ===")
+	log("getTideBalance() reports: \(tideBalance)")
+	log("Position Flow balance: \(positionFlowBalance)")
+	log("Difference: \(positionFlowBalance - tideBalance)")
+	log("========================================\n")
 
-	log("\n=== TEST COMPLETE - Skipping closeTide due to known getTideBalance calculation issues ===")
+	// Skip closeTide for now due to getTideBalance precision issues
+        closeTide(signer: user, id: tideIDs![0], beFailed: false)
+        
+        log("\n=== TEST COMPLETE ===")
 }
 
 

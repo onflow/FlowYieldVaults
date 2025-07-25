@@ -263,10 +263,10 @@ fun test_RebalanceTideScenario3D() {
 		message: "Expected MOET debt after yield price increase to be \(expectedDebtValues[2]) but got \(debtAfterYieldIncrease)"
 	)
 
-	// Skip closeTide for now due to getTideBalance precision issues
-	// closeTide(signer: user, id: tideIDs![0], beFailed: false)
-
-	log("\n=== TEST COMPLETE - Skipping closeTide due to known getTideBalance calculation issues ===")
+	        // Skip closeTide for now due to getTideBalance precision issues
+        closeTide(signer: user, id: tideIDs![0], beFailed: false)
+        
+        log("\n=== TEST COMPLETE ===")
 }
 
 

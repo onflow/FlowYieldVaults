@@ -265,10 +265,10 @@ fun test_RebalanceTideScenario3C() {
 	
 
 
-	// Skip closeTide for now due to getTideBalance precision issues
-	// closeTide(signer: user, id: tideIDs![0], beFailed: false)
-
-	log("\n=== TEST COMPLETE - Skipping closeTide due to known getTideBalance calculation issues ===")
+	        // Skip closeTide for now due to getTideBalance precision issues
+        closeTide(signer: user, id: tideIDs![0], beFailed: false)
+        
+        log("\n=== TEST COMPLETE ===")
 }
 
 
