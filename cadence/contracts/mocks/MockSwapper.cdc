@@ -75,7 +75,6 @@ access(all) contract MockSwapper {
         /// NOTE: This mock sources pricing data from the mocked oracle, allowing for pricing to be manually manipulated
         /// for testing and demonstration purposes
         access(all) fun swap(quote: {DeFiActions.Quote}?, inVault: @{FungibleToken.Vault}): @{FungibleToken.Vault} {
-            log("swap")
             return <- self._swap(<-inVault, reverse: false)
         }
 
@@ -98,8 +97,9 @@ access(all) contract MockSwapper {
             let uintOutTokenPrice = TidalProtocolUtils.toUInt256Balance(outTokenPrice)
             let uintInTokenPrice = TidalProtocolUtils.toUInt256Balance(inTokenPrice)
 
+            // the original formula is correct, but lacks precision
+            // let price = reverse  ? outTokenPrice / inTokenPrice : inTokenPrice / outTokenPrice
             let uintPrice = reverse ? TidalProtocolUtils.div(uintOutTokenPrice, uintInTokenPrice) : TidalProtocolUtils.div(uintInTokenPrice, uintOutTokenPrice)
-            let price = TidalProtocolUtils.toUFix64Balance(uintPrice)
 
             if amount == UFix64.max {
                 return SwapStack.BasicQuote(
@@ -145,3 +145,4 @@ access(all) contract MockSwapper {
         self.liquidityConnectors = {}
     }    
 }
+
