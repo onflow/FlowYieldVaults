@@ -52,7 +52,7 @@ Current test results after updating expected values from the Google Sheet, skipp
 
 **Average precision improvement: ~96%**
 
-### Scenario 3a: Flow 0.8, Yield 1.2 (❌ FAIL)
+### Scenario 3a: Flow 0.8, Yield 1.2 (✅ PASS)
 
 | Step | Metric | Expected | Actual | Difference | % Difference |
 |------|--------|----------|---------|------------|--------------|
@@ -62,7 +62,7 @@ Current test results after updating expected values from the Google Sheet, skipp
 | After Flow 0.8 | Yield Tokens | 492.30769231 | 492.30769231 | 0.00000000 | 0.00000000% |
 | After Flow 0.8 | Flow Value | 800.00000000 | 800.00000000 | 0.00000000 | 0.00000000% |
 | After Flow 0.8 | MOET Debt | 492.30769231 | 492.30769231 | 0.00000000 | 0.00000000% |
-| After Yield 1.2 | Yield Tokens | 460.74950690 | 460.74950866 | +0.00000176 | +0.00000038% |
+| After Yield 1.2 | Yield Tokens | 460.74950690 | 460.74950886 | +0.00000196 | +0.00000043% |
 | After Yield 1.2 | Flow Value | 898.46153846 | 898.46153231 | -0.00000615 | -0.00000068% |
 | After Yield 1.2 | MOET Debt | 552.89940828 | 552.89940449 | -0.00000379 | -0.00000069% |
 
@@ -76,9 +76,9 @@ Current test results after updating expected values from the Google Sheet, skipp
 | Initial | Flow Value | 1000.00000000 | 1000.00000000 | 0.00000000 | 0.00000000% |
 | After Flow 1.5 | Yield Tokens | 923.07692308 | 923.07692307 | -0.00000001 | -0.00000000% |
 | After Flow 1.5 | Flow Value | 1500.00000000 | 1500.00000000 | 0.00000000 | 0.00000000% |
-| After Yield 1.3 | Yield Tokens | 841.14701866 | 841.14701607 | -0.00000259 | -0.00000031% |
-| After Yield 1.3 | Flow Value | 1776.92307692 | 1776.92307477 | -0.00000215 | -0.00000012% |
-| After Yield 1.3 | MOET Debt | 1093.49112426 | 1093.49112293 | -0.00000133 | -0.00000012% |
+| After Yield 1.3 | Yield Tokens | 841.14701866 | 841.14701865 | -0.00000001 | -0.00000000% |
+| After Yield 1.3 | Flow Value | 1776.92307692 | 1776.92307690 | -0.00000002 | -0.00000000% |
+| After Yield 1.3 | MOET Debt | 1093.49112426 | 1093.49112424 | -0.00000002 | -0.00000000% |
 
 **Status**: ✅ PASS (with closeTide skipped)
 
@@ -104,7 +104,7 @@ Current test results after updating expected values from the Google Sheet, skipp
 | Initial | Flow Value | 1000.00000000 | 1000.00000000 | 0.00000000 | 0.00000000% |
 | After Flow 0.5 | Yield Tokens | 307.69230769 | 307.69230770 | +0.00000001 | +0.00000000% |
 | After Flow 0.5 | Flow Value | 500.00000000 | 500.00000000 | 0.00000000 | 0.00000000% |
-| After Yield 1.5 | Yield Tokens | 268.24457594 | 268.24457687 | +0.00000093 | +0.00000035% |
+| After Yield 1.5 | Yield Tokens | 268.24457594 | 268.24457750 | +0.00000156 | +0.00000058% |
 | After Yield 1.5 | Flow Value | 653.84615385 | 653.84614770 | -0.00000615 | -0.00000094% |
 | After Yield 1.5 | MOET Debt | 402.36686391 | 402.36686012 | -0.00000379 | -0.00000094% |
 
@@ -113,9 +113,9 @@ Current test results after updating expected values from the Google Sheet, skipp
 ## Key Observations
 
 1. **Precision Differences** (After MockSwapper improvements):
-   - Maximum absolute difference: 0.00000020 (Scenario 2, Yield 3.0, Tide Balance) - **improved from 0.00000833**
-   - Maximum percentage difference: 0.00000094% (Scenario 3d, Flow Value)
-   - Most differences are now below 0.00000020 - **improved from 0.00000100**
+   - Maximum absolute difference: 0.00000615 (Scenarios 3a and 3d, Flow Value) 
+   - Maximum percentage difference: 0.00000094% (Scenario 3d, Flow Value and MOET Debt)
+   - Most differences are now below 0.00000200
    - Scenario 3 continues to track Yield tokens, Flow collateral value, and MOET debt
 
 2. **MockSwapper Precision Improvements**:
