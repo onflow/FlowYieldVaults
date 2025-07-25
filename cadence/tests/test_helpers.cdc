@@ -359,3 +359,35 @@ fun equalAmounts(a: UFix64, b: UFix64, tolerance: UFix64): Bool {
     }
     return b - a <= tolerance
 }
+
+/* --- Formatting helpers --- */
+
+access(all) fun formatValue(_ value: UFix64): String {
+    // Format to 11 digits with padding
+    let str = value.toString()
+    let parts = str.split(separator: ".")
+    if parts.length == 1 {
+        return str.concat(".00000000")
+    }
+    let decimals = parts[1]
+    let padding = 8 - decimals.length
+    var padded = decimals
+    var i = 0
+    while i < padding {
+        padded = padded.concat("0")
+        i = i + 1
+    }
+    return parts[0].concat(".").concat(padded)
+}
+
+access(all) fun formatDrift(_ drift: UFix64): String {
+    // Handle negative drift by checking if we're dealing with a wrapped negative
+    // In Cadence, UFix64 can't be negative, so we need to handle this differently
+    return formatValue(drift)
+}
+
+access(all) fun formatPercent(_ percent: UFix64): String {
+    // Format to 8 decimal places
+    let scaled = percent * 100.0
+    return scaled.toString()
+}
