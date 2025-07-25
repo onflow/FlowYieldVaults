@@ -114,8 +114,8 @@ access(all) contract MockSwapper {
             let uintInAmount = out ? uintAmount : TidalProtocolUtils.div(uintAmount, uintPrice)
             let uintOutAmount = out ? TidalProtocolUtils.mul(uintAmount, uintPrice) : uintAmount
 
-            let inAmount = TidalProtocolUtils.toUFix64Balance(uintInAmount)
-            let outAmount = TidalProtocolUtils.toUFix64Balance(uintOutAmount)
+            let inAmount = TidalProtocolUtils.roundToUFix64(uintInAmount)
+            let outAmount = TidalProtocolUtils.roundToUFix64(uintOutAmount)
 
             return SwapStack.BasicQuote(
                 inType: reverse ? self.outVault : self.inVault,
