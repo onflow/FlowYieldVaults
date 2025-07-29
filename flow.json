@@ -70,13 +70,6 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"TidalProtocolUtils": {
-			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocolUtils.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000008"
-			}
-		},
 		"TidalProtocol": {
 			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
 			"aliases": {
@@ -212,6 +205,7 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
+				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",
 				"DeFiActions",
 				"FungibleTokenStack",
@@ -225,7 +219,6 @@
 						}
 					]
 				},
-				"TidalProtocolUtils",
 				"TidalProtocol",
 				{
 					"name": "YieldToken",
