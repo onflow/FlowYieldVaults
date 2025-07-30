@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - nialexsan/context-rounding
   pull_request:
     branches:
       - main
