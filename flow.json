@@ -77,6 +77,13 @@
 				"testing": "0000000000000008"
 			}
 		},
+		"TidalProtocolUtils": {
+			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocolUtils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
 		"TidalYield": {
 			"source": "cadence/contracts/TidalYield.cdc",
 			"aliases": {
@@ -219,6 +226,7 @@
 						}
 					]
 				},
+				"TidalProtocolUtils",
 				"TidalProtocol",
 				{
 					"name": "YieldToken",
