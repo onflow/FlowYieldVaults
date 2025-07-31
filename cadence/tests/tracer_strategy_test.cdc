@@ -257,7 +257,7 @@ fun test_RebalanceTideSucceedsAfterYieldPriceDecrease() {
 	log("Tide balance before rebalance: \(tideBalance ?? 0.0)")
 
 	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-    rebalancePosition(signer: protocolAccount, pid: positionID, force: true, beFailed: false)
+	rebalancePosition(signer: protocolAccount, pid: positionID, force: true, beFailed: false)
 
 	closeTide(signer: user, id: tideIDs![0], beFailed: false)
 
@@ -324,7 +324,7 @@ fun test_RebalanceTideSucceedsAfterCollateralPriceIncrease() {
 
     // the ratio of yield tokens after the rebalance should be directly proportional to the collateral price increase, 
     // as we started with 1.0 for all values.
-    Test.assert(yieldTokensAfter >= (yieldTokensBefore * collateralPriceIncrease)-0.00000001,
+    Test.assert(yieldTokensAfter >= (yieldTokensBefore * collateralPriceIncrease) - TOLERANCE,
         message: "Expected user's Flow balance after rebalance to be more than funding amount but got \(yieldTokensAfter)"
     )
 

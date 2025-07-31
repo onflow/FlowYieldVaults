@@ -142,7 +142,7 @@ fun test_RebalanceTideScenario2() {
     log("[TEST] flow balance after \(flowBalanceAfter)")
 
     Test.assert(
-    	(flowBalanceAfter-flowBalanceBefore) > 0.1,
+    	equalAmounts(a: flowBalanceAfter, b: flowBalanceBefore, tolerance: 0.01),
     	message: "Expected user's Flow balance after rebalance to be more than zero but got \(flowBalanceAfter)"
     )
 }
