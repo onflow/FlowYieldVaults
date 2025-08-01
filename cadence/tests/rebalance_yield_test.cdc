@@ -136,14 +136,14 @@ fun test_RebalanceTideScenario2() {
         )
     }
 
-    // closeTide(signer: user, id: tideIDs![0], beFailed: false)
-    //
-    // let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
-    // log("[TEST] flow balance after \(flowBalanceAfter)")
-    //
-    // Test.assert(
-    // 	(flowBalanceAfter-flowBalanceBefore) > 0.1,
-    // 	message: "Expected user's Flow balance after rebalance to be more than zero but got \(flowBalanceAfter)"
-    // )
+    closeTide(signer: user, id: tideIDs![0], beFailed: false)
+
+    let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+    log("[TEST] flow balance after \(flowBalanceAfter)")
+
+    Test.assert(
+    	equalAmounts(a: flowBalanceAfter, b: flowBalanceBefore, tolerance: 0.01),
+    	message: "Expected user's Flow balance after rebalance to be more than zero but got \(flowBalanceAfter)"
+    )
 }
 

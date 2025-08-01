@@ -391,3 +391,7 @@ access(all) fun formatPercent(_ percent: UFix64): String {
     let scaled = percent * 100.0
     return scaled.toString()
 }
+
+/* --- Const Helpers --- */
+access(all) let TOLERANCE = 0.00000001
+
