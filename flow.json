@@ -21,6 +21,13 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"DeFiActionsUtils": {
+			"source": "./lib/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
 		"FungibleTokenConnectors": {
 			"source": "./lib/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
@@ -170,6 +177,62 @@
 				"testnet": "631e88ae7f1d7c20"
 			}
 		},
+		"StableSwapFactory": {
+			"source": "mainnet://b063c16cac85dbd1.StableSwapFactory",
+			"hash": "46318aee6fd29616c8048c23210d4c4f5b172eb99a0ca911fbd849c831a52a0b",
+			"aliases": {
+        "emulator": "f3fcd2c1a78f5eee",
+				"mainnet": "b063c16cac85dbd1"
+			}
+		},
+		"SwapConfig": {
+			"source": "mainnet://b78ef7afa52ff906.SwapConfig",
+			"hash": "ccafdb89804887e4e39a9b8fdff5c0ff0d0743505282f2a8ecf86c964e691c82",
+			"aliases": {
+        "emulator": "f3fcd2c1a78f5eee",
+				"mainnet": "b78ef7afa52ff906"
+			}
+		},
+		"SwapError": {
+			"source": "mainnet://b78ef7afa52ff906.SwapError",
+			"hash": "7d13a652a1308af387513e35c08b4f9a7389a927bddf08431687a846e4c67f21",
+			"aliases": {
+        "emulator": "f3fcd2c1a78f5eee",
+				"mainnet": "b78ef7afa52ff906"
+			}
+		},
+		"SwapFactory": {
+			"source": "mainnet://b063c16cac85dbd1.SwapFactory",
+			"hash": "1142e0102c8597e405e24ed2c6e5579b0faeca41f656818db10f3142a83493d2",
+			"aliases": {
+        "emulator": "f3fcd2c1a78f5eee",
+				"mainnet": "b063c16cac85dbd1"
+			}
+		},
+		"SwapInterfaces": {
+			"source": "mainnet://b78ef7afa52ff906.SwapInterfaces",
+			"hash": "570bb4b9c8da8e0caa8f428494db80779fb906a66cc1904c39a2b9f78b89c6fa",
+			"aliases": {
+        "emulator": "f3fcd2c1a78f5eee",
+				"mainnet": "b78ef7afa52ff906"
+			}
+		},
+		"SwapPair": {
+			"source": "mainnet://368caca05ddcb898.SwapPair",
+			"hash": "69b99c4a8abc123a0a88b1c354f9da414a32e2f73194403e67e89d51713923c0",
+			"aliases": {
+        "emulator": "f3fcd2c1a78f5eee",
+				"mainnet": "368caca05ddcb898"
+			}
+		},
+		"SwapRouter": {
+			"source": "mainnet://a6850776a94e6551.SwapRouter",
+			"hash": "2ae9ecd237b7ea36b4fcc87f415d181b437543722a64f18094e026252607932c",
+			"aliases": {
+        "emulator": "f3fcd2c1a78f5eee",
+				"mainnet": "a6850776a94e6551"
+			}
+		},
 		"ViewResolver": {
 			"source": "mainnet://1d7e57aa55817448.ViewResolver",
 			"hash": "374a1994046bac9f6228b4843cb32393ef40554df9bd9907a702d098a2987bde",
@@ -187,6 +250,13 @@
 		"testnet": "access.devnet.nodes.onflow.org:9000"
 	},
 	"accounts": {
+		"amm": {
+			"address": "f3fcd2c1a78f5eee",
+			"key": {
+				"type": "file",
+				"location": "amm.pkey"
+			}
+		},
 		"emulator-account": {
 			"address": "f8d6e0586b0a20c7",
 			"key": {
@@ -204,6 +274,22 @@
 	},
 	"deployments": {
 		"emulator": {
+			"amm": [
+				"SwapConfig",
+				"SwapInterfaces",
+				"SwapError",
+        {
+          "name": "SwapFactory",
+          "args": [
+            {
+              "value": "0xf3fcd2c1a78f5eee",
+              "type": "Address"
+            }
+          ]
+        },
+				"StableSwapFactory",
+				"SwapRouter"
+			],
 			"emulator-account": [
 				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",

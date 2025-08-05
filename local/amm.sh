@@ -1,0 +1,59 @@
+#!/bin/sh
+#set -e
+
+# Constants
+AMM_SIGNER="amm"
+
+# Helper functions
+echo_info() {
+  echo "\033[1;34m[INFO]\033[0m $1"
+}
+
+# # 1. Create a new Flow account with the test user's pubkey
+# echo_info "Creating new Flow account for test user..."
+# flow accounts create --network "$FLOW_NETWORK" --key "$(cat $TEST_USER_PUBKEY_PATH)"
+
+flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0xf3fcd2c1a78f5eee 1000.0
+
+# 2. Setup MOET and YIELD vault, and create swap pairs
+#
+MOET_IDENTIFIER=$(flow scripts execute ./cadence/scripts/mocks/amm/get_moet_token_identifier.cdc | grep "^Result:" | sed -E 's/Result: "([^"]+)"/\1/')
+YIELD_IDENTIFIER=$(flow scripts execute ./cadence/scripts/mocks/amm/get_yield_token_identifier.cdc | grep "^Result:" | sed -E 's/Result: "([^"]+)"/\1/')
+
+flow transactions send ./cadence/transactions/mocks/amm/setup.cdc --signer ${AMM_SIGNER}
+#
+# 3. transfer funds to FLOW, MOET, and YIELD vaults
+#
+flow transactions send ./cadence/transactions/mocks/amm/transfer_amm_tokens.cdc f3fcd2c1a78f5eee 1000.0
+# 
+# 4. create swap pair
+#
+flow transactions send ./lib/DeFiActions/cadence/transactions/increment-fi/create_swap_pair.cdc $MOET_IDENTIFIER $YIELD_IDENTIFIER false
+#
+#
+# 5. add liquidity to the AMMs
+#
+MOET_KEY="${MOET_IDENTIFIER%.*}"
+YIELD_KEY="${YIELD_IDENTIFIER%.*}"
+BLOCK_TS=$(flow blocks get latest | grep -i 'Proposal Timestamp Unix' | awk '{print $NF}')
+DEADLINE=$((BLOCK_TS + 600))
+
+echo $MOET_KEY
+echo $YIELD_KEY
+echo $DEADLINE
+flow transactions send "./lib/DeFiActions/cadence/transactions/increment-fi/add_liquidity.cdc" \
+	"$MOET_KEY" \
+	"$YIELD_KEY" \
+	100.0 \
+	100.0 \
+	0.0 \
+	0.0 \
+	$DEADLINE.0 \
+	/storage/moetTokenVault_0xf8d6e0586b0a20c7 \
+	/storage/yieldTokenVault_0xf8d6e0586b0a20c7 \
+	false \
+	--signer $AMM_SIGNER
+#
+# 6. add connectors
+#
+#
