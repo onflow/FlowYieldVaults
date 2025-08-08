@@ -2,12 +2,6 @@
 git submodule update --init --recursive
 # execute emulator deployment
 #
-TEST_USER_PUBKEY_PATH="./amm.pubkey"
-AMM_PUBKEY_PATH="./amm.pubkey"
-FLOW_NETWORK="emulator"
-flow accounts create --network "$FLOW_NETWORK" --key "$(cat $TEST_USER_PUBKEY_PATH)"
-flow accounts create --network "$FLOW_NETWORK" --key "$(cat $AMM_PUBKEY_PATH)"
-#
 flow deploy
 
 # set mocked prices in the MockOracle contract, initialized with MOET as unitOfAccount
