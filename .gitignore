@@ -1,6 +1,10 @@
 
 # flow
 *.pkey
+!mock-amm.pkey
+!emulator-account.pkey
+!evm-gateway.pkey
+!test-user.pkey
 imports
 coverage.lcov
 coverage.json
