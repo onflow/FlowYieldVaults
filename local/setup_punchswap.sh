@@ -3,8 +3,8 @@
 cp ./local/contracts_local.sh ./solidity/lib/punch-swap-v3-contracts/
 cp ./local/flow-emulator.json ./solidity/lib/punch-swap-v3-contracts/script/deployParameters/
 
-cp ./local/amm.env ./solidity/lib/punch-swap-v3-contracts/.env
-cp ./local/amm.env ./solidity/lib/punch-swap-core-contracts/.env
+cp ./local/punchswap.env ./solidity/lib/punch-swap-v3-contracts/.env
+cp ./local/punchswap.env ./solidity/lib/punch-swap-core-contracts/.env
 
 # deployer
 flow transactions send ./cadence/transactions/mocks/amm/transfer_to_evm.cdc 0xC31A5268a1d311d992D637E8cE925bfdcCEB4310 1000.0
