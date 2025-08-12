@@ -4,7 +4,7 @@ This document explains how to generate scenario CSVs, build Cadence tests, run t
 
 ### What it does
 
-- Generates deterministic scenario CSVs for unified fuzzy testing (Scenarios 1–10) via `tidal_simulator.py`.
+- Generates deterministic scenario CSVs for unified fuzzy testing (Scenarios 1–9, compact numbering) via `tidal_simulator.py`.
 - Converts CSVs into Cadence tests (`cadence/tests/rebalance_*.cdc`) via `generate_cadence_tests.py` with strict comparisons at ±0.0000001.
 - Emits machine-parsable DRIFT logs from tests and aggregates them into `precision_reports/UNIFIED_FUZZY_DRIFT_REPORT.md`.
 
@@ -26,17 +26,16 @@ pip install pandas
 python3 tidal_simulator.py
 ```
 
-Outputs the following CSV files in the repo root:
+Outputs the following CSV files in the repo root (compact numbering, with splits):
 - Scenario1_FLOW.csv
 - Scenario2_Instant.csv
 - Scenario3_Path_{A,B,C,D}_precise.csv
-- Scenario4_Scaling.csv (intentionally skipped by test generator)
-- Scenario5_VolatileMarkets.csv
-- Scenario6_GradualTrends.csv
-- Scenario7_EdgeCases.csv
-- Scenario8_MultiStepPaths.csv
-- Scenario9_RandomWalks.csv
-- Scenario10_ExtremeShocks.csv
+- Scenario4_VolatileMarkets.csv
+- Scenario5_GradualTrends.csv
+- Scenario6_EdgeCases.csv
+- Scenario7_MultiStepPaths_{Bear,Bull,Sideways,Crisis}.csv
+- Scenario8_RandomWalks.csv
+- Scenario9_ExtremeShocks_{FlashCrash,Rebound,YieldHyperInflate,MixedShock}.csv
 
 ### Generate Cadence tests
 
@@ -48,17 +47,18 @@ Outputs Cadence tests directly into `cadence/tests/` with names like:
 - rebalance_scenario1_flow_test.cdc
 - rebalance_scenario2_instant_test.cdc
 - rebalance_scenario3_path_{a,b,c,d}_test.cdc
-- rebalance_scenario4_volatilemarkets_test.cdc  (renumbered from 5)
-- rebalance_scenario5_gradualtrends_test.cdc    (renumbered from 6)
-- rebalance_scenario6_edgecases_test.cdc        (renumbered from 7)
-- rebalance_scenario7_multisteppaths_test.cdc   (renumbered from 8)
-- rebalance_scenario8_randomwalks_test.cdc      (renumbered from 9)
-- rebalance_scenario9_extremeshocks_test.cdc    (renumbered from 10)
+- rebalance_scenario4_volatilemarkets_test.cdc
+- rebalance_scenario5_gradualtrends_test.cdc
+- rebalance_scenario6_edgecases_test.cdc
+- rebalance_scenario7_multisteppaths_{bear,bull,sideways,crisis}_test.cdc
+- rebalance_scenario8_randomwalks_test.cdc
+- rebalance_scenario9_extremeshocks_{flashcrash,rebound,yieldhyperinflate,mixedshock}_test.cdc
 
 Notes:
-- Scenario 4 (Scaling) is intentionally excluded from the suite because it requires per-row resets; all other scenarios evolve state across steps.
+- Scaling table is removed from CSV outputs; compact numbering starts at VolatileMarkets for Scenario 4.
 - All tests use exact comparisons with tolerance 0.0000001 and 8-decimal formatting.
-- Step 0 ordering matches the simulator: open at baseline (1.0/1.0), set step-0 prices, replay CSV actions, then assert.
+- Scenario 1 generated test asserts post-rebalance values for each price point to match CSV expectations.
+- Legacy tests remain intact (rebalance_scenario{1,2}_test.cdc and 3a–3d).
 
 ### Run tests
 
@@ -69,7 +69,13 @@ flow test cadence/tests/rebalance_scenario1_flow_test.cdc
 
 Run multiple scenarios (example 4–9):
 ```bash
-for f in cadence/tests/rebalance_scenario{4,5,6,7,8,9}_*.cdc; do
+for f in \
+  cadence/tests/rebalance_scenario4_volatilemarkets_test.cdc \
+  cadence/tests/rebalance_scenario5_gradualtrends_test.cdc \
+  cadence/tests/rebalance_scenario6_edgecases_test.cdc \
+  cadence/tests/rebalance_scenario7_multisteppaths_*_test.cdc \
+  cadence/tests/rebalance_scenario8_randomwalks_test.cdc \
+  cadence/tests/rebalance_scenario9_extremeshocks_*_test.cdc; do
   echo "\n=== RUN $f ==="; flow test "$f" | cat;
 done
 ```
@@ -104,19 +110,15 @@ What it does:
 ### Current status and interpretation
 
 - Precision target: ±0.0000001 for all asserted values (debt, yield units, collateral).
-- Scenarios 1–3: match legacy expectations under strict precision.
-- Scenarios 4–9: after step-0 ordering fix, some cases still show larger deltas (not rounding-only). These indicate semantic ordering differences between CSV expectations and on-chain rebalancing sequences, not a change in formulas.
-
-Action items:
-- Use the drift report to pinpoint step labels where deltas are large and adjust simulator/generator action order if needed.
-- Keep Scenario 4 excluded unless per-row snapshots are introduced.
+- Scenarios 1–3: generated tests align with legacy expectations under strict precision.
+- Some later steps in Scenarios 4–9 exhibit larger deltas in the drift report. These are due to step-order/semantics mismatches between the CSV action sequencing and on-chain rebalancing (e.g., when to rebalance tide vs protocol), not formula changes. Tolerances remain unchanged.
 
 ### Files of interest
 
 - `tidal_simulator.py`: generates CSVs with shared formulas across scenarios (collateral × CF ÷ targetHealth; balancer sell-to-debt at 1.05× threshold).
-- `generate_cadence_tests.py`: builds tests from CSVs, embeds DRIFT logs, strict comparisons.
+- `generate_cadence_tests.py`: maps CSVs to tests, with Scenario 1 using immediate post-rebalance semantics; embeds DRIFT logs and strict comparisons.
 - `cadence/tests/test_helpers.cdc`: helpers used by tests.
-- `precision_reports/generate_drift_report.py`: runs selected tests and produces the drift report.
+- `precision_reports/generate_drift_report.py`: runs selected tests (including split S7/S9) and produces the drift report.
 
 ### Troubleshooting
 
