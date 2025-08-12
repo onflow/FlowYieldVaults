@@ -106,16 +106,16 @@ fun setup() {
 }
 
 access(all)
-fun test_RebalanceTideScenario2_Instant() {
+fun test_RebalanceTideScenario5_GradualTrends() {
     let fundingAmount = 1000.0
     let user = Test.createAccount()
 
-    let flowPrices = [1.00000000, 1.00000000, 1.00000000, 1.00000000, 1.00000000, 1.00000000, 1.00000000]
-    let yieldPrices = [1.00000000, 1.10000000, 1.20000000, 1.30000000, 1.50000000, 2.00000000, 3.00000000]
-    let expectedDebts = [615.38461539, 653.25443787, 689.80014069, 725.17450688, 793.83008149, 956.66702129, 1251.02610476]
-    let expectedYieldUnits = [615.38461539, 593.86767079, 574.83345057, 557.82654375, 529.22005433, 478.33351064, 417.00870159]
-    let expectedCollaterals = [1000.00000000, 1061.53846154, 1120.92522862, 1178.40857368, 1289.97388243, 1554.58390959, 2032.91742023]
-    let actions: [String] = ["none", "Bal sell 55.944055944 | Borrow 37.869822485", "Bal sell 49.488972566 | Borrow 36.545702818", "Bal sell 44.217957736 | Borrow 35.374366189", "Bal sell 74.376872501 | Borrow 68.655574616", "Bal sell 132.305013582 | Borrow 162.836939793", "Bal sell 159.444503548 | Borrow 294.359083472"]
+    let flowPrices = [1.00000000, 1.15450850, 1.29389263, 1.40450850, 1.47552826, 1.50000000, 1.47552826, 1.40450850, 1.29389263, 1.15450850, 1.00000000, 0.84549150, 0.70610737, 0.59549150, 0.52447174, 0.50000000, 0.52447174, 0.59549150, 0.70610737, 0.84549150]
+    let yieldPrices = [1.00000000, 1.02000000, 1.04000000, 1.06000000, 1.08000000, 1.10000000, 1.12000000, 1.14000000, 1.16000000, 1.18000000, 1.20000000, 1.22000000, 1.24000000, 1.26000000, 1.28000000, 1.30000000, 1.32000000, 1.34000000, 1.36000000, 1.38000000]
+    let expectedDebts = [615.38461539, 710.46676739, 796.24161600, 890.34449359, 935.36526298, 950.87836296, 967.57840168, 921.00715747, 848.47074410, 787.19251603, 681.84211556, 576.49171509, 502.86174714, 424.08549837, 373.50803323, 369.02848103, 387.09002059, 439.50664964, 521.14746334, 640.20285923]
+    let expectedYieldUnits = [615.38461539, 708.60241146, 791.07822744, 839.94763546, 881.63353304, 895.73635121, 863.90928722, 823.05731861, 760.52592778, 667.11230172, 579.32030133, 492.96751406, 405.53366705, 343.01283469, 303.49919005, 283.86806233, 297.55104684, 336.66793420, 396.69794427, 463.91511539]
+    let expectedCollaterals = [1000.00000000, 1154.50849700, 1293.89262600, 1446.80980208, 1519.96855234, 1545.17733980, 1572.31490273, 1496.63663090, 1378.76495917, 1279.18783854, 1107.99343778, 936.79903702, 817.15033910, 689.13893485, 606.95055399, 599.67128168, 629.02128345, 714.19830566, 846.86462793, 1040.32964625]
+    let actions: [String] = ["none", "Borrow 95.082152000", "Borrow 85.774848615", "Bal sell 39.906891590 | Borrow 94.102877590", "Borrow 45.020769385", "Borrow 15.513099981", "Bal sell 46.737812852 | Borrow 16.700038724", "Repay 46.571244206", "Repay 72.536413371", "Bal sell 41.482924299 | Repay 61.278228078", "Repay 105.350400467", "Repay 105.350400466", "Bal sell 28.054840599 | Repay 73.629967951", "Repay 78.776248771", "Repay 50.577465145", "Bal sell 16.185318334 | Repay 4.479552194", "Borrow 18.061539556", "Borrow 52.416629051", "Borrow 81.640813705", "Bal sell 19.054854893 | Borrow 119.055395888"]
 
     // Keep initial prices at 1.0/1.0 for opening the Tide to match baseline CSV state
 
@@ -164,7 +164,7 @@ fun test_RebalanceTideScenario2_Instant() {
     var flowCollateralAmount0 = getFlowCollateralFromPosition(pid: pid)
     var actualCollateral = flowCollateralAmount0 * flowPrices[0]
 
-    logStep("Scenario2_Instant", 0, actualDebt, expectedDebts[0], actualYieldUnits, expectedYieldUnits[0], actualCollateral, expectedCollaterals[0])
+    logStep("Scenario5_GradualTrends", 0, actualDebt, expectedDebts[0], actualYieldUnits, expectedYieldUnits[0], actualCollateral, expectedCollaterals[0])
     let okDebt0 = equalAmounts(a: actualDebt, b: expectedDebts[0], tolerance: 0.0000001)
     let okY0 = equalAmounts(a: actualYieldUnits, b: expectedYieldUnits[0], tolerance: 0.0000001)
     let okC0 = equalAmounts(a: actualCollateral, b: expectedCollaterals[0], tolerance: 0.0000001)
@@ -205,7 +205,7 @@ fun test_RebalanceTideScenario2_Instant() {
         let flowCollateralAmount = getFlowCollateralFromPosition(pid: pid)
         actualCollateral = flowCollateralAmount * flowPrices[i]
 
-        logStep("Scenario2_Instant", i, actualDebt, expectedDebts[i], actualYieldUnits, expectedYieldUnits[i], actualCollateral, expectedCollaterals[i])
+        logStep("Scenario5_GradualTrends", i, actualDebt, expectedDebts[i], actualYieldUnits, expectedYieldUnits[i], actualCollateral, expectedCollaterals[i])
         let okDebt = equalAmounts(a: actualDebt, b: expectedDebts[i], tolerance: 0.0000001)
         let okY = equalAmounts(a: actualYieldUnits, b: expectedYieldUnits[i], tolerance: 0.0000001)
         let okC = equalAmounts(a: actualCollateral, b: expectedCollaterals[i], tolerance: 0.0000001)
