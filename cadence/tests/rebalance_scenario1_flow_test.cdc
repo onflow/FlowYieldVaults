@@ -115,9 +115,6 @@ fun test_RebalanceTideScenario1_FLOW() {
     let expectedDebts = [307.69230769, 492.30769231, 615.38461539, 738.46153846, 923.07692308, 1230.76923077, 1846.15384615, 3076.92307692]
     let expectedYieldUnits = [307.69230769, 492.30769231, 615.38461539, 738.46153846, 923.07692308, 1230.76923077, 1846.15384615, 3076.92307692]
     let expectedCollaterals = [500.00000000, 800.00000000, 1000.00000000, 1200.00000000, 1500.00000000, 2000.00000000, 3000.00000000, 5000.00000000]
-    let actions: [String] = []
-
-    // Keep initial prices at 1.0/1.0 for opening the Tide to match baseline CSV state
 
     let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
     mintFlow(to: user, amount: fundingAmount)
@@ -138,27 +135,14 @@ fun test_RebalanceTideScenario1_FLOW() {
     rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
     rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
-    // Step 0: set prices to step-0, execute CSV actions (if provided) in-order, then assert
+    var allGood: Bool = true
+
+    // Step 0: set prices, rebalance both, then assert post-rebalance values
     setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPrices[0])
     setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPrices[0])
-    if false {
-        let a0 = actions[0]
-        if a0 != "none" {
-            let parts0 = a0.split(separator: "|")
-            var j0: Int = 0
-            while j0 < parts0.length {
-                let p0 = parts0[j0]
-                if p0.contains("Bal") {
-                    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-                } else if p0.contains("Borrow") || p0.contains("Repay") {
-                    rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
-                }
-                j0 = j0 + 1
-            }
-        }
-    }
+    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+    rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
-    var allGood: Bool = true
     var actualDebt = getMOETDebtFromPosition(pid: pid)
     var actualYieldUnits = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0
     var flowCollateralAmount0 = getFlowCollateralFromPosition(pid: pid)
@@ -170,35 +154,13 @@ fun test_RebalanceTideScenario1_FLOW() {
     let okC0 = equalAmounts(a: actualCollateral, b: expectedCollaterals[0], tolerance: 0.0000001)
     if !(okDebt0 && okY0 && okC0) { allGood = false }
 
-    // Subsequent steps: set prices, rebalance, assert
+    // Subsequent steps: set prices, rebalance both, assert
     var i = 1
     while i < flowPrices.length {
         setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPrices[i])
         setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPrices[i])
-
-        // Execute rebalances per CSV 'Actions' for this step in-order if available; otherwise do both
-        if false {
-            let a = actions[i]
-            if a != "none" {
-                let parts = a.split(separator: "|")
-                var idx: Int = 0
-                while idx < parts.length {
-                    let p = parts[idx]
-                    if p.contains("Bal") {
-                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-                    } else if p.contains("Borrow") || p.contains("Repay") {
-                        rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
-                    }
-                    idx = idx + 1
-                }
-            } else {
-                rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-                rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
-            }
-        } else {
-            rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-            rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
-        }
+        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+        rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
         actualDebt = getMOETDebtFromPosition(pid: pid)
         actualYieldUnits = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0

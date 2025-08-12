@@ -5,13 +5,22 @@ from pathlib import Path
 
 
 TEST_FILES = [
-    # After renumbering: scenarios 4..9
+    # Scenarios 4..9 with S7/S9 split per case
     'cadence/tests/rebalance_scenario4_volatilemarkets_test.cdc',
     'cadence/tests/rebalance_scenario5_gradualtrends_test.cdc',
     'cadence/tests/rebalance_scenario6_edgecases_test.cdc',
-    'cadence/tests/rebalance_scenario7_multisteppaths_test.cdc',
+    # Scenario 7 (split)
+    'cadence/tests/rebalance_scenario7_multisteppaths_bear_test.cdc',
+    'cadence/tests/rebalance_scenario7_multisteppaths_bull_test.cdc',
+    'cadence/tests/rebalance_scenario7_multisteppaths_sideways_test.cdc',
+    'cadence/tests/rebalance_scenario7_multisteppaths_crisis_test.cdc',
+    # Scenario 8
     'cadence/tests/rebalance_scenario8_randomwalks_test.cdc',
-    'cadence/tests/rebalance_scenario9_extremeshocks_test.cdc',
+    # Scenario 9 (split)
+    'cadence/tests/rebalance_scenario9_extremeshocks_flashcrash_test.cdc',
+    'cadence/tests/rebalance_scenario9_extremeshocks_rebound_test.cdc',
+    'cadence/tests/rebalance_scenario9_extremeshocks_yieldhyperinflate_test.cdc',
+    'cadence/tests/rebalance_scenario9_extremeshocks_mixedshock_test.cdc',
 ]
 
 DRIFT_QUOTED_RE = re.compile(r'"DRIFT\|([^\"]+)"', re.S)

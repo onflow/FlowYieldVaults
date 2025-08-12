@@ -261,6 +261,99 @@ fun {test_name}() {{
 '''
 
 
+def generate_instant_rebalance_test(scenario_name: str, df: pd.DataFrame) -> str:
+    """Generate tests that always rebalance immediately after setting prices.
+    Intended for CSVs where expected values are post-rebalance (e.g., Scenario1 FLOW grid).
+    Expects columns: FlowPrice, YieldPrice, Debt, YieldUnits, Collateral.
+    """
+    test_name = f"test_RebalanceTide{scenario_name}"
+
+    flow_prices = df['FlowPrice'].tolist() if 'FlowPrice' in df.columns else [1.0] * len(df)
+    yield_prices = df['YieldPrice'].tolist() if 'YieldPrice' in df.columns else [1.0] * len(df)
+    expected_debts = df['Debt'].tolist()
+    expected_yields = df['YieldUnits'].tolist()
+    expected_collaterals = df['Collateral'].tolist()
+
+    return f'''
+access(all)
+fun {test_name}() {{
+    let fundingAmount = 1000.0
+    let user = Test.createAccount()
+
+    let flowPrices = [{', '.join(format_decimal(p) for p in flow_prices)}]
+    let yieldPrices = [{', '.join(format_decimal(p) for p in yield_prices)}]
+    let expectedDebts = [{', '.join(format_decimal(d) for d in expected_debts)}]
+    let expectedYieldUnits = [{', '.join(format_decimal(y) for y in expected_yields)}]
+    let expectedCollaterals = [{', '.join(format_decimal(c) for c in expected_collaterals)}]
+
+    let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+    mintFlow(to: user, amount: fundingAmount)
+    createTide(
+        signer: user,
+        strategyIdentifier: strategyIdentifier,
+        vaultIdentifier: flowTokenIdentifier,
+        amount: fundingAmount,
+        beFailed: false
+    )
+
+    var tideIDs = getTideIDs(address: user.address)
+    var pid  = 1 as UInt64
+    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+    Test.assertEqual(1, tideIDs!.length)
+
+    // Initial stabilization
+    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+    rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+
+    var allGood: Bool = true
+
+    // Step 0: set prices, rebalance both, then assert post-rebalance values
+    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPrices[0])
+    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPrices[0])
+    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+    rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+
+    var actualDebt = getMOETDebtFromPosition(pid: pid)
+    var actualYieldUnits = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0
+    var flowCollateralAmount0 = getFlowCollateralFromPosition(pid: pid)
+    var actualCollateral = flowCollateralAmount0 * flowPrices[0]
+
+    logStep("{scenario_name}", 0, actualDebt, expectedDebts[0], actualYieldUnits, expectedYieldUnits[0], actualCollateral, expectedCollaterals[0])
+    let okDebt0 = equalAmounts(a: actualDebt, b: expectedDebts[0], tolerance: 0.0000001)
+    let okY0 = equalAmounts(a: actualYieldUnits, b: expectedYieldUnits[0], tolerance: 0.0000001)
+    let okC0 = equalAmounts(a: actualCollateral, b: expectedCollaterals[0], tolerance: 0.0000001)
+    if !(okDebt0 && okY0 && okC0) {{ allGood = false }}
+
+    // Subsequent steps: set prices, rebalance both, assert
+    var i = 1
+    while i < flowPrices.length {{
+        setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPrices[i])
+        setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPrices[i])
+        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+        rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+
+        actualDebt = getMOETDebtFromPosition(pid: pid)
+        actualYieldUnits = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0
+        let flowCollateralAmount = getFlowCollateralFromPosition(pid: pid)
+        actualCollateral = flowCollateralAmount * flowPrices[i]
+
+        logStep("{scenario_name}", i, actualDebt, expectedDebts[i], actualYieldUnits, expectedYieldUnits[i], actualCollateral, expectedCollaterals[i])
+        let okDebt = equalAmounts(a: actualDebt, b: expectedDebts[i], tolerance: 0.0000001)
+        let okY = equalAmounts(a: actualYieldUnits, b: expectedYieldUnits[i], tolerance: 0.0000001)
+        let okC = equalAmounts(a: actualCollateral, b: expectedCollaterals[i], tolerance: 0.0000001)
+        if !(okDebt && okY && okC) {{ allGood = false }}
+        i = i + 1
+    }}
+
+    closeTide(signer: user, id: tideIDs![0], beFailed: false)
+
+    let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+    Test.assert((flowBalanceAfter - flowBalanceBefore) > 0.1, message: "Expected user's Flow balance > 0 after test")
+    Test.assert(allGood, message: "One or more steps exceeded tolerance")
+}}
+'''
+
+
 def generate_path_test(scenario_name: str, df: pd.DataFrame) -> str:
     """Generate sequential path test matching legacy step semantics.
     Expects columns: Step, Label, FlowPrice, YieldPrice, Debt, YieldUnits, Collateral.
@@ -433,7 +526,7 @@ def generate_scenario_test(scenario_name: str, csv_path: Path) -> str:
     if 'Shock' in df.columns:
         return generate_shocks_test(scenario_name, df)
     if 'DebtBefore' in df.columns and 'DebtAfter' in df.columns:
-        # Scenario 1 format: convert to standard format using *_After columns
+        # Scenario 1 format: expected values are post-rebalance after price set
         mapped = pd.DataFrame({
             'FlowPrice': df['FlowPrice'],
             'YieldPrice': 1.0,
@@ -441,7 +534,7 @@ def generate_scenario_test(scenario_name: str, csv_path: Path) -> str:
             'YieldUnits': df['YieldAfter'],
             'Collateral': df['Collateral'],
         })
-        return generate_standard_test(scenario_name, mapped)
+        return generate_instant_rebalance_test(scenario_name, mapped)
     return generate_standard_test(scenario_name, df)
 
 
