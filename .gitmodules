@@ -15,3 +15,6 @@
 [submodule "solidity/lib/punch-swap-v3-contracts"]
 	path = solidity/lib/punch-swap-v3-contracts
 	url = git@github.com:Kitty-Punch/punch-swap-v3-contracts.git
+[submodule "solidity/lib/forge-std"]
+	path = solidity/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
