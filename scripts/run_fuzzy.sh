@@ -26,8 +26,11 @@ gen_patterns=(
   'rebalance_scenario5_gradualtrends_test.cdc'
   'rebalance_scenario6_edgecases_test.cdc'
   'rebalance_scenario7_multisteppaths_*_test.cdc'
+  'rebalance_scenario7_multisteppaths_test.cdc'
   'rebalance_scenario8_randomwalks_test.cdc'
+  'rebalance_scenario8_randomwalks_*_test.cdc'
   'rebalance_scenario9_extremeshocks_*_test.cdc'
+  'rebalance_scenario9_extremeshocks_test.cdc'
 )
 for pat in "${gen_patterns[@]}"; do
   if find "$TEST_DIR" -maxdepth 1 -name "$pat" | grep -q .; then
@@ -54,6 +57,22 @@ python3 -m pip install --quiet --upgrade pip pandas
 
 echo "[fuzzy] Generating CSVs"
 python3 "$ROOT/tidal_simulator.py"
+
+# Split Scenario 8 walks into independent CSVs (Walk0..4)
+python3 - << 'PY'
+import pandas as pd
+from pathlib import Path
+root = Path('.').resolve()
+p = root / 'Scenario8_RandomWalks.csv'
+if p.exists():
+    df = pd.read_csv(p)
+    if 'WalkID' in df.columns:
+        for walk_id in sorted(df['WalkID'].unique()):
+            sub = df[df['WalkID'] == walk_id]
+            out = root / f'Scenario8_RandomWalks_Walk{int(walk_id)}.csv'
+            sub.to_csv(out, index=False)
+            print(f"[fuzzy] Wrote {out}")
+PY
 
 echo "[fuzzy] Generating Cadence tests"
 python3 "$ROOT/generate_cadence_tests.py"

@@ -215,28 +215,21 @@ fun {test_name}() {{
         setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPrices[i])
         setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPrices[i])
 
-        // Execute rebalances per CSV 'Actions' for this step in-order if available; otherwise do both
+        // Execute rebalances per CSV 'Actions' for this step in-order if available; otherwise run Tide once
         if {str(has_actions).lower()} {{
             let a = actions[i]
             if a != "none" {{
                 let parts = a.split(separator: "|")
                 var idx: Int = 0
                 while idx < parts.length {{
-                    let p = parts[idx]
-                    if p.contains("Bal") {{
-                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-                    }} else if p.contains("Borrow") || p.contains("Repay") {{
-                        rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
-                    }}
+                    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
                     idx = idx + 1
                 }}
             }} else {{
                 rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-                rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
             }}
         }} else {{
             rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-            rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
         }}
 
         actualDebt = getMOETDebtFromPosition(pid: pid)
@@ -303,7 +296,6 @@ fun {test_name}() {{
 
     // Initial stabilization
     rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-    rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
     var allGood: Bool = true
 
@@ -311,7 +303,6 @@ fun {test_name}() {{
     setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPrices[0])
     setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPrices[0])
     rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-    rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
     var actualDebt = getMOETDebtFromPosition(pid: pid)
     var actualYieldUnits = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0
@@ -387,7 +378,7 @@ def generate_path_test(scenario_name: str, df: pd.DataFrame) -> str:
     code.append("\tvar tideIDs = getTideIDs(address: user.address)\n\tvar pid  = 1 as UInt64\n\tTest.assert(tideIDs != nil, message: \"Expected user's Tide IDs to be non-nil but encountered nil\")\n\tTest.assertEqual(1, tideIDs!.length)")
 
     # Initial stabilization
-    code.append("\trebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)\n\trebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)")
+    code.append("\trebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)")
 
     # Step 0: baseline (no rebalance after set)
     s0 = steps[0]
@@ -407,13 +398,9 @@ def generate_path_test(scenario_name: str, df: pd.DataFrame) -> str:
         code.append(f"\n\t// Step {idx}: {s['label']}")
         code.append(f"\tsetMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: {s['flow']})")
         code.append(f"\tsetMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: {s['yield']})")
-        # For labels containing 'after YIELD', only rebalance tide to match legacy tests
-        code.append("\tif (\"after YIELD\" == \"" + s['label'] + "\") {")
-        code.append("\t\trebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)")
-        code.append("\t} else {")
-        code.append("\t\trebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)")
-        code.append("\t\trebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)")
-        code.append("\t}")
+        # Always use Tide rebalance; ensure one protocol sync in FLOW step for legacy parity
+        code.append("\trebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)")
+        code.append("\trebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)")
         code.append("\tactualDebt = getMOETDebtFromPosition(pid: pid)")
         code.append("\tactualYieldUnits = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0")
         code.append(f"\tflowCollateralAmount = getFlowCollateralFromPosition(pid: pid)\n\tactualCollateral = flowCollateralAmount * {s['flow']}")
@@ -476,7 +463,6 @@ def generate_scaling_test(scenario_name: str, df: pd.DataFrame) -> str:
         cb.append(f"\tcreateTide(\n\t\tsigner: user,\n\t\tstrategyIdentifier: strategyIdentifier,\n\t\tvaultIdentifier: flowTokenIdentifier,\n\t\tamount: {r['initialFlow']},\n\t\tbeFailed: false\n\t)")
         cb.append(f"\tvar tideIDs = getTideIDs(address: user.address)\n\tvar pid: UInt64 = 1\n\tTest.assert(tideIDs != nil, message: \"tideIDs nil\")\n\tTest.assertEqual(1, tideIDs!.length)")
         cb.append(f"\trebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)")
-        cb.append(f"\trebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)")
         cb.append(f"\tlet debt = getMOETDebtFromPosition(pid: pid)")
         cb.append(f"\tlet y = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0")
         cb.append(f"\tlet flowAmt = getFlowCollateralFromPosition(pid: pid)")
@@ -517,6 +503,13 @@ def generate_scenario_test(scenario_name: str, csv_path: Path) -> str:
     if 'InitialFLOW' in df.columns and 'Debt' in df.columns and 'YieldUnits' in df.columns:
         return generate_scaling_test(scenario_name, df)
     if 'WalkID' in df.columns:
+        # If this CSV contains a single walk, emit a single test without extra suffix
+        try:
+            if df['WalkID'].nunique() == 1:
+                return generate_standard_test(scenario_name, df)
+        except Exception:
+            pass
+        # Otherwise, emit a test per-walk from the combined file
         return generate_random_walk_test(scenario_name, df)
     if 'TestCase' in df.columns:
         return generate_edge_case_test(scenario_name, df)
@@ -555,7 +548,12 @@ def main():
         'Scenario7_MultiStepPaths_Bull': 'Scenario7_MultiStepPaths_Bull.csv',
         'Scenario7_MultiStepPaths_Sideways': 'Scenario7_MultiStepPaths_Sideways.csv',
         'Scenario7_MultiStepPaths_Crisis': 'Scenario7_MultiStepPaths_Crisis.csv',
-        'Scenario8_RandomWalks': 'Scenario8_RandomWalks.csv',
+        # Scenario8 split per-walk for independent setup
+        'Scenario8_RandomWalks_Walk0': 'Scenario8_RandomWalks_Walk0.csv',
+        'Scenario8_RandomWalks_Walk1': 'Scenario8_RandomWalks_Walk1.csv',
+        'Scenario8_RandomWalks_Walk2': 'Scenario8_RandomWalks_Walk2.csv',
+        'Scenario8_RandomWalks_Walk3': 'Scenario8_RandomWalks_Walk3.csv',
+        'Scenario8_RandomWalks_Walk4': 'Scenario8_RandomWalks_Walk4.csv',
         # Scenario9 split into per-shock CSVs
         'Scenario9_ExtremeShocks_FlashCrash': 'Scenario9_ExtremeShocks_FlashCrash.csv',
         'Scenario9_ExtremeShocks_Rebound': 'Scenario9_ExtremeShocks_Rebound.csv',

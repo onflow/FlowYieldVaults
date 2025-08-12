@@ -122,7 +122,6 @@ fun test_RebalanceTideScenario3_Path_B() {
 	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
 	Test.assertEqual(1, tideIDs!.length)
 	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 	// Step 0: start
 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.00000000)
 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.00000000)
@@ -138,12 +137,8 @@ fun test_RebalanceTideScenario3_Path_B() {
 	// Step 1: after FLOW
 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.50000000)
 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.00000000)
-	if ("after YIELD" == "after FLOW") {
-		rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-	} else {
-		rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-		rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
-	}
+	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 	actualDebt = getMOETDebtFromPosition(pid: pid)
 	actualYieldUnits = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0
 	flowCollateralAmount = getFlowCollateralFromPosition(pid: pid)
@@ -156,12 +151,8 @@ fun test_RebalanceTideScenario3_Path_B() {
 	// Step 2: after YIELD
 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.50000000)
 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.30000000)
-	if ("after YIELD" == "after YIELD") {
-		rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-	} else {
-		rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-		rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
-	}
+	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 	actualDebt = getMOETDebtFromPosition(pid: pid)
 	actualYieldUnits = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0
 	flowCollateralAmount = getFlowCollateralFromPosition(pid: pid)

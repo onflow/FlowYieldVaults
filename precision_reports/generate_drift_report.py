@@ -14,8 +14,12 @@ TEST_FILES = [
     'cadence/tests/rebalance_scenario7_multisteppaths_bull_test.cdc',
     'cadence/tests/rebalance_scenario7_multisteppaths_sideways_test.cdc',
     'cadence/tests/rebalance_scenario7_multisteppaths_crisis_test.cdc',
-    # Scenario 8
-    'cadence/tests/rebalance_scenario8_randomwalks_test.cdc',
+    # Scenario 8 (split per walk)
+    'cadence/tests/rebalance_scenario8_randomwalks_walk0_test.cdc',
+    'cadence/tests/rebalance_scenario8_randomwalks_walk1_test.cdc',
+    'cadence/tests/rebalance_scenario8_randomwalks_walk2_test.cdc',
+    'cadence/tests/rebalance_scenario8_randomwalks_walk3_test.cdc',
+    'cadence/tests/rebalance_scenario8_randomwalks_walk4_test.cdc',
     # Scenario 9 (split)
     'cadence/tests/rebalance_scenario9_extremeshocks_flashcrash_test.cdc',
     'cadence/tests/rebalance_scenario9_extremeshocks_rebound_test.cdc',

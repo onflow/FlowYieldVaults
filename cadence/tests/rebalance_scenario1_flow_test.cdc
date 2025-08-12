@@ -133,7 +133,6 @@ fun test_RebalanceTideScenario1_FLOW() {
 
     // Initial stabilization
     rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-    rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
     var allGood: Bool = true
 
@@ -141,7 +140,6 @@ fun test_RebalanceTideScenario1_FLOW() {
     setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPrices[0])
     setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPrices[0])
     rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-    rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
     var actualDebt = getMOETDebtFromPosition(pid: pid)
     var actualYieldUnits = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0

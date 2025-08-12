@@ -106,16 +106,16 @@ fun setup() {
 }
 
 access(all)
-fun test_RebalanceTideScenario7_MultiStepPaths_Crisis() {
+fun test_RebalanceTideScenario8_RandomWalks_Walk1() {
     let fundingAmount = 1000.0
     let user = Test.createAccount()
 
-    let flowPrices = [1.00000000, 0.50000000, 0.20000000, 0.10000000, 0.15000000, 0.30000000, 0.70000000, 1.20000000]
-    let yieldPrices = [1.00000000, 2.00000000, 5.00000000, 10.00000000, 10.00000000, 10.00000000, 10.00000000, 10.00000000]
-    let expectedDebts = [615.38461539, 686.39053255, 908.14747383, 1012.93372081, 1519.40058121, 3038.80116241, 7090.53604563, 12155.20464966]
-    let expectedYieldUnits = [615.38461539, 343.19526627, 181.62949477, 101.29337208, 151.94005812, 303.88011624, 709.05360456, 1215.52046497]
-    let expectedCollaterals = [1000.00000000, 1115.38461539, 1475.73964497, 1646.01729631, 2469.02594446, 4938.05188892, 11522.12107415, 19752.20755569]
-    let actions: [String] = ["none", "Bal sell 307.692307693 | Borrow 71.005917160", "Bal sell 205.917159763 | Borrow 221.756941282", "Bal sell 90.814747382 | Borrow 104.786246978", "Borrow 506.466860402", "Borrow 1519.400581207", "Borrow 4051.734883219", "Borrow 5064.668604022"]
+    let flowPrices = [1.12232770, 1.05061119, 1.24275246, 1.04030602, 1.18490621, 1.33047349, 1.34975370, 1.28417423, 1.45337942, 1.66365837]
+    let yieldPrices = [1.10472091, 1.13048513, 1.18756240, 1.20479091, 1.31389545, 1.45771414, 1.67049283, 1.80881982, 1.97663844, 2.14782091]
+    let expectedDebts = [730.32082296, 683.65347340, 840.93562465, 703.94581332, 849.21005048, 1010.73928442, 1116.17688482, 1118.82372856, 1330.12029881, 1593.45326523]
+    let expectedYieldUnits = [661.09079407, 619.80997715, 708.11910809, 594.41488718, 646.33000277, 693.37276445, 668.17220769, 618.53796324, 672.92038437, 741.89298560]
+    let expectedCollaterals = [1186.77133731, 1110.93689427, 1366.52039006, 1143.91194665, 1379.96633203, 1642.45133717, 1813.78743783, 1818.08855891, 2161.44548557, 2589.36155600]
+    let actions: [String] = ["Bal sell 58.334766530 | Borrow 114.936207574", "Repay 46.667349560", "Bal sell 44.132037448 | Borrow 157.282151255", "Repay 136.989811330", "Bal sell 58.644850991 | Borrow 145.264237156", "Bal sell 63.767190202 | Borrow 161.529233935", "Bal sell 88.318217765 | Borrow 105.437600402", "Bal sell 51.097543177 | Borrow 2.646843745", "Bal sell 52.514503447 | Borrow 211.296570249", "Bal sell 53.632112024 | Borrow 263.332966417"]
 
     // Keep initial prices at 1.0/1.0 for opening the Tide to match baseline CSV state
 
@@ -164,7 +164,7 @@ fun test_RebalanceTideScenario7_MultiStepPaths_Crisis() {
     var flowCollateralAmount0 = getFlowCollateralFromPosition(pid: pid)
     var actualCollateral = flowCollateralAmount0 * flowPrices[0]
 
-    logStep("Scenario7_MultiStepPaths_Crisis", 0, actualDebt, expectedDebts[0], actualYieldUnits, expectedYieldUnits[0], actualCollateral, expectedCollaterals[0])
+    logStep("Scenario8_RandomWalks_Walk1", 0, actualDebt, expectedDebts[0], actualYieldUnits, expectedYieldUnits[0], actualCollateral, expectedCollaterals[0])
     let okDebt0 = equalAmounts(a: actualDebt, b: expectedDebts[0], tolerance: 0.0000001)
     let okY0 = equalAmounts(a: actualYieldUnits, b: expectedYieldUnits[0], tolerance: 0.0000001)
     let okC0 = equalAmounts(a: actualCollateral, b: expectedCollaterals[0], tolerance: 0.0000001)
@@ -198,7 +198,7 @@ fun test_RebalanceTideScenario7_MultiStepPaths_Crisis() {
         let flowCollateralAmount = getFlowCollateralFromPosition(pid: pid)
         actualCollateral = flowCollateralAmount * flowPrices[i]
 
-        logStep("Scenario7_MultiStepPaths_Crisis", i, actualDebt, expectedDebts[i], actualYieldUnits, expectedYieldUnits[i], actualCollateral, expectedCollaterals[i])
+        logStep("Scenario8_RandomWalks_Walk1", i, actualDebt, expectedDebts[i], actualYieldUnits, expectedYieldUnits[i], actualCollateral, expectedCollaterals[i])
         let okDebt = equalAmounts(a: actualDebt, b: expectedDebts[i], tolerance: 0.0000001)
         let okY = equalAmounts(a: actualYieldUnits, b: expectedYieldUnits[i], tolerance: 0.0000001)
         let okC = equalAmounts(a: actualCollateral, b: expectedCollaterals[i], tolerance: 0.0000001)
