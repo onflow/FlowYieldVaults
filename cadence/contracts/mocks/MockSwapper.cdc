@@ -4,7 +4,7 @@ import "Burner"
 import "MockOracle"
 
 import "DeFiActions"
-import "SwapStack"
+import "SwapConnectors"
 import "DeFiActionsMathUtils"
 
 ///
@@ -30,7 +30,7 @@ access(all) contract MockSwapper {
     /// Mocked DeFiActions Swapper implementation. Be sure to set connectors for Vaults you wish to handle via this mock
     /// in MockSwapper.liquidityConnectors via .setLiquidityConnector before instantiating mocks
     access(all) struct Swapper : DeFiActions.Swapper {
-        access(contract) let uniqueID: DeFiActions.UniqueIdentifier?
+        access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
         access(self) let inVault: Type
         access(self) let outVault: Type
         access(self) let oracle: {DeFiActions.PriceOracle}
@@ -90,9 +90,9 @@ access(all) contract MockSwapper {
         /// Internal estimator returning a quote for the amount in/out and in the desired direction
         access(self) fun _estimate(amount: UFix64, out: Bool, reverse: Bool): {DeFiActions.Quote} {
             let outTokenPrice = self.oracle.price(ofToken: self.outType())
-                ?? panic("Price for token \(self.outType().identifier) is currently unavailable")
+            ?? panic("Price for token \(self.outType().identifier) is currently unavailable")
             let inTokenPrice = self.oracle.price(ofToken: self.inType())
-                ?? panic("Price for token \(self.inType().identifier) is currently unavailable")
+            ?? panic("Price for token \(self.inType().identifier) is currently unavailable")
 
             let uintOutTokenPrice = DeFiActionsMathUtils.toUInt128(outTokenPrice)
             let uintInTokenPrice = DeFiActionsMathUtils.toUInt128(inTokenPrice)
@@ -102,7 +102,7 @@ access(all) contract MockSwapper {
             let uintPrice = reverse ? DeFiActionsMathUtils.div(uintOutTokenPrice, uintInTokenPrice) : DeFiActionsMathUtils.div(uintInTokenPrice, uintOutTokenPrice)
 
             if amount == UFix64.max {
-                return SwapStack.BasicQuote(
+                return SwapConnectors.BasicQuote(
                     inType: reverse ? self.outType() : self.inType(),
                     outType: reverse ? self.inType() : self.outType(),
                     inAmount: UFix64.max,
@@ -117,7 +117,7 @@ access(all) contract MockSwapper {
             let inAmount = DeFiActionsMathUtils.toUFix64Round(uintInAmount)
             let outAmount = DeFiActionsMathUtils.toUFix64Round(uintOutAmount)
 
-            return SwapStack.BasicQuote(
+            return SwapConnectors.BasicQuote(
                 inType: reverse ? self.outVault : self.inVault,
                 outType: reverse ? self.inVault : self.outVault,
                 inAmount: inAmount,
@@ -135,9 +135,22 @@ access(all) contract MockSwapper {
             var outVault <- swapOutVault.withdrawAvailable(maxAmount: outAmount)
 
             assert(outVault.balance == outAmount,
-                message: "MockSwapper outVault returned invalid balance - expected \(outAmount), received \(outVault.balance)")
+            message: "MockSwapper outVault returned invalid balance - expected \(outAmount), received \(outVault.balance)")
 
             return <- outVault
+        }
+        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
+            return DeFiActions.ComponentInfo(
+                type: self.getType(),
+                id: self.id(),
+                innerComponents: []
+            )
+        }
+        access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
+            return self.uniqueID
+        }
+        access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) {
+            self.uniqueID = id
         }
     }
 

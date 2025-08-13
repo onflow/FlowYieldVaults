@@ -4,7 +4,7 @@ import "FlowToken"
 // DeFiActions
 import "DeFiActionsUtils"
 import "DeFiActions"
-import "SwapStack"
+import "SwapConnectors"
 // Lending protocol
 import "TidalProtocol"
 // TidalYield platform
@@ -40,10 +40,10 @@ access(all) contract TidalYieldStrategies {
     /// Source. While this object is a simple wrapper for the top-level collateralized position, the true magic of the
     /// DeFiActions is in the stacking of the related connectors. This stacking logic can be found in the
     /// TracerStrategyComposer construct.
-    access(all) resource TracerStrategy : TidalYield.Strategy {
+    access(all) resource TracerStrategy : TidalYield.Strategy, DeFiActions.IdentifiableResource {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
-        access(contract) let uniqueID: DeFiActions.UniqueIdentifier?
+        access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
         access(self) let position: TidalProtocol.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
@@ -81,6 +81,19 @@ access(all) contract TidalYieldStrategies {
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
             TidalYieldAutoBalancers._cleanupAutoBalancer(id: self.id()!)
+        }
+        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
+            return DeFiActions.ComponentInfo(
+                type: self.getType(),
+                id: self.id(),
+                innerComponents: []
+            )
+        }
+        access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
+            return self.uniqueID
+        }
+        access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) {
+            self.uniqueID = id
         }
     }
 
@@ -150,9 +163,9 @@ access(all) contract TidalYieldStrategies {
             // init SwapSink directing swapped funds to AutoBalancer
             //
             // Swaps provided MOET to YieldToken & deposits to the AutoBalancer
-            let abaSwapSink = SwapStack.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
+            let abaSwapSink = SwapConnectors.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
             // Swaps YieldToken & provides swapped MOET, sourcing YieldToken from the AutoBalancer
-            let abaSwapSource = SwapStack.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
+            let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
 
             // open a TidalProtocol position
             let position = TidalProtocol.openPosition(
@@ -172,14 +185,14 @@ access(all) contract TidalYieldStrategies {
                 uniqueID: uniqueID
             )
             // allows for YieldToken to be deposited to the Position
-            let positionSwapSink = SwapStack.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
+            let positionSwapSink = SwapConnectors.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
 
             // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value,
             // recollateralizing the position
-            autoBalancer.setSink(positionSwapSink)
+            autoBalancer.setSink(positionSwapSink, updateSinkID: true)
 
             return <-create TracerStrategy(
-                id: DeFiActions.UniqueIdentifier(),
+                id: DeFiActions.createUniqueIdentifier(),
                 collateralType: collateralType,
                 position: position
             )

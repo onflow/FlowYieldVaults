@@ -15,7 +15,7 @@ access(all) contract MockStrategy {
     access(all) let IssuerStoragePath : StoragePath
     
     access(all) struct Sink : DeFiActions.Sink {
-        access(contract) let uniqueID: DeFiActions.UniqueIdentifier?
+        access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
         init(_ id: DeFiActions.UniqueIdentifier?) {
             self.uniqueID = id
         }
@@ -28,9 +28,22 @@ access(all) contract MockStrategy {
         access(all) fun depositCapacity(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
             return
         }
+        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
+            return DeFiActions.ComponentInfo(
+                type: self.getType(),
+                id: self.id(),
+                innerComponents: []
+            )
+        }
+        access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
+            return self.uniqueID
+        }
+        access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) {
+            self.uniqueID = id
+        }
     }
     access(all) struct Source : DeFiActions.Source {
-        access(contract) let uniqueID: DeFiActions.UniqueIdentifier?
+        access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
         init(_ id: DeFiActions.UniqueIdentifier?) {
             self.uniqueID = id
         }
@@ -43,12 +56,25 @@ access(all) contract MockStrategy {
         access(FungibleToken.Withdraw) fun withdrawAvailable(maxAmount: UFix64): @{FungibleToken.Vault} {
             return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
         }
+        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
+            return DeFiActions.ComponentInfo(
+                type: self.getType(),
+                id: self.id(),
+                innerComponents: []
+            )
+        }
+        access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
+            return self.uniqueID
+        }
+        access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) {
+            self.uniqueID = id
+        }
     }
 
     access(all) resource Strategy : TidalYield.Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
-        access(contract) let uniqueID: DeFiActions.UniqueIdentifier?
+        access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
 
@@ -86,6 +112,20 @@ access(all) contract MockStrategy {
         }
 
         access(contract) fun burnCallback() {} // no-op
+
+        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
+            return DeFiActions.ComponentInfo(
+                type: self.getType(),
+                id: self.id(),
+                innerComponents: []
+            )
+        }
+        access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
+            return self.uniqueID
+        }
+        access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) {
+            self.uniqueID = id
+        }
     }
 
     access(all) resource StrategyComposer : TidalYield.StrategyComposer {
@@ -103,7 +143,7 @@ access(all) contract MockStrategy {
             uniqueID: DeFiActions.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
         ): @{TidalYield.Strategy} {
-            let id = DeFiActions.UniqueIdentifier()
+            let id = DeFiActions.createUniqueIdentifier()
             let strat <- create Strategy(
                 id: id,
                 sink: Sink(id),
