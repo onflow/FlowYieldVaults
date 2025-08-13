@@ -219,6 +219,7 @@ access(all) contract TidalYield {
         }
         /// Returns the balance of the Tide's vaultType available via the encapsulated Strategy
         access(all) fun getTideBalance(): UFix64 {
+            log("getTideBalance")
             return self._borrowStrategy().availableBalance(ofToken: self.vaultType)
         }
         /// Burner.Burnable conformance - emits the BurnedTide event when burned

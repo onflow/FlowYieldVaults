@@ -128,7 +128,7 @@ fun test_RebalanceTideScenario2() {
 
         tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
 
-        log("[TEST] Tide balance after yield before \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+        log("[TEST] Tide balance after yield price \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
 
         Test.assert(
             tideBalance == expectedFlowBalance[index],
