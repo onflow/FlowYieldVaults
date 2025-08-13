@@ -33,6 +33,12 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
+        name: "DeFiActionsMathUtils",
+        path: "../../lib/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
         name: "DeFiActions",
         path: "../../lib/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
         arguments: []
@@ -57,12 +63,6 @@ access(all) fun deployContracts() {
         name: "MOET",
         path: "../../lib/TidalProtocol/cadence/contracts/MOET.cdc",
         arguments: [initialMoetSupply]
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "TidalProtocolUtils",
-        path: "../../lib/TidalProtocol/cadence/contracts/TidalProtocolUtils.cdc",
-        arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(

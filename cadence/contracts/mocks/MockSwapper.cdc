@@ -5,7 +5,7 @@ import "MockOracle"
 
 import "DeFiActions"
 import "SwapStack"
-import "TidalProtocolUtils"
+import "DeFiActionsMathUtils"
 
 ///
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
@@ -94,12 +94,12 @@ access(all) contract MockSwapper {
             let inTokenPrice = self.oracle.price(ofToken: self.inType())
                 ?? panic("Price for token \(self.inType().identifier) is currently unavailable")
 
-            let uintOutTokenPrice = TidalProtocolUtils.toUInt256Balance(outTokenPrice)
-            let uintInTokenPrice = TidalProtocolUtils.toUInt256Balance(inTokenPrice)
+            let uintOutTokenPrice = DeFiActionsMathUtils.toUInt128(outTokenPrice)
+            let uintInTokenPrice = DeFiActionsMathUtils.toUInt128(inTokenPrice)
 
             // the original formula is correct, but lacks precision
             // let price = reverse  ? outTokenPrice / inTokenPrice : inTokenPrice / outTokenPrice
-            let uintPrice = reverse ? TidalProtocolUtils.div(uintOutTokenPrice, uintInTokenPrice) : TidalProtocolUtils.div(uintInTokenPrice, uintOutTokenPrice)
+            let uintPrice = reverse ? DeFiActionsMathUtils.div(uintOutTokenPrice, uintInTokenPrice) : DeFiActionsMathUtils.div(uintInTokenPrice, uintOutTokenPrice)
 
             if amount == UFix64.max {
                 return SwapStack.BasicQuote(
@@ -110,12 +110,12 @@ access(all) contract MockSwapper {
                 )
             }
 
-            let uintAmount = TidalProtocolUtils.toUInt256Balance(amount)
-            let uintInAmount = out ? uintAmount : TidalProtocolUtils.div(uintAmount, uintPrice)
-            let uintOutAmount = out ? TidalProtocolUtils.mul(uintAmount, uintPrice) : uintAmount
+            let uintAmount = DeFiActionsMathUtils.toUInt128(amount)
+            let uintInAmount = out ? uintAmount : DeFiActionsMathUtils.div(uintAmount, uintPrice)
+            let uintOutAmount = out ? DeFiActionsMathUtils.mul(uintAmount, uintPrice) : uintAmount
 
-            let inAmount = TidalProtocolUtils.toUFix64Balance(uintInAmount)
-            let outAmount = TidalProtocolUtils.toUFix64Balance(uintOutAmount)
+            let inAmount = DeFiActionsMathUtils.toUFix64Round(uintInAmount)
+            let outAmount = DeFiActionsMathUtils.toUFix64Round(uintOutAmount)
 
             return SwapStack.BasicQuote(
                 inType: reverse ? self.outVault : self.inVault,

@@ -14,15 +14,8 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"DFBMathUtils": {
-			"source": "./lib/DeFiBlocks/cadence/contracts/utils/DFBMathUtils.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
-			}
-		},
-		"DFBv2": {
-			"source": "./lib/DeFiBlocks/cadence/contracts/interfaces/DFBv2.cdc",
+		"DeFiActionsMathUtils": {
+			"source": "./lib/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -77,18 +70,18 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"TidalProtocolUtils": {
-			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocolUtils.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000008"
-			}
-		},
 		"TidalProtocol": {
 			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000008"
+			}
+		},
+		"TidalProtocolUtils": {
+			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocolUtils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"TidalYield": {
@@ -98,29 +91,8 @@
 				"testing": "0000000000000009"
 			}
 		},
-		"TidalProtocol": {
-			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000008"
-			}
-		},
-		"TidalProtocolUtils": {
-			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocolUtils.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000008"
-			}
-		},
 		"TidalYieldAutoBalancers": {
 			"source": "cadence/contracts/TidalYieldAutoBalancers.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
-			}
-		},
-		"TidalYieldAutoBalancersV2": {
-			"source": "cadence/contracts/TidalYieldAutoBalancersV2.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000009"
@@ -133,25 +105,11 @@
 				"testing": "0000000000000009"
 			}
 		},
-		"TidalYieldStrategiesV2": {
-			"source": "cadence/contracts/TidalYieldStrategiesV2.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
-			}
-		},
 		"YieldToken": {
 			"source": "cadence/contracts/mocks/YieldToken.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000010"
-			}
-		},
-		"MockYieldToken": {
-			"source": "./lib/TidalProtocol/cadence/contracts/mocks/MockYieldToken.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
 			}
 		}
 	},
@@ -254,6 +212,7 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
+				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",
 				"DeFiActions",
 				"FungibleTokenStack",
@@ -295,3 +254,4 @@
 		}
 	}
 }
+

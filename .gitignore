@@ -4,3 +4,6 @@
 imports
 coverage.lcov
 coverage.json
+
+# fuzzy testing archives
+archives/
