@@ -221,6 +221,9 @@ access(all) contract TidalYield {
         access(all) fun getTideBalance(): UFix64 {
             return self._borrowStrategy().availableBalance(ofToken: self.vaultType)
         }
+        access(all) fun getLiquidationValue(): UFix64 {
+            return self._borrowStrategy().liquidationValue(ofToken: self.vaultType)
+        }
         /// Burner.Burnable conformance - emits the BurnedTide event when burned
         access(contract) fun burnCallback() {
             emit BurnedTide(
