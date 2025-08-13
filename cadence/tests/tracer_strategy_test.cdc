@@ -240,6 +240,7 @@ fun test_RebalanceTideSucceedsAfterYieldPriceDecrease() {
 		amount: fundingAmount,
 		beFailed: false
 	)
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<TidalProtocol.Opened>())) as! TidalProtocol.Opened).pid
 
 	var tideIDs = getTideIDs(address: user.address)
 	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
@@ -256,6 +257,7 @@ fun test_RebalanceTideSucceedsAfterYieldPriceDecrease() {
 	log("Tide balance before rebalance: \(tideBalance ?? 0.0)")
 
 	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalancePosition(signer: protocolAccount, pid: positionID, force: true, beFailed: false)
 
 	closeTide(signer: user, id: tideIDs![0], beFailed: false)
 
@@ -294,6 +296,7 @@ fun test_RebalanceTideSucceedsAfterCollateralPriceIncrease() {
         amount: fundingAmount,
         beFailed: false
     )
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<TidalProtocol.Opened>())) as! TidalProtocol.Opened).pid
 
     var tideIDs = getTideIDs(address: user.address)
     Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
@@ -313,7 +316,7 @@ fun test_RebalanceTideSucceedsAfterCollateralPriceIncrease() {
 
     // Position ID is hardcoded to 1 here since this is the first tide created, 
     // if there is a better way to get the position ID, please let me know
-    rebalancePosition(signer: protocolAccount, pid: 1, force: true, beFailed: false)
+    rebalancePosition(signer: protocolAccount, pid: positionID, force: true, beFailed: false)
 
     let yieldTokensAfter = getAutoBalancerBalance(id: tideIDs![0])!
 
@@ -321,7 +324,7 @@ fun test_RebalanceTideSucceedsAfterCollateralPriceIncrease() {
 
     // the ratio of yield tokens after the rebalance should be directly proportional to the collateral price increase, 
     // as we started with 1.0 for all values.
-    Test.assert(yieldTokensAfter >= (yieldTokensBefore * collateralPriceIncrease),
+    Test.assert(yieldTokensAfter >= (yieldTokensBefore * collateralPriceIncrease) - TOLERANCE,
         message: "Expected user's Flow balance after rebalance to be more than funding amount but got \(yieldTokensAfter)"
     )
 

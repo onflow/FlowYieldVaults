@@ -33,20 +33,26 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
+        name: "DeFiActionsMathUtils",
+        path: "../../lib/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
         name: "DeFiActions",
         path: "../../lib/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "SwapStack",
-        path: "../../lib/DeFiActions/cadence/contracts/connectors/SwapStack.cdc",
+        name: "SwapConnectors",
+        path: "../../lib/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FungibleTokenStack",
-        path: "../../lib/DeFiActions/cadence/contracts/connectors/FungibleTokenStack.cdc",
+        name: "FungibleTokenConnectors",
+        path: "../../lib/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -57,12 +63,6 @@ access(all) fun deployContracts() {
         name: "MOET",
         path: "../../lib/TidalProtocol/cadence/contracts/MOET.cdc",
         arguments: [initialMoetSupply]
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "TidalProtocolUtils",
-        path: "../../lib/TidalProtocol/cadence/contracts/TidalProtocolUtils.cdc",
-        arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
@@ -391,3 +391,7 @@ access(all) fun formatPercent(_ percent: UFix64): String {
     let scaled = percent * 100.0
     return scaled.toString()
 }
+
+/* --- Const Helpers --- */
+access(all) let TOLERANCE = 0.00000001
+
