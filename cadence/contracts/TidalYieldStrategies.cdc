@@ -63,7 +63,6 @@ access(all) contract TidalYieldStrategies {
         }
         /// Returns the amount available for withdrawal via the inner Source
         access(all) fun availableBalance(ofToken: Type): UFix64 {
-            log("availableBalance")
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable(liquidation: true) : 0.0
         }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
@@ -149,16 +148,16 @@ access(all) contract TidalYieldStrategies {
             //
             // MOET -> YieldToken
             let moetToYieldSwapper = MockSwapper.Swapper(
-                inVault: moetTokenType,
-                outVault: yieldTokenType,
-                uniqueID: uniqueID
-            )
+                    inVault: moetTokenType,
+                    outVault: yieldTokenType,
+                    uniqueID: uniqueID
+                )
             // YieldToken -> MOET
             let yieldToMoetSwapper = MockSwapper.Swapper(
-                inVault: yieldTokenType,
-                outVault: moetTokenType,
-                uniqueID: uniqueID
-            )
+                    inVault: yieldTokenType,
+                    outVault: moetTokenType,
+                    uniqueID: uniqueID
+                )
 
             // init SwapSink directing swapped funds to AutoBalancer
             //
@@ -169,21 +168,21 @@ access(all) contract TidalYieldStrategies {
 
             // open a TidalProtocol position
             let position = TidalProtocol.openPosition(
-                collateral: <-withFunds,
-                issuanceSink: abaSwapSink,
-                repaymentSource: abaSwapSource,
-                pushToDrawDownSink: true
-            )
+                    collateral: <-withFunds,
+                    issuanceSink: abaSwapSink,
+                    repaymentSource: abaSwapSource,
+                    pushToDrawDownSink: true
+                )
             // get Sink & Source connectors relating to the new Position
             let positionSink = position.createSinkWithOptions(type: collateralType, pushToDrawDownSink: true)
             let positionSource = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true) // TODO: may need to be false
 
             // init YieldToken -> FLOW Swapper
             let yieldToFlowSwapper = MockSwapper.Swapper(
-                inVault: yieldTokenType,
-                outVault: flowTokenType, // TODO: before 
-                uniqueID: uniqueID
-            )
+                    inVault: yieldTokenType,
+                    outVault: flowTokenType, // TODO: before 
+                    uniqueID: uniqueID
+                )
             // allows for YieldToken to be deposited to the Position
             let positionSwapSink = SwapConnectors.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
 
