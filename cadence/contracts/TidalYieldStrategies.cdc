@@ -4,7 +4,7 @@ import "FlowToken"
 // DeFiActions
 import "DeFiActionsUtils"
 import "DeFiActions"
-import "SwapStack"
+import "SwapConnectors"
 // Lending protocol
 import "TidalProtocol"
 // TidalYield platform
@@ -149,9 +149,9 @@ access(all) contract TidalYieldStrategies {
             // init SwapSink directing swapped funds to AutoBalancer
             //
             // Swaps provided MOET to YieldToken & deposits to the AutoBalancer
-            let abaSwapSink = SwapStack.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
+            let abaSwapSink = SwapConnectors.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
             // Swaps YieldToken & provides swapped MOET, sourcing YieldToken from the AutoBalancer
-            let abaSwapSource = SwapStack.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
+            let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
 
             // open a TidalProtocol position
             let position = TidalProtocol.openPosition(
@@ -171,7 +171,7 @@ access(all) contract TidalYieldStrategies {
                     uniqueID: uniqueID
                 )
             // allows for YieldToken to be deposited to the Position
-            let positionSwapSink = SwapStack.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
+            let positionSwapSink = SwapConnectors.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
 
             // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value,
             // recollateralizing the position

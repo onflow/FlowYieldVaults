@@ -21,8 +21,8 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"FungibleTokenStack": {
-			"source": "./lib/DeFiActions/cadence/contracts/connectors/FungibleTokenStack.cdc",
+		"FungibleTokenConnectors": {
+			"source": "./lib/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -63,8 +63,8 @@
 				"testing": "0000000000000008"
 			}
 		},
-		"SwapStack": {
-			"source": "./lib/DeFiActions/cadence/contracts/connectors/SwapStack.cdc",
+		"SwapConnectors": {
+			"source": "./lib/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -208,8 +208,8 @@
 				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",
 				"DeFiActions",
-				"FungibleTokenStack",
-				"SwapStack",
+				"FungibleTokenConnectors",
+				"SwapConnectors",
 				{
 					"name": "MOET",
 					"args": [
