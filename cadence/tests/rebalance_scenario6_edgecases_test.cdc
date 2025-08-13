@@ -183,7 +183,15 @@ fun test_RebalanceTideScenario6_EdgeCases_VeryLowFlow() {
                 let parts = a.split(separator: "|")
                 var idx: Int = 0
                 while idx < parts.length {
-                    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    let p = parts[idx]
+                    if p.contains("Bal") {
+                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    } else if p.contains("Borrow") || p.contains("Repay") {
+                        rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+                    } else {
+                        // Default to Tide rebalance if action token is unrecognized
+                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    }
                     idx = idx + 1
                 }
             } else {
@@ -293,7 +301,15 @@ fun test_RebalanceTideScenario6_EdgeCases_VeryHighFlow() {
                 let parts = a.split(separator: "|")
                 var idx: Int = 0
                 while idx < parts.length {
-                    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    let p = parts[idx]
+                    if p.contains("Bal") {
+                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    } else if p.contains("Borrow") || p.contains("Repay") {
+                        rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+                    } else {
+                        // Default to Tide rebalance if action token is unrecognized
+                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    }
                     idx = idx + 1
                 }
             } else {
@@ -403,7 +419,15 @@ fun test_RebalanceTideScenario6_EdgeCases_VeryHighYield() {
                 let parts = a.split(separator: "|")
                 var idx: Int = 0
                 while idx < parts.length {
-                    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    let p = parts[idx]
+                    if p.contains("Bal") {
+                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    } else if p.contains("Borrow") || p.contains("Repay") {
+                        rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+                    } else {
+                        // Default to Tide rebalance if action token is unrecognized
+                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    }
                     idx = idx + 1
                 }
             } else {
@@ -513,7 +537,15 @@ fun test_RebalanceTideScenario6_EdgeCases_BothVeryLow() {
                 let parts = a.split(separator: "|")
                 var idx: Int = 0
                 while idx < parts.length {
-                    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    let p = parts[idx]
+                    if p.contains("Bal") {
+                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    } else if p.contains("Borrow") || p.contains("Repay") {
+                        rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+                    } else {
+                        // Default to Tide rebalance if action token is unrecognized
+                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    }
                     idx = idx + 1
                 }
             } else {
@@ -623,7 +655,15 @@ fun test_RebalanceTideScenario6_EdgeCases_MinimalPosition() {
                 let parts = a.split(separator: "|")
                 var idx: Int = 0
                 while idx < parts.length {
-                    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    let p = parts[idx]
+                    if p.contains("Bal") {
+                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    } else if p.contains("Borrow") || p.contains("Repay") {
+                        rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+                    } else {
+                        // Default to Tide rebalance if action token is unrecognized
+                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    }
                     idx = idx + 1
                 }
             } else {
@@ -733,7 +773,15 @@ fun test_RebalanceTideScenario6_EdgeCases_LargePosition() {
                 let parts = a.split(separator: "|")
                 var idx: Int = 0
                 while idx < parts.length {
-                    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    let p = parts[idx]
+                    if p.contains("Bal") {
+                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    } else if p.contains("Borrow") || p.contains("Repay") {
+                        rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+                    } else {
+                        // Default to Tide rebalance if action token is unrecognized
+                        rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+                    }
                     idx = idx + 1
                 }
             } else {
