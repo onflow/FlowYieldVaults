@@ -57,6 +57,7 @@ access(all) contract TidalYield {
         /// Returns the balance of the given token available for withdrawal. Note that this may be an estimate due to
         /// the lack of guarantees inherent to DeFiActions Sources
         access(all) fun availableBalance(ofToken: Type): UFix64
+        access(all) fun liquidationValue(ofToken: Type): UFix64
         /// Deposits up to the balance of the referenced Vault into this Strategy
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
             pre {
