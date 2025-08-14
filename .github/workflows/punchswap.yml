@@ -40,7 +40,7 @@ jobs:
       - name: Run EVM gateway
         run: ./local/run_evm_gateway.sh
       - name: Setup PunchSwap
-        run: ./local/setup_punchswap.sh
+        run: ./local/punchswap/setup_punchswap.sh
       - name: Run e2e script
-        run: ./local/e2e_punchswap.sh
+        run: ./local/punchswap/e2e_punchswap.sh
 
