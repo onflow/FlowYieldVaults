@@ -37,6 +37,8 @@ jobs:
         run: ./local/run_evm_gateway.sh
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+      - name: Install Flow deps
+        run: flow deps install
       - name: Setup PunchSwap
         run: ./local/punchswap/setup_punchswap.sh
       - name: Run e2e script
