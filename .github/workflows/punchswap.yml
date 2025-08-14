@@ -1,0 +1,47 @@
+name: KittyPunch tests
+
+on:
+  push:
+    branches:
+      - main
+      - nialexsan/amms
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  tests:
+    name: Flow CLI Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+          submodules: "recursive"
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.23.x"
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Install Flow CLI
+        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)"
+      - name: Flow CLI Version
+        run: flow version
+      - name: Update PATH
+        run: echo "/root/.local/bin" >> $GITHUB_PATH
+      - name: Run emulator
+        run: flow emulator
+      - name: Create wallets
+        run: ./local/setup_wallets.sh
+      - name: Run EVM gateway
+        run: ./local/run_evm_gateway.sh
+      - name: Setup PunchSwap
+        run: ./local/setup_punchswap.sh
+      - name: Run e2e script
+        run: ./local/e2e_punchswap.sh
+
