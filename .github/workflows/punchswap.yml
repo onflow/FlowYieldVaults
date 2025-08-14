@@ -35,11 +35,13 @@ jobs:
         run: ./local/setup_wallets.sh
       - name: Run EVM gateway
         run: ./local/run_evm_gateway.sh
-      - name: Install Foundry
+      - name: Install Foundry (bootstrap)
         run: |
           curl -L https://foundry.paradigm.xyz | bash
-          source /home/runner/.bashrc
-          foundryup
+          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
+
+      - name: Install Foundry toolchain
+        run: foundryup
       - name: Setup PunchSwap
         run: ./local/punchswap/setup_punchswap.sh
       - name: Run e2e script
