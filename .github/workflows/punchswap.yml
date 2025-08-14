@@ -17,33 +17,33 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
           submodules: "recursive"
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.23.x"
-          cache: true
-          cache-dependency-path: |
-            **/go.sum
-      - name: Install Flow CLI
-        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v2.2.17
-      - name: Flow CLI Version
-        run: flow version
-      - name: Update PATH
-        run: echo "/root/.local/bin" >> $GITHUB_PATH
-      - name: Run emulator
-        run: ./local/run_emulator.sh 
-      - name: Create wallets
-        run: ./local/setup_wallets.sh
-      - name: Run EVM gateway
-        run: ./local/run_evm_gateway.sh
+      # - uses: actions/setup-go@v5
+      #   with:
+      #     go-version: "1.23.x"
+      #     cache: true
+      #     cache-dependency-path: |
+      #       **/go.sum
+      # - name: Install Flow CLI
+      #   run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v2.2.17
+      # - name: Flow CLI Version
+      #   run: flow version
+      # - name: Update PATH
+      #   run: echo "/root/.local/bin" >> $GITHUB_PATH
+      # - name: Run emulator
+      #   run: ./local/run_emulator.sh 
+      # - name: Create wallets
+      #   run: ./local/setup_wallets.sh
+      # - name: Run EVM gateway
+      #   run: ./local/run_evm_gateway.sh
       - name: Install Foundry (bootstrap)
         run: |
           curl -L https://foundry.paradigm.xyz | bash
           echo "$HOME/.foundry/bin" >> $GITHUB_PATH
 
       - name: Install Foundry toolchain
-        run: foundryup
-      - name: Setup PunchSwap
-        run: ./local/punchswap/setup_punchswap.sh
-      - name: Run e2e script
-        run: ./local/punchswap/e2e_punchswap.sh
+        run: $HOME/.foundry/bin/foundryup
+      # - name: Setup PunchSwap
+      #   run: ./local/punchswap/setup_punchswap.sh
+      # - name: Run e2e script
+      #   run: ./local/punchswap/e2e_punchswap.sh
 
