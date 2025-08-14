@@ -38,7 +38,7 @@ jobs:
       - name: Install Foundry
         run: |
           curl -L https://foundry.paradigm.xyz | bash
-          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
+          source /home/runner/.bashrc
           foundryup
       - name: Setup PunchSwap
         run: ./local/punchswap/setup_punchswap.sh
