@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - nialexsan/mock-punchswap
   pull_request:
     branches:
       - main
