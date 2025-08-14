@@ -35,7 +35,7 @@ jobs:
       - name: Update PATH
         run: echo "/root/.local/bin" >> $GITHUB_PATH
       - name: Run emulator
-        run: flow emulator
+        run: ./local/run_emulator.sh 
       - name: Create wallets
         run: ./local/setup_wallets.sh
       - name: Run EVM gateway
