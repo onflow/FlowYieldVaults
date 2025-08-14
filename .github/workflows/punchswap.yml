@@ -17,16 +17,12 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
           submodules: "recursive"
-      - name: Set up Go
-        uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.23.x"
-      - uses: actions/cache@v4
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+          cache: true
+          cache-dependency-path: |
+            **/go.sum
       - name: Install Flow CLI
         run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v2.2.17
       - name: Flow CLI Version
@@ -39,6 +35,11 @@ jobs:
         run: ./local/setup_wallets.sh
       - name: Run EVM gateway
         run: ./local/run_evm_gateway.sh
+      - name: Install Foundry
+        run: |
+          curl -L https://foundry.paradigm.xyz | bash
+          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
+          foundryup
       - name: Setup PunchSwap
         run: ./local/punchswap/setup_punchswap.sh
       - name: Run e2e script
