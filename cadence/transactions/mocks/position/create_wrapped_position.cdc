@@ -1,7 +1,7 @@
 import "FungibleToken"
 
 import "DeFiActions"
-import "FungibleTokenStack"
+import "FungibleTokenConnectors"
 
 import "MOET"
 import "MockTidalProtocolConsumer"
@@ -46,12 +46,12 @@ transaction(amount: UFix64, vaultStoragePath: StoragePath, pushToDrawDownSink: B
             ?? panic("Could not borrow reference to Vault from \(vaultStoragePath)")
         self.collateral <- collateralSource.withdraw(amount: amount)
         // construct the DeFiActions Sink that will receive the loaned amount
-        self.sink = FungibleTokenStack.VaultSink(
+        self.sink = FungibleTokenConnectors.VaultSink(
             max: nil,
             depositVault: depositVaultCap,
             uniqueID: nil
         )
-        self.source = FungibleTokenStack.VaultSource(
+        self.source = FungibleTokenConnectors.VaultSource(
             min: nil,
             withdrawVault: withdrawVaultCap,
             uniqueID: nil

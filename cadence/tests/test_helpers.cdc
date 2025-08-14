@@ -45,14 +45,14 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "SwapStack",
-        path: "../../lib/DeFiActions/cadence/contracts/connectors/SwapStack.cdc",
+        name: "SwapConnectors",
+        path: "../../lib/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FungibleTokenStack",
-        path: "../../lib/DeFiActions/cadence/contracts/connectors/FungibleTokenStack.cdc",
+        name: "FungibleTokenConnectors",
+        path: "../../lib/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
