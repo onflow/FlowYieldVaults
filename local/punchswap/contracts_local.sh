@@ -2,7 +2,7 @@ echo $(date) > local_deploy.txt
 source .env
 
 NETWORK=emulator
-CHECK_UNISWAP_V3_POOL_INIT_CODE_HASH=false
+CHECK_UNISWAP_V3_POOL_INIT_CODE_HASH=true
 DEPLOY_CORE=true
 DEPLOY_PERIPHERY_1=true
 DEPLOY_PERIPHERY_2=true
