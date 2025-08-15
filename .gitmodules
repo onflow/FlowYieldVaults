@@ -9,9 +9,6 @@
 [submodule "lib/flow-evm-gateway"]
 	path = lib/flow-evm-gateway
 	url = git@github.com:onflow/flow-evm-gateway.git
-[submodule "solidity/lib/punch-swap-core-contracts"]
-	path = solidity/lib/punch-swap-core-contracts
-	url = git@github.com:Kitty-Punch/punch-swap-core-contracts.git
 [submodule "solidity/lib/punch-swap-v3-contracts"]
 	path = solidity/lib/punch-swap-v3-contracts
 	url = git@github.com:Kitty-Punch/punch-swap-v3-contracts.git
