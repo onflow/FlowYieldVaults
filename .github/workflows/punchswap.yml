@@ -22,7 +22,7 @@ jobs:
           go-version: "1.23.x"
           cache: true
           cache-dependency-path: |
-            **/go.sum
+            lib/flow-evm-gateway/**/go.sum
       - name: Install Flow CLI
         run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v2.2.17
       - name: Flow CLI Version
