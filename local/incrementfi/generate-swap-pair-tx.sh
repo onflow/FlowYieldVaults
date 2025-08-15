@@ -1,9 +1,9 @@
 #!/bin/bash
 
-TEMPLATE="./cadence/contracts/mocks/SwapPairTemplate.cdc"
-OUTPUT="./cadence/contracts/mocks/SwapPair.cdc"
+TEMPLATE="./cadence/contracts/mocks/incrementfi/SwapPairTemplate.cdc"
+OUTPUT="./cadence/contracts/mocks/incrementfi/SwapPair.cdc"
 
-TX="./cadence/transactions/mocks/amm/setup.cdc"
+TX="./cadence/transactions/mocks/incrementfi/setup.cdc"
 
 jq -r '
   (.contracts, .dependencies)
