@@ -2,7 +2,7 @@
 #set -e
 
 # Constants
-AMM_SIGNER="amm"
+SIGNER="mock-incrementfi"
 
 # Helper functions
 echo_info() {
@@ -17,14 +17,14 @@ flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0xf
 
 # 2. Setup MOET and YIELD vault, and create swap pairs
 #
-MOET_IDENTIFIER=$(flow scripts execute ./cadence/scripts/mocks/amm/get_moet_token_identifier.cdc | grep "^Result:" | sed -E 's/Result: "([^"]+)"/\1/')
-YIELD_IDENTIFIER=$(flow scripts execute ./cadence/scripts/mocks/amm/get_yield_token_identifier.cdc | grep "^Result:" | sed -E 's/Result: "([^"]+)"/\1/')
+MOET_IDENTIFIER=$(flow scripts execute ./cadence/scripts/mocks/incrementfi/get_moet_token_identifier.cdc | grep "^Result:" | sed -E 's/Result: "([^"]+)"/\1/')
+YIELD_IDENTIFIER=$(flow scripts execute ./cadence/scripts/mocks/incrementfi/get_yield_token_identifier.cdc | grep "^Result:" | sed -E 's/Result: "([^"]+)"/\1/')
 
-flow transactions send ./cadence/transactions/mocks/amm/setup.cdc --signer ${AMM_SIGNER}
+flow transactions send ./cadence/transactions/mocks/incrementfi/setup.cdc --signer ${SIGNER}
 #
 # 3. transfer funds to FLOW, MOET, and YIELD vaults
 #
-flow transactions send ./cadence/transactions/mocks/amm/transfer_amm_tokens.cdc f3fcd2c1a78f5eee 1000.0
+flow transactions send ./cadence/transactions/mocks/incrementfi/transfer_amm_tokens.cdc f3fcd2c1a78f5eee 1000.0
 # 
 # 4. create swap pair
 #
@@ -52,7 +52,7 @@ flow transactions send "./lib/DeFiActions/cadence/transactions/increment-fi/add_
 	/storage/moetTokenVault_0xf8d6e0586b0a20c7 \
 	/storage/yieldTokenVault_0xf8d6e0586b0a20c7 \
 	false \
-	--signer $AMM_SIGNER
+	--signer $SIGNER
 #
 # 6. add connectors
 #
