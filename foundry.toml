@@ -1,0 +1,8 @@
+[profile.default]
+src = "./solidity/src"
+out = "./solidity/out"
+libs = ["./solidity/lib"]
+script = "./solidity/script"
+test = "./solidity/test"
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
