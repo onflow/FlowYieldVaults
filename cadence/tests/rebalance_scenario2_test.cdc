@@ -276,8 +276,8 @@ fun test_RebalanceTideScenario2() {
 		// )
 		
 		Test.assert(
-			equalAmounts(a:tideBalance!, b:expectedFlowBalance[index], tolerance:0.01),
-			message: "Tide balance of \(tideBalance ?? 0.0) doesn't match an expected value \(expectedFlowBalance[index])"
+			equalAmounts(a: actualTideBalance, b: expectedBalance, tolerance: 0.01),	
+			message: "Expected balance \(expectedBalance) but got \(actualTideBalance) for yield price \(yieldTokenPrice)"
 		)
 	}
 
