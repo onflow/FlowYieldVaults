@@ -57,7 +57,7 @@ access(all) contract TidalYield {
         /// Returns the balance of the given token available for withdrawal. Note that this may be an estimate due to
         /// the lack of guarantees inherent to DeFiActions Sources
         access(all) fun availableBalance(ofToken: Type): UFix64
-        access(all) fun liquidationValue(ofToken: Type): UFix64
+        access(all) fun closeoutAmount(ofToken: Type): UFix64
         /// Deposits up to the balance of the referenced Vault into this Strategy
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
             pre {
@@ -223,8 +223,8 @@ access(all) contract TidalYield {
             return self._borrowStrategy().availableBalance(ofToken: self.vaultType)
         }
 
-        access(all) fun getLiquidationValue(): UFix64 {
-            return self._borrowStrategy().liquidationValue(ofToken: self.vaultType)
+        access(all) fun getCloseoutBalance(): UFix64 {
+            return self._borrowStrategy().closeoutAmount(ofToken: self.vaultType)
         }
 
         /// Burner.Burnable conformance - emits the BurnedTide event when burned
