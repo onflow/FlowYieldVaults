@@ -132,6 +132,15 @@
 				"testnet": "8c5303eaa26202d6"
 			}
 		},
+		"FlowStorageFees": {
+			"source": "mainnet://e467b9dd11fa00df.FlowStorageFees",
+			"hash": "e38d8a95f6518b8ff46ce57dfa37b4b850b3638f33d16333096bc625b6d9b51a",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "e467b9dd11fa00df",
+				"testnet": "8c5303eaa26202d6"
+			}
+		},
 		"FlowToken": {
 			"source": "mainnet://1654653399040a61.FlowToken",
 			"hash": "cefb25fd19d9fc80ce02896267eb6157a6b0df7b1935caa8641421fe34c0e67a",
@@ -257,6 +266,13 @@
 				"location": "local/emulator-account.pkey"
 			}
 		},
+		"evm-gateway": {
+			"address": "e03daebed8ca0615",
+			"key": {
+				"type": "file",
+				"location": "local/evm-gateway.pkey"
+			}
+		},
 		"mock-incrementfi": {
 			"address": "f3fcd2c1a78f5eee",
 			"key": {
@@ -294,6 +310,7 @@
 				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",
 				"DeFiActions",
+				"FlowStorageFees",
 				"FungibleTokenConnectors",
 				"SwapConnectors",
 				{
