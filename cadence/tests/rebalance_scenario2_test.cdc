@@ -276,7 +276,7 @@ fun test_RebalanceTideScenario2() {
 		// )
 		
 		Test.assert(
-			equalAmounts(a: actualTideBalance, b: expectedBalance, tolerance: 0.01),	
+			equalAmounts(a: actualTideBalance, b: expectedBalance, tolerance: 0.01),
 			message: "Expected balance \(expectedBalance) but got \(actualTideBalance) for yield price \(yieldTokenPrice)"
 		)
 	}
