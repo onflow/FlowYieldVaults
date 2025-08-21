@@ -1,4 +1,4 @@
-import "Tidal"
+import "TidalYield"
 
 /// Returns the balance of the tide with the given ID at the provided address or nil if either the address does not
 /// have a TideManager stored or the Tide is not available. Note this `nil` does not mean a Tide with the given ID
@@ -11,8 +11,8 @@ import "Tidal"
 ///
 access(all)
 fun main(address: Address, id: UInt64): UFix64? {
-	let tide = getAccount(address).capabilities.borrow<&Tidal.TideManager>(Tidal.TideManagerPublicPath)
-	?.borrowTide(id: id)
-	?? nil
-	return tide?.getLiquidationValue() ?? nil
+    let tide = getAccount(address).capabilities.borrow<&TidalYield.TideManager>(TidalYield.TideManagerPublicPath)
+        ?.borrowTide(id: id)
+        ?? nil
+    return tide?.getCloseoutBalance() ?? nil
 }

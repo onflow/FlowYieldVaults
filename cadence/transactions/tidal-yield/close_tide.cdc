@@ -2,7 +2,7 @@ import "FungibleToken"
 import "FungibleTokenMetadataViews"
 import "ViewResolver"
 
-import "Tidal"
+import "TidalYield"
 
 /// Withdraws the full balance from an existing Tide stored in the signer's TideManager and closes the Tide. If the
 /// signer does not yet have a Vault of the withdrawn Type, one is configured.
@@ -10,13 +10,13 @@ import "Tidal"
 /// @param id: The Tide.id() of the Tide from which the full balance will be withdrawn
 ///
 transaction(id: UInt64) {
-    let manager: auth(FungibleToken.Withdraw) &Tidal.TideManager
+    let manager: auth(FungibleToken.Withdraw) &TidalYield.TideManager
     let receiver: &{FungibleToken.Vault}
 
     prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability) &Account) {
         // reference the signer's TideManager & underlying Tide
-        self.manager = signer.storage.borrow<auth(FungibleToken.Withdraw) &Tidal.TideManager>(from: Tidal.TideManagerStoragePath)
-            ?? panic("Signer does not have a TideManager stored at path \(Tidal.TideManagerStoragePath) - configure and retry")
+        self.manager = signer.storage.borrow<auth(FungibleToken.Withdraw) &TidalYield.TideManager>(from: TidalYield.TideManagerStoragePath)
+            ?? panic("Signer does not have a TideManager stored at path \(TidalYield.TideManagerStoragePath) - configure and retry")
         let tide = self.manager.borrowTide(id: id) ?? panic("Tide with ID \(id) was not found")
         
         // get the data for where the vault type is canoncially stored

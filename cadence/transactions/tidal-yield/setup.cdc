@@ -2,27 +2,27 @@ import "FungibleToken"
 import "FungibleTokenMetadataViews"
 import "ViewResolver"
 
-import "Tidal"
+import "TidalYield"
 
-/// Configures a Tidal.TideManager at the canonical path. If one is already configured, the transaction no-ops
+/// Configures a TidalYield.TideManager at the canonical path. If one is already configured, the transaction no-ops
 ///
 transaction {
     prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability) &Account) {
-        if signer.storage.type(at: Tidal.TideManagerStoragePath) == Type<@Tidal.TideManager>() {
+        if signer.storage.type(at: TidalYield.TideManagerStoragePath) == Type<@TidalYield.TideManager>() {
             return // early return if TideManager is found
         }
 
         // configure the TideManager
-        signer.storage.save(<-Tidal.createTideManager(), to: Tidal.TideManagerStoragePath)
-        let cap = signer.capabilities.storage.issue<&Tidal.TideManager>(Tidal.TideManagerStoragePath)
-        signer.capabilities.publish(cap, at: Tidal.TideManagerPublicPath)
+        signer.storage.save(<-TidalYield.createTideManager(), to: TidalYield.TideManagerStoragePath)
+        let cap = signer.capabilities.storage.issue<&TidalYield.TideManager>(TidalYield.TideManagerStoragePath)
+        signer.capabilities.publish(cap, at: TidalYield.TideManagerPublicPath)
         // issue an authorized capability for later access via Capability controller if needed (e.g. via HybridCustody)
-        signer.capabilities.storage.issue<auth(FungibleToken.Withdraw) &Tidal.TideManager>(Tidal.TideManagerStoragePath)
+        signer.capabilities.storage.issue<auth(FungibleToken.Withdraw) &TidalYield.TideManager>(TidalYield.TideManagerStoragePath)
 
         // confirm setup of TideManager at canonical path
-        let storedType = signer.storage.type(at: Tidal.TideManagerStoragePath) ?? Type<Never>()
-        if storedType != Type<@Tidal.TideManager>() {
-            panic("Setup was unsuccessful - Expected TideManager at \(Tidal.TideManagerStoragePath) but found \(storedType.identifier)")
+        let storedType = signer.storage.type(at: TidalYield.TideManagerStoragePath) ?? Type<Never>()
+        if storedType != Type<@TidalYield.TideManager>() {
+            panic("Setup was unsuccessful - Expected TideManager at \(TidalYield.TideManagerStoragePath) but found \(storedType.identifier)")
         }
     }
 }

@@ -1,8 +1,17 @@
-[submodule "lib/DeFiBlocks"]
-	path = lib/DeFiBlocks
-	url = git@github.com:onflow/DeFiBlocks.git
-	branch = main
 [submodule "lib/TidalProtocol"]
 	path = lib/TidalProtocol
 	url = git@github.com:onflow/TidalProtocol.git
-	branch = tracer-bullet
+	branch = main
+[submodule "lib/DeFiActions"]
+	path = lib/DeFiActions
+	url = git@github.com:onflow/DeFiActions.git
+	branch = nialexsan/univ3
+[submodule "lib/flow-evm-gateway"]
+	path = lib/flow-evm-gateway
+	url = git@github.com:onflow/flow-evm-gateway.git
+[submodule "solidity/lib/punch-swap-v3-contracts"]
+	path = solidity/lib/punch-swap-v3-contracts
+	url = git@github.com:Kitty-Punch/punch-swap-v3-contracts.git
+[submodule "solidity/lib/forge-std"]
+	path = solidity/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std

@@ -1,14 +1,14 @@
 // standards
 import "FungibleToken"
 import "FlowToken"
-// DeFiBlocks
-import "DFBUtils"
-import "DFB"
-import "SwapStack"
+// DeFiActions
+import "DeFiActionsUtils"
+import "DeFiActions"
+import "SwapConnectors"
 // Lending protocol
 import "TidalProtocol"
 // TidalYield platform
-import "Tidal"
+import "TidalYield"
 import "TidalYieldAutoBalancers"
 // tokens
 import "YieldToken"
@@ -24,11 +24,11 @@ import "MockSwapper"
 ///
 /// This contract defines Strategies used in the TidalYield platform.
 ///
-/// A Strategy instance can be thought of as objects wrapping a stack of DeFiBlocks connectors wired together to
+/// A Strategy instance can be thought of as objects wrapping a stack of DeFiActions connectors wired together to
 /// (optimally) generate some yield on initial deposits. Strategies can be simple such as swapping into a yield-bearing
-/// asset (such as stFLOW) or more complex DeFiBlocks stacks.
+/// asset (such as stFLOW) or more complex DeFiActions stacks.
 ///
-/// A StrategyComposer is tasked with the creation of a supported Strategy. It's within the stacking of DeFiBlocks
+/// A StrategyComposer is tasked with the creation of a supported Strategy. It's within the stacking of DeFiActions
 /// connectors that the true power of the components lies.
 ///
 access(all) contract TidalYieldStrategies {
@@ -38,24 +38,24 @@ access(all) contract TidalYieldStrategies {
 
     /// This is the first Strategy implementation, wrapping a TidalProtocol Position along with its related Sink &
     /// Source. While this object is a simple wrapper for the top-level collateralized position, the true magic of the
-    /// DeFiBlocks is in the stacking of the related connectors. This stacking logic can be found in the
+    /// DeFiActions is in the stacking of the related connectors. This stacking logic can be found in the
     /// TracerStrategyComposer construct.
-    access(all) resource TracerStrategy : Tidal.Strategy {
+    access(all) resource TracerStrategy : TidalYield.Strategy, DeFiActions.IdentifiableResource {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
-        access(contract) let uniqueID: DFB.UniqueIdentifier?
+        access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
         access(self) let position: TidalProtocol.Position
-        access(self) var sink: {DFB.Sink}
-        access(self) var source: {DFB.Source}
+        access(self) var sink: {DeFiActions.Sink}
+        access(self) var source: {DeFiActions.Source}
 
-        init(id: DFB.UniqueIdentifier, collateralType: Type, position: TidalProtocol.Position) {
+        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: TidalProtocol.Position) {
             self.uniqueID = id
             self.position = position
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
         }
 
-        // Inherited from Tidal.Strategy default implementation
+        // Inherited from TidalYield.Strategy default implementation
         // access(all) view fun isSupportedCollateralType(_ type: Type): Bool
 
         access(all) view fun getSupportedCollateralTypes(): {Type: Bool} {
@@ -76,7 +76,7 @@ access(all) contract TidalYieldStrategies {
         /// an empty Vault is returned.
         access(FungibleToken.Withdraw) fun withdraw(maxAmount: UFix64, ofToken: Type): @{FungibleToken.Vault} {
             if ofToken != self.source.getSourceType() {
-                return <- DFBUtils.getEmptyVault(ofToken)
+                return <- DeFiActionsUtils.getEmptyVault(ofToken)
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
         }
@@ -84,10 +84,23 @@ access(all) contract TidalYieldStrategies {
         access(contract) fun burnCallback() {
             TidalYieldAutoBalancers._cleanupAutoBalancer(id: self.id()!)
         }
+        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
+            return DeFiActions.ComponentInfo(
+                type: self.getType(),
+                id: self.id(),
+                innerComponents: []
+            )
+        }
+        access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
+            return self.uniqueID
+        }
+        access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) {
+            self.uniqueID = id
+        }
     }
 
     /// This StrategyComposer builds a TracerStrategy
-    access(all) resource TracerStrategyComposer : Tidal.StrategyComposer {
+    access(all) resource TracerStrategyComposer : TidalYield.StrategyComposer {
         /// Returns the Types of Strategies composed by this StrategyComposer
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
             return { Type<@TracerStrategy>(): true }
@@ -107,9 +120,9 @@ access(all) contract TidalYieldStrategies {
         /// Composes a Strategy of the given type with the provided funds
         access(all) fun createStrategy(
             _ type: Type,
-            uniqueID: DFB.UniqueIdentifier,
+            uniqueID: DeFiActions.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
-        ): @{Tidal.Strategy} {
+        ): @{TidalYield.Strategy} {
             // this PriceOracle is mocked and will be shared by all components used in the TracerStrategy
             let oracle = MockOracle.PriceOracle()
 
@@ -152,9 +165,9 @@ access(all) contract TidalYieldStrategies {
             // init SwapSink directing swapped funds to AutoBalancer
             //
             // Swaps provided MOET to YieldToken & deposits to the AutoBalancer
-            let abaSwapSink = SwapStack.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
+            let abaSwapSink = SwapConnectors.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
             // Swaps YieldToken & provides swapped MOET, sourcing YieldToken from the AutoBalancer
-            let abaSwapSource = SwapStack.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
+            let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
 
             // open a TidalProtocol position
             let position = TidalProtocol.openPosition(
@@ -174,14 +187,14 @@ access(all) contract TidalYieldStrategies {
                     uniqueID: uniqueID
                 )
             // allows for YieldToken to be deposited to the Position
-            let positionSwapSink = SwapStack.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
+            let positionSwapSink = SwapConnectors.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
 
             // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value,
             // recollateralizing the position
-            autoBalancer.setSink(positionSwapSink)
+            autoBalancer.setSink(positionSwapSink, updateSinkID: true)
 
             return <-create TracerStrategy(
-                id: DFB.UniqueIdentifier(),
+                id: DeFiActions.createUniqueIdentifier(),
                 collateralType: collateralType,
                 position: position
             )
@@ -191,11 +204,11 @@ access(all) contract TidalYieldStrategies {
     /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
     /// may utilize resource consumption (i.e. account storage). Since TracerStrategy creation consumes account storage
     /// via configured AutoBalancers
-    access(all) resource StrategyComposerIssuer : Tidal.StrategyComposerIssuer {
+    access(all) resource StrategyComposerIssuer : TidalYield.StrategyComposerIssuer {
         access(all) view fun getSupportedComposers(): {Type: Bool} {
             return { Type<@TracerStrategyComposer>(): true }
         }
-        access(all) fun issueComposer(_ type: Type): @{Tidal.StrategyComposer} {
+        access(all) fun issueComposer(_ type: Type): @{TidalYield.StrategyComposer} {
             switch type {
             case Type<@TracerStrategyComposer>():
                 return <- create TracerStrategyComposer()

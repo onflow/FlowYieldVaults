@@ -1,21 +1,28 @@
 {
 	"contracts": {
-		"DFB": {
-			"source": "./lib/DeFiBlocks/cadence/contracts/interfaces/DFB.cdc",
+		"DeFiActions": {
+			"source": "./lib/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
-		"DFBUtils": {
-			"source": "./lib/DeFiBlocks/cadence/contracts/utils/DFBUtils.cdc",
+		"DeFiActionsMathUtils": {
+			"source": "./lib/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
-		"FungibleTokenStack": {
-			"source": "./lib/DeFiBlocks/cadence/contracts/connectors/FungibleTokenStack.cdc",
+		"DeFiActionsUtils": {
+			"source": "./lib/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
+		"FungibleTokenConnectors": {
+			"source": "./lib/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -56,8 +63,8 @@
 				"testing": "0000000000000008"
 			}
 		},
-		"SwapStack": {
-			"source": "./lib/DeFiBlocks/cadence/contracts/connectors/SwapStack.cdc",
+		"SwapConnectors": {
+			"source": "./lib/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -70,8 +77,8 @@
 				"testing": "0000000000000008"
 			}
 		},
-		"Tidal": {
-			"source": "cadence/contracts/Tidal.cdc",
+		"TidalYield": {
+			"source": "cadence/contracts/TidalYield.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000009"
@@ -118,6 +125,15 @@
 				"testnet": "8c5303eaa26202d6"
 			}
 		},
+		"FlowStorageFees": {
+			"source": "mainnet://e467b9dd11fa00df.FlowStorageFees",
+			"hash": "e38d8a95f6518b8ff46ce57dfa37b4b850b3638f33d16333096bc625b6d9b51a",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "e467b9dd11fa00df",
+				"testnet": "8c5303eaa26202d6"
+			}
+		},
 		"FlowToken": {
 			"source": "mainnet://1654653399040a61.FlowToken",
 			"hash": "cefb25fd19d9fc80ce02896267eb6157a6b0df7b1935caa8641421fe34c0e67a",
@@ -147,7 +163,7 @@
 		},
 		"MetadataViews": {
 			"source": "mainnet://1d7e57aa55817448.MetadataViews",
-			"hash": "10a239cc26e825077de6c8b424409ae173e78e8391df62750b6ba19ffd048f51",
+			"hash": "9032f46909e729d26722cbfcee87265e4f81cd2912e936669c0e6b510d007e81",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
@@ -184,24 +200,40 @@
 			"address": "f8d6e0586b0a20c7",
 			"key": {
 				"type": "file",
-				"location": "emulator-account.pkey"
+				"location": "local/emulator-account.pkey"
+			}
+		},
+		"evm-gateway": {
+			"address": "e03daebed8ca0615",
+			"key": {
+				"type": "file",
+				"location": "local/evm-gateway.pkey"
+			}
+		},
+		"mock-incrementfi": {
+			"address": "f3fcd2c1a78f5eee",
+			"key": {
+				"type": "file",
+				"location": "local/mock-incrementfi.pkey"
 			}
 		},
 		"test-user": {
 			"address": "179b6b1cb6755e31",
 			"key": {
 				"type": "file",
-				"location": "test-user.pkey"
+				"location": "local/test-user.pkey"
 			}
 		}
 	},
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
-				"DFBUtils",
-				"DFB",
-				"FungibleTokenStack",
-				"SwapStack",
+				"DeFiActionsMathUtils",
+				"DeFiActionsUtils",
+				"DeFiActions",
+				"FlowStorageFees",
+				"FungibleTokenConnectors",
+				"SwapConnectors",
 				{
 					"name": "MOET",
 					"args": [
@@ -232,7 +264,7 @@
 				},
 				"MockSwapper",
 				"TidalYieldAutoBalancers",
-				"Tidal",
+				"TidalYield",
 				"TidalYieldStrategies"
 			]
 		}
