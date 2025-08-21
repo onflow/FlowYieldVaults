@@ -20,7 +20,11 @@ flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0xf
 MOET_IDENTIFIER=$(flow scripts execute ./cadence/scripts/mocks/incrementfi/get_moet_token_identifier.cdc | grep "^Result:" | sed -E 's/Result: "([^"]+)"/\1/')
 YIELD_IDENTIFIER=$(flow scripts execute ./cadence/scripts/mocks/incrementfi/get_yield_token_identifier.cdc | grep "^Result:" | sed -E 's/Result: "([^"]+)"/\1/')
 
-flow transactions send ./cadence/transactions/mocks/incrementfi/setup.cdc --signer ${SIGNER}
+
+SWAP_PAIR_HEX=$(./local/incrementfi/generate-swap-pair-tx.sh)
+
+flow transactions send ./cadence/transactions/mocks/incrementfi/setup.cdc ${SWAP_PAIR_HEX} --signer ${SIGNER}
+
 #
 # 3. transfer funds to FLOW, MOET, and YIELD vaults
 #

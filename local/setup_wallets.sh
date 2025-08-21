@@ -7,3 +7,4 @@ flow accounts create --network "$FLOW_NETWORK" --key "$(cat $AMM_PUBKEY_PATH)"
 flow accounts create --network "$FLOW_NETWORK" --key "$(cat $EVM_GATEWAY_PUBKEY_PATH)"
 
 flow transactions send ./cadence/transactions/mocks/add_gw_keys.cdc --signer evm-gateway
+

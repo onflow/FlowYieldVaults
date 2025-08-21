@@ -21,13 +21,6 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"DeFiActionsUtils": {
-			"source": "./lib/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
-			}
-		},
 		"FungibleTokenConnectors": {
 			"source": "./lib/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
@@ -290,22 +283,6 @@
 	},
 	"deployments": {
 		"emulator": {
-			"mock-incrementfi": [
-				"SwapConfig",
-				"SwapInterfaces",
-				"SwapError",
-				{
-					"name": "SwapFactory",
-					"args": [
-						{
-							"value": "0xf3fcd2c1a78f5eee",
-							"type": "Address"
-						}
-					]
-				},
-				"StableSwapFactory",
-				"SwapRouter"
-			],
 			"emulator-account": [
 				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",
@@ -345,6 +322,22 @@
 				"TidalYieldAutoBalancers",
 				"TidalYield",
 				"TidalYieldStrategies"
+			],
+			"mock-incrementfi": [
+				"SwapConfig",
+				"SwapInterfaces",
+				"SwapError",
+				{
+					"name": "SwapFactory",
+					"args": [
+						{
+							"value": "0xf3fcd2c1a78f5eee",
+							"type": "Address"
+						}
+					]
+				},
+				"StableSwapFactory",
+				"SwapRouter"
 			]
 		}
 	}

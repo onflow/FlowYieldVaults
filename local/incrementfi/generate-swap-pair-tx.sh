@@ -3,8 +3,6 @@
 TEMPLATE="./cadence/contracts/mocks/incrementfi/SwapPairTemplate.cdc"
 OUTPUT="./cadence/contracts/mocks/incrementfi/SwapPair.cdc"
 
-TX="./cadence/transactions/mocks/incrementfi/setup.cdc"
-
 jq -r '
   (.contracts, .dependencies)
   | to_entries[]
@@ -15,10 +13,9 @@ jq -r '
 cp "$TEMPLATE" "$OUTPUT"
 
 while read name address; do
-	sed -i '' -E "s|^[[:space:]]*import[[:space:]]+\"${name}\"[[:space:]]*;?[[:space:]]*$|import ${name} from ${address}|g" "$OUTPUT"
+  sed -i '' -E "s|^[[:space:]]*import[[:space:]]+\"${name}\"[[:space:]]*;?[[:space:]]*$|import ${name} from ${address}|g" "$OUTPUT"
 done < contracts_map.txt
 
-HEX_STRING=$(xxd -p "$OUTPUT" | tr -d '\n')
-
-sed -i '' -E "s|^[[:space:]]*let swapPairTemplateCode[[:space:]]*=[[:space:]]*\"[^\"]*\"|        let swapPairTemplateCode = \"${HEX_STRING}\"|" $TX
+# Generate hex string
+xxd -p "$OUTPUT" | tr -d '\n'
 
