@@ -29,5 +29,5 @@ jobs:
         run: ./local/setup_wallets.sh
       - name: Install Flow deps
         run: flow deps install
-      - name: Setup PunchSwap
+      - name: Setup IncrementFi
         run: ./local/incrementfi/setup_incrementfi.sh
