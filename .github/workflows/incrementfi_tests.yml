@@ -28,7 +28,7 @@ jobs:
       - name: Create wallets
         run: ./local/setup_wallets.sh
       - name: Install Flow deps 
-        run: flow deps install --skip-deployments
+        run: flow deps install --skip-alias --skip-deployments
       - name: Deploy contracts
         run: flow deploy
       - name: Setup IncrementFi
