@@ -13,7 +13,7 @@ echo_info() {
 # echo_info "Creating new Flow account for test user..."
 # flow accounts create --network "$FLOW_NETWORK" --key "$(cat $TEST_USER_PUBKEY_PATH)"
 
-flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0xf3fcd2c1a78f5eee 1000.0 --sealed
+flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0xf3fcd2c1a78f5eee 1000.0
 
 # 2. Setup MOET and YIELD vault, and create swap pairs
 #
@@ -23,16 +23,16 @@ YIELD_IDENTIFIER=$(flow scripts execute ./cadence/scripts/mocks/incrementfi/get_
 
 SWAP_PAIR_HEX=$(./local/incrementfi/generate-swap-pair-tx.sh)
 
-flow transactions send ./cadence/transactions/mocks/incrementfi/setup.cdc ${SWAP_PAIR_HEX} --signer ${SIGNER} --sealed
+flow transactions send ./cadence/transactions/mocks/incrementfi/setup.cdc ${SWAP_PAIR_HEX} --signer ${SIGNER}
 
 #
 # 3. transfer funds to FLOW, MOET, and YIELD vaults
 #
-flow transactions send ./cadence/transactions/mocks/incrementfi/transfer_amm_tokens.cdc f3fcd2c1a78f5eee 1000.0 --sealed
+flow transactions send ./cadence/transactions/mocks/incrementfi/transfer_amm_tokens.cdc f3fcd2c1a78f5eee 1000.0
 # 
 # 4. create swap pair
 #
-flow transactions send ./lib/DeFiActions/cadence/transactions/increment-fi/create_swap_pair.cdc $MOET_IDENTIFIER $YIELD_IDENTIFIER false --sealed
+flow transactions send ./lib/DeFiActions/cadence/transactions/increment-fi/create_swap_pair.cdc $MOET_IDENTIFIER $YIELD_IDENTIFIER false
 #
 #
 # 5. add liquidity to the AMMs
@@ -56,8 +56,7 @@ flow transactions send "./lib/DeFiActions/cadence/transactions/increment-fi/add_
 	/storage/moetTokenVault_0xf8d6e0586b0a20c7 \
 	/storage/yieldTokenVault_0xf8d6e0586b0a20c7 \
 	false \
-	--signer $SIGNER \
-	--sealed
+	--signer $SIGNER
 #
 # 6. add connectors
 #
