@@ -21,8 +21,6 @@ else
   SED_INPLACE=(-i '')
 fi
 
-cat $OUTPUT
-
 while read name address; do
   sed "${SED_INPLACE[@]}" -E \
     "s|^[[:space:]]*import[[:space:]]+\"${name}\"[[:space:]]*;?[[:space:]]*$|import ${name} from ${address}|g" \
