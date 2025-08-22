@@ -11,6 +11,7 @@ jq -r '
 ' flow.json > contracts_map.txt
 
 cp "$TEMPLATE" "$OUTPUT"
+cat $OUTPUT
 
 while read name address; do
   sed -i '' -E "s|^[[:space:]]*import[[:space:]]+\"${name}\"[[:space:]]*;?[[:space:]]*$|import ${name} from ${address}|g" "$OUTPUT"
