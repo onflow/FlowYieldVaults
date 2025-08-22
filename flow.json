@@ -219,14 +219,6 @@
 				"mainnet": "b78ef7afa52ff906"
 			}
 		},
-		"SwapPair": {
-			"source": "mainnet://368caca05ddcb898.SwapPair",
-			"hash": "69b99c4a8abc123a0a88b1c354f9da414a32e2f73194403e67e89d51713923c0",
-			"aliases": {
-				"emulator": "f3fcd2c1a78f5eee",
-				"mainnet": "368caca05ddcb898"
-			}
-		},
 		"SwapRouter": {
 			"source": "mainnet://a6850776a94e6551.SwapRouter",
 			"hash": "2ae9ecd237b7ea36b4fcc87f415d181b437543722a64f18094e026252607932c",
