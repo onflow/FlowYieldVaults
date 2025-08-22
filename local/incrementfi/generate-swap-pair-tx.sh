@@ -11,10 +11,22 @@ jq -r '
 ' flow.json > contracts_map.txt
 
 cp "$TEMPLATE" "$OUTPUT"
+
+# Choose correct -i for sed (GNU vs BSD)
+if sed --version >/dev/null 2>&1; then
+  # GNU sed
+  SED_INPLACE=(-i)
+else
+  # BSD/macOS sed
+  SED_INPLACE=(-i '')
+fi
+
 cat $OUTPUT
 
 while read name address; do
-  sed -i '' -E "s|^[[:space:]]*import[[:space:]]+\"${name}\"[[:space:]]*;?[[:space:]]*$|import ${name} from ${address}|g" "$OUTPUT"
+  sed "${SED_INPLACE[@]}" -E \
+    "s|^[[:space:]]*import[[:space:]]+\"${name}\"[[:space:]]*;?[[:space:]]*$|import ${name} from ${address}|g" \
+    "$OUTPUT"
 done < contracts_map.txt
 
 # Generate hex string
