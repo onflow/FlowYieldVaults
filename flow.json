@@ -57,9 +57,15 @@
 			}
 		},
 		"MockTidalProtocolConsumer": {
-			"source": "./cadence/contracts/mocks/MockTidalProtocolConsumer.cdc",
+			"source": "./lib/TidalProtocol/cadence/contracts/mocks/MockTidalProtocolConsumer.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000008"
+			}
+		},
+		"TestHelpers": {
+			"source": "./lib/TidalProtocol/cadence/contracts/mocks/TestHelpers.cdc",
+			"aliases": {
 				"testing": "0000000000000008"
 			}
 		},
