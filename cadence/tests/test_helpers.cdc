@@ -95,7 +95,7 @@ access(all) fun deployContracts() {
 
     err = Test.deployContract(
         name: "MockTidalProtocolConsumer",
-        path: "../contracts/mocks/MockTidalProtocolConsumer.cdc",
+        path: "../../lib/TidalProtocol/cadence/contracts/mocks/MockTidalProtocolConsumer.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
