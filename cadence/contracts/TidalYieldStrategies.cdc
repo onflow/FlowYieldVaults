@@ -167,12 +167,19 @@ access(all) contract TidalYieldStrategies {
             let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
 
             // open a TidalProtocol position
-            let position = TidalProtocol.openPosition(
+            let position = TidalProtocol.openPosition_beta(
+                    betaCap: TidalYieldStrategies._betaCap(),
                     collateral: <-withFunds,
                     issuanceSink: abaSwapSink,
                     repaymentSource: abaSwapSource,
                     pushToDrawDownSink: true
                 )
+            // let position = TidalProtocol.openPosition(
+            //         collateral: <-withFunds,
+            //         issuanceSink: abaSwapSink,
+            //         repaymentSource: abaSwapSource,
+            //         pushToDrawDownSink: true
+            //     )
             // get Sink & Source connectors relating to the new Position
             let positionSink = position.createSinkWithOptions(type: collateralType, pushToDrawDownSink: true)
             let positionSource = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true) // TODO: may need to be false
@@ -213,6 +220,14 @@ access(all) contract TidalYieldStrategies {
                 panic("Unsupported StrategyComposer requested: \(type.identifier)")
             }
         }
+    }
+
+    access(contract) fun _betaCap(): Capability<&{TidalProtocol.PoolBeta}> {
+        let cap = self.account.capabilities.storage.issue<&{TidalProtocol.PoolBeta}>(
+            TidalProtocol.BetaBadgeStoragePath
+        )
+        assert(cap.check(), message: "Beta badge missing on strategies account")
+        return cap
     }
 
     init() {
