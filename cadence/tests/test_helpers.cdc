@@ -78,6 +78,12 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
+        name: "TidalProtocolClosedBeta",
+        path: "../../lib/TidalProtocol/cadence/contracts/TidalProtocolClosedBeta.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
         name: "TidalProtocol",
         path: "../../lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
         arguments: []
@@ -116,6 +122,12 @@ access(all) fun deployContracts() {
     err = Test.deployContract(
         name: "TidalYieldAutoBalancers",
         path: "../contracts/TidalYieldAutoBalancers.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "TidalYieldClosedBeta",
+        path: "../contracts/TidalYieldClosedBeta.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())

@@ -6,6 +6,7 @@ import "DeFiActionsUtils"
 import "DeFiActions"
 import "SwapConnectors"
 // Lending protocol
+import "TidalProtocolClosedBeta"
 import "TidalProtocol"
 // TidalYield platform
 import "TidalYield"
@@ -165,10 +166,10 @@ access(all) contract TidalYieldStrategies {
             let abaSwapSink = SwapConnectors.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
             // Swaps YieldToken & provides swapped MOET, sourcing YieldToken from the AutoBalancer
             let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
-
+ 
             // open a TidalProtocol position
             let position = TidalProtocol.openPosition_beta(
-                    betaCap: TidalYieldStrategies._betaCap(),
+                    betaRef: TidalYieldStrategies._betaRef(),
                     collateral: <-withFunds,
                     issuanceSink: abaSwapSink,
                     repaymentSource: abaSwapSource,
@@ -222,12 +223,11 @@ access(all) contract TidalYieldStrategies {
         }
     }
 
-    access(contract) fun _betaCap(): Capability<&{TidalProtocol.PoolBeta}> {
-        let cap = self.account.capabilities.storage.issue<&{TidalProtocol.PoolBeta}>(
-            TidalProtocol.BetaBadgeStoragePath
-        )
-        assert(cap.check(), message: "Beta badge missing on strategies account")
-        return cap
+    access(contract) fun _betaRef(): &{TidalProtocolClosedBeta.IBeta} {
+        let ref = self.account.storage.borrow<&{TidalProtocolClosedBeta.IBeta}>(
+            from: TidalProtocolClosedBeta.BetaBadgeStoragePath
+        ) ?? panic("Beta ref is required")
+        return ref
     }
 
     init() {
