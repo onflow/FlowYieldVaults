@@ -22,10 +22,22 @@ fun _executeTransaction(_ path: String, _ args: [AnyStruct], _ signer: Test.Test
 }
 
 access(all)
-fun grantBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
+fun grantProtocolBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
     let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
     let betaTxn = Test.Transaction(
         code: Test.readFile("../../lib/TidalProtocol/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc"),
+        authorizers: [admin.address, grantee.address],
+        signers: signers,
+        arguments: []
+    )
+    return Test.executeTransaction(betaTxn)
+}
+
+access(all)
+fun grantBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
+    let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
+    let betaTxn = Test.Transaction(
+        code: Test.readFile("../transactions/tidal-yield/admin/grant_beta.cdc"),
         authorizers: [admin.address, grantee.address],
         signers: signers,
         arguments: []
@@ -424,9 +436,9 @@ access(all) let TOLERANCE = 0.00000001
 access(all) fun setupBetaAccess(): Void {
     let protocolAccount = Test.getAccount(0x0000000000000008)
     let tidalYieldAccount = Test.getAccount(0x0000000000000009)
-    let protocolBeta = grantBeta(protocolAccount, protocolAccount)
+    let protocolBeta = grantProtocolBeta(protocolAccount, protocolAccount)
     Test.expect(protocolBeta, Test.beSucceeded())
 
-    let tidalYieldBeta = grantBeta(protocolAccount, tidalYieldAccount)
+    let tidalYieldBeta = grantProtocolBeta(protocolAccount, tidalYieldAccount)
     Test.expect(tidalYieldBeta, Test.beSucceeded())
 }

@@ -101,6 +101,7 @@ fun test_RebalanceTideScenario1() {
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	mintFlow(to: user, amount: fundingAmount)
+    grantBeta(tidalYieldAccount, user)
 
 	createTide(
 		signer: user,

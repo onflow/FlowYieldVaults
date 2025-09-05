@@ -2,6 +2,7 @@ import "FungibleToken"
 import "FungibleTokenMetadataViews"
 import "ViewResolver"
 
+import "TidalYieldClosedBeta"
 import "TidalYield"
 
 /// Opens a new Tide in the Tidal platform, funding the Tide with the specified Vault and amount
@@ -16,6 +17,7 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
     let manager: &TidalYield.TideManager
     let strategy: Type
     let depositVault: @{FungibleToken.Vault}
+    let betaRef: &{TidalYieldClosedBeta.IBeta}
 
     prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability) &Account) {
         // create the Strategy Type to compose which the Tide should manage
@@ -50,9 +52,11 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
         }
         self.manager = signer.storage.borrow<&TidalYield.TideManager>(from: TidalYield.TideManagerStoragePath)
             ?? panic("Signer does not have a TideManager stored at path \(TidalYield.TideManagerStoragePath) - configure and retry")
+        self.betaRef = signer.storage.borrow<&{TidalYieldClosedBeta.IBeta}>(from: TidalYieldClosedBeta.BetaBadgeStoragePath)
+            ?? panic("Signer doesn not have a BetaBadge stored at path \(TidalYieldClosedBeta.BetaBadgeStoragePath) - configure and retry")
     }
 
     execute {
-        self.manager.createTide(strategyType: self.strategy, withVault: <-self.depositVault)
+        self.manager.createTide(betaRef: self.betaRef, strategyType: self.strategy, withVault: <-self.depositVault)
     }
 }

@@ -9,6 +9,7 @@ import "SwapConnectors"
 import "TidalProtocolClosedBeta"
 import "TidalProtocol"
 // TidalYield platform
+import "TidalYieldClosedBeta"
 import "TidalYield"
 import "TidalYieldAutoBalancers"
 // tokens
@@ -166,7 +167,7 @@ access(all) contract TidalYieldStrategies {
             let abaSwapSink = SwapConnectors.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
             // Swaps YieldToken & provides swapped MOET, sourcing YieldToken from the AutoBalancer
             let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
- 
+
             // open a TidalProtocol position
             let position = TidalProtocol.openPosition_beta(
                     betaRef: TidalYieldStrategies._betaRef(),

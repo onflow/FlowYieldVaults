@@ -4,6 +4,7 @@ import "Burner"
 import "ViewResolver"
 // DeFiActions
 import "DeFiActions"
+import "TidalYieldClosedBeta"
 
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -318,7 +319,7 @@ access(all) contract TidalYield {
             return self.tides.length
         }
         /// Creates a new Tide executing the specified Strategy with the provided funds
-        access(all) fun createTide(strategyType: Type, withVault: @{FungibleToken.Vault}) {
+        access(all) fun createTide(betaRef: &{TidalYieldClosedBeta.IBeta}, strategyType: Type, withVault: @{FungibleToken.Vault}) {
             let balance = withVault.balance
             let type = withVault.getType()
             let tide <-create Tide(strategyType: strategyType, withVault: <-withVault)

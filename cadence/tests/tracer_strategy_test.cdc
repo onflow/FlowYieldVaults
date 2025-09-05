@@ -91,6 +91,7 @@ fun test_CreateTideSucceeds() {
 
 	let user = Test.createAccount()
 	mintFlow(to: user, amount: fundingAmount)
+    grantBeta(tidalYieldAccount, user)
 
 	createTide(
 		signer: user,
@@ -113,6 +114,7 @@ fun test_CloseTideSucceeds() {
 
 	let user = Test.createAccount()
 	mintFlow(to: user, amount: fundingAmount)
+    grantBeta(tidalYieldAccount, user)
 
 	createTide(
 		signer: user,
@@ -149,6 +151,7 @@ fun test_RebalanceTideSucceeds() {
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	mintFlow(to: user, amount: fundingAmount)
+    grantBeta(tidalYieldAccount, user)
 
     createTide(signer: user,
         strategyIdentifier: strategyIdentifier,
@@ -232,6 +235,7 @@ fun test_RebalanceTideSucceedsAfterYieldPriceDecrease() {
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	mintFlow(to: user, amount: fundingAmount)
+    grantBeta(tidalYieldAccount, user)
 
 	createTide(
 		signer: user,
@@ -288,6 +292,7 @@ fun test_RebalanceTideSucceedsAfterCollateralPriceIncrease() {
     // Likely 0.0
     let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
     mintFlow(to: user, amount: fundingAmount)
+    grantBeta(tidalYieldAccount, user)
 
     createTide(
         signer: user,

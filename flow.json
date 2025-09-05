@@ -91,7 +91,7 @@
 			}
 		},
 		"TidalYieldClosedBeta": {
-			"source": "./lib/TidalProtocol/cadence/contracts/TidalYieldClosedBeta.cdc",
+			"source": "cadence/contracts/TidalYieldClosedBeta.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000009"
@@ -285,6 +285,7 @@
 				},
 				"MockSwapper",
 				"TidalYieldAutoBalancers",
+        "TidalYieldClosedBeta",
 				"TidalYield",
 				"TidalYieldStrategies"
 			]
