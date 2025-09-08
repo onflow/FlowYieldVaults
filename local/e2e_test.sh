@@ -1,26 +1,50 @@
-echo "Grant Protocol Beta access to TidalYield..."
-flow transactions send ./lib/TidalProtocol/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc --authorizer emulator-account,emulator-account --proposer emulator-account --payer emulator-account
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "Grant Tide Beta access to test user..."
-flow transactions send ./cadence/transactions/tidal-yield/admin/grant_beta.cdc --authorizer emulator-account,test-user --proposer test-user --payer emulator-account
+run_txn() {
+  desc=$1
+  shift
+  echo ">>> $desc"
+  result=$(flow transactions send "$@" 2>&1 || true)
 
-echo "Transfer Flow tokens"
-flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0x179b6b1cb6755e31 1000.0
+  echo "$result"
 
-#flow transactions send "./cadence/transactions/yield-token/setup_vault.cdc" --signer test-user
+  if ! echo "$result" | grep -q "SEALED"; then
+    echo "❌ Transaction '$desc' failed (not SEALED)"
+    exit 1
+  fi
+}
 
-echo "Creating Tide[0]..."
-flow transactions send ./cadence/transactions/tidal-yield/create_tide.cdc \
+run_txn "Grant Protocol Beta access to TidalYield" \
+  ./lib/TidalProtocol/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc \
+  --authorizer emulator-account,emulator-account \
+  --proposer emulator-account \
+  --payer emulator-account
+
+run_txn "Grant Tide Beta access to test user" \
+  ./cadence/transactions/tidal-yield/admin/grant_beta.cdc \
+  --authorizer emulator-account,test-user \
+  --proposer test-user \
+  --payer emulator-account
+
+run_txn "Transfer Flow tokens" \
+  ./cadence/transactions/flow-token/transfer_flow.cdc \
+  0x179b6b1cb6755e31 1000.0
+
+run_txn "Creating Tide[0]" \
+  ./cadence/transactions/tidal-yield/create_tide.cdc \
   A.f8d6e0586b0a20c7.TidalYieldStrategies.TracerStrategy \
   A.0ae53cb6e3f42a79.FlowToken.Vault \
   100.0 \
   --signer test-user
 
-echo "Depositing 20.0 to Tide[0]..."
-flow transactions send ./cadence/transactions/tidal-yield/deposit_to_tide.cdc 0 20.0 --signer test-user
+run_txn "Depositing 20.0 to Tide[0]" \
+  ./cadence/transactions/tidal-yield/deposit_to_tide.cdc 0 20.0 --signer test-user
 
-echo "Withdrawing 10.0 from Tide[0]..."
-flow transactions send ./cadence/transactions/tidal-yield/withdraw_from_tide.cdc 0 10.0 --signer test-user
+run_txn "Withdrawing 10.0 from Tide[0]" \
+  ./cadence/transactions/tidal-yield/withdraw_from_tide.cdc 0 10.0 --signer test-user
 
-flow transactions send ./cadence/transactions/tidal-yield/close_tide.cdc 0 --signer test-user
+run_txn "Closing Tide[0]" \
+  ./cadence/transactions/tidal-yield/close_tide.cdc 0 --signer test-user
 
+echo "✅ All E2E transactions SEALED successfully!"
