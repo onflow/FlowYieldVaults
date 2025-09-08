@@ -17,5 +17,5 @@ flow transactions send ./cadence/transactions/tidal-yield/deposit_to_tide.cdc 0 
 echo_info "Withdrawing 10.0 from Tide[0]..."
 flow transactions send ./cadence/transactions/tidal-yield/withdraw_from_tide.cdc 0 10.0 --signer test-user
 
-flow transactions send ../cadence/transactions/tidal-yield/close_tide.cdc 0 --signer test-user
+flow transactions send ./cadence/transactions/tidal-yield/close_tide.cdc 0 --signer test-user
 
