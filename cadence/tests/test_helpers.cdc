@@ -90,12 +90,6 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "TidalProtocolClosedBeta",
-        path: "../../lib/TidalProtocol/cadence/contracts/TidalProtocolClosedBeta.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
         name: "TidalProtocol",
         path: "../../lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
         arguments: []
@@ -442,3 +436,17 @@ access(all) fun setupBetaAccess(): Void {
     let tidalYieldBeta = grantProtocolBeta(protocolAccount, tidalYieldAccount)
     Test.expect(tidalYieldBeta, Test.beSucceeded())
 }
+
+// Returns the balance for a given Vault 'Type' if present, otherwise nil.
+access(all) fun findBalance(
+    details: TidalProtocol.PositionDetails,
+    vaultType: Type
+): UFix64? {
+    for b in details.balances {
+        if b.vaultType == vaultType {
+            return b.balance
+        }
+    }
+    return nil
+}
+

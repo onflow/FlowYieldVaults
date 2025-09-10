@@ -144,7 +144,7 @@ fun test_RebalanceTideSucceeds() {
 	Test.reset(to: snapshot)
 
     let fundingAmount = 100.0
-    let priceIncrease = 0.2
+    let yieldTokenPriceIncrease = 0.2
 
 	let user = Test.createAccount()
 
@@ -171,7 +171,7 @@ fun test_RebalanceTideSucceeds() {
 
     setMockOraclePrice(signer: tidalYieldAccount,
         forTokenIdentifier: yieldTokenIdentifier,
-        price: startingYieldPrice * (1.0 + priceIncrease)
+        price: startingYieldPrice * (1.0 + yieldTokenPriceIncrease)
     )
 
     let autoBalancerValueAfter = getAutoBalancerCurrentValue(id: tideID)!
@@ -192,14 +192,14 @@ fun test_RebalanceTideSucceeds() {
     rebalancePosition(signer: protocolAccount, pid: positionID, force: true, beFailed: false)
 
     let positionDetails = getPositionDetails(pid: positionID, beFailed: false)
-    let positionFlowBalance = positionDetails.balances[1]
+    let positionFlowBalance = findBalance(details: positionDetails, vaultType: Type<@FlowToken.Vault>()) ?? 0.0
 
     // The math here is a little off, expected amount is around 130, but the final value of the tide is 127
     let initialLoan = fundingAmount * (flowCollateralFactor / targetHealthFactor)
-    let expectedBalance = initialLoan * priceIncrease + fundingAmount
-    log("Position Flow balance after rebalance: \(positionFlowBalance.balance)")
-    Test.assert(positionFlowBalance.balance > fundingAmount,
-        message: "Expected user's Flow balance in their position after rebalance to be more than \(fundingAmount) but got \(positionFlowBalance.balance)"
+    let expectedBalance = initialLoan * yieldTokenPriceIncrease + fundingAmount
+    log("Position Flow balance after rebalance: \(positionFlowBalance)")
+    Test.assert(positionFlowBalance > fundingAmount,
+        message: "Expected user's Flow balance in their position after rebalance to be more than \(fundingAmount) but got \(positionFlowBalance)"
     )
 
     let positionAvailBal = positionAvailableBalance(

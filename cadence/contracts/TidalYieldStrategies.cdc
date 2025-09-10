@@ -6,7 +6,6 @@ import "DeFiActionsUtils"
 import "DeFiActions"
 import "SwapConnectors"
 // Lending protocol
-import "TidalProtocolClosedBeta"
 import "TidalProtocol"
 // TidalYield platform
 import "TidalYieldClosedBeta"
@@ -169,19 +168,21 @@ access(all) contract TidalYieldStrategies {
             let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
 
             // open a TidalProtocol position
-            let position = TidalProtocol.openPosition_beta(
-                    betaRef: TidalYieldStrategies._betaRef(),
-                    collateral: <-withFunds,
+            let poolCap = TidalYieldStrategies.account.storage.load<Capability<auth(TidalProtocol.EParticipant, TidalProtocol.EPosition) &TidalProtocol.Pool>>(
+                from: TidalProtocol.PoolCapStoragePath
+            ) ?? panic("Missing pool capability")
+
+            let poolRef = poolCap.borrow() ?? panic("Invalid Pool Cap")
+
+            let pid = poolRef.createPosition(
+                    funds: <-withFunds,
                     issuanceSink: abaSwapSink,
                     repaymentSource: abaSwapSource,
                     pushToDrawDownSink: true
                 )
-            // let position = TidalProtocol.openPosition(
-            //         collateral: <-withFunds,
-            //         issuanceSink: abaSwapSink,
-            //         repaymentSource: abaSwapSource,
-            //         pushToDrawDownSink: true
-            //     )
+            let position = TidalProtocol.Position(id: pid, pool: poolCap)
+            TidalYieldStrategies.account.storage.save(poolCap, to: TidalProtocol.PoolCapStoragePath)
+
             // get Sink & Source connectors relating to the new Position
             let positionSink = position.createSinkWithOptions(type: collateralType, pushToDrawDownSink: true)
             let positionSource = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true) // TODO: may need to be false
@@ -222,13 +223,6 @@ access(all) contract TidalYieldStrategies {
                 panic("Unsupported StrategyComposer requested: \(type.identifier)")
             }
         }
-    }
-
-    access(contract) fun _betaRef(): &{TidalProtocolClosedBeta.IBeta} {
-        let ref = self.account.storage.borrow<&{TidalProtocolClosedBeta.IBeta}>(
-            from: TidalProtocolClosedBeta.BetaBadgeStoragePath
-        ) ?? panic("Beta ref is required")
-        return ref
     }
 
     init() {
