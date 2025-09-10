@@ -2,10 +2,6 @@
 	path = lib/TidalProtocol
 	url = git@github.com:onflow/TidalProtocol.git
 	branch = main
-[submodule "lib/DeFiActions"]
-	path = lib/DeFiActions
-	url = git@github.com:onflow/DeFiActions.git
-	branch = nialexsan/univ3
 [submodule "lib/flow-evm-gateway"]
 	path = lib/flow-evm-gateway
 	url = git@github.com:onflow/flow-evm-gateway.git

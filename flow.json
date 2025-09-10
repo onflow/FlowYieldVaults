@@ -1,28 +1,28 @@
 {
 	"contracts": {
 		"DeFiActions": {
-			"source": "./lib/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
 		"DeFiActionsMathUtils": {
-			"source": "./lib/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
 		"DeFiActionsUtils": {
-			"source": "./lib/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
 		"FungibleTokenConnectors": {
-			"source": "./lib/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -70,7 +70,7 @@
 			}
 		},
 		"SwapConnectors": {
-			"source": "./lib/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
