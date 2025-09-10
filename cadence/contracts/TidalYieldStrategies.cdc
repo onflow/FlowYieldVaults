@@ -46,7 +46,7 @@ access(all) contract TidalYieldStrategies {
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
         access(self) let position: TidalProtocol.Position
         access(self) var sink: {DeFiActions.Sink}
-        access(self) var source: {DeFiActions.Source}
+        access(self) var source: {DeFiActions.Source, DeFiActions.Liquidator}
 
         init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: TidalProtocol.Position) {
             self.uniqueID = id
@@ -63,7 +63,7 @@ access(all) contract TidalYieldStrategies {
         }
         /// Returns the amount available for withdrawal via the inner Source
         access(all) fun availableBalance(ofToken: Type): UFix64 {
-            return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
+            return ofToken == self.source.getSourceType() ? self.source.liquidationAmount() : 0.0
         }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
