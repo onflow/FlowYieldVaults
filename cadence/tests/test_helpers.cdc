@@ -28,31 +28,31 @@ access(all) fun deployContracts() {
     // DeFiActions contracts
     var err = Test.deployContract(
         name: "DeFiActionsUtils",
-        path: "../../lib/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
+        path: "../../lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "DeFiActionsMathUtils",
-        path: "../../lib/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
+        path: "../../lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "DeFiActions",
-        path: "../../lib/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
+        path: "../../lib/TidalProtocol/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "SwapConnectors",
-        path: "../../lib/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
+        path: "../../lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "FungibleTokenConnectors",
-        path: "../../lib/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
+        path: "../../lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
