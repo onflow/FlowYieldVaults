@@ -1,6 +1,7 @@
 # install DeFiBlocks submodule as dependency
 git submodule update --init --recursive
 # execute emulator deployment
+flow deps install --skip-alias --skip-deployments
 flow deploy
 
 # set mocked prices in the MockOracle contract, initialized with MOET as unitOfAccount
