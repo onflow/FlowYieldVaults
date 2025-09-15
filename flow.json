@@ -63,12 +63,6 @@
 				"testing": "0000000000000008"
 			}
 		},
-		"TestHelpers": {
-			"source": "./lib/TidalProtocol/cadence/contracts/mocks/TestHelpers.cdc",
-			"aliases": {
-				"testing": "0000000000000008"
-			}
-		},
 		"SwapConnectors": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
@@ -76,18 +70,17 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"TestHelpers": {
+			"source": "./lib/TidalProtocol/cadence/contracts/mocks/TestHelpers.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
 		"TidalProtocol": {
 			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000008"
-			}
-		},
-		"TidalYieldClosedBeta": {
-			"source": "cadence/contracts/TidalYieldClosedBeta.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
 			}
 		},
 		"TidalYield": {
@@ -99,6 +92,13 @@
 		},
 		"TidalYieldAutoBalancers": {
 			"source": "cadence/contracts/TidalYieldAutoBalancers.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009"
+			}
+		},
+		"TidalYieldClosedBeta": {
+			"source": "cadence/contracts/TidalYieldClosedBeta.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000009"
@@ -325,7 +325,7 @@
 				},
 				"MockSwapper",
 				"TidalYieldAutoBalancers",
-        "TidalYieldClosedBeta",
+				"TidalYieldClosedBeta",
 				"TidalYield",
 				"TidalYieldStrategies"
 			],
