@@ -33,13 +33,7 @@ access(all) contract MockOracle {
             }
             return MockOracle.mockedPrices[ofToken]
         }
-        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
-            return DeFiActions.ComponentInfo(
-                type: self.getType(),
-                id: self.id(),
-                innerComponents: []
-            )
-        }
+        // Simplified for local testing; omit ComponentInfo usage to match local DeFiActions
         access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
             return self.uniqueID
         }

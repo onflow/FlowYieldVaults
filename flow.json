@@ -1,28 +1,35 @@
 {
 	"contracts": {
 		"DeFiActions": {
-			"source": "./lib/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
 		"DeFiActionsMathUtils": {
-			"source": "./lib/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
 		"DeFiActionsUtils": {
-			"source": "./lib/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
-		"FungibleTokenConnectors": {
-			"source": "./lib/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
+		"FungibleTokenStack": {
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/FungibleTokenStack.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
+		"SwapStack": {
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/SwapStack.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -61,13 +68,6 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000008"
-			}
-		},
-		"SwapConnectors": {
-			"source": "./lib/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
 			}
 		},
 		"TidalProtocol": {
@@ -232,8 +232,8 @@
 				"DeFiActionsUtils",
 				"DeFiActions",
 				"FlowStorageFees",
-				"FungibleTokenConnectors",
-				"SwapConnectors",
+				"FungibleTokenStack",
+				"SwapStack",
 				{
 					"name": "MOET",
 					"args": [

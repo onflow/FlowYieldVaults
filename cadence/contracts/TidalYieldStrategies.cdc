@@ -4,7 +4,7 @@ import "FlowToken"
 // DeFiActions
 import "DeFiActionsUtils"
 import "DeFiActions"
-import "SwapConnectors"
+import "SwapStack"
 // Lending protocol
 import "TidalProtocol"
 // TidalYield platform
@@ -81,13 +81,7 @@ access(all) contract TidalYieldStrategies {
         access(contract) fun burnCallback() {
             TidalYieldAutoBalancers._cleanupAutoBalancer(id: self.id()!)
         }
-        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
-            return DeFiActions.ComponentInfo(
-                type: self.getType(),
-                id: self.id(),
-                innerComponents: []
-            )
-        }
+        // local build: omit ComponentInfo usage
         access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
             return self.uniqueID
         }
@@ -162,9 +156,9 @@ access(all) contract TidalYieldStrategies {
             // init SwapSink directing swapped funds to AutoBalancer
             //
             // Swaps provided MOET to YieldToken & deposits to the AutoBalancer
-            let abaSwapSink = SwapConnectors.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
+            let abaSwapSink = SwapStack.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
             // Swaps YieldToken & provides swapped MOET, sourcing YieldToken from the AutoBalancer
-            let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
+            let abaSwapSource = SwapStack.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
 
             // open a TidalProtocol position
             let position = TidalProtocol.openPosition(
@@ -184,14 +178,14 @@ access(all) contract TidalYieldStrategies {
                     uniqueID: uniqueID
                 )
             // allows for YieldToken to be deposited to the Position
-            let positionSwapSink = SwapConnectors.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
+            let positionSwapSink = SwapStack.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
 
             // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value,
             // recollateralizing the position
             autoBalancer.setSink(positionSwapSink, updateSinkID: true)
 
             return <-create TracerStrategy(
-                id: DeFiActions.createUniqueIdentifier(),
+                id: DeFiActions.UniqueIdentifier(),
                 collateralType: collateralType,
                 position: position
             )

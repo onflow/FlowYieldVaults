@@ -45,14 +45,14 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "SwapConnectors",
-        path: "../../lib/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
+        name: "SwapStack",
+        path: "../../lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/SwapStack.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FungibleTokenConnectors",
-        path: "../../lib/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
+        name: "FungibleTokenStack",
+        path: "../../lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/FungibleTokenStack.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -89,6 +89,12 @@ access(all) fun deployContracts() {
     err = Test.deployContract(
         name: "MockSwapper",
         path: "../contracts/mocks/MockSwapper.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "MockDexSwapper",
+        path: "../../lib/TidalProtocol/cadence/contracts/mocks/MockDexSwapper.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -172,6 +178,13 @@ fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
     let res = _executeScript("../scripts/tidal-yield/get_auto_balancer_current_value_by_id.cdc", [id])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
+}
+
+access(all)
+fun getPositionHealth(pid: UInt64, beFailed: Bool): UInt128 {
+    let res = _executeScript("../scripts/tidal-protocol/position_health.cdc", [pid])
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+    return res.returnValue as! UInt128
 }
 
 access(all)
@@ -266,6 +279,18 @@ access(all)
 fun mintMoet(signer: Test.TestAccount, to: Address, amount: UFix64, beFailed: Bool) {
     let mintRes = _executeTransaction("../transactions/moet/mint_moet.cdc", [to, amount], signer)
     Test.expect(mintRes, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+access(all)
+fun mintFlow(to: Test.TestAccount, amount: UFix64) {
+    let tx = Test.Transaction(
+        code: Test.readFile("../../lib/TidalProtocol/cadence/transactions/flowtoken/mint_flowtoken.cdc"),
+        authorizers: [Test.serviceAccount().address],
+        signers: [Test.serviceAccount()],
+        arguments: [to.address, amount]
+    )
+    let res = Test.executeTransaction(tx)
+    Test.expect(res, Test.beSucceeded())
 }
 
 access(all)
