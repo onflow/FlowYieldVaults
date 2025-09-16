@@ -15,12 +15,6 @@ run_txn() {
   fi
 }
 
-run_txn "Grant Protocol Beta access to TidalYield" \
-  ./lib/TidalProtocol/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc \
-  --authorizer emulator-account,emulator-account \
-  --proposer emulator-account \
-  --payer emulator-account
-
 run_txn "Grant Tide Beta access to test user" \
   ./cadence/transactions/tidal-yield/admin/grant_beta.cdc \
   --authorizer emulator-account,test-user \
