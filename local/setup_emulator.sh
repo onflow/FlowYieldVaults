@@ -33,8 +33,8 @@ flow transactions send ./cadence/transactions/tidal-yield/admin/add_strategy_com
     /storage/TidalYieldStrategyComposerIssuer_0xf8d6e0586b0a20c7
 
 # grant PoolBeta cap
-run_txn "Grant Protocol Beta access to TidalYield" \
-  ./cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc \
+echo "Grant Protocol Beta access to TidalYield"
+flow transactions send ./lib/TidalProtocol/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc \
   --authorizer emulator-account,emulator-account \
   --proposer emulator-account \
   --payer emulator-account
