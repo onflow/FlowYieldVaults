@@ -2,7 +2,7 @@
 import Test
 import BlockchainHelpers
 
-import "test_helpers.cdc"
+import "./test_helpers.cdc"
 
 import "FlowToken"
 import "MOET"

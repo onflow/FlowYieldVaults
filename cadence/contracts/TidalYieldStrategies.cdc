@@ -54,6 +54,13 @@ access(all) contract TidalYieldStrategies {
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
         }
+        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
+            return DeFiActions.ComponentInfo(
+                type: self.getType(),
+                id: self.id(),
+                innerComponents: [self.sink.getComponentInfo(), self.source.getComponentInfo()]
+            )
+        }
 
         // Inherited from TidalYield.Strategy default implementation
         // access(all) view fun isSupportedCollateralType(_ type: Type): Bool
@@ -81,13 +88,7 @@ access(all) contract TidalYieldStrategies {
         access(contract) fun burnCallback() {
             TidalYieldAutoBalancers._cleanupAutoBalancer(id: self.id()!)
         }
-        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
-            return DeFiActions.ComponentInfo(
-                type: self.getType(),
-                id: self.id(),
-                innerComponents: []
-            )
-        }
+        // local build: omit ComponentInfo usage
         access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
             return self.uniqueID
         }
