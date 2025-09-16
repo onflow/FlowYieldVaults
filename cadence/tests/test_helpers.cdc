@@ -127,6 +127,26 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+
+    // Mock DEX swapper used by liquidation via DEX tests
+    err = Test.deployContract(
+        name: "MockDexSwapper",
+        path: "../../lib/TidalProtocol/cadence/contracts/mocks/MockDexSwapper.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+}
+
+access(all)
+fun ensurePoolFactoryAndCreatePool(signer: Test.TestAccount, defaultTokenIdentifier: String) {
+    // TidalProtocol init stores a PoolFactory at the protocol account as part of contract init.
+    // If for any reason it's missing, no separate tx exists here; we just proceed to create the pool.
+    let res = _executeTransaction(
+        "../transactions/tidal-protocol/pool-factory/create_and_store_pool.cdc",
+        [defaultTokenIdentifier],
+        signer
+    )
+    Test.expect(res, Test.beSucceeded())
 }
 
 access(all)
@@ -172,6 +192,15 @@ fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
     let res = _executeScript("../scripts/tidal-yield/get_auto_balancer_current_value_by_id.cdc", [id])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
+}
+
+access(all)
+fun getPositionHealth(pid: UInt64, beFailed: Bool): UInt128 {
+    let res = _executeScript("../scripts/tidal-protocol/position_health.cdc",
+            [pid]
+        )
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+    return res.status == Test.ResultStatus.failed ? 0 : res.returnValue as! UInt128
 }
 
 access(all)

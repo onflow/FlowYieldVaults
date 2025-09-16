@@ -28,7 +28,13 @@ access(all) contract MockStrategy {
         access(all) fun depositCapacity(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
             return
         }
-        // local build: omit ComponentInfo usage
+        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
+            return DeFiActions.ComponentInfo(
+                type: self.getType(),
+                id: self.id(),
+                innerComponents: []
+            )
+        }
         access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
             return self.uniqueID
         }
@@ -50,7 +56,13 @@ access(all) contract MockStrategy {
         access(FungibleToken.Withdraw) fun withdrawAvailable(maxAmount: UFix64): @{FungibleToken.Vault} {
             return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
         }
-        // local build: omit ComponentInfo usage
+        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
+            return DeFiActions.ComponentInfo(
+                type: self.getType(),
+                id: self.id(),
+                innerComponents: []
+            )
+        }
         access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
             return self.uniqueID
         }
@@ -100,7 +112,13 @@ access(all) contract MockStrategy {
         }
 
         access(contract) fun burnCallback() {} // no-op
-        // local build: omit ComponentInfo usage
+        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
+            return DeFiActions.ComponentInfo(
+                type: self.getType(),
+                id: self.id(),
+                innerComponents: []
+            )
+        }
         access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
             return self.uniqueID
         }
@@ -124,7 +142,7 @@ access(all) contract MockStrategy {
             uniqueID: DeFiActions.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
         ): @{TidalYield.Strategy} {
-            let id = DeFiActions.UniqueIdentifier()
+            let id = uniqueID
             let strat <- create Strategy(
                 id: id,
                 sink: Sink(id),

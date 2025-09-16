@@ -1,7 +1,7 @@
 import Test
 import BlockchainHelpers
 
-import "test_helpers.cdc"
+import "./test_helpers.cdc"
 
 import "TidalProtocol"
 import "MOET"
@@ -24,10 +24,10 @@ access(all)
 fun setup() {
     deployContracts()
 
-    let protocol = Test.getAccount(0x0000000000000007)
+    let protocol = Test.getAccount(0x0000000000000008)
 
     setMockOraclePrice(signer: protocol, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
-    createAndStorePool(signer: protocol, defaultTokenIdentifier: defaultTokenIdentifier, beFailed: false)
+    ensurePoolFactoryAndCreatePool(signer: protocol, defaultTokenIdentifier: defaultTokenIdentifier)
     addSupportedTokenSimpleInterestCurve(
         signer: protocol,
         tokenTypeIdentifier: flowTokenIdentifier,
@@ -59,7 +59,7 @@ fun test_liquidation_quote_and_execute() {
     Test.expect(openRes, Test.beSucceeded())
 
     // cause undercollateralization
-    setMockOraclePrice(signer: Test.getAccount(0x0000000000000007), forTokenIdentifier: flowTokenIdentifier, price: 0.7)
+    setMockOraclePrice(signer: Test.getAccount(0x0000000000000008), forTokenIdentifier: flowTokenIdentifier, price: 0.7)
 
     // quote liquidation using submodule script
     let quoteRes = _executeScript(
@@ -76,7 +76,7 @@ fun test_liquidation_quote_and_execute() {
     // execute liquidation repay-for-seize via submodule transaction
     let liquidator = Test.createAccount()
     setupMoetVault(liquidator, beFailed: false)
-    mintMoet(signer: Test.getAccount(0x0000000000000007), to: liquidator.address, amount: quote.requiredRepay + 1.0, beFailed: false)
+    mintMoet(signer: Test.getAccount(0x0000000000000008), to: liquidator.address, amount: quote.requiredRepay + 1.0, beFailed: false)
 
     let liqRes = _executeTransaction(
         "../../lib/TidalProtocol/cadence/transactions/tidal-protocol/pool-management/liquidate_repay_for_seize.cdc",

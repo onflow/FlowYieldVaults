@@ -4,7 +4,7 @@ import "Burner"
 import "MockOracle"
 
 import "DeFiActions"
-import "SwapStack"
+import "SwapConnectors"
 import "DeFiActionsMathUtils"
 
 ///
@@ -102,7 +102,7 @@ access(all) contract MockSwapper {
             let uintPrice = reverse ? DeFiActionsMathUtils.div(uintOutTokenPrice, uintInTokenPrice) : DeFiActionsMathUtils.div(uintInTokenPrice, uintOutTokenPrice)
 
             if amount == UFix64.max {
-                return SwapStack.BasicQuote(
+                return SwapConnectors.BasicQuote(
                     inType: reverse ? self.outType() : self.inType(),
                     outType: reverse ? self.inType() : self.outType(),
                     inAmount: UFix64.max,
@@ -117,7 +117,7 @@ access(all) contract MockSwapper {
             let inAmount = DeFiActionsMathUtils.toUFix64Round(uintInAmount)
             let outAmount = DeFiActionsMathUtils.toUFix64Round(uintOutAmount)
 
-            return SwapStack.BasicQuote(
+            return SwapConnectors.BasicQuote(
                 inType: reverse ? self.outVault : self.inVault,
                 outType: reverse ? self.inVault : self.outVault,
                 inAmount: inAmount,

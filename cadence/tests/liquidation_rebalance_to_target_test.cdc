@@ -1,7 +1,7 @@
 import Test
 import BlockchainHelpers
 
-import "test_helpers.cdc"
+import "./test_helpers.cdc"
 
 import "FlowToken"
 import "MOET"
@@ -16,6 +16,14 @@ access(all) let flowType = Type<@FlowToken.Vault>().identifier
 access(all) let moetType = Type<@MOET.Vault>().identifier
 
 access(all) var snapshot: UInt64 = 0
+
+access(all)
+fun safeReset() {
+    let cur = getCurrentBlockHeight()
+    if cur > snapshot {
+        Test.reset(to: snapshot)
+    }
+}
 
 access(all)
 fun setup() {
@@ -58,7 +66,7 @@ fun setup() {
 
 access(all)
 fun test_rebalance_with_yield_topup_recovers_target_health() {
-    Test.reset(to: snapshot)
+    safeReset()
     let pid: UInt64 = 0
 
     // unhealthy: drop FLOW
