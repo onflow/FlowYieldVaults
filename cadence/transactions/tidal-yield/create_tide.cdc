@@ -19,7 +19,7 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
     let depositVault: @{FungibleToken.Vault}
     let betaRef: &{TidalYieldClosedBeta.IBeta}
 
-    prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability) &Account) {
+    prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability, CopyValue) &Account) {
         // create the Strategy Type to compose which the Tide should manage
         self.strategy = CompositeType(strategyIdentifier)
             ?? panic("Invalid strategyIdentifier \(strategyIdentifier) - ensure the provided strategyIdentifier corresponds to a valid Strategy Type")
