@@ -17,7 +17,7 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
     let manager: &TidalYield.TideManager
     let strategy: Type
     let depositVault: @{FungibleToken.Vault}
-    let betaRef: &{TidalYieldClosedBeta.IBeta}
+    let betaRef: &TidalYieldClosedBeta.BetaBadge
 
     prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability, CopyValue) &Account) {
         // create the Strategy Type to compose which the Tide should manage
@@ -52,7 +52,7 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
         }
         self.manager = signer.storage.borrow<&TidalYield.TideManager>(from: TidalYield.TideManagerStoragePath)
             ?? panic("Signer does not have a TideManager stored at path \(TidalYield.TideManagerStoragePath) - configure and retry")
-        let betaCap = signer.storage.copy<Capability<&{TidalYieldClosedBeta.IBeta}>>(from: TidalYieldClosedBeta.UserBetaCapStoragePath)
+        let betaCap = signer.storage.copy<Capability<&TidalYieldClosedBeta.BetaBadge>>(from: TidalYieldClosedBeta.UserBetaCapStoragePath)
             ?? panic("Signer doesn not have a BetaBadge stored at path \(TidalYieldClosedBeta.UserBetaCapStoragePath) - configure and retry")
 
         self.betaRef = betaCap.borrow()

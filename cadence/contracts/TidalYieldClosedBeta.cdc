@@ -2,14 +2,21 @@ access(all) contract TidalYieldClosedBeta {
 
     // 1) Define an entitlement only the admin can issue
     access(all) entitlement Admin
+    access(all) entitlement Beta
 
-    access(all) resource interface IBeta {}
-    access(all) resource BetaBadge: IBeta {}
+    access(all) resource BetaBadge {
+        access(all) let _owner: Address
+        init(_ o: Address) {
+            self._owner = o
+        }
+        access(all) view fun getOwner(): Address {
+            return self._owner
+        }
+    }
 
     // --- Paths ---
     access(all) let UserBetaCapStoragePath: StoragePath
     access(all) let AdminHandleStoragePath: StoragePath
-    access(all) let BetaBadgePublicPath: PublicPath
 
     // --- Registry: which capability was issued to which address, and revocation flags ---
     access(all) var issuedCapIDs: {Address: UInt64}
@@ -27,15 +34,15 @@ access(all) contract TidalYieldClosedBeta {
     access(contract) fun _ensureBadge(_ addr: Address) {
         let p = self._badgePath(addr)
         if self.account.storage.type(at: p) == nil {
-            self.account.storage.save(<-create BetaBadge(), to: p)
+            self.account.storage.save(<-create BetaBadge(addr), to: p)
         }
     }
 
     /// Issue a capability from the contract/deployer account and record its ID
-    access(contract) fun _issueBadgeCap(_ addr: Address): Capability<&{TidalYieldClosedBeta.IBeta}> {
+    access(contract) fun _issueBadgeCap(_ addr: Address): Capability<auth(Beta) &BetaBadge> {
         let p = self._badgePath(addr)
-        let cap: Capability<&{TidalYieldClosedBeta.IBeta}> =
-            self.account.capabilities.storage.issue<&{TidalYieldClosedBeta.IBeta}>(p)
+        let cap: Capability<auth(Beta) &BetaBadge> =
+            self.account.capabilities.storage.issue<auth(Beta) &BetaBadge>(p)
         self.issuedCapIDs[addr] = cap.id
 
         if let ctrl = self.account.capabilities.storage.getController(byCapabilityID: cap.id) {
@@ -58,7 +65,7 @@ access(all) contract TidalYieldClosedBeta {
 
     // 2) A small in-account helper resource that performs privileged ops
     access(all) resource AdminHandle {
-        access(Admin) fun grantBeta(addr: Address): Capability<&{TidalYieldClosedBeta.IBeta}> {
+        access(Admin) fun grantBeta(addr: Address): Capability<auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge> {
             TidalYieldClosedBeta._ensureBadge(addr)
             return TidalYieldClosedBeta._issueBadgeCap(addr)
         }
@@ -76,9 +83,6 @@ access(all) contract TidalYieldClosedBeta {
     init() {
         self.AdminHandleStoragePath = StoragePath(
             identifier: "TidalYieldClosedBetaAdmin_\(self.account.address)"
-        )!
-        self.BetaBadgePublicPath = PublicPath(
-            identifier: "TidalYieldBetaBadge_\(self.account.address)"
         )!
         self.UserBetaCapStoragePath = StoragePath(
             identifier: "TidalYieldUserBetaCap_\(self.account.address)"

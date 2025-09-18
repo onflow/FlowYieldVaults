@@ -15,7 +15,7 @@ transaction() {
         let handle: auth(TidalYieldClosedBeta.Admin) &TidalYieldClosedBeta.AdminHandle =
         adminCap.borrow() ?? panic("Missing AdminHandle")
 
-        let cap: Capability<&{TidalYieldClosedBeta.IBeta}> =
+        let cap: Capability<&TidalYieldClosedBeta.BetaBadge> =
         handle.grantBeta(addr: user.address)
 
         let p = TidalYieldClosedBeta.UserBetaCapStoragePath
@@ -27,9 +27,9 @@ transaction() {
                 let old <- user.storage.load<@TidalYieldClosedBeta.BetaBadge>(from: p)
                 ?? panic("Expected BetaBadge but it disappeared")
                 destroy old
-            } else if t == Type<Capability<&{TidalYieldClosedBeta.IBeta}>>() {
+            } else if t == Type<Capability<&TidalYieldClosedBeta.BetaBadge>>() {
                 // Remove old capability value
-                let _ = user.storage.load<Capability<&{TidalYieldClosedBeta.IBeta}>>(from: p)
+                let _ = user.storage.load<Capability<&TidalYieldClosedBeta.BetaBadge>>(from: p)
                 // no destroy needed; it's a value, just drop it
             } else {
                 panic("Unexpected type at UserBetaCapStoragePath: ".concat(t.identifier))
@@ -37,19 +37,5 @@ transaction() {
         }
         user.storage.save(cap, to: p)
 
-        let copyCap = user.capabilities.storage.issue<&{TidalYieldClosedBeta.IBeta}>(p)
-
-        let pubPath = TidalYieldClosedBeta.BetaBadgePublicPath
-
-        // If anything is already published there, remove it first
-        let existingAny = user.capabilities.exists(pubPath)
-        if existingAny {
-            user.capabilities.unpublish(pubPath)
-        }
-
-        user.capabilities.publish(
-            copyCap, 
-            at: TidalYieldClosedBeta.BetaBadgePublicPath
-        )
     }
 }

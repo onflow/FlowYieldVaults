@@ -1,12 +1,8 @@
 import "TidalYieldClosedBeta"
 
 access(all) fun main(addr: Address): Bool {
-    let capExists = getAccount(addr).capabilities.exists(TidalYieldClosedBeta.BetaBadgePublicPath)
-    if !capExists {
-        return false
-    }
+    let acct = getAuthAccount<auth(Storage) &Account>(addr)
     let betaCapID = TidalYieldClosedBeta.getBetaCapID(addr)
-    let existingCap = getAccount(addr).capabilities.get<&{TidalYieldClosedBeta.IBeta}>(TidalYieldClosedBeta.BetaBadgePublicPath)
-
-    return existingCap.id != nil && betaCapID != nil
+    let existingCap = acct.storage.borrow<&Capability<auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge>>(from: TidalYieldClosedBeta.UserBetaCapStoragePath)
+    return betaCapID != nil && existingCap?.id == betaCapID
 }
