@@ -56,7 +56,7 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
             ?? panic("Signer doesn not have a BetaBadge stored at path \(TidalYieldClosedBeta.BetaBadgeStoragePath) - configure and retry")
 
         self.betaRef = betaCap.borrow()
-            ?? panic("Capability does not contain corret reference")
+            ?? panic("Capability does not contain correct reference")
 
     }
 

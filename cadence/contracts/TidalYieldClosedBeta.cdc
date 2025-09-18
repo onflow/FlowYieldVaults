@@ -68,6 +68,11 @@ access(all) contract TidalYieldClosedBeta {
         }
     }
 
+    /// Read-only check used by any gated entrypoint
+    access(all) view fun getBetaCapID(_ addr: Address): UInt64? {
+        return self.issuedCapIDs[addr]
+    }
+
     init() {
         self.BetaBadgeStoragePath = StoragePath(
             identifier: "TidalYieldBetaBadge_\(self.account.address)"
