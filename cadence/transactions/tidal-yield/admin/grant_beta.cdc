@@ -21,12 +21,8 @@ transaction() {
         let p = TidalYieldClosedBeta.UserBetaCapStoragePath
 
         // 1) Clear whatever is currently at `p`
-        log(user.storage.type(at:p))
-
         if let t = user.storage.type(at: p) {
-            log(t)
             if t == Type<@TidalYieldClosedBeta.BetaBadge>() {
-                log("old")
                 // Remove old resource
                 let old <- user.storage.load<@TidalYieldClosedBeta.BetaBadge>(from: p)
                 ?? panic("Expected BetaBadge but it disappeared")
