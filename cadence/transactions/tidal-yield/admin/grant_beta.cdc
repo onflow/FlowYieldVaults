@@ -18,7 +18,7 @@ transaction() {
         let cap: Capability<&{TidalYieldClosedBeta.IBeta}> =
         handle.grantBeta(addr: user.address)
 
-        let p = TidalYieldClosedBeta.BetaBadgeStoragePath
+        let p = TidalYieldClosedBeta.UserBetaCapStoragePath
 
         // 1) Clear whatever is currently at `p`
         log(user.storage.type(at:p))
@@ -36,7 +36,7 @@ transaction() {
                 let _ = user.storage.load<Capability<&{TidalYieldClosedBeta.IBeta}>>(from: p)
                 // no destroy needed; it's a value, just drop it
             } else {
-                panic("Unexpected type at BetaBadgeStoragePath: ".concat(t.identifier))
+                panic("Unexpected type at UserBetaCapStoragePath: ".concat(t.identifier))
             }
         }
         user.storage.save(cap, to: p)

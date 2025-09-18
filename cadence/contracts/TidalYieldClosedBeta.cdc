@@ -7,6 +7,7 @@ access(all) contract TidalYieldClosedBeta {
     access(all) resource BetaBadge: IBeta {}
 
     // --- Paths ---
+    access(all) let UserBetaCapStoragePath: StoragePath
     access(all) let BetaBadgeStoragePath: StoragePath
     access(all) let AdminHandleStoragePath: StoragePath
     access(all) let BetaBadgePublicPath: PublicPath
@@ -82,6 +83,9 @@ access(all) contract TidalYieldClosedBeta {
         )!
         self.BetaBadgePublicPath = PublicPath(
             identifier: "TidalYieldBetaBadge_\(self.account.address)"
+        )!
+        self.UserBetaCapStoragePath = StoragePath(
+            identifier: "TidalYieldUserBetaCap_\(self.account.address)"
         )!
 
         self.issuedCapIDs = {}

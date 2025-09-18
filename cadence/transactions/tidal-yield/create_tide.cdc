@@ -52,8 +52,8 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
         }
         self.manager = signer.storage.borrow<&TidalYield.TideManager>(from: TidalYield.TideManagerStoragePath)
             ?? panic("Signer does not have a TideManager stored at path \(TidalYield.TideManagerStoragePath) - configure and retry")
-        let betaCap = signer.storage.copy<Capability<&{TidalYieldClosedBeta.IBeta}>>(from: TidalYieldClosedBeta.BetaBadgeStoragePath)
-            ?? panic("Signer doesn not have a BetaBadge stored at path \(TidalYieldClosedBeta.BetaBadgeStoragePath) - configure and retry")
+        let betaCap = signer.storage.copy<Capability<&{TidalYieldClosedBeta.IBeta}>>(from: TidalYieldClosedBeta.UserBetaCapStoragePath)
+            ?? panic("Signer doesn not have a BetaBadge stored at path \(TidalYieldClosedBeta.UserBetaCapStoragePath) - configure and retry")
 
         self.betaRef = betaCap.borrow()
             ?? panic("Capability does not contain correct reference")
