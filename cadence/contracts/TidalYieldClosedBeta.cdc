@@ -8,7 +8,6 @@ access(all) contract TidalYieldClosedBeta {
 
     // --- Paths ---
     access(all) let UserBetaCapStoragePath: StoragePath
-    access(all) let BetaBadgeStoragePath: StoragePath
     access(all) let AdminHandleStoragePath: StoragePath
     access(all) let BetaBadgePublicPath: PublicPath
 
@@ -75,9 +74,6 @@ access(all) contract TidalYieldClosedBeta {
     }
 
     init() {
-        self.BetaBadgeStoragePath = StoragePath(
-            identifier: "TidalYieldBetaBadge_\(self.account.address)"
-        )!
         self.AdminHandleStoragePath = StoragePath(
             identifier: "TidalYieldClosedBetaAdmin_\(self.account.address)"
         )!
