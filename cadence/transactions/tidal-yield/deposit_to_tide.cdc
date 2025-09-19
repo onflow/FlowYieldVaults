@@ -17,7 +17,7 @@ transaction(id: UInt64, amount: UFix64) {
 
     prepare(signer: auth(BorrowValue, CopyValue) &Account) {
         let betaCap = signer.storage.copy<Capability<auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge>>(from: TidalYieldClosedBeta.UserBetaCapStoragePath)
-            ?? panic("Signer doesn not have a BetaBadge stored at path \(TidalYieldClosedBeta.UserBetaCapStoragePath) - configure and retry")
+            ?? panic("Signer does not have a BetaBadge stored at path \(TidalYieldClosedBeta.UserBetaCapStoragePath) - configure and retry")
 
         self.betaRef = betaCap.borrow()
             ?? panic("Capability does not contain correct reference")
