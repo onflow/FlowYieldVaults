@@ -44,6 +44,6 @@ transaction(id: UInt64, amount: UFix64) {
     }
 
     execute {
-        self.manager.depositToTide(betaRef: betaRef, id, from: <-self.depositVault)
+        self.manager.depositToTide(betaRef: self.betaRef, id, from: <-self.depositVault)
     }
 }
