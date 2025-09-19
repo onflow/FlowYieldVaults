@@ -1,6 +1,5 @@
 access(all) contract TidalYieldClosedBeta {
 
-    // 1) Define an entitlement only the admin can issue
     access(all) entitlement Admin
     access(all) entitlement Beta
 
@@ -19,7 +18,16 @@ access(all) contract TidalYieldClosedBeta {
     access(all) let AdminHandleStoragePath: StoragePath
 
     // --- Registry: which capability was issued to which address, and revocation flags ---
-    access(all) var issuedCapIDs: {Address: UInt64}
+    access(all) struct AccessInfo {
+        access(all) let capID: UInt64
+        access(all) let isRevoked: Bool
+
+        init(_ capID: UInt64, _ isRevoked: Bool) {
+            self.capID = capID
+            self.isRevoked = isRevoked
+        }
+    }
+    access(all) var issuedCapIDs: {Address: AccessInfo}
 
     // --- Events ---
     access(all) event BetaGranted(addr: Address, capID: UInt64)
@@ -38,12 +46,20 @@ access(all) contract TidalYieldClosedBeta {
         }
     }
 
+    access(contract) fun _destroyBadge(_ addr: Address) {
+        let p = self._badgePath(addr)
+        if let badge <- self.account.storage.load<@BetaBadge>(from: p) {
+            destroy badge
+        }
+    }
+
     /// Issue a capability from the contract/deployer account and record its ID
     access(contract) fun _issueBadgeCap(_ addr: Address): Capability<auth(Beta) &BetaBadge> {
         let p = self._badgePath(addr)
         let cap: Capability<auth(Beta) &BetaBadge> =
             self.account.capabilities.storage.issue<auth(Beta) &BetaBadge>(p)
-        self.issuedCapIDs[addr] = cap.id
+
+        self.issuedCapIDs[addr] = AccessInfo(cap.id, false)
 
         if let ctrl = self.account.capabilities.storage.getController(byCapabilityID: cap.id) {
             ctrl.setTag("tidalyield-beta")
@@ -55,12 +71,13 @@ access(all) contract TidalYieldClosedBeta {
 
     /// Delete the recorded controller, revoking *all copies* of the capability
     access(contract) fun _revokeByAddress(_ addr: Address) {
-        let id = self.issuedCapIDs[addr] ?? panic("No cap recorded for address")
-        let ctrl = self.account.capabilities.storage.getController(byCapabilityID: id)
+        let info = self.issuedCapIDs[addr] ?? panic("No cap recorded for address")
+        let ctrl = self.account.capabilities.storage.getController(byCapabilityID: info.capID)
             ?? panic("Missing controller for recorded cap ID")
         ctrl.delete()
-        self.issuedCapIDs.remove(key: addr)
-        emit BetaRevoked(addr: addr, capID: id)
+        self.issuedCapIDs[addr] = AccessInfo(info.capID, true)
+        self._destroyBadge(addr)
+        emit BetaRevoked(addr: addr, capID: info.capID)
     }
 
     // 2) A small in-account helper resource that performs privileged ops
@@ -77,7 +94,13 @@ access(all) contract TidalYieldClosedBeta {
 
     /// Read-only check used by any gated entrypoint
     access(all) view fun getBetaCapID(_ addr: Address): UInt64? {
-        return self.issuedCapIDs[addr]
+        if let info = self.issuedCapIDs[addr] {
+            if info.isRevoked {
+                return nil
+            }
+            return info.capID
+        }
+        return nil
     }
 
     init() {
