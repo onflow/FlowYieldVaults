@@ -271,9 +271,24 @@
 				"type": "file",
 				"location": "local/test-user.pkey"
 			}
-		}
+		},
+    "testnet-admin": {
+      "address": "2ab6f469ee0dfbb6",
+      "key": {
+        "type": "google-kms",
+        "resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1",
+        "hashAlgorithm": "SHA2_256",
+        "signatureAlgorithm": "ECDSA_P256",
+        "index": 0
+      }
+    }
 	},
 	"deployments": {
+    "testnet": {
+      "testnet-admin": [
+        "DeFiActionsMathUtils"
+      ]
+    },
 		"emulator": {
 			"emulator-account": [
 				"DeFiActionsMathUtils",
