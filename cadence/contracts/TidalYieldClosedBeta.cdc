@@ -4,12 +4,12 @@ access(all) contract TidalYieldClosedBeta {
     access(all) entitlement Beta
 
     access(all) resource BetaBadge {
-        access(all) let _owner: Address
-        init(_ o: Address) {
-            self._owner = o
+        access(all) let assignedTo: Address
+        init(_ addr: Address) {
+            self.assignedTo = addr
         }
         access(all) view fun getOwner(): Address {
-            return self._owner
+            return self.assignedTo
         }
     }
 
@@ -101,6 +101,27 @@ access(all) contract TidalYieldClosedBeta {
             return info.capID
         }
         return nil
+    }
+
+    access(all) view fun validateBeta(_ addr: Address?, _ betaRef: auth(Beta) &BetaBadge): Bool {
+        if (addr == nil) {
+            return false
+        }
+        // Must have a live, non-revoked record for this address
+        let recordedID: UInt64? = self.getBetaCapID(addr!); 
+        if recordedID == nil {
+            return false
+        }
+
+        if self.issuedCapIDs[addr!]?.isRevoked == true {
+            return false
+        }
+
+        if betaRef.getOwner() != addr {
+            return false
+        }
+
+        return true 
     }
 
     init() {

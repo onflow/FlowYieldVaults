@@ -8,12 +8,9 @@ transaction() {
         admin: auth(Capabilities) &Account,
         user:  auth(Storage, Capabilities) &Account
     ) {
-        let adminCap: Capability<auth(TidalYieldClosedBeta.Admin) &TidalYieldClosedBeta.AdminHandle> =
-            admin.capabilities.storage.issue<auth(TidalYieldClosedBeta.Admin) &TidalYieldClosedBeta.AdminHandle>(
-                TidalYieldClosedBeta.AdminHandleStoragePath
-            )
-        let handle: auth(TidalYieldClosedBeta.Admin) &TidalYieldClosedBeta.AdminHandle =
-            adminCap.borrow() ?? panic("Missing AdminHandle")
+        let handle = admin.storage.borrow<auth(TidalYieldClosedBeta.Admin) &TidalYieldClosedBeta.AdminHandle>(
+            from: TidalYieldClosedBeta.AdminHandleStoragePath
+        ) ?? panic("Missing AdminHandle")
 
         let cap: Capability<auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge> =
             handle.grantBeta(addr: user.address)

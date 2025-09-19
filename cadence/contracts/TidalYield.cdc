@@ -320,6 +320,10 @@ access(all) contract TidalYield {
         }
         /// Creates a new Tide executing the specified Strategy with the provided funds
         access(all) fun createTide(betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge, strategyType: Type, withVault: @{FungibleToken.Vault}) {
+            pre {
+                TidalYieldClosedBeta.validateBeta(self.owner?.address!, betaRef):
+                "Invalid Beta Ref"
+            }
             let balance = withVault.balance
             let type = withVault.getType()
             let tide <-create Tide(strategyType: strategyType, withVault: <-withVault)
@@ -341,6 +345,9 @@ access(all) contract TidalYield {
             pre {
                 self.tides[tide.uniqueID.id] == nil:
                 "Collision with Tide ID \(tide.uniqueID.id) - a Tide with this ID already exists"
+
+                TidalYieldClosedBeta.validateBeta(self.owner?.address!, betaRef):
+                "Invalid Beta Ref"
             }
             emit AddedToManager(id: tide.uniqueID.id, owner: self.owner?.address, managerUUID: self.uuid, tokenType: tide.getType().identifier)
             self.tides[tide.uniqueID.id] <-! tide
@@ -350,6 +357,9 @@ access(all) contract TidalYield {
             pre {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
+
+                TidalYieldClosedBeta.validateBeta(self.owner?.address!, betaRef):
+                "Invalid Beta Ref"
             }
             let tide = (&self.tides[id] as &Tide?)!
             tide.deposit(from: <-from)
@@ -366,6 +376,9 @@ access(all) contract TidalYield {
             pre {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
+
+                TidalYieldClosedBeta.validateBeta(self.owner?.address!, betaRef):
+                "Invalid Beta Ref"
             }
             return <- self._withdrawTide(id: id)!
         }
