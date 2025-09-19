@@ -354,18 +354,25 @@ access(all) contract TidalYield {
             let tide = (&self.tides[id] as &Tide?)!
             tide.deposit(from: <-from)
         }
-        /// Withdraws the specified Tide, reverting if none exists with the provided ID
-        access(FungibleToken.Withdraw) fun withdrawTide(id: UInt64): @Tide {
+        access(self) fun _withdrawTide(id: UInt64): @Tide {
             pre {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
             }
             return <- self.tides.remove(key: id)!
         }
+        /// Withdraws the specified Tide, reverting if none exists with the provided ID
+        access(FungibleToken.Withdraw) fun withdrawTide(betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge, id: UInt64): @Tide {
+            pre {
+                self.tides[id] != nil:
+                "No Tide with ID \(id) found"
+            }
+            return <- self._withdrawTide(id: id)!
+        }
         /// Withdraws funds from the specified Tide in the given amount. The resulting Vault Type will be whatever
         /// denomination is supported by the Tide, so callers should examine the Tide to know the resulting Vault to
         /// expect
-        access(FungibleToken.Withdraw) fun withdrawFromTide(betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge, _ id: UInt64, amount: UFix64): @{FungibleToken.Vault} {
+        access(FungibleToken.Withdraw) fun withdrawFromTide(_ id: UInt64, amount: UFix64): @{FungibleToken.Vault} {
             pre {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
@@ -380,7 +387,7 @@ access(all) contract TidalYield {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
             }
-            let tide <- self.withdrawTide(id: id)
+            let tide <- self._withdrawTide(id: id)
             let res <- tide.withdraw(amount: tide.getTideBalance())
             Burner.burn(<-tide)
             return <-res

@@ -8,12 +8,18 @@ import "TidalYield"
 ///
 transaction {
     prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability) &Account) {
+        let betaCap = signer.storage.copy<Capability<auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge>>(from: TidalYieldClosedBeta.UserBetaCapStoragePath)
+            ?? panic("Signer doesn not have a BetaBadge stored at path \(TidalYieldClosedBeta.UserBetaCapStoragePath) - configure and retry")
+
+        let betaRef = betaCap.borrow()
+            ?? panic("Capability does not contain correct reference")
+
         if signer.storage.type(at: TidalYield.TideManagerStoragePath) == Type<@TidalYield.TideManager>() {
             return // early return if TideManager is found
         }
 
         // configure the TideManager
-        signer.storage.save(<-TidalYield.createTideManager(), to: TidalYield.TideManagerStoragePath)
+        signer.storage.save(<-TidalYield.createTideManager(betaRef: betaRef), to: TidalYield.TideManagerStoragePath)
         let cap = signer.capabilities.storage.issue<&TidalYield.TideManager>(TidalYield.TideManagerStoragePath)
         signer.capabilities.publish(cap, at: TidalYield.TideManagerPublicPath)
         // issue an authorized capability for later access via Capability controller if needed (e.g. via HybridCustody)
