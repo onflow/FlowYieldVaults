@@ -3,6 +3,7 @@ import "FungibleTokenMetadataViews"
 import "ViewResolver"
 
 import "TidalYield"
+import "TidalYieldClosedBeta"
 
 /// Deposits to an existing Tide stored in the signer's TideManager
 ///
