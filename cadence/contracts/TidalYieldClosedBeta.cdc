@@ -96,6 +96,7 @@ access(all) contract TidalYieldClosedBeta {
     access(all) view fun getBetaCapID(_ addr: Address): UInt64? {
         if let info = self.issuedCapIDs[addr] {
             if info.isRevoked {
+                assert(info.isRevoked, message: "Beta access revoked") 
                 return nil
             }
             return info.capID
@@ -105,19 +106,17 @@ access(all) contract TidalYieldClosedBeta {
 
     access(all) view fun validateBeta(_ addr: Address?, _ betaRef: auth(Beta) &BetaBadge): Bool {
         if (addr == nil) {
+            assert(addr == nil, message: "Address is required for Beta verification") 
             return false
         }
-        // Must have a live, non-revoked record for this address
         let recordedID: UInt64? = self.getBetaCapID(addr!); 
         if recordedID == nil {
-            return false
-        }
-
-        if self.issuedCapIDs[addr!]?.isRevoked == true {
+            assert(recordedID == nil, message: "No Beta access") 
             return false
         }
 
         if betaRef.getOwner() != addr {
+            assert(betaRef.getOwner() != addr, message: "BetaBadge may only be used by its assigned owner") 
             return false
         }
 
