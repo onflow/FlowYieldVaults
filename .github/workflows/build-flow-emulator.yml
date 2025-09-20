@@ -1,0 +1,40 @@
+name: 'Build and Push Flow Emulator Image'
+
+on:
+  workflow_dispatch:
+
+env:
+  DOCKER_IMAGE_URL: us-west1-docker.pkg.dev/dl-flow-devex-staging/backend/flow-emulator:${{ github.sha }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: 'Checkout'
+        uses: 'actions/checkout@v4'
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_PAT }}
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: '${{ vars.BUILDER_WORKLOAD_IDENTITY_PROVIDER }}'
+          service_account: '${{ vars.BUILDER_SERVICE_ACCOUNT }}'
+
+      - name: 'Set up gcloud'
+        uses: 'google-github-actions/setup-gcloud@v1'
+        with:
+          project_id: ${{ vars.GAR_PROJECT_ID }}
+
+      - name: 'Build and Push Flow Emulator'
+        run: |
+          gcloud auth configure-docker ${{ vars.GAR_REGION }}-docker.pkg.dev
+          docker build -t "${{ env.DOCKER_IMAGE_URL }}" .
+          docker push "${{ env.DOCKER_IMAGE_URL }}"
