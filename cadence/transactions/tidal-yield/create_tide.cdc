@@ -2,6 +2,7 @@ import "FungibleToken"
 import "FungibleTokenMetadataViews"
 import "ViewResolver"
 
+import "TidalYieldClosedBeta"
 import "TidalYield"
 
 /// Opens a new Tide in the Tidal platform, funding the Tide with the specified Vault and amount
@@ -16,8 +17,15 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
     let manager: &TidalYield.TideManager
     let strategy: Type
     let depositVault: @{FungibleToken.Vault}
+    let betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge
 
-    prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability) &Account) {
+    prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability, CopyValue) &Account) {
+        let betaCap = signer.storage.copy<Capability<auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge>>(from: TidalYieldClosedBeta.UserBetaCapStoragePath)
+            ?? panic("Signer does not have a BetaBadge stored at path \(TidalYieldClosedBeta.UserBetaCapStoragePath) - configure and retry")
+
+        self.betaRef = betaCap.borrow()
+            ?? panic("Capability does not contain correct reference")
+
         // create the Strategy Type to compose which the Tide should manage
         self.strategy = CompositeType(strategyIdentifier)
             ?? panic("Invalid strategyIdentifier \(strategyIdentifier) - ensure the provided strategyIdentifier corresponds to a valid Strategy Type")
@@ -40,7 +48,7 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
 
         // configure the TideManager if needed
         if signer.storage.type(at: TidalYield.TideManagerStoragePath) == nil {
-            signer.storage.save(<-TidalYield.createTideManager(), to: TidalYield.TideManagerStoragePath)
+            signer.storage.save(<-TidalYield.createTideManager(betaRef: self.betaRef), to: TidalYield.TideManagerStoragePath)
             let cap = signer.capabilities.storage.issue<&TidalYield.TideManager>(TidalYield.TideManagerStoragePath)
             signer.capabilities.publish(cap, at: TidalYield.TideManagerPublicPath)
             // issue an authorized capability for later access via Capability controller if needed (e.g. via HybridCustody)
@@ -53,6 +61,6 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
     }
 
     execute {
-        self.manager.createTide(strategyType: self.strategy, withVault: <-self.depositVault)
+        self.manager.createTide(betaRef: self.betaRef, strategyType: self.strategy, withVault: <-self.depositVault)
     }
 }

@@ -4,6 +4,7 @@ import "Burner"
 import "ViewResolver"
 // DeFiActions
 import "DeFiActions"
+import "TidalYieldClosedBeta"
 
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -318,7 +319,11 @@ access(all) contract TidalYield {
             return self.tides.length
         }
         /// Creates a new Tide executing the specified Strategy with the provided funds
-        access(all) fun createTide(strategyType: Type, withVault: @{FungibleToken.Vault}) {
+        access(all) fun createTide(betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge, strategyType: Type, withVault: @{FungibleToken.Vault}) {
+            pre {
+                TidalYieldClosedBeta.validateBeta(self.owner?.address!, betaRef):
+                "Invalid Beta Ref"
+            }
             let balance = withVault.balance
             let type = withVault.getType()
             let tide <-create Tide(strategyType: strategyType, withVault: <-withVault)
@@ -332,34 +337,50 @@ access(all) contract TidalYield {
                 creator: self.owner?.address
             )
 
-            self.addTide(<-tide)
+            self.addTide(betaRef: betaRef, <-tide)
         }
         /// Adds an open Tide to this TideManager resource. This effectively transfers ownership of the newly added
         /// Tide to the owner of this TideManager
-        access(all) fun addTide(_ tide: @Tide) {
+        access(all) fun addTide(betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge, _ tide: @Tide) {
             pre {
                 self.tides[tide.uniqueID.id] == nil:
                 "Collision with Tide ID \(tide.uniqueID.id) - a Tide with this ID already exists"
+
+                TidalYieldClosedBeta.validateBeta(self.owner?.address!, betaRef):
+                "Invalid Beta Ref"
             }
             emit AddedToManager(id: tide.uniqueID.id, owner: self.owner?.address, managerUUID: self.uuid, tokenType: tide.getType().identifier)
             self.tides[tide.uniqueID.id] <-! tide
         }
         /// Deposits additional funds to the specified Tide, reverting if none exists with the provided ID
-        access(all) fun depositToTide(_ id: UInt64, from: @{FungibleToken.Vault}) {
+        access(all) fun depositToTide(betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge, _ id: UInt64, from: @{FungibleToken.Vault}) {
             pre {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
+
+                TidalYieldClosedBeta.validateBeta(self.owner?.address!, betaRef):
+                "Invalid Beta Ref"
             }
             let tide = (&self.tides[id] as &Tide?)!
             tide.deposit(from: <-from)
         }
-        /// Withdraws the specified Tide, reverting if none exists with the provided ID
-        access(FungibleToken.Withdraw) fun withdrawTide(id: UInt64): @Tide {
+        access(self) fun _withdrawTide(id: UInt64): @Tide {
             pre {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
             }
             return <- self.tides.remove(key: id)!
+        }
+        /// Withdraws the specified Tide, reverting if none exists with the provided ID
+        access(FungibleToken.Withdraw) fun withdrawTide(betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge, id: UInt64): @Tide {
+            pre {
+                self.tides[id] != nil:
+                "No Tide with ID \(id) found"
+
+                TidalYieldClosedBeta.validateBeta(self.owner?.address!, betaRef):
+                "Invalid Beta Ref"
+            }
+            return <- self._withdrawTide(id: id)!
         }
         /// Withdraws funds from the specified Tide in the given amount. The resulting Vault Type will be whatever
         /// denomination is supported by the Tide, so callers should examine the Tide to know the resulting Vault to
@@ -379,7 +400,7 @@ access(all) contract TidalYield {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
             }
-            let tide <- self.withdrawTide(id: id)
+            let tide <- self._withdrawTide(id: id)
             let res <- tide.withdraw(amount: tide.getTideBalance())
             Burner.burn(<-tide)
             return <-res
@@ -406,7 +427,7 @@ access(all) contract TidalYield {
         return <- self._borrowFactory().createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds)
     }
     /// Creates a TideManager used to create and manage Tides
-    access(all) fun createTideManager(): @TideManager {
+    access(all) fun createTideManager(betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge): @TideManager {
         return <-create TideManager()
     }
     /// Creates a StrategyFactory resource

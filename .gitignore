@@ -1,4 +1,4 @@
-
+.DS_Store
 # flow
 *.pkey
 !local/mock-incrementfi.pkey
