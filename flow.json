@@ -89,10 +89,12 @@
 
 			}
 		},
-		"TestHelpers": {
-			"source": "./lib/TidalProtocol/cadence/contracts/mocks/TestHelpers.cdc",
+		"DummyConnectors": {
+			"source": "./lib/TidalProtocol/cadence/contracts/mocks/DummyConnectors.cdc",
 			"aliases": {
-				"testing": "0000000000000008"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000008",
+        "testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"TidalProtocol": {
@@ -126,7 +128,8 @@
 			"source": "cadence/contracts/TidalYieldClosedBeta.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
+				"testing": "0000000000000009",
+        "testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"TidalYieldStrategies": {
@@ -343,6 +346,7 @@
 						}
 					]
 				},
+        "DummyConnectors",
 				"TidalProtocol",
 				{
 					"name": "YieldToken",
@@ -364,6 +368,7 @@
 				},
 				"MockSwapper",
 				"TidalYieldAutoBalancers",
+				"TidalYieldClosedBeta",
 				"TidalYield",
 				"TidalYieldStrategies"
       ]
@@ -385,6 +390,7 @@
 						}
 					]
 				},
+        "DummyConnectors",
 				"TidalProtocol",
 				{
 					"name": "YieldToken",
