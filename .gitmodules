@@ -11,3 +11,6 @@
 [submodule "solidity/lib/forge-std"]
 	path = solidity/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "lib/MORE-Vaults-Core"]
+	path = lib/MORE-Vaults-Core
+	url = https://github.com/MORE-Vaults/MORE-Vaults-Core
