@@ -95,44 +95,50 @@ contract UseMintedUSDCWBTC is Script {
     uint160 constant MIN_SQRT_RATIO = 4295128739 + 1;
     uint160 constant MAX_SQRT_RATIO =
         1461446703485210103287273052203988822378723970342 - 1;
-    error Underfunded(address token, address holder, uint256 need, uint256 have);
 
-function _tryMint(address token, address to, uint256 amount) internal {
-    if (amount == 0) return;
-    // best-effort: if token has no mint or caller lacks perms, we just log
-    try IMintableERC20(token).mint(to, amount) { 
-        console2.log("Minted", amount);
-	console2.log("to", to);
-	console2.log("for token", token);
-    } catch {
-        console2.log("mint() failed (no mint or not authorized) for token", token);
+    // Best-effort mint; logs success/failure, never reverts itself
+    function _tryMint(address token, address to, uint256 amount) internal {
+        if (amount == 0) return;
+        try IMintableERC20(token).mint(to, amount) {
+            console2.log("mint() ok:", amount);
+            console2.log("to       :", to);
+            console2.log("token    :", token);
+        } catch {
+            console2.log("mint() failed (no mint or not authorized) for token", token);
+        }
     }
-}
 
-function _ensureFunded(
-    address token,
-    address holder,
-    uint256 need,
-    uint256 mintIfPossible,
-    bool tryMint
-) internal {
-    uint256 have = IERC20(token).balanceOf(holder);
-    if (have >= need) return;
-
-    if (tryMint && mintIfPossible > 0) {
-        _tryMint(token, holder, mintIfPossible);
-        have = IERC20(token).balanceOf(holder);
+    // Ensure holder has >= need; optionally try to mint; otherwise revert with readable message
+    function _ensureFunded(
+        address token,
+        address holder,
+        uint256 need,
+        uint256 mintIfPossible,
+        bool tryMint
+    ) internal {
+        uint256 have = IERC20(token).balanceOf(holder);
         if (have >= need) return;
+
+        if (tryMint && mintIfPossible > 0) {
+
+        uint256 shortfall = need - have;
+        uint256 mintAmount = shortfall < mintIfPossible ? shortfall : mintIfPossible;
+        if (mintAmount > 0) {
+            _tryMint(token, holder, mintAmount);
+        }
+            have = IERC20(token).balanceOf(holder);
+            if (have >= need) return;
+        }
+
+        console2.log("Insufficient funds");
+        console2.log("token :", token);
+        console2.log("holder:", holder);
+        console2.log("need  :", need);
+        console2.log("have  :", have);
+
+        // Use a string revert (so Foundry shows the message instead of empty revert data)
+        require(false, "EOA underfunded; mint/transfer or lower *_FUND (see logs above)");
     }
-
-    console2.log("Insufficient funds");
-    console2.log("token :", token);
-    console2.log("holder:", holder);
-    console2.log("need  :", need);
-    console2.log("have  :", have);
-    revert Underfunded(token, holder, need, have);
-}
-
 
     function run() external {
         uint256 pk   = vm.envUint("PK_ACCOUNT");
@@ -149,9 +155,8 @@ function _ensureFunded(
         (address t0, address t1) = USDC < WBTC ? (USDC, WBTC) : (WBTC, USDC);
 
         // Funding amounts (base units). Defaults assume USDC 6d, WBTC 8d.
-        // Feel free to override via env to something small first.
-        uint256 usdcFund = vm.envOr("USDC_FUND", uint256(600_000 * 1e6)); // 600k USDC
-        uint256 wbtcFund = vm.envOr("WBTC_FUND", uint256(600_000 * 1e8)); // 600k WBTC (test scale)
+	uint256 usdcFund = vm.envOr("USDC_FUND", uint256(2_500_000)); // 2.5 USDC
+	uint256 wbtcFund = vm.envOr("WBTC_FUND", uint256(1_000_000)); // 0.01 WBTC
         uint256 amt0 = (t0 == USDC) ? usdcFund : wbtcFund;
         uint256 amt1 = (t1 == WBTC) ? wbtcFund : usdcFund;
 
@@ -187,20 +192,16 @@ function _ensureFunded(
 
         // 4) Ensure EOA has enough balance to cover the planned pulls.
         //    If tokens support mint, this will mint; otherwise it will enforce funding.
-bool TRY_MINT = vm.envOr("TRY_MINT", true);
-uint256 usdcMint = vm.envOr("USDC_MINT", uint256(1_000_000 * 1e6));
-uint256 wbtcMint = vm.envOr("WBTC_MINT", uint256(21 * 1e8));
+        bool    TRY_MINT = vm.envOr("TRY_MINT", true);
+        uint256 usdcMint = vm.envOr("USDC_MINT", uint256(1_000_000 * 1e6));
+        uint256 wbtcMint = vm.envOr("WBTC_MINT", uint256(21 * 1e8));
 
-_ensureFunded(t0, eoa, amt0, (t0 == USDC) ? usdcMint : wbtcMint, TRY_MINT);
-_ensureFunded(t1, eoa, amt1, (t1 == WBTC) ? wbtcMint : usdcMint, TRY_MINT);
+        _ensureFunded(t0, eoa, amt0, (t0 == USDC) ? usdcMint : wbtcMint, TRY_MINT);
+        _ensureFunded(t1, eoa, amt1, (t1 == WBTC) ? wbtcMint : usdcMint, TRY_MINT);
 
-        // 5) Approve helper to pull your balances from the EOA
-        // IERC20(t0).safeApprove(address(helper), 0);
-        // IERC20(t0).safeApprove(address(helper), type(uint256).max);
-        // IERC20(t1).safeApprove(address(helper), 0);
-        // IERC20(t1).safeApprove(address(helper), type(uint256).max);
-	IERC20(t0).forceApprove(address(helper), type(uint256).max);
-	IERC20(t1).forceApprove(address(helper), type(uint256).max);
+        // 5) Approve helper to pull your balances from the EOA (OZ v5)
+        IERC20(t0).forceApprove(address(helper), type(uint256).max);
+        IERC20(t1).forceApprove(address(helper), type(uint256).max);
 
         // 6) Move funds into helper
         helper.pull(IERC20(t0), amt0);
