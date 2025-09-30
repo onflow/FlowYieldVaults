@@ -8,3 +8,4 @@ flow accounts create --network "$FLOW_NETWORK" --key "$(cat $EVM_GATEWAY_PUBKEY_
 
 flow transactions send ./cadence/transactions/mocks/add_gw_keys.cdc --signer evm-gateway
 
+flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0xe03daebed8ca0615 1000.0
