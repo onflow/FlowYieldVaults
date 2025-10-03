@@ -129,6 +129,13 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"UniswapV3SwapConnectors1": {
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors1.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
 		"YieldToken": {
 			"source": "cadence/contracts/mocks/YieldToken.cdc",
 			"aliases": {
@@ -665,7 +672,8 @@
 		},
 		"testnet": {
 			"testnet-deployer": [
-				"UniswapV3SwapConnectors"
+				"UniswapV3SwapConnectors",
+				"UniswapV3SwapConnectors1"
 			]
 		}
 	}
