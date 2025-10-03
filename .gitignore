@@ -9,3 +9,5 @@ imports
 coverage.lcov
 coverage.json
 solidity/out/
+
+testnet-deployer.pkey

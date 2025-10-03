@@ -4,21 +4,24 @@
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
+				"testing": "0000000000000007",
+				"testnet": "4c2ff9dd03ab442f"
 			}
 		},
 		"DeFiActionsMathUtils": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
+				"testing": "0000000000000007",
+				"testnet": "4c2ff9dd03ab442f"
 			}
 		},
 		"DeFiActionsUtils": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
+				"testing": "0000000000000007",
+				"testnet": "4c2ff9dd03ab442f"
 			}
 		},
 		"EVMTokenConnectors": {
@@ -74,7 +77,8 @@
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
+				"testing": "0000000000000007",
+				"testnet": "addd594cf410166a"
 			}
 		},
 		"TestHelpers": {
@@ -212,7 +216,8 @@
 			"hash": "8cfbe61228b181a654ea45a26e79334f5907199801b94c4e639a67e2068160db",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"FlowEVMBridgeCustomAssociationTypes": {
@@ -220,7 +225,8 @@
 			"hash": "12bf631191d7d2c2621f002e616cfeb8319c58e753ecccd08f516315149e2066",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"FlowEVMBridgeCustomAssociations": {
@@ -228,7 +234,8 @@
 			"hash": "984e237c8ea3a97a987b9b502e542b4f22fa55feb74ecc6aaee245a50b287fc4",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"FlowEVMBridgeHandlerInterfaces": {
@@ -256,7 +263,8 @@
 			"hash": "2881ec6db6dde705b2919185230890aba85b4e0cca4537721181588fba7ae4ad",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"FlowEVMBridgeResolver": {
@@ -294,7 +302,8 @@
 			"hash": "8582adc5ae360ab746dab61b0b4d00974ff05483679e838475d4577827e6fb01",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"FlowStorageFees": {
@@ -338,7 +347,8 @@
 			"hash": "431a51a6cca87773596f79832520b19499fe614297eaef347e49383f2ae809af",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"ICrossVM": {
@@ -346,7 +356,8 @@
 			"hash": "e14dcb25f974e216fd83afdc0d0f576ae7014988755a4777b06562ffb06537bc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"ICrossVMAsset": {
@@ -354,7 +365,8 @@
 			"hash": "aa1fbd979c9d7806ea8ea66311e2a4257c5a4051eef020524a0bda4d8048ed57",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"IEVMBridgeNFTMinter": {
@@ -362,7 +374,8 @@
 			"hash": "65ec734429c12b70cd97ad8ea2c2bc4986fab286744921ed139d9b45da92e77e",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"IEVMBridgeTokenMinter": {
@@ -380,7 +393,8 @@
 			"hash": "c6f5962bde2060b4490bd62c7a05e048536aab17e430cf6aa4e5b893b06f8302",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"IFlowEVMTokenBridge": {
@@ -537,6 +551,13 @@
 				"type": "file",
 				"location": "local/test-user.pkey"
 			}
+		},
+		"testnet-deployer": {
+			"address": "29242c62f18538c9",
+			"key": {
+				"type": "file",
+				"location": "testnet-deployer.pkey"
+			}
 		}
 	},
 	"deployments": {
@@ -640,6 +661,11 @@
 				},
 				"StableSwapFactory",
 				"SwapRouter"
+			]
+		},
+		"testnet": {
+			"testnet-deployer": [
+				"UniswapV3SwapConnectors"
 			]
 		}
 	}
