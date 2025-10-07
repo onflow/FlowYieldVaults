@@ -113,7 +113,7 @@ access(all) contract ERC4626PriceOracles {
         /// @return a copy of the struct's UniqueIdentifier
         ///
         access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
-            return nil
+            return self.uniqueID
         }
         /// Sets the UniqueIdentifier of this component to the provided UniqueIdentifier, used in extending a stack to
         /// identify another connector in a DeFiActions stack. See DeFiActions.align() for more information.
@@ -121,7 +121,7 @@ access(all) contract ERC4626PriceOracles {
         /// @param id: the UniqueIdentifier to set for this component
         ///
         access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) {
-            // do nothing
+            self.uniqueID = id
         }
         /// Performs a dry call to the ERC4626 vault
         ///
