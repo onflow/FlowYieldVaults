@@ -35,9 +35,10 @@ transaction() {
       uniqueID: nil
     )
 
+    let flowStoragePath = /storage/flowTokenVault
+    let usdcStoragePath = /storage/EVMVMBridgedToken_5e65b6b04fba51d95409712978cb91e99d93ae73Vault
     // ---- Swap FLOW → USDC (quoteOut + swap) ----
     // Withdraw FLOW
-    let flowStoragePath = /storage/flowTokenVault
     let flowWithdrawRef = acct.storage
       .borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: flowStoragePath)
       ?? panic("Missing FLOW vault at /storage/flowTokenVault")
@@ -54,30 +55,29 @@ transaction() {
     log("USDC received: ".concat(usdcOut.balance.toString()))
 
     // Deposit USDC
-    let usdcStoragePath = /storage/EVMVMBridgedToken_5e65b6b04fba51d95409712978cb91e99d93ae73Vault
     let usdcReceiver = acct.storage
       .borrow<&{FungibleToken.Receiver}>(from: usdcStoragePath)
       ?? panic("Missing USDC vault at ".concat(usdcStoragePath.toString()))
     usdcReceiver.deposit(from: <-usdcOut)
 
-    // // ---- Exact-out USDC: pre-quote input FLOW, then swap ----
-    // let desiredUSDC: UFix64 = 10.0
-    // let qi = swapper.quoteIn(forDesired: desiredUSDC, reverse: false)
-    // let needFlow: UFix64 = qi.inAmount
-    // log("ExactOut want ".concat(desiredUSDC.toString()).concat(" USDC; need FLOW: ").concat(needFlow.toString()))
-    //
-    // // Withdraw required FLOW
-    // let flowWithdrawRef2 = acct.storage
-    //   .borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: flowStoragePath)
-    //   ?? panic("Missing FLOW vault for exact-out")
-    // let flowNeedVault <- flowWithdrawRef2.withdraw(amount: needFlow)
-    //
-    // // Swap and deposit USDC
-    // let usdcOut2 <- swapper.swap(quote: qi, inVault: <-flowNeedVault)
-    // log("ExactOut USDC received: ".concat(usdcOut2.balance.toString()))
-    // let usdcReceiver2 = acct.storage
-    //   .borrow<&{FungibleToken.Receiver}>(from: usdcStoragePath)
-    //   ?? panic("Missing USDC vault for exact-out deposit")
-    // usdcReceiver2.deposit(from: <-usdcOut2)
+    // ---- Exact-out USDC: pre-quote input FLOW, then swap ----
+    let desiredUSDC: UFix64 = 100.0
+    let qi = swapper.quoteIn(forDesired: desiredUSDC, reverse: false)
+    let needFlow: UFix64 = qi.inAmount
+    log("ExactOut want ".concat(desiredUSDC.toString()).concat(" USDC; need FLOW: ").concat(needFlow.toString()))
+
+    // Withdraw required FLOW
+    let flowWithdrawRef2 = acct.storage
+      .borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: flowStoragePath)
+      ?? panic("Missing FLOW vault for exact-out")
+    let flowNeedVault <- flowWithdrawRef2.withdraw(amount: needFlow)
+
+    // Swap and deposit USDC
+    let usdcOut2 <- swapper.swap(quote: qi, inVault: <-flowNeedVault)
+    log("ExactOut USDC received: ".concat(usdcOut2.balance.toString()))
+    let usdcReceiver2 = acct.storage
+      .borrow<&{FungibleToken.Receiver}>(from: usdcStoragePath)
+      ?? panic("Missing USDC vault for exact-out deposit")
+    usdcReceiver2.deposit(from: <-usdcOut2)
   }
 }
