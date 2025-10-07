@@ -153,25 +153,6 @@ access(all) contract ERC4626SinkConnectors {
         access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) {
             self.uniqueID = id
         }
-        /// Returns the total shares issued by the ERC4626 vault
-        ///
-        /// @return The total shares issued by the ERC4626 vault
-        access(all) fun totalShares(): UInt256? {
-            if let coa = self.coa.borrow() {
-                return ERC4626Utils.totalShares(coa: coa, vault: self.vault)
-            }
-            return nil
-        }
-        /// Returns the total assets managed by the ERC4626 vault
-        ///
-        /// @return The total assets managed by the ERC4626 vault
-        access(all) fun totalAssets(): UInt256? {
-            if let coa = self.coa.borrow() {
-                return ERC4626Utils.totalAssets(coa: coa, vault: self.vault)
-            }
-            return nil
-        }
-
         /// Performs a dry call to the ERC4626 vault
         ///
         /// @param to The address of the ERC4626 vault
