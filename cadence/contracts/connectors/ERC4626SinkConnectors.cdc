@@ -70,27 +70,13 @@ access(all) contract ERC4626SinkConnectors {
         access(all) fun minimumCapacity(): UFix64 {
             // Check the EVMTokenConnectors Sink has capacity to bridge the assets to EVM
             // TODO: Update EVMTokenConnector.Sink to return 0.0 if it doesn't have fees to pay for the bridge call
-            if self.tokenSink.minimumCapacity() == 0.0 {
+            let coa = self.coa.borrow()
+            if coa == nil || self.tokenSink.minimumCapacity() == 0.0 {
                 return 0.0
             }
             // Check the ERC4626 vault has capacity to deposit the assets
-            let maxDepositRes = self._call(
-                    dry: true,
-                    to: self.vault,
-                    signature: "maxDeposit(address)",
-                    args: [self.assetEVMAddress],
-                    gasLimit: 100_000
-                )
-            if maxDepositRes?.status != EVM.Status.successful || maxDepositRes!.data.length == 0 {
-                return 0.0
-            }
-            // decode the response & return
-            let decodedData = EVM.decodeABI(types: [Type<UInt256>()], data: maxDepositRes!.data)
-            let max = decodedData[0] as? UInt256
-            if max == nil {
-                return 0.0
-            }
-            return FlowEVMBridgeUtils.convertERC20AmountToCadenceAmount(max!, erc20Address: self.assetEVMAddress)
+            let max = ERC4626Utils.maxDeposit(coa: coa!, vault: self.vault, receiver: coa!.address())
+            return max != nil ? FlowEVMBridgeUtils.convertERC20AmountToCadenceAmount(max!, erc20Address: self.assetEVMAddress) : 0.0
         }
         /// Deposits up to the Sink's capacity from the provided Vault
         access(all) fun depositCapacity(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
