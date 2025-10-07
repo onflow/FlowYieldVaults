@@ -60,43 +60,15 @@ access(all) contract ERC4626PriceOracles {
         ///
         /// @return The current price of the ERC4626 vault denominated in the underlying asset type
         access(all) fun price(ofToken: Type): UFix64? {
-            let totalAssets = self.totalAssets()
-            let totalShares = self.totalShares()
+            let totalAssets = ERC4626Utils.totalAssets(coa: self.coa.borrow()!, vault: self.vault)
+            let totalShares = ERC4626Utils.totalShares(coa: self.coa.borrow()!, vault: self.vault)
             if totalAssets == nil || totalShares == nil {
                 return nil
             }
             var price = totalAssets! / totalShares!
 
-            price = ERC4626PriceUtils.normalizeDecimals(amount: price, originalDecimals: 0, targetDecimals: 24)
+            price = ERC4626Utils.normalizeDecimals(amount: price, originalDecimals: 0, targetDecimals: 24)
             return FlowEVMBridgeUtils.uint256ToUFix64(value: price, decimals: 24)
-        }
-        /// Returns the total shares issued by the ERC4626 vault
-        ///
-        /// @return The total shares issued by the ERC4626 vault
-        access(all) fun totalShares(): UInt256? {
-            let callRes = self._dryCall(to: self.vault, signature: "totalSupply()", args: [], gasLimit: 1000000)
-            if callRes?.status != EVM.Status.successful {
-                return nil
-            }
-            let totalShares = EVM.decodeABI(types: [Type<UInt256>()], data: callRes!.data) as! [AnyStruct]
-            if totalShares.length != 1 {
-                return nil
-            }
-            return totalShares[0] as! UInt256
-        }
-        /// Returns the total assets managed by the ERC4626 vault
-        ///
-        /// @return The total assets managed by the ERC4626 vault
-        access(all) fun totalAssets(): UInt256? {
-            let callRes = self._dryCall(to: self.vault, signature: "totalAssets()", args: [], gasLimit: 1000000)
-            if callRes?.status != EVM.Status.successful {
-                return nil
-            }
-            let totalAssets = EVM.decodeABI(types: [Type<UInt256>()], data: callRes!.data) as! [AnyStruct]
-            if totalAssets.length != 1 {
-                return nil
-            }
-            return totalAssets[0] as! UInt256
         }
         /// Returns a ComponentInfo struct containing information about this component and a list of ComponentInfo for
         /// each inner component in the stack.
@@ -122,23 +94,6 @@ access(all) contract ERC4626PriceOracles {
         ///
         access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) {
             self.uniqueID = id
-        }
-        /// Performs a dry call to the ERC4626 vault
-        ///
-        /// @param to The address of the ERC4626 vault
-        /// @param signature The signature of the function to call
-        /// @param args The arguments to pass to the function
-        /// @param gasLimit The gas limit to use for the call
-        ///
-        /// @return The result of the dry call or `nil` if the COA capability is invalid
-        access(self)
-        fun _dryCall(to: EVM.EVMAddress, signature: String, args: [AnyStruct], gasLimit: UInt64): EVM.Result? {
-            let calldata = EVM.encodeABIWithSignature(signature, args)
-            let valueBalance = EVM.Balance(attoflow: 0)
-            if let coa = self.coa.borrow() {
-                return coa.dryCall(to: to, data: calldata, gasLimit: gasLimit, value: valueBalance)
-            }
-            return nil
         }
     }
 }
