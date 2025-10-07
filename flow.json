@@ -28,6 +28,20 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"ERC4626SinkConnectors": {
+			"source": "./cadence/contracts/connectors/ERC4626SinkConnectors.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
+		"ERC4626Utils": {
+			"source": "./cadence/contracts/utils/ERC4626Utils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
 		"EVMTokenConnectors": {
 			"source": "./lib/DeFiActions/cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
 			"aliases": {
@@ -418,6 +432,7 @@
 					]
 				},
 				"MockSwapper",
+				"ERC4626Utils",
 				"ERC4626PriceOracles",
 				"TidalYieldAutoBalancers",
 				"TidalYield",

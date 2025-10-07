@@ -3,6 +3,7 @@ import "EVM"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 import "DeFiActions"
+import "ERC4626Utils"
 
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 /// THIS CONTRACT IS IN BETA AND IS NOT FINALIZED - INTERFACES MAY CHANGE AND/OR PENDING CHANGES MAY REQUIRE REDEPLOYMENT
@@ -66,7 +67,7 @@ access(all) contract ERC4626PriceOracles {
             }
             var price = totalAssets! / totalShares!
 
-            price = ERC4626PriceOracles.normalizeDecimals(amount: price, originalDecimals: 0, targetDecimals: 24)
+            price = ERC4626PriceUtils.normalizeDecimals(amount: price, originalDecimals: 0, targetDecimals: 24)
             return FlowEVMBridgeUtils.uint256ToUFix64(value: price, decimals: 24)
         }
         /// Returns the total shares issued by the ERC4626 vault
@@ -139,24 +140,5 @@ access(all) contract ERC4626PriceOracles {
             }
             return nil
         }
-    }
-
-    /// Normalizes decimals of the given amount to the target decimals
-    ///
-    /// @param amount The amount to normalize
-    /// @param originalDecimals The original decimals of the amount
-    /// @param targetDecimals The target decimals to normalize to
-    ///
-    /// @return The normalized amount
-    access(all) fun normalizeDecimals(amount: UInt256, originalDecimals: UInt8, targetDecimals: UInt8): UInt256 {
-        var res = amount
-        if originalDecimals > targetDecimals {
-            // decimals is greater than targetDecimals - truncate the fractional part
-            res = amount / FlowEVMBridgeUtils.pow(base: 10, exponent: originalDecimals - targetDecimals)
-        } else if originalDecimals < targetDecimals {
-            // decimals is less than targetDecimals - scale the amount up to targetDecimals
-            res = amount * FlowEVMBridgeUtils.pow(base: 10, exponent: targetDecimals - originalDecimals)
-        }
-        return res
     }
 }
