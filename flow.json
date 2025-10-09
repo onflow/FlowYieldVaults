@@ -24,6 +24,14 @@
 				"testnet": "4c2ff9dd03ab442f"
 			}
 		},
+		"EVMAbiHelpers": {
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007",
+				"testnet": "29242c62f18538c9"
+			}
+		},
 		"EVMTokenConnectors": {
 			"source": "cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
 			"aliases": {
@@ -126,14 +134,8 @@
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
-			}
-		},
-		"UniswapV3SwapConnectors1": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors1.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
+				"testing": "0000000000000007",
+				"testnet": "29242c62f18538c9"
 			}
 		},
 		"YieldToken": {
@@ -672,8 +674,8 @@
 		},
 		"testnet": {
 			"testnet-deployer": [
+				"EVMAbiHelpers",
 				"UniswapV3SwapConnectors",
-				"UniswapV3SwapConnectors1"
 			]
 		}
 	}

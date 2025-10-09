@@ -12,7 +12,7 @@ transaction() {
     let coaCap: Capability<auth(EVM.Owner) &EVM.CadenceOwnedAccount> =
       acct.capabilities.storage.issue<auth(EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
 
-    let router = EVM.addressFromString("0x4231aA94A25FFA1AF95cBE70483052a92f1a3d8D")
+    let router = EVM.addressFromString("0x2Db6468229F6fB1a77d248Dbb1c386760C257804")
 
     let quoter = EVM.addressFromString("0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c")
 
@@ -59,25 +59,5 @@ transaction() {
       .borrow<&{FungibleToken.Receiver}>(from: usdcStoragePath)
       ?? panic("Missing USDC vault at ".concat(usdcStoragePath.toString()))
     usdcReceiver.deposit(from: <-usdcOut)
-
-    // ---- Exact-out USDC: pre-quote input FLOW, then swap ----
-    let desiredUSDC: UFix64 = 100.0
-    let qi = swapper.quoteIn(forDesired: desiredUSDC, reverse: false)
-    let needFlow: UFix64 = qi.inAmount
-    log("ExactOut want ".concat(desiredUSDC.toString()).concat(" USDC; need FLOW: ").concat(needFlow.toString()))
-
-    // Withdraw required FLOW
-    let flowWithdrawRef2 = acct.storage
-      .borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: flowStoragePath)
-      ?? panic("Missing FLOW vault for exact-out")
-    let flowNeedVault <- flowWithdrawRef2.withdraw(amount: needFlow)
-
-    // Swap and deposit USDC
-    let usdcOut2 <- swapper.swap(quote: qi, inVault: <-flowNeedVault)
-    log("ExactOut USDC received: ".concat(usdcOut2.balance.toString()))
-    let usdcReceiver2 = acct.storage
-      .borrow<&{FungibleToken.Receiver}>(from: usdcStoragePath)
-      ?? panic("Missing USDC vault for exact-out deposit")
-    usdcReceiver2.deposit(from: <-usdcOut2)
   }
 }
