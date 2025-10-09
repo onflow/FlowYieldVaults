@@ -1,6 +1,7 @@
 // standards
 import "FungibleToken"
 import "FlowToken"
+import "EVM"
 // DeFiActions
 import "DeFiActionsUtils"
 import "DeFiActions"
@@ -14,6 +15,12 @@ import "TidalYieldAutoBalancers"
 // tokens
 import "YieldToken"
 import "MOET"
+// amm integration
+import "UniswapV3SwapConnectors"
+// vm bridge
+import "FlowEVMBridgeConfig"
+import "FlowEVMBridgeUtils"
+import "FlowEVMBridge"
 // mocks
 import "MockOracle"
 import "MockSwapper"
@@ -122,50 +129,83 @@ access(all) contract TidalYieldStrategies {
             withFunds: @{FungibleToken.Vault}
         ): @{TidalYield.Strategy} {
             // this PriceOracle is mocked and will be shared by all components used in the TracerStrategy
+            // TODO: add ERC4626 price oracle
             let oracle = MockOracle.PriceOracle()
 
-            // assign token types
+            // assign EVM token addresses & types
+            // TODO: Consider how we're going to handle these addresses across networks, especially testing & CI
+            let yieldTokenEVMAddress = EVM.addressFromString("0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95")
+            let stableTokenEVMAddress = EVM.addressFromString("0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1")
+            let yieldTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: yieldTokenEVMAddress)
+                ?? panic("YieldToken associated with EVM address \(yieldTokenEVMAddress.toString()) not found in VM Bridge config")
+            let stableTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: stableTokenEVMAddress)
+                ?? panic("Stables associated with EVM address \(stableTokenEVMAddress.toString()) not found in VM Bridge config")
+            // assign collateral & flow token types
             let collateralType = withFunds.getType()
-            let yieldTokenType = Type<@YieldToken.Vault>()
-            let moetTokenType = Type<@MOET.Vault>()
             let flowTokenType = Type<@FlowToken.Vault>()
 
             // configure and AutoBalancer for this stack
             let autoBalancer = TidalYieldAutoBalancers._initNewAutoBalancer(
-                oracle: oracle,             // used to determine value of deposits & when to rebalance
-                vaultType: yieldTokenType,  // the type of Vault held by the AutoBalancer
-                lowerThreshold: 0.95,       // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
-                upperThreshold: 1.05,       // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
-                rebalanceSink: nil,         // nil on init - will be set once a PositionSink is available
-                rebalanceSource: nil,       // nil on init - not set for TracerStrategy
-                uniqueID: uniqueID          // identifies AutoBalancer as part of this Strategy
-            )
+                    oracle: oracle,             // used to determine value of deposits & when to rebalance
+                    vaultType: yieldTokenType,  // the type of Vault held by the AutoBalancer
+                    lowerThreshold: 0.95,       // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
+                    upperThreshold: 1.05,       // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
+                    rebalanceSink: nil,         // nil on init - will be set once a PositionSink is available
+                    rebalanceSource: nil,       // nil on init - not set for TracerStrategy
+                    uniqueID: uniqueID          // identifies AutoBalancer as part of this Strategy
+                )
             // enables deposits of YieldToken to the AutoBalancer
             let abaSink = autoBalancer.createBalancerSink() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
             // enables withdrawals of YieldToken from the AutoBalancer
             let abaSource = autoBalancer.createBalancerSource() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
 
-            // init MOET <> YIELD swappers
+            // assign uniswap v3 router & quoter addresses
+            let router = EVM.addressFromString("0x4231aA94A25FFA1AF95cBE70483052a92f1a3d8D")
+            let quoter = EVM.addressFromString("0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c")
+            // init Stable <> YIELD swappers
             //
-            // MOET -> YieldToken
-            let moetToYieldSwapper = MockSwapper.Swapper(
-                    inVault: moetTokenType,
+            // Stable -> YieldToken
+            // TODO: Update to use UniswapV3SwapConnectors
+            // let stableToYieldSwapper = MockSwapper.Swapper(
+            //         inVault: stableTokenType,
+            //         outVault: yieldTokenType,
+            //         uniqueID: uniqueID
+            //     )
+            // TODO: consider how we're going to pass the user's COA capability to the Swapper
+            let stableToYieldSwapper = UniswapV3SwapConnectors.Swapper(
+                    routerAddress: router,
+                    quoterAddress: quoter,
+                    tokenPath: [stableTokenEVMAddress, yieldTokenEVMAddress],
+                    feePath: [3000],
+                    inVault: stableTokenType,
                     outVault: yieldTokenType,
+                    coaCapability: TidalYieldStrategies._getCOACapability(),
                     uniqueID: uniqueID
                 )
-            // YieldToken -> MOET
-            let yieldToMoetSwapper = MockSwapper.Swapper(
+            // YieldToken -> Stable
+            // TODO: Update to use UniswapV3SwapConnectors
+            // let yieldToStableSwapper = MockSwapper.Swapper(
+            //         inVault: yieldTokenType,
+            //         outVault: stableTokenType,
+            //         uniqueID: uniqueID
+            //     )
+            let yieldToStableSwapper = UniswapV3SwapConnectors.Swapper(
+                    routerAddress: router,
+                    quoterAddress: quoter,
+                    tokenPath: [yieldTokenEVMAddress, stableTokenEVMAddress],
+                    feePath: [3000],
                     inVault: yieldTokenType,
-                    outVault: moetTokenType,
+                    outVault: stableTokenType,
+                    coaCapability: TidalYieldStrategies._getCOACapability(),
                     uniqueID: uniqueID
                 )
 
             // init SwapSink directing swapped funds to AutoBalancer
             //
-            // Swaps provided MOET to YieldToken & deposits to the AutoBalancer
-            let abaSwapSink = SwapConnectors.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
-            // Swaps YieldToken & provides swapped MOET, sourcing YieldToken from the AutoBalancer
-            let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
+            // Swaps provided Stable to YieldToken & deposits to the AutoBalancer
+            let abaSwapSink = SwapConnectors.SwapSink(swapper: stableToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
+            // Swaps YieldToken & provides swapped Stable, sourcing YieldToken from the AutoBalancer
+            let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToStableSwapper, source: abaSource, uniqueID: uniqueID)
 
             // open a TidalProtocol position
             let poolCap = TidalYieldStrategies.account.storage.load<Capability<auth(TidalProtocol.EParticipant, TidalProtocol.EPosition) &TidalProtocol.Pool>>(
@@ -224,10 +264,27 @@ access(all) contract TidalYieldStrategies {
             }
         }
     }
+    
+    /// Returns the COA capability for this account
+    /// TODO: this is temporary until we have a better way to pass user's COAs to inner connectors
+    access(self)
+    fun _getCOACapability(): Capability<auth(EVM.Owner) &EVM.CadenceOwnedAccount> {
+        let coaCap = self.account.capabilities.storage.issue<auth(EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
+        assert(coaCap.check(), message: "Could not issue COA capability")
+        return coaCap
+    }
 
     init() {
         self.IssuerStoragePath = StoragePath(identifier: "TidalYieldStrategyComposerIssuer_\(self.account.address)")!
 
         self.account.storage.save(<-create StrategyComposerIssuer(), to: self.IssuerStoragePath)
+
+        // TODO: this is temporary until we have a better way to pass user's COAs to inner connectors
+        // create a COA in this account
+        if self.account.storage.type(at: /storage/evm) == nil {
+            self.account.storage.save(<-EVM.createCadenceOwnedAccount(), to: /storage/evm)
+            let cap = self.account.capabilities.storage.issue<&EVM.CadenceOwnedAccount>(/storage/evm)
+            self.account.capabilities.publish(cap, at: /public/evm)
+        }
     }
 }
