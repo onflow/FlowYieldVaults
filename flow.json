@@ -9,14 +9,6 @@
 			}
 		},
 		"DeFiActionsMathUtils": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007",
-				"testnet": "4c2ff9dd03ab442f"
-			}
-		},
-		"DeFiActionsMathUtils": {
 			"source": "./lib/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
@@ -59,8 +51,8 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"FungibleTokenStack": {
-			"source": "./lib/DeFiActions/cadence/contracts/connectors/FungibleTokenStack.cdc",
+		"FungibleTokenConnectors": {
+			"source": "./lib/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
