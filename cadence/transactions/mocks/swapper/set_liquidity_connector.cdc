@@ -2,7 +2,7 @@ import "FungibleToken"
 
 import "MockSwapper"
 
-import "FungibleTokenStack"
+import "FungibleTokenConnectors"
 
 /// Configures the MockSwapper contract with a liquidity source connected to the signer's Vault at the provided
 /// storage path
@@ -19,7 +19,7 @@ transaction(vaultStoragePath: StoragePath) {
     }
 
     execute {
-        let vaultConnector = FungibleTokenStack.VaultSinkAndSource(
+        let vaultConnector = FungibleTokenConnectors.VaultSinkAndSource(
                 min: nil,
                 max: nil,
                 vault: self.vaultCap,

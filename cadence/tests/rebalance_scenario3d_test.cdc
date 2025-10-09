@@ -7,6 +7,7 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "TidalYieldStrategies"
+import "TidalProtocol"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let tidalYieldAccount = Test.getAccount(0x0000000000000009)
@@ -22,9 +23,38 @@ access(all) let targetHealthFactor = 1.3
 
 access(all) var snapshot: UInt64 = 0
 
+// Helper function to get Flow collateral from position
+access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
+    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
+    for balance in positionDetails.balances {
+        if balance.vaultType == Type<@FlowToken.Vault>() {
+            // Credit means it's a deposit (collateral)
+            if balance.direction == TidalProtocol.BalanceDirection.Credit {
+                return balance.balance
+            }
+        }
+    }
+    return 0.0
+}
+
+// Helper function to get MOET debt from position
+access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
+    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
+    for balance in positionDetails.balances {
+        if balance.vaultType == Type<@MOET.Vault>() {
+            // Debit means it's borrowed (debt)
+            if balance.direction == TidalProtocol.BalanceDirection.Debit {
+                return balance.balance
+            }
+        }
+    }
+    return 0.0
+}
+
 access(all)
 fun setup() {
 	deployContracts()
+	
 
 	// set mocked token prices
 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
@@ -32,6 +62,7 @@ fun setup() {
 
 	// mint tokens & set liquidity in mock swapper contract
 	let reserveAmount = 100_000_00.0
+	setupMoetVault(protocolAccount, beFailed: false)
 	setupYieldVault(protocolAccount, beFailed: false)
 	mintFlow(to: protocolAccount, amount: reserveAmount)
 	mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
@@ -54,7 +85,7 @@ fun setup() {
 	// open wrapped position (pushToDrawDownSink)
 	// the equivalent of depositing reserves
 	let openRes = executeTransaction(
-		"../transactions/mocks/position/create_wrapped_position.cdc",
+		"../../lib/TidalProtocol/cadence/tests/transactions/mock-tidal-protocol-consumer/create_wrapped_position.cdc",
 		[reserveAmount/2.0, /storage/flowTokenVault, true],
 		protocolAccount
 	)
@@ -81,13 +112,17 @@ fun test_RebalanceTideScenario3D() {
 	let flowPriceDecrease = 0.5
 	let yieldPriceIncrease = 1.5
 
-	let expectedYieldTokenValues = [615.38, 307.69, 268.24]
+	let expectedYieldTokenValues = [615.38461539, 307.69230769, 268.24457594]
+	let expectedFlowCollateralValues = [1000.0, 500.0, 653.84615385]
+	let expectedDebtValues = [615.38461539, 307.69230769, 402.36686391]
 
 	let user = Test.createAccount()
 
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	log("[TEST] flow balance before \(flowBalanceBefore)")
 	mintFlow(to: user, amount: fundingAmount)
+    grantBeta(tidalYieldAccount, user)
 
 	createTide(
 		signer: user,
@@ -103,65 +138,136 @@ fun test_RebalanceTideScenario3D() {
 	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
 	Test.assertEqual(1, tideIDs!.length)
 
-	var tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
-
-	log("[TEST] Initial tide balance: \(tideBalance ?? 0.0)")
-
-	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
-	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
-
-	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
-
-	log("[TEST] Tide balance before flow price decrease \(tideBalance ?? 0.0)")
-
 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPriceDecrease)
 
-	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
-
-	log("[TEST] Tide balance before flow price decrease rebalance: \(tideBalance ?? 0.0)")
-
 	let yieldTokensBefore = getAutoBalancerBalance(id: tideIDs![0])!
+	let debtBefore = getMOETDebtFromPosition(pid: pid)
+	let flowCollateralBefore = getFlowCollateralFromPosition(pid: pid)
+	let flowCollateralValueBefore = flowCollateralBefore * 1.0  // Initial price is 1.0
+	
+	log("\n=== PRECISION COMPARISON (Initial State) ===")
+	log("Expected Yield Tokens: \(expectedYieldTokenValues[0])")
+	log("Actual Yield Tokens:   \(yieldTokensBefore)")
+	let diff0 = yieldTokensBefore > expectedYieldTokenValues[0] ? yieldTokensBefore - expectedYieldTokenValues[0] : expectedYieldTokenValues[0] - yieldTokensBefore
+	let sign0 = yieldTokensBefore > expectedYieldTokenValues[0] ? "+" : "-"
+	log("Difference:            \(sign0)\(diff0)")
+	log("")
+	log("Expected Flow Collateral Value: \(expectedFlowCollateralValues[0])")
+	log("Actual Flow Collateral Value:   \(flowCollateralValueBefore)")
+	let flowDiff0 = flowCollateralValueBefore > expectedFlowCollateralValues[0] ? flowCollateralValueBefore - expectedFlowCollateralValues[0] : expectedFlowCollateralValues[0] - flowCollateralValueBefore
+	let flowSign0 = flowCollateralValueBefore > expectedFlowCollateralValues[0] ? "+" : "-"
+	log("Difference:                     \(flowSign0)\(flowDiff0)")
+	log("")
+	log("Expected MOET Debt: \(expectedDebtValues[0])")
+	log("Actual MOET Debt:   \(debtBefore)")
+	let debtDiff0 = debtBefore > expectedDebtValues[0] ? debtBefore - expectedDebtValues[0] : expectedDebtValues[0] - debtBefore
+	let debtSign0 = debtBefore > expectedDebtValues[0] ? "+" : "-"
+	log("Difference:         \(debtSign0)\(debtDiff0)")
+	log("=========================================================\n")
+	
 	Test.assert(
 		equalAmounts(a:yieldTokensBefore, b:expectedYieldTokenValues[0], tolerance:0.01),
-		message: "Expected yield tokens after flow price decrease to be \(expectedYieldTokenValues[0]) but got \(yieldTokensBefore)"
+		message: "Expected yield tokens to be \(expectedYieldTokenValues[0]) but got \(yieldTokensBefore)"
+	)
+	Test.assert(
+		equalAmounts(a:flowCollateralValueBefore, b:expectedFlowCollateralValues[0], tolerance:0.01),
+		message: "Expected flow collateral value to be \(expectedFlowCollateralValues[0]) but got \(flowCollateralValueBefore)"
+	)
+	Test.assert(
+		equalAmounts(a:debtBefore, b:expectedDebtValues[0], tolerance:0.01),
+		message: "Expected MOET debt to be \(expectedDebtValues[0]) but got \(debtBefore)"
 	)
 
 	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
-	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
-
-	log("[TEST] Tide balance after flow price decrease rebalance: \(tideBalance ?? 0.0)")
-
 	let yieldTokensAfterFlowPriceDecrease = getAutoBalancerBalance(id: tideIDs![0])!
+	let flowCollateralAfterFlowDecrease = getFlowCollateralFromPosition(pid: pid)
+	let flowCollateralValueAfterFlowDecrease = flowCollateralAfterFlowDecrease * flowPriceDecrease
+	let debtAfterFlowDecrease = getMOETDebtFromPosition(pid: pid)
+	
+	log("\n=== PRECISION COMPARISON (After Flow Price Decrease) ===")
+	log("Expected Yield Tokens: \(expectedYieldTokenValues[1])")
+	log("Actual Yield Tokens:   \(yieldTokensAfterFlowPriceDecrease)")
+	let diff1 = yieldTokensAfterFlowPriceDecrease > expectedYieldTokenValues[1] ? yieldTokensAfterFlowPriceDecrease - expectedYieldTokenValues[1] : expectedYieldTokenValues[1] - yieldTokensAfterFlowPriceDecrease
+	let sign1 = yieldTokensAfterFlowPriceDecrease > expectedYieldTokenValues[1] ? "+" : "-"
+	log("Difference:            \(sign1)\(diff1)")
+	log("")
+	log("Expected Flow Collateral Value: \(expectedFlowCollateralValues[1])")
+	log("Actual Flow Collateral Value:   \(flowCollateralValueAfterFlowDecrease)")
+	log("Actual Flow Collateral Amount:  \(flowCollateralAfterFlowDecrease) Flow tokens")
+	let flowDiff1 = flowCollateralValueAfterFlowDecrease > expectedFlowCollateralValues[1] ? flowCollateralValueAfterFlowDecrease - expectedFlowCollateralValues[1] : expectedFlowCollateralValues[1] - flowCollateralValueAfterFlowDecrease
+	let flowSign1 = flowCollateralValueAfterFlowDecrease > expectedFlowCollateralValues[1] ? "+" : "-"
+	log("Difference:                     \(flowSign1)\(flowDiff1)")
+	log("")
+	log("Expected MOET Debt: \(expectedDebtValues[1])")
+	log("Actual MOET Debt:   \(debtAfterFlowDecrease)")
+	let debtDiff1 = debtAfterFlowDecrease > expectedDebtValues[1] ? debtAfterFlowDecrease - expectedDebtValues[1] : expectedDebtValues[1] - debtAfterFlowDecrease
+	let debtSign1 = debtAfterFlowDecrease > expectedDebtValues[1] ? "+" : "-"
+	log("Difference:         \(debtSign1)\(debtDiff1)")
+	log("=========================================================\n")
+	
 	Test.assert(
 		equalAmounts(a:yieldTokensAfterFlowPriceDecrease, b:expectedYieldTokenValues[1], tolerance:0.01),
 		message: "Expected yield tokens after flow price decrease to be \(expectedYieldTokenValues[1]) but got \(yieldTokensAfterFlowPriceDecrease)"
 	)
+	Test.assert(
+		equalAmounts(a:flowCollateralValueAfterFlowDecrease, b:expectedFlowCollateralValues[1], tolerance:0.01),
+		message: "Expected flow collateral value after flow price decrease to be \(expectedFlowCollateralValues[1]) but got \(flowCollateralValueAfterFlowDecrease)"
+	)
+	Test.assert(
+		equalAmounts(a:debtAfterFlowDecrease, b:expectedDebtValues[1], tolerance:0.01),
+		message: "Expected MOET debt after flow price decrease to be \(expectedDebtValues[1]) but got \(debtAfterFlowDecrease)"
+	)
 
 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPriceIncrease)
-
-	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
-
-	log("[TEST] Tide balance before yield price increase rebalance: \(tideBalance ?? 0.0)")
 
 	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
 	//rebalancePosition(signer: protocolAccount, pid: 0, force: true, beFailed: false)
 
-	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
-
-	log("[TEST] Tide balance after yield price increase rebalance: \(tideBalance ?? 0.0)")
-
 	let yieldTokensAfterYieldPriceIncrease = getAutoBalancerBalance(id: tideIDs![0])!
+	let flowCollateralAfterYieldIncrease = getFlowCollateralFromPosition(pid: pid)
+	let flowCollateralValueAfterYieldIncrease = flowCollateralAfterYieldIncrease * flowPriceDecrease  // Flow price remains at 0.5
+	let debtAfterYieldIncrease = getMOETDebtFromPosition(pid: pid)
+	
+	log("\n=== PRECISION COMPARISON (After Yield Price Increase) ===")
+	log("Expected Yield Tokens: \(expectedYieldTokenValues[2])")
+	log("Actual Yield Tokens:   \(yieldTokensAfterYieldPriceIncrease)")
+	let diff2 = yieldTokensAfterYieldPriceIncrease > expectedYieldTokenValues[2] ? yieldTokensAfterYieldPriceIncrease - expectedYieldTokenValues[2] : expectedYieldTokenValues[2] - yieldTokensAfterYieldPriceIncrease
+	let sign2 = yieldTokensAfterYieldPriceIncrease > expectedYieldTokenValues[2] ? "+" : "-"
+	log("Difference:            \(sign2)\(diff2)")
+	log("")
+	log("Expected Flow Collateral Value: \(expectedFlowCollateralValues[2])")
+	log("Actual Flow Collateral Value:   \(flowCollateralValueAfterYieldIncrease)")
+	log("Actual Flow Collateral Amount:  \(flowCollateralAfterYieldIncrease) Flow tokens")
+	let flowDiff2 = flowCollateralValueAfterYieldIncrease > expectedFlowCollateralValues[2] ? flowCollateralValueAfterYieldIncrease - expectedFlowCollateralValues[2] : expectedFlowCollateralValues[2] - flowCollateralValueAfterYieldIncrease
+	let flowSign2 = flowCollateralValueAfterYieldIncrease > expectedFlowCollateralValues[2] ? "+" : "-"
+	log("Difference:                     \(flowSign2)\(flowDiff2)")
+	log("")
+	log("Expected MOET Debt: \(expectedDebtValues[2])")
+	log("Actual MOET Debt:   \(debtAfterYieldIncrease)")
+	let debtDiff2 = debtAfterYieldIncrease > expectedDebtValues[2] ? debtAfterYieldIncrease - expectedDebtValues[2] : expectedDebtValues[2] - debtAfterYieldIncrease
+	let debtSign2 = debtAfterYieldIncrease > expectedDebtValues[2] ? "+" : "-"
+	log("Difference:         \(debtSign2)\(debtDiff2)")
+	log("=========================================================\n")
+	
 	Test.assert(
 		equalAmounts(a:yieldTokensAfterYieldPriceIncrease, b:expectedYieldTokenValues[2], tolerance:0.01),
 		message: "Expected yield tokens after yield price increase to be \(expectedYieldTokenValues[2]) but got \(yieldTokensAfterYieldPriceIncrease)"
 	)
+	Test.assert(
+		equalAmounts(a:flowCollateralValueAfterYieldIncrease, b:expectedFlowCollateralValues[2], tolerance:0.01),
+		message: "Expected flow collateral value after yield price increase to be \(expectedFlowCollateralValues[2]) but got \(flowCollateralValueAfterYieldIncrease)"
+	)
+	Test.assert(
+		equalAmounts(a:debtAfterYieldIncrease, b:expectedDebtValues[2], tolerance:0.01),
+		message: "Expected MOET debt after yield price increase to be \(expectedDebtValues[2]) but got \(debtAfterYieldIncrease)"
+	)
 
-	closeTide(signer: user, id: tideIDs![0], beFailed: false)
-
-	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
-	log("[TEST] flow balance after \(flowBalanceAfter)")
+	        // Skip closeTide for now due to getTideBalance precision issues
+        closeTide(signer: user, id: tideIDs![0], beFailed: false)
+        
+        log("\n=== TEST COMPLETE ===")
 }
 
 

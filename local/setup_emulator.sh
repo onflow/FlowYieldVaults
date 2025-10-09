@@ -1,6 +1,7 @@
 # install DeFiBlocks submodule as dependency
 git submodule update --init --recursive
 # execute emulator deployment
+flow deps install --skip-alias --skip-deployments
 flow deploy
 
 # set mocked prices in the MockOracle contract, initialized with MOET as unitOfAccount
@@ -30,3 +31,11 @@ flow transactions send ./cadence/transactions/tidal-yield/admin/add_strategy_com
     'A.f8d6e0586b0a20c7.TidalYieldStrategies.TracerStrategy' \
     'A.f8d6e0586b0a20c7.TidalYieldStrategies.TracerStrategyComposer' \
     /storage/TidalYieldStrategyComposerIssuer_0xf8d6e0586b0a20c7
+
+# grant PoolBeta cap
+echo "Grant Protocol Beta access to TidalYield"
+flow transactions send ./lib/TidalProtocol/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc \
+  --authorizer emulator-account,emulator-account \
+  --proposer emulator-account \
+  --payer emulator-account
+

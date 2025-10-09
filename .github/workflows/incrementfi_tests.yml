@@ -1,0 +1,35 @@
+name: IncrementFi
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  tests:
+    name: IncrementFi Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+          submodules: recursive
+      - name: Install Flow CLI
+        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v2.2.17
+      - name: Flow CLI Version
+        run: flow version
+      - name: Update PATH
+        run: echo "/root/.local/bin" >> $GITHUB_PATH
+      - name: Run emulator
+        run: ./local/run_emulator.sh 
+      - name: Create wallets
+        run: ./local/setup_wallets.sh
+      - name: Install Flow deps 
+        run: flow deps install --skip-alias --skip-deployments
+      - name: Deploy contracts
+        run: flow deploy
+      - name: Setup IncrementFi
+        run: ./local/incrementfi/setup_incrementfi.sh

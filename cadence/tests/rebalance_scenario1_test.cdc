@@ -25,6 +25,7 @@ access(all) var snapshot: UInt64 = 0
 access(all)
 fun setup() {
 	deployContracts()
+	
 
 	// set mocked token prices
 	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
@@ -32,6 +33,7 @@ fun setup() {
 
 	// mint tokens & set liquidity in mock swapper contract
 	let reserveAmount = 100_000_00.0
+	setupMoetVault(protocolAccount, beFailed: false)
 	setupYieldVault(protocolAccount, beFailed: false)
 	mintFlow(to: protocolAccount, amount: reserveAmount)
 	mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
@@ -54,7 +56,7 @@ fun setup() {
 	// open wrapped position (pushToDrawDownSink)
 	// the equivalent of depositing reserves
 	let openRes = executeTransaction(
-		"../transactions/mocks/position/create_wrapped_position.cdc",
+		"../../lib/TidalProtocol/cadence/tests/transactions/mock-tidal-protocol-consumer/create_wrapped_position.cdc",
 		[reserveAmount/2.0, /storage/flowTokenVault, true],
 		protocolAccount
 	)
@@ -83,10 +85,23 @@ fun test_RebalanceTideScenario1() {
 	let user = Test.createAccount()
 
 	let flowPrices = [0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0, 5.0]
+	
+	// Expected values from Google sheet calculations
+	let expectedYieldTokenValues: {UFix64: UFix64} = {
+		0.5: 307.69230769,
+		0.8: 492.30769231,
+		1.0: 615.38461538,
+		1.2: 738.46153846,
+		1.5: 923.07692308,
+		2.0: 1230.76923077,
+		3.0: 1846.15384615,
+		5.0: 3076.92307692
+	}
 
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	mintFlow(to: user, amount: fundingAmount)
+    grantBeta(tidalYieldAccount, user)
 
 	createTide(
 		signer: user,
@@ -125,12 +140,43 @@ fun test_RebalanceTideScenario1() {
 
 		log("[TEST] Tide balance before flow price \(flowPrice) rebalance: \(tideBalance ?? 0.0)")
 
+		// Get yield token balance before rebalance
+		let yieldTokensBefore = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0
+		let currentValueBefore = getAutoBalancerCurrentValue(id: tideIDs![0]) ?? 0.0
+		
 		rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: false, beFailed: false)
 		rebalancePosition(signer: protocolAccount, pid: pid, force: false, beFailed: false)
 
 		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
 
 		log("[TEST] Tide balance after flow before \(flowPrice): \(tideBalance ?? 0.0)")
+		
+		// Get yield token balance after rebalance
+		let yieldTokensAfter = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0
+		let currentValueAfter = getAutoBalancerCurrentValue(id: tideIDs![0]) ?? 0.0
+		
+		// Get expected yield tokens from Google sheet calculations
+		let expectedYieldTokens = expectedYieldTokenValues[flowPrice] ?? 0.0
+		
+		log("\n=== SCENARIO 1 DETAILS for Flow Price \(flowPrice) ===")
+		log("Tide Balance:          \(tideBalance ?? 0.0)")
+		log("Yield Tokens Before:   \(yieldTokensBefore)")
+		log("Yield Tokens After:    \(yieldTokensAfter)")
+		log("Expected Yield Tokens: \(expectedYieldTokens)")
+		let precisionDiff = yieldTokensAfter > expectedYieldTokens ? yieldTokensAfter - expectedYieldTokens : expectedYieldTokens - yieldTokensAfter
+		let precisionSign = yieldTokensAfter > expectedYieldTokens ? "+" : "-"
+		log("Precision Difference:  \(precisionSign)\(precisionDiff)")
+		let percentDiff = expectedYieldTokens > 0.0 ? (precisionDiff / expectedYieldTokens) * 100.0 : 0.0
+		log("Percent Difference:    \(precisionSign)\(percentDiff)%")
+		let yieldChange = yieldTokensAfter > yieldTokensBefore ? yieldTokensAfter - yieldTokensBefore : yieldTokensBefore - yieldTokensAfter
+		let yieldSign = yieldTokensAfter > yieldTokensBefore ? "+" : "-"
+		log("Yield Token Change:    \(yieldSign)\(yieldChange)")
+		log("Current Value Before:  \(currentValueBefore)")
+		log("Current Value After:   \(currentValueAfter)")
+		let valueChange = currentValueAfter > currentValueBefore ? currentValueAfter - currentValueBefore : currentValueBefore - currentValueAfter
+		let valueSign = currentValueAfter > currentValueBefore ? "+" : "-"
+		log("Value Change:          \(valueSign)\(valueChange)")
+		log("=============================================\n")
 	}
 
 	closeTide(signer: user, id: tideIDs![0], beFailed: false)

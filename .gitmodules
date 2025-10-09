@@ -2,6 +2,18 @@
 	path = lib/TidalProtocol
 	url = git@github.com:onflow/TidalProtocol.git
 	branch = main
-[submodule "lib/DeFiActions"]
-	path = lib/DeFiActions
-	url = git@github.com:onflow/DeFiActions.git
+[submodule "lib/flow-evm-gateway"]
+	path = lib/flow-evm-gateway
+	url = git@github.com:onflow/flow-evm-gateway.git
+[submodule "solidity/lib/punch-swap-v3-contracts"]
+	path = solidity/lib/punch-swap-v3-contracts
+	url = git@github.com:Kitty-Punch/punch-swap-v3-contracts.git
+[submodule "solidity/lib/forge-std"]
+	path = solidity/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "lib/flow-evm-bridge"]
+	path = lib/flow-evm-bridge
+	url = git@github.com:onflow/flow-evm-bridge.git
+[submodule "solidity/lib/openzeppelin-contracts"]
+	path = solidity/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
