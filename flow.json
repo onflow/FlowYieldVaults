@@ -4,118 +4,136 @@
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
+				"testing": "0000000000000007",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"DeFiActionsMathUtils": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
+				"testing": "0000000000000007",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"DeFiActionsUtils": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
+				"testing": "0000000000000007",
+				"testnet": "2ab6f469ee0dfbb6"
+			}
+		},
+		"DummyConnectors": {
+			"source": "./lib/TidalProtocol/cadence/contracts/mocks/DummyConnectors.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000008",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"FungibleTokenConnectors": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
+				"testing": "0000000000000007",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"MOET": {
 			"source": "./lib/TidalProtocol/cadence/contracts/MOET.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000008"
+				"testing": "0000000000000008",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"MockOracle": {
 			"source": "cadence/contracts/mocks/MockOracle.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
+				"testing": "0000000000000009",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"MockStrategy": {
 			"source": "cadence/contracts/mocks/MockStrategy.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
+				"testing": "0000000000000009",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"MockSwapper": {
 			"source": "cadence/contracts/mocks/MockSwapper.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
+				"testing": "0000000000000009",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"MockTidalProtocolConsumer": {
 			"source": "./lib/TidalProtocol/cadence/contracts/mocks/MockTidalProtocolConsumer.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000008"
+				"testing": "0000000000000008",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"SwapConnectors": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
-			}
-		},
-		"TestHelpers": {
-			"source": "./lib/TidalProtocol/cadence/contracts/mocks/TestHelpers.cdc",
-			"aliases": {
-				"testing": "0000000000000008"
+				"testing": "0000000000000007",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"TidalProtocol": {
 			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000008"
+				"testing": "0000000000000008",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"TidalYield": {
 			"source": "cadence/contracts/TidalYield.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
+				"testing": "0000000000000009",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"TidalYieldAutoBalancers": {
 			"source": "cadence/contracts/TidalYieldAutoBalancers.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
+				"testing": "0000000000000009",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"TidalYieldClosedBeta": {
 			"source": "cadence/contracts/TidalYieldClosedBeta.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
+				"testing": "0000000000000009",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"TidalYieldStrategies": {
 			"source": "cadence/contracts/TidalYieldStrategies.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
+				"testing": "0000000000000009",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"YieldToken": {
 			"source": "cadence/contracts/mocks/YieldToken.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000010"
+				"testing": "0000000000000010",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		}
 	},
@@ -284,6 +302,14 @@
 				"type": "file",
 				"location": "local/test-user.pkey"
 			}
+		},
+		"testnet-admin": {
+			"address": "2ab6f469ee0dfbb6",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
 		}
 	},
 	"deployments": {
@@ -304,6 +330,7 @@
 						}
 					]
 				},
+				"DummyConnectors",
 				"TidalProtocol",
 				{
 					"name": "YieldToken",
@@ -344,6 +371,50 @@
 				},
 				"StableSwapFactory",
 				"SwapRouter"
+			]
+		},
+		"testnet": {
+			"testnet-admin": [
+				"DeFiActionsMathUtils",
+				"DeFiActionsUtils",
+				"DeFiActions",
+				"FlowStorageFees",
+				"FungibleTokenConnectors",
+				"SwapConnectors",
+				{
+					"name": "MOET",
+					"args": [
+						{
+							"value": "1000000.00000000",
+							"type": "UFix64"
+						}
+					]
+				},
+				"DummyConnectors",
+				"TidalProtocol",
+				{
+					"name": "YieldToken",
+					"args": [
+						{
+							"value": "1000000.00000000",
+							"type": "UFix64"
+						}
+					]
+				},
+				{
+					"name": "MockOracle",
+					"args": [
+						{
+							"value": "A.2ab6f469ee0dfbb6.MOET.Vault",
+							"type": "String"
+						}
+					]
+				},
+				"MockSwapper",
+				"TidalYieldAutoBalancers",
+				"TidalYieldClosedBeta",
+				"TidalYield",
+				"TidalYieldStrategies"
 			]
 		}
 	}
