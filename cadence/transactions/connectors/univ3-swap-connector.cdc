@@ -1,7 +1,6 @@
 import "FungibleToken"
 import "EVM"
-import "FlowEVMBridgeUtils"
-import "UniswapV3SwapConnectors3"
+import "UniswapV3SwapConnectors"
 import "FlowEVMBridgeConfig"
 
 transaction() {
@@ -15,23 +14,20 @@ transaction() {
 
     let quoter = EVM.addressFromString("0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c")
 
-    // let usdc  = EVM.addressFromString("0x5e65b6B04fbA51D95409712978Cb91E99d93aE73")
-    // let wflow = EVM.addressFromString("0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e") // WFLOW on EVM side
+    // let usdc  = EVM.addressFromString("0x5e65b6B04fbA51D95409712978Cb91E99d93aE73") // Testnet USDC
+    // let wflow = EVM.addressFromString("0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e") // Testnet WFLOW
 
-    let tokenIn = EVM.addressFromString("0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1")
-    let tokenOut = EVM.addressFromString("0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95")
+    let tokenIn = EVM.addressFromString("0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1") // mockUSDC
+    let tokenOut = EVM.addressFromString("0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95") // More Vaults mUSDC
 
     // Vault types for in/out
-    // let inType: Type = Type<@FlowToken.Vault>() // FLOW in
-    // let outType: Type = FlowEVMBridgeConfig.getTypeAssociated(with: usdc) ?? panic("invalid USDC out type")
 
-    let inType: Type = FlowEVMBridgeConfig.getTypeAssociated(with: tokenIn) ?? panic("invalid mockUSDC in type") // FLOW in
+    let inType: Type = FlowEVMBridgeConfig.getTypeAssociated(with: tokenIn) ?? panic("invalid mockUSDC in type")
     let outType: Type = FlowEVMBridgeConfig.getTypeAssociated(with: tokenOut) ?? panic("invalid moreVaultUSDC out type")
-    // Swapper: tokenPath must be [WFLOW, USDC] for FLOW → USDC
-    let swapper = UniswapV3SwapConnectors3.Swapper(
+
+    let swapper = UniswapV3SwapConnectors.Swapper(
       routerAddress: router,
       quoterAddress: quoter,
-      //tokenPath: [wflow, usdc],
       tokenPath: [tokenIn, tokenOut],
       feePath: [3000], // 0.3%
       inVault: inType,
@@ -42,26 +38,27 @@ transaction() {
 
     let tokenInStoragePath = /storage/EVMVMBridgedToken_d431955d55a99ef69beb96ba34718d0f9fbc91b1Vault
     let tokenOutStoragePath = /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault
-    // Withdraw FLOW
+
+    // Withdraw
     let withdrawRef = acct.storage
       .borrow<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(from: tokenInStoragePath)
-      ?? panic("Missing FLOW vault at /storage/flowTokenVault")
+      ?? panic("Missing TokenIn vault at ".concat(tokenInStoragePath.toString()))
 
     let amountIn: UFix64 = 1.0
     let vaultIn <- withdrawRef.withdraw(amount: amountIn)
 
-    // Quote how much USDC we’ll get
+    // Quote how much we’ll get
     let q = swapper.quoteOut(forProvided: amountIn, reverse: false)
-    log("Quote out for provided ".concat(amountIn.toString()).concat(" FLOW → USDC: ").concat(q.outAmount.toString()))
+    log("Quote out for provided ".concat(amountIn.toString()).concat(" TokenIn → TokenOut: ").concat(q.outAmount.toString()))
 
     // Perform the swap
     let vaultOut <- swapper.swap(quote: q, inVault: <-vaultIn)
-    log("USDC received: ".concat(vaultOut.balance.toString()))
+    log("TokenOut received: ".concat(vaultOut.balance.toString()))
 
-    // Deposit USDC
-    let usdcReceiver = acct.storage
+    // Deposit
+    let tokenOutReceiver = acct.storage
       .borrow<&{FungibleToken.Receiver}>(from: tokenOutStoragePath)
-      ?? panic("Missing USDC vault at ".concat(tokenOutStoragePath.toString()))
-    usdcReceiver.deposit(from: <-vaultOut)
+      ?? panic("Missing TokenOut vault at ".concat(tokenOutStoragePath.toString()))
+    tokenOutReceiver.deposit(from: <-vaultOut)
   }
 }

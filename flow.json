@@ -135,15 +135,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
-				"testnet": "29242c62f18538c9"
-			}
-		},
-		"UniswapV3SwapConnectors3": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007",
-				"testnet": "29242c62f18538c9"
+				"testnet": "46be98b71c0a9543"
 			}
 		},
 		"YieldToken": {
@@ -575,6 +567,13 @@
 				"type": "file",
 				"location": "testnet-deployer.pkey"
 			}
+		},
+		"testnet-uniswapV3-connectors-deployer": {
+			"address": "46be98b71c0a9543",
+			"key": {
+				"type": "file",
+				"location": "testnet-uniswapV3-connectors-deployer.pkey"
+			}
 		}
 	},
 	"deployments": {
@@ -682,7 +681,9 @@
 		},
 		"testnet": {
 			"testnet-deployer": [
-				"EVMAbiHelpers",
+				"EVMAbiHelpers"
+			],
+			"testnet-uniswapV3-connectors-deployer": [
 				"UniswapV3SwapConnectors"
 			]
 		}
