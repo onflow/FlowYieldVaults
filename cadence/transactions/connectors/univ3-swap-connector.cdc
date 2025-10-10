@@ -1,7 +1,5 @@
 import "FungibleToken"
 import "EVM"
-import "FlowToken"
-import "FlowEVMBridgeUtils"
 import "UniswapV3SwapConnectors"
 import "FlowEVMBridgeConfig"
 
@@ -12,22 +10,25 @@ transaction() {
     let coaCap: Capability<auth(EVM.Owner) &EVM.CadenceOwnedAccount> =
       acct.capabilities.storage.issue<auth(EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
 
-    let router = EVM.addressFromString("0x4231aA94A25FFA1AF95cBE70483052a92f1a3d8D")
+    let router = EVM.addressFromString("0x2Db6468229F6fB1a77d248Dbb1c386760C257804")
 
     let quoter = EVM.addressFromString("0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c")
 
-    let usdc  = EVM.addressFromString("0x5e65b6B04fbA51D95409712978Cb91E99d93aE73")
-    let wflow = EVM.addressFromString("0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e") // WFLOW on EVM side
+    // let usdc  = EVM.addressFromString("0x5e65b6B04fbA51D95409712978Cb91E99d93aE73") // Testnet USDC
+    // let wflow = EVM.addressFromString("0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e") // Testnet WFLOW
+
+    let tokenIn = EVM.addressFromString("0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1") // mockUSDC
+    let tokenOut = EVM.addressFromString("0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95") // More Vaults mUSDC
 
     // Vault types for in/out
-    let inType: Type = Type<@FlowToken.Vault>() // FLOW in
-    let outType: Type = FlowEVMBridgeConfig.getTypeAssociated(with: usdc) ?? panic("invalid USDC out type")
 
-    // Swapper: tokenPath must be [WFLOW, USDC] for FLOW → USDC
+    let inType: Type = FlowEVMBridgeConfig.getTypeAssociated(with: tokenIn) ?? panic("invalid mockUSDC in type")
+    let outType: Type = FlowEVMBridgeConfig.getTypeAssociated(with: tokenOut) ?? panic("invalid moreVaultUSDC out type")
+
     let swapper = UniswapV3SwapConnectors.Swapper(
       routerAddress: router,
       quoterAddress: quoter,
-      tokenPath: [wflow, usdc],
+      tokenPath: [tokenIn, tokenOut],
       feePath: [3000], // 0.3%
       inVault: inType,
       outVault: outType,
@@ -35,49 +36,29 @@ transaction() {
       uniqueID: nil
     )
 
-    let flowStoragePath = /storage/flowTokenVault
-    let usdcStoragePath = /storage/EVMVMBridgedToken_5e65b6b04fba51d95409712978cb91e99d93ae73Vault
-    // ---- Swap FLOW → USDC (quoteOut + swap) ----
-    // Withdraw FLOW
-    let flowWithdrawRef = acct.storage
-      .borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: flowStoragePath)
-      ?? panic("Missing FLOW vault at /storage/flowTokenVault")
+    let tokenInStoragePath = /storage/EVMVMBridgedToken_d431955d55a99ef69beb96ba34718d0f9fbc91b1Vault
+    let tokenOutStoragePath = /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault
 
-    let flowIn: UFix64 = 100.0
-    let flowVaultIn <- flowWithdrawRef.withdraw(amount: flowIn)
+    // Withdraw
+    let withdrawRef = acct.storage
+      .borrow<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(from: tokenInStoragePath)
+      ?? panic("Missing TokenIn vault at ".concat(tokenInStoragePath.toString()))
 
-    // Quote how much USDC we’ll get
-    let q = swapper.quoteOut(forProvided: flowIn, reverse: false)
-    log("Quote out for provided ".concat(flowIn.toString()).concat(" FLOW → USDC: ").concat(q.outAmount.toString()))
+    let amountIn: UFix64 = 1.0
+    let vaultIn <- withdrawRef.withdraw(amount: amountIn)
+
+    // Quote how much we’ll get
+    let q = swapper.quoteOut(forProvided: amountIn, reverse: false)
+    log("Quote out for provided ".concat(amountIn.toString()).concat(" TokenIn → TokenOut: ").concat(q.outAmount.toString()))
 
     // Perform the swap
-    let usdcOut <- swapper.swap(quote: q, inVault: <-flowVaultIn)
-    log("USDC received: ".concat(usdcOut.balance.toString()))
+    let vaultOut <- swapper.swap(quote: q, inVault: <-vaultIn)
+    log("TokenOut received: ".concat(vaultOut.balance.toString()))
 
-    // Deposit USDC
-    let usdcReceiver = acct.storage
-      .borrow<&{FungibleToken.Receiver}>(from: usdcStoragePath)
-      ?? panic("Missing USDC vault at ".concat(usdcStoragePath.toString()))
-    usdcReceiver.deposit(from: <-usdcOut)
-
-    // ---- Exact-out USDC: pre-quote input FLOW, then swap ----
-    let desiredUSDC: UFix64 = 100.0
-    let qi = swapper.quoteIn(forDesired: desiredUSDC, reverse: false)
-    let needFlow: UFix64 = qi.inAmount
-    log("ExactOut want ".concat(desiredUSDC.toString()).concat(" USDC; need FLOW: ").concat(needFlow.toString()))
-
-    // Withdraw required FLOW
-    let flowWithdrawRef2 = acct.storage
-      .borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: flowStoragePath)
-      ?? panic("Missing FLOW vault for exact-out")
-    let flowNeedVault <- flowWithdrawRef2.withdraw(amount: needFlow)
-
-    // Swap and deposit USDC
-    let usdcOut2 <- swapper.swap(quote: qi, inVault: <-flowNeedVault)
-    log("ExactOut USDC received: ".concat(usdcOut2.balance.toString()))
-    let usdcReceiver2 = acct.storage
-      .borrow<&{FungibleToken.Receiver}>(from: usdcStoragePath)
-      ?? panic("Missing USDC vault for exact-out deposit")
-    usdcReceiver2.deposit(from: <-usdcOut2)
+    // Deposit
+    let tokenOutReceiver = acct.storage
+      .borrow<&{FungibleToken.Receiver}>(from: tokenOutStoragePath)
+      ?? panic("Missing TokenOut vault at ".concat(tokenOutStoragePath.toString()))
+    tokenOutReceiver.deposit(from: <-vaultOut)
   }
 }

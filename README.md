@@ -804,114 +804,111 @@ export INITIAL_DEPOSIT=100.0
 
 # Step 1: Setup account for Tidal platform
 echo "Setting up Tidal account..."
-flow transactions send transactions/tidal-yield/setup.cdc \
+flow transactions send cadence/transactions/tidal-yield/setup.cdc \
   --signer test-account
 
 # Step 2: Setup token vaults
 echo "Setting up token vaults..."
-flow transactions send transactions/moet/setup_vault.cdc \
+flow transactions send cadence/transactions/moet/setup_vault.cdc \
   --signer test-account
 
-flow transactions send transactions/yield-token/setup_vault.cdc \
+flow transactions send cadence/transactions/yield-token/setup_vault.cdc \
   --signer test-account
 
 # Step 3: Initialize token prices
 echo "Setting initial token prices..."
-flow transactions send transactions/mocks/oracle/set_price.cdc \
-  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
-  --arg UFix64:1.0 \
+flow transactions send cadence/transactions/mocks/oracle/set_price.cdc \
+  "A.0ae53cb6e3f42a79.FlowToken.Vault" \
+  1.0 \
   --signer test-account
 
-flow transactions send transactions/mocks/oracle/set_price.cdc \
-  --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault" \
-  --arg UFix64:2.0 \
+flow transactions send cadence/transactions/mocks/oracle/set_price.cdc \
+  "A.f8d6e0586b0a20c7.YieldToken.Vault" \
+  2.0 \
   --signer test-account
 
-flow transactions send transactions/mocks/oracle/set_price.cdc \
-  --arg String:"A.0ae53cb6e3f42a79.MOET.Vault" \
-  --arg UFix64:1.0 \
+flow transactions send cadence/transactions/mocks/oracle/set_price.cdc \
+  "A.f8d6e0586b0a20c7.MOET.Vault" \
+  1.0 \
   --signer test-account
 
 # Step 4: Fund MockSwapper with liquidity
 echo "Funding MockSwapper with liquidity..."
-flow transactions send transactions/mocks/swapper/set_liquidity_connector.cdc \
-  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
-  --arg String:"A.0ae53cb6e3f42a79.MOET.Vault" \
-  --arg UFix64:10000.0 \
+flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connector.cdc \
+  "/storage/flowTokenVault" \
   --signer test-account
 
-flow transactions send transactions/mocks/swapper/set_liquidity_connector.cdc \
-  --arg String:"A.0ae53cb6e3f42a79.MOET.Vault" \
-  --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault" \
-  --arg UFix64:10000.0 \
+flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connector.cdc \
+  "/storage/moetTokenVault_0xf8d6e0586b0a20c7" \
   --signer test-account
 
-flow transactions send transactions/mocks/swapper/set_liquidity_connector.cdc \
-  --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault" \
-  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
-  --arg UFix64:10000.0 \
+flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connector.cdc \
+  "/storage/yieldTokenVault_0xf8d6e0586b0a20c7" \
   --signer test-account
 
 # Step 5: Create Tide position
 echo "Creating Tide position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send transactions/tidal-yield/create_tide.cdc \
-  --arg String:"tracer" \
-  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
-  --arg UFix64:$INITIAL_DEPOSIT \
+flow transactions send cadence/transactions/tidal-yield/create_tide.cdc \
+  "A.f8d6e0586b0a20c7.TidalYieldStrategies.TracerStrategy" \
+  "A.0ae53cb6e3f42a79.FlowToken.Vault" \
+  $INITIAL_DEPOSIT \
   --signer test-account
 
 # Step 6: Get the Tide ID
 echo "Getting Tide ID..."
-TIDE_ID=$(flow scripts execute scripts/tidal-yield/get_tide_ids.cdc \
-  --arg Address:$YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
+TIDE_ID=$(flow scripts execute cadence/scripts/tidal-yield/get_tide_ids.cdc \
+  $YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
 echo "Tide ID: $TIDE_ID"
 
 # Step 7: Record baseline metrics
 echo "=== RECORDING BASELINE METRICS ==="
 echo "Initial FLOW Price:"
-flow scripts execute scripts/mocks/oracle/get_price.cdc \
-  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault"
+flow scripts execute cadence/scripts/mocks/oracle/get_price.cdc \
+  "A.0ae53cb6e3f42a79.FlowToken.Vault"
 
 echo "Initial YieldToken Price:"
-flow scripts execute scripts/mocks/oracle/get_price.cdc \
-  --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
+flow scripts execute cadence/scripts/mocks/oracle/get_price.cdc \
+  "A.f8d6e0586b0a20c7.YieldToken.Vault"
 
 echo "Initial Tide Balance:"
-flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
-  --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
+flow scripts execute cadence/scripts/tidal-yield/get_tide_balance.cdc \
+  $YOUR_ADDRESS $TIDE_ID
 
 echo "Initial AutoBalancer Balance:"
-flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
-  --arg UInt64:$TIDE_ID
+flow scripts execute cadence/scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
+  $TIDE_ID
 
 # Step 8: Execute the test - Increase FLOW price by 20%
 echo "=== EXECUTING TEST: FLOW PRICE INCREASE ==="
 echo "Setting FLOW price from $1.00 to $1.20 (+20%)"
-flow transactions send transactions/mocks/oracle/set_price.cdc \
-  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
-  --arg UFix64:1.2 \
+flow transactions send cadence/transactions/mocks/oracle/set_price.cdc \
+  "A.0ae53cb6e3f42a79.FlowToken.Vault" \
+  1.2 \
   --signer test-account
 
 echo "Confirming new FLOW price:"
-flow scripts execute scripts/mocks/oracle/get_price.cdc \
-  --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault"
+flow scripts execute cadence/scripts/mocks/oracle/get_price.cdc \
+  "A.0ae53cb6e3f42a79.FlowToken.Vault"
 
 # Step 9: Trigger rebalancing
 echo "Triggering rebalancing..."
-flow transactions send transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
-  --arg UInt64:$TIDE_ID \
-  --arg Bool:true \
+flow transactions send cadence/transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
+  $TIDE_ID true \
+  --signer test-account
+
+flow transactions send cadence/transactions/tidal-protocol/pool-management/rebalance_position.cdc \
+  $TIDE_ID true \
   --signer test-account
 
 # Step 10: Verify results
 echo "=== VERIFYING RESULTS ==="
 echo "New AutoBalancer Balance (should be HIGHER):"
-flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
-  --arg UInt64:$TIDE_ID
+flow scripts execute cadence/scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
+  $TIDE_ID
 
-echo "New Tide Balance (should be HIGHER):"
-flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
-  --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
+echo "New Tide Balance):"
+flow scripts execute cadence/scripts/tidal-yield/get_tide_balance.cdc \
+  $YOUR_ADDRESS $TIDE_ID
 
 echo "SCENARIO 1 COMPLETE!"
 echo "Expected Results:"

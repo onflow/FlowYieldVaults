@@ -27,7 +27,7 @@ flow transactions send ./cadence/transactions/tidal-protocol/pool-governance/add
 # wire up liquidity to MockSwapper, mocking AMM liquidity sources
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/flowTokenVault --network testnet --signer testnet-admin
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/moetTokenVault_0x2ab6f469ee0dfbb6 --network testnet --signer testnet-admin
-flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/yieldTokenVault_0x2ab6f469ee0dfbb6 --signer testnet-admin
+flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/yieldTokenVault_0x2ab6f469ee0dfbb6 --network testnet --signer testnet-admin
 # add TracerStrategy as supported Strategy with the ability to initialize when new Tides are created
 flow transactions send ./cadence/transactions/tidal-yield/admin/add_strategy_composer.cdc \
     'A.2ab6f469ee0dfbb6.TidalYieldStrategies.TracerStrategy' \
