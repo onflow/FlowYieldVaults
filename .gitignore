@@ -12,3 +12,4 @@ solidity/out/
 
 testnet-deployer.pkey
 testnet-uniswapV3-connectors-deployer.pkey
+mock-strategy-deployer.pkey

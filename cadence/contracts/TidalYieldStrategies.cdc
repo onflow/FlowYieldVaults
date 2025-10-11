@@ -160,7 +160,7 @@ access(all) contract TidalYieldStrategies {
             let abaSource = autoBalancer.createBalancerSource() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
 
             // assign uniswap v3 router & quoter addresses
-            let router = EVM.addressFromString("0x4231aA94A25FFA1AF95cBE70483052a92f1a3d8D")
+            let router = EVM.addressFromString("0x2Db6468229F6fB1a77d248Dbb1c386760C257804")
             let quoter = EVM.addressFromString("0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c")
             // init Stable <> YIELD swappers
             //
