@@ -101,7 +101,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
-				"testnet": "addd594cf410166a"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"TestHelpers": {
@@ -262,7 +262,7 @@
 		},
 		"FlowEVMBridgeCustomAssociations": {
 			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeCustomAssociations",
-			"hash": "984e237c8ea3a97a987b9b502e542b4f22fa55feb74ecc6aaee245a50b287fc4",
+			"hash": "59366ff81d3e23cd96f362f1f1feb99f8d0cac66b6137926748e5f13f031a51c",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
@@ -725,8 +725,6 @@
 				"FlowStorageFees",
 				"FungibleTokenConnectors",
 				"SwapConnectors",
-				"EVMAbiHelpers",
-				"UniswapV3SwapConnectors",
 				{
 					"name": "MOET",
 					"args": [
@@ -757,6 +755,8 @@
 					]
 				},
 				"MockSwapper",
+				"EVMAbiHelpers",
+				"UniswapV3SwapConnectors",
 				"TidalYieldAutoBalancers",
 				"TidalYieldClosedBeta",
 				"TidalYield",
