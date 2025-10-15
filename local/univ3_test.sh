@@ -18,7 +18,7 @@ forge script ./solidity/script/01_DeployBridge.s.sol:DeployBridge \
 echo "Setup emulator"
 ./local/setup_emulator.sh
 
-./local/setup_bridge.sh
+./local/setup_bridged_tokens.sh
 
 #
 # CODE_HEX=$(xxd -p -c 200000 ./cadence/contracts/PunchSwapV3Connector.cdc)

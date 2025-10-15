@@ -5,7 +5,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
-				"testnet": "4c2ff9dd03ab442f"
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"DeFiActionsMathUtils": {
@@ -13,7 +13,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
-				"testnet": "4c2ff9dd03ab442f"
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"DeFiActionsUtils": {
@@ -21,7 +21,15 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
-				"testnet": "4c2ff9dd03ab442f"
+				"testnet": "2ab6f469ee0dfbb6"
+			}
+		},
+		"DummyConnectors": {
+			"source": "./lib/TidalProtocol/cadence/contracts/mocks/DummyConnectors.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000008",
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"EVMAbiHelpers": {
@@ -36,16 +44,8 @@
 			"source": "cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
+				"testing": "0000000000000009",
 				"testnet": "b88ba0e976146cd1"
-			}
-		},
-		"DummyConnectors": {
-			"source": "./lib/TidalProtocol/cadence/contracts/mocks/DummyConnectors.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000008",
-				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"FungibleTokenConnectors": {
@@ -107,7 +107,7 @@
 		"TestHelpers": {
 			"source": "./lib/TidalProtocol/cadence/contracts/mocks/TestHelpers.cdc",
 			"aliases": {
-				"testing": "0000000000000008"
+				"testing": "0000000000000008",
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
@@ -151,12 +151,20 @@
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
+		"TidalYieldStrategiesUSDC": {
+			"source": "cadence/contracts/TidalYieldStrategiesUSDC.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009",
+				"testnet": "2ab6f469ee0dfbb6"
+			}
+		},
 		"UniswapV3SwapConnectors": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
-				"testnet": "46be98b71c0a9543"
+				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
 		"YieldToken": {
@@ -262,7 +270,7 @@
 		},
 		"FlowEVMBridgeCustomAssociations": {
 			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeCustomAssociations",
-			"hash": "984e237c8ea3a97a987b9b502e542b4f22fa55feb74ecc6aaee245a50b287fc4",
+			"hash": "59366ff81d3e23cd96f362f1f1feb99f8d0cac66b6137926748e5f13f031a51c",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
@@ -583,6 +591,14 @@
 				"location": "local/test-user.pkey"
 			}
 		},
+		"testnet-admin": {
+			"address": "2ab6f469ee0dfbb6",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
 		"testnet-deployer": {
 			"address": "29242c62f18538c9",
 			"key": {
@@ -595,67 +611,15 @@
 			"key": {
 				"type": "file",
 				"location": "testnet-uniswapV3-connectors-deployer.pkey"
-      }
-    },
-		"testnet-admin": {
-			"address": "2ab6f469ee0dfbb6",
-			"key": {
-				"type": "google-kms",
-				"hashAlgorithm": "SHA2_256",
-				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		}
 	},
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
-				{
-					"name": "FlowEVMBridgeUtils",
-					"args": [
-						{
-							"value": "0xbd6e7465e62808d9b7028e9e256d7742a6230f45",
-							"type": "String"
-						}
-					]
-				},
-				"SerializeMetadata",
-				"Serialize",
-				"FlowEVMBridgeConfig",
-				"FlowEVMBridgeHandlerInterfaces",
-				"CrossVMNFT",
-				"ICrossVMAsset",
-				"ICrossVM",
-				"IBridgePermissions",
-				"IEVMBridgeNFTMinter",
-				"IEVMBridgeTokenMinter",
-				"IFlowEVMNFTBridge",
-				"IFlowEVMTokenBridge",
-				"CrossVMToken",
-				"FlowEVMBridgeNFTEscrow",
-				"FlowEVMBridgeTokenEscrow",
-				"FlowEVMBridgeTemplates",
-				{
-					"name": "FlowEVMBridgeAccessor",
-					"args": [
-						{
-							"value": "0xf8d6e0586b0a20c7",
-							"type": "Address"
-						}
-					]
-				},
-				"FlowEVMBridgeHandlers",
-				"CrossVMMetadataViews",
-				"StringUtils",
-				"ArrayUtils",
-				"ScopedFTProviders",
-				"FlowEVMBridgeResolver",
-				"FlowEVMBridgeCustomAssociations",
-				"FlowEVMBridgeCustomAssociationTypes",
-				"FlowEVMBridge",
 				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",
 				"DeFiActions",
-				"FlowStorageFees",
 				"FungibleTokenConnectors",
 				"SwapConnectors",
 				{
@@ -711,13 +675,11 @@
 			]
 		},
 		"testnet": {
-			"testnet-deployer": [
-				"EVMAbiHelpers"
-			],
-			"testnet-uniswapV3-connectors-deployer": [
-				"UniswapV3SwapConnectors"
-			},
 			"testnet-admin": [
+				"DeFiActionsMathUtils",
+				"DeFiActionsUtils",
+				"DeFiActions",
+				"EVMAbiHelpers",
 				"FlowStorageFees",
 				"FungibleTokenConnectors",
 				"SwapConnectors",
