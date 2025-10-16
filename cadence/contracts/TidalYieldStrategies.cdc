@@ -135,11 +135,11 @@ access(all) contract TidalYieldStrategies {
             // assign EVM token addresses & types
             // TODO: Consider how we're going to handle these addresses across networks, especially testing & CI
             let yieldTokenEVMAddress = EVM.addressFromString("0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95")
-            let stableTokenEVMAddress = EVM.addressFromString("0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1")
+            let moetTokenEVMAddress = EVM.addressFromString("0x51F5cC5f50afB81e8F23C926080FA38C3024b238")
             let yieldTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: yieldTokenEVMAddress)
                 ?? panic("YieldToken associated with EVM address \(yieldTokenEVMAddress.toString()) not found in VM Bridge config")
-            let stableTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: stableTokenEVMAddress)
-                ?? panic("Stables associated with EVM address \(stableTokenEVMAddress.toString()) not found in VM Bridge config")
+            let moetTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: moetTokenEVMAddress)
+                ?? panic("Stables associated with EVM address \(moetTokenEVMAddress.toString()) not found in VM Bridge config")
             // assign collateral & flow token types
             let collateralType = withFunds.getType()
             let flowTokenType = Type<@FlowToken.Vault>()
@@ -167,7 +167,7 @@ access(all) contract TidalYieldStrategies {
             // Stable -> YieldToken
             // TODO: Update to use UniswapV3SwapConnectors
             // let stableToYieldSwapper = MockSwapper.Swapper(
-            //         inVault: stableTokenType,
+            //         inVault: moetTokenType,
             //         outVault: yieldTokenType,
             //         uniqueID: uniqueID
             //     )
@@ -175,9 +175,9 @@ access(all) contract TidalYieldStrategies {
             let stableToYieldSwapper = UniswapV3SwapConnectors.Swapper(
                     routerAddress: router,
                     quoterAddress: quoter,
-                    tokenPath: [stableTokenEVMAddress, yieldTokenEVMAddress],
+                    tokenPath: [moetTokenEVMAddress, yieldTokenEVMAddress],
                     feePath: [3000],
-                    inVault: stableTokenType,
+                    inVault: moetTokenType,
                     outVault: yieldTokenType,
                     coaCapability: TidalYieldStrategies._getCOACapability(),
                     uniqueID: uniqueID
@@ -186,16 +186,16 @@ access(all) contract TidalYieldStrategies {
             // TODO: Update to use UniswapV3SwapConnectors
             // let yieldToStableSwapper = MockSwapper.Swapper(
             //         inVault: yieldTokenType,
-            //         outVault: stableTokenType,
+            //         outVault: moetTokenType,
             //         uniqueID: uniqueID
             //     )
             let yieldToStableSwapper = UniswapV3SwapConnectors.Swapper(
                     routerAddress: router,
                     quoterAddress: quoter,
-                    tokenPath: [yieldTokenEVMAddress, stableTokenEVMAddress],
+                    tokenPath: [yieldTokenEVMAddress, moetTokenEVMAddress],
                     feePath: [3000],
                     inVault: yieldTokenType,
-                    outVault: stableTokenType,
+                    outVault: moetTokenType,
                     coaCapability: TidalYieldStrategies._getCOACapability(),
                     uniqueID: uniqueID
                 )
