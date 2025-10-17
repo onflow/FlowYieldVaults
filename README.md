@@ -851,8 +851,6 @@ This section provides a step-by-step guide to test rebalancing functionality in 
 
 ![COLLATERAL PRICE DOWN](./2-tidal-diagram.png)
 
-The entrypoint for position rebalancing is really the Pool, not the MockOracle. Also, it's not clear to me if the squares are entities or process states. This is how I imagine the undercollateralized process flow.
-
 ### Yield Token Price Changes
 
                            YIELD TOKEN PRICE REBALANCING WITH CONTRACT INTERACTIONS
