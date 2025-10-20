@@ -142,7 +142,6 @@ access(all) contract TidalYieldStrategies {
                 ?? panic("Stables associated with EVM address \(moetTokenEVMAddress.toString()) not found in VM Bridge config")
             // assign collateral & flow token types
             let collateralType = withFunds.getType()
-            let flowTokenType = Type<@FlowToken.Vault>()
 
             // configure and AutoBalancer for this stack
             let autoBalancer = TidalYieldAutoBalancers._initNewAutoBalancer(
@@ -230,7 +229,7 @@ access(all) contract TidalYieldStrategies {
             // init YieldToken -> FLOW Swapper
             let yieldToFlowSwapper = MockSwapper.Swapper(
                     inVault: yieldTokenType,
-                    outVault: flowTokenType, // TODO: before 
+                    outVault: collateralType, 
                     uniqueID: uniqueID
                 )
             // allows for YieldToken to be deposited to the Position
