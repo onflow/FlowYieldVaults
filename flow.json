@@ -156,6 +156,14 @@
 				"testnet": "8c5303eaa26202d6"
 			}
 		},
+		"FlowEVMBridgeHandlerInterfaces": {
+			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeHandlerInterfaces",
+			"hash": "7e0e28eb8fb30595249384cb8c7a44eae3884700d0a6c3139240c0d19e4dc173",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141"
+			}
+		},
 		"FlowStorageFees": {
 			"source": "mainnet://e467b9dd11fa00df.FlowStorageFees",
 			"hash": "e38d8a95f6518b8ff46ce57dfa37b4b850b3638f33d16333096bc625b6d9b51a",
@@ -258,6 +266,14 @@
 				"mainnet": "a6850776a94e6551"
 			}
 		},
+		"USDCFlow": {
+			"source": "mainnet://f1ab99c82dee3526.USDCFlow",
+			"hash": "221e4f6b0d3cfc61d6baab6c968d962ff019a58e1eff43835daa7e62258c8fc5",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "f1ab99c82dee3526"
+			}
+		},
 		"ViewResolver": {
 			"source": "mainnet://1d7e57aa55817448.ViewResolver",
 			"hash": "374a1994046bac9f6228b4843cb32393ef40554df9bd9907a702d098a2987bde",
@@ -315,6 +331,8 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
+				"FlowEVMBridgeHandlerInterfaces",
+				"USDCFlow",
 				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",
 				"DeFiActions",
