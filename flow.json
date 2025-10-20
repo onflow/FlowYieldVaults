@@ -151,6 +151,14 @@
 				"testnet": "d27920b6384e2a78"
 			}
 		},
+		"TidalYieldStrategiesUSDC": {
+			"source": "cadence/contracts/TidalYieldStrategiesUSDC.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009",
+				"testnet": "2ab6f469ee0dfbb6"
+			}
+		},
 		"UniswapV3SwapConnectors": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
 			"aliases": {
@@ -616,53 +624,9 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
-				{
-					"name": "FlowEVMBridgeUtils",
-					"args": [
-						{
-							"value": "0xbd6e7465e62808d9b7028e9e256d7742a6230f45",
-							"type": "String"
-						}
-					]
-				},
-				"SerializeMetadata",
-				"Serialize",
-				"FlowEVMBridgeConfig",
-				"FlowEVMBridgeHandlerInterfaces",
-				"CrossVMNFT",
-				"ICrossVMAsset",
-				"ICrossVM",
-				"IBridgePermissions",
-				"IEVMBridgeNFTMinter",
-				"IEVMBridgeTokenMinter",
-				"IFlowEVMNFTBridge",
-				"IFlowEVMTokenBridge",
-				"CrossVMToken",
-				"FlowEVMBridgeNFTEscrow",
-				"FlowEVMBridgeTokenEscrow",
-				"FlowEVMBridgeTemplates",
-				{
-					"name": "FlowEVMBridgeAccessor",
-					"args": [
-						{
-							"value": "0xf8d6e0586b0a20c7",
-							"type": "Address"
-						}
-					]
-				},
-				"FlowEVMBridgeHandlers",
-				"CrossVMMetadataViews",
-				"StringUtils",
-				"ArrayUtils",
-				"ScopedFTProviders",
-				"FlowEVMBridgeResolver",
-				"FlowEVMBridgeCustomAssociations",
-				"FlowEVMBridgeCustomAssociationTypes",
-				"FlowEVMBridge",
 				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",
 				"DeFiActions",
-				"FlowStorageFees",
 				"FungibleTokenConnectors",
 				"SwapConnectors",
 				{
