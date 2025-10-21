@@ -2,6 +2,7 @@ import Test
 
 import "MOET"
 import "TidalProtocol"
+import "DeFiActionsMathUtils"
 
 /* --- Test execution helpers --- */
 
@@ -166,7 +167,7 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
 
-    setupBetaAccess()
+    // Beta access not required for mirror tests
 }
 
 access(all)
@@ -441,6 +442,18 @@ access(all) fun formatValue(_ value: UFix64): String {
     return parts[0].concat(".").concat(padded)
 }
 
+access(all) fun hfToUFix64(_ value: UInt128): UFix64 {
+    return DeFiActionsMathUtils.toUFix64Round(value)
+}
+
+access(all) fun formatHF(_ value: UInt128): String {
+    if value == UInt128.max {
+        return "inf"
+    }
+    let uf = hfToUFix64(value)
+    return formatValue(uf)
+}
+
 access(all) fun formatDrift(_ drift: UFix64): String {
     // Handle negative drift by checking if we're dealing with a wrapped negative
     // In Cadence, UFix64 can't be negative, so we need to handle this differently
@@ -459,10 +472,10 @@ access(all) let TOLERANCE = 0.00000001
 access(all) fun setupBetaAccess(): Void {
     let protocolAccount = Test.getAccount(0x0000000000000008)
     let tidalYieldAccount = Test.getAccount(0x0000000000000009)
-    let protocolBeta = grantProtocolBeta(protocolAccount, protocolAccount)
+    let protocolBeta = grantBeta(protocolAccount, protocolAccount)
     Test.expect(protocolBeta, Test.beSucceeded())
 
-    let tidalYieldBeta = grantProtocolBeta(protocolAccount, tidalYieldAccount)
+    let tidalYieldBeta = grantBeta(protocolAccount, tidalYieldAccount)
     Test.expect(tidalYieldBeta, Test.beSucceeded())
 }
 

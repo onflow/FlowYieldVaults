@@ -125,8 +125,9 @@ fun test_rebalance_capacity_thresholds() {
     Test.assert(equalAmounts(a: cumulative, b: 10000.0, tolerance: 0.00000001))
 
     // Emit mirror metrics for external comparison parsing
-    log("MIRROR:successful=\(successful)")
-    log("MIRROR:cumulative=\(cumulative)")
+    log("MIRROR:cum_swap=".concat(formatValue(cumulative)))
+    log("MIRROR:successful_swaps=".concat(successful.toString()))
+    log("MIRROR:stop_condition=max_safe_single_swap")
 }
 
 

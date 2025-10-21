@@ -63,11 +63,16 @@ fun test_moet_depeg_health_resilience() {
     let pid: UInt64 = 0
 
     let hBefore = getPositionHealth(pid: pid, beFailed: false)
+    log("MIRROR:hf_before=".concat(formatHF(hBefore)))
 
     // MOET depeg to 0.95 (debt token price down)
     setMockOraclePrice(signer: protocol, forTokenIdentifier: moetType, price: 0.95)
 
+    let hMin = getPositionHealth(pid: pid, beFailed: false)
+    log("MIRROR:hf_min=".concat(formatHF(hMin)))
+
     let hAfter = getPositionHealth(pid: pid, beFailed: false)
+    log("MIRROR:hf_after=".concat(formatHF(hAfter)))
 
     // Expect HF not to decrease due to lower debt token price (allow small tolerance)
     let tol = 10000000000000000000 as UInt128
