@@ -1,0 +1,9 @@
+
+❗   Version warning: a new version of Flow CLI is available (v2.8.3).
+   Read the installation guide for upgrade instructions: https://developers.flow.com/tools/flow-cli/install 
+
+
+Test results: "/Users/keshavgupta/tidal-sc/cadence/tests/moet_depeg_mirror_test.cdc"
+- PASS: test_moet_depeg_health_resilience
+
+

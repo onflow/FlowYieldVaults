@@ -27,17 +27,15 @@ access(all)
 fun setup() {
     deployContracts()
 
-    // Initial prices aligning to simulation defaults for FLOW-adjacent tests
     setMockOraclePrice(signer: protocol, forTokenIdentifier: flowType, price: 1.0)
     setMockOraclePrice(signer: protocol, forTokenIdentifier: moetType, price: 1.0)
 
-    // Setup protocol reserves and MOET vault
     setupMoetVault(protocol, beFailed: false)
     mintFlow(to: protocol, amount: 100000.0)
     mintMoet(signer: protocol, to: protocol.address, amount: 100000.0, beFailed: false)
 
-    // Create pool and support FLOW with baseline CF
     createAndStorePool(signer: protocol, defaultTokenIdentifier: moetType, beFailed: false)
+    // Baseline collateral factor 0.8
     addSupportedTokenSimpleInterestCurve(
         signer: protocol,
         tokenTypeIdentifier: flowType,
@@ -47,7 +45,6 @@ fun setup() {
         depositCapacityCap: 1_000_000.0
     )
 
-    // Open a wrapped position to mirror simulation agents opening exposure
     let openRes = _executeTransaction(
         "../transactions/mocks/position/create_wrapped_position.cdc",
         [1000.0, /storage/flowTokenVault, true],
@@ -59,20 +56,17 @@ fun setup() {
 }
 
 access(all)
-fun test_flow_flash_crash_liquidation_path() {
+fun test_cf_baseline_no_liquidation_at_85pct() {
     safeReset()
     let pid: UInt64 = 0
 
-    // Pre-crash health
-    let hfBefore = getPositionHealth(pid: pid, beFailed: false)
-    log("MIRROR:hf_before=".concat(formatHF(hfBefore)))
+    // 15% drop to FLOW price 0.85
+    setMockOraclePrice(signer: protocol, forTokenIdentifier: flowType, price: 0.85)
 
-    // Apply a flash crash to FLOW (e.g., -30%) akin to simulation stress
-    setMockOraclePrice(signer: protocol, forTokenIdentifier: flowType, price: 0.7)
-
-    // Health at crash (pre-liquidation)
-    let hfMin = getPositionHealth(pid: pid, beFailed: false)
-    log("MIRROR:hf_min=".concat(formatHF(hfMin)))
+    // Health should remain above ~1.0 with baseline CF
+    let h = getPositionHealth(pid: pid, beFailed: false)
+    let minHealthy = 1010000000000000000000000 as UInt128 // 1.01
+    Test.assert(h >= minHealthy)
 
     // Governance allowlist of MockDexSwapper
     let swapperTypeId = Type<MockDexSwapper.Swapper>().identifier
@@ -85,34 +79,18 @@ fun test_flow_flash_crash_liquidation_path() {
     let allowRes = Test.executeTransaction(allowTx)
     Test.expect(allowRes, Test.beSucceeded())
 
-    // Ensure protocol has MOET liquidity for DEX swap
+    // Attempt liquidation: should fail because HF >= 1
     setupMoetVault(protocol, beFailed: false)
     mintMoet(signer: protocol, to: protocol.address, amount: 1_000_000.0, beFailed: false)
 
-    // Execute liquidation via mock dex when undercollateralized
-    let liqTx = _executeTransaction(
-        "../../lib/TidalProtocol/cadence/transactions/tidal-protocol/pool-management/liquidate_via_mock_dex.cdc",
-        [pid, Type<@MOET.Vault>(), Type<@FlowToken.Vault>(), 1000.0, 0.0, 1.42857143],
-        protocol
+    let liqTx = Test.Transaction(
+        code: Test.readFile("../../lib/TidalProtocol/cadence/transactions/tidal-protocol/pool-management/liquidate_via_mock_dex.cdc"),
+        authorizers: [protocol.address],
+        signers: [protocol],
+        arguments: [pid, Type<@MOET.Vault>(), Type<@FlowToken.Vault>(), 1000.0, 0.0, 1.17647059]
     )
-    Test.expect(liqTx, Test.beSucceeded())
-
-    // Post-liquidation health should recover above 1.0 (tolerance window)
-    let h = getPositionHealth(pid: pid, beFailed: false)
-    log("MIRROR:hf_after=".concat(formatHF(h)))
-
-    // Emit liquidation metrics from events
-    let liqEvents = Test.eventsOfType(Type<TidalProtocol.LiquidationExecutedViaDex>())
-    let liqCount = liqEvents.length
-    log("MIRROR:liq_count=".concat(liqCount.toString()))
-    if liqCount > 0 {
-        let last = liqEvents[liqCount - 1] as! TidalProtocol.LiquidationExecutedViaDex
-        log("MIRROR:liq_repaid=".concat(formatValue(last.repaid)))
-        log("MIRROR:liq_seized=".concat(formatValue(last.seized)))
-    }
-    let target = 1010000000000000000000000 as UInt128
-    let tol = 10000000000000000000 as UInt128
-    Test.assert(h >= target - tol)
+    let liqRes = Test.executeTransaction(liqTx)
+    Test.expect(liqRes, Test.beFailed())
 }
 
 
