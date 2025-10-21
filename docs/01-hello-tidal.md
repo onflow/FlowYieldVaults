@@ -10,11 +10,13 @@ keywords:
   - cadence smart contracts
   - defi strategies
   - position management
-  - tidalprotocol
+  - tidal protocol
   - moet
   - yield tokens
   - position health
 ---
+
+TODO: REPLACE 0x179b6b1cb6755e31 with YOUR_ACCOUNT_ADDRESS
 
 # Hello Tidal: Create and Inspect a Position
 
@@ -26,9 +28,9 @@ These tutorials will be updated, but you may need to refactor your code if the i
 
 :::
 
-Tidal is a yield farming platform built on the Flow blockchain that enables users to deposit tokens into supported DeFi strategies such as collateralized borrowing via TidalProtocol's Active Lending Platform. Tidal aims to support yield-generating strategies, automatically optimizing returns through DeFi Actions components and auto-balancing mechanisms.
+Tidal is a yield farming platform built on the Flow blockchain that enables users to deposit tokens into supported DeFi strategies such as collateralized borrowing via Tidal Protocol's Active Lending Platform. Tidal aims to support yield-generating strategies, automatically optimizing returns through DeFi Actions components and auto-balancing mechanisms.
 
-The platform is designed to support multiple yield-generating strategies. For example, the TracerStrategy creates sophisticated token flows where users deposit FLOW tokens, which are used as collateral to borrow MOET (TidalProtocol's synthetic stablecoin), which is then swapped to YieldTokens and managed by AutoBalancers for optimal yield generation.
+The platform is designed to support multiple yield-generating strategies. For example, the Tracer Strategy creates sophisticated token flows where users deposit FLOW tokens, which are used as collateral to borrow MOET (Tidal Protocol's synthetic stablecoin), which is then swapped to YieldTokens and managed by AutoBalancers for optimal yield generation.
 
 ## Learning Objectives
 
@@ -84,7 +86,7 @@ Think of it this way: Tidal Protocol provides the lending infrastructure, while 
 
 Tidal implements a sophisticated **dual rebalancing system** with two complementary mechanisms:
 
-### 1. TidalProtocol Position Rebalancing
+### 1. Tidal Protocol Position Rebalancing
 
 - **Purpose**: Maintains healthy collateralization ratios for lending positions
 - **Triggers**: When position health falls below target (1.3) or minimum (1.1) thresholds
@@ -102,21 +104,35 @@ These systems work together to provide comprehensive protection against liquidat
 
 **In summary**: Automatic balancing exists in **both** Tidal and High Tide:
 
-- **Tidal** (TidalProtocol) = Automatic balancing for liquidation protection
+- **Tidal** (Tidal Protocol) = Automatic balancing for liquidation protection
 - **High Tide** (TidalYield) = Automatic balancing for yield optimization
 
 ## Setting Up Your Environment
 
-Follow these steps to set up your local Flow emulator with Tidal contracts:
+Follow these steps to set up your local Flow emulator with Tidal contracts.
 
-**Step 1: Clone the Repository**
+First, clone the repository:
 
 ```bash
 git clone https://github.com/onflow/tidal-sc tidal-sc
 cd tidal-sc
 ```
 
+**Step 1: Start the Flow Emulator**
+
+Before running the setup script, you need to start the Flow emulator:
+
+```bash
+flow emulator start --persist
+```
+
+The `--persist` flag ensures that deployed contracts and state are preserved when the emulator is restarted, which is helpful during development and learning.
+
+You should see output indicating the emulator is running on port 3569.
+
 **Step 2: Deploy Contracts and Configure System**
+
+Then, run the setup script to set up the project to run on the emulator:
 
 ```bash
 ./local/setup_emulator.sh
@@ -127,9 +143,9 @@ This script will:
 - Install [DeFi Actions] dependencies
 - Deploy all Tidal contracts to the emulator
 - Set up mock oracle prices (FLOW: $0.50, YieldToken: $1.00)
-- Configure TidalProtocol with MOET as default token and FLOW as collateral (collateral factor: 0.8)
+- Configure Tidal Protocol with MOET as default token and FLOW as collateral (collateral factor: 0.8)
 - Set up liquidity connectors for mock swapping
-- Register the TracerStrategy
+- Register the Tracer Strategy
 - Grant beta access to TidalYield (required for creating Tides during closed beta)
 
 **Step 3: Verify Setup**
@@ -141,6 +157,37 @@ flow accounts list --network emulator
 ```
 
 You should see the emulator account with deployed contracts.
+
+```zsh
+📋 Account Status Across Networks
+
+This shows which networks your configured accounts are accessible on:
+🌐 Network  🟢 Local (running)  🔴 Local (stopped)  ✓ Found  ✗ Error
+─────────────────────────────────────────────────────
+
+🟢 emulator
+    ✓ emulator-account (f8d6e0586b0a20c7): 999999999.99600000 FLOW
+    ✗ evm-gateway (e03daebed8ca0615): Account not found
+    ✗ mock-incrementfi (f3fcd2c1a78f5eee): Account not found
+    ✗ test-user (179b6b1cb6755e31): Account not found
+
+🌐 mainnet
+  No accounts found
+
+🌐 testnet
+    ✓ testnet-admin (2ab6f469ee0dfbb6): 99999.99557095 FLOW
+
+🟢 testing
+    ✓ emulator-account (f8d6e0586b0a20c7): 999999999.99600000 FLOW
+    ✗ evm-gateway (e03daebed8ca0615): Account not found
+    ✗ mock-incrementfi (f3fcd2c1a78f5eee): Account not found
+    ✗ test-user (179b6b1cb6755e31): Account not found
+
+
+💡 Tip: To fund testnet accounts, run: flow accounts fund
+```
+
+**Important**: Keep the emulator running in a separate terminal window throughout this tutorial. If you stop the emulator, you'll need to restart it.
 
 ## Understanding Position Creation and IDs
 
@@ -172,7 +219,7 @@ Max MOET Borrowable = $30.77 ÷ $1.00 = 30.77 MOET
 
 The system uses two different identifiers:
 
-- **Position ID (pid)**: TidalProtocol lending position identifier - tracks the actual lending/borrowing position
+- **Position ID (pid)**: Tidal Protocol lending position identifier - tracks the actual lending/borrowing position
 - **Tide ID**: TidalYield strategy wrapper identifier - tracks the yield strategy that wraps the position
 
 These are separate identifiers that serve different purposes in the dual-layer architecture.
@@ -181,27 +228,81 @@ These are separate identifiers that serve different purposes in the dual-layer a
 
 Now let's create a position using the Flow CLI. The process involves sending transactions to create a Tide position and then inspecting it with scripts.
 
-### Step 1: Set Up Your Account
+### Step 1: Create Test Account
 
-First, ensure your account has the necessary setup for Tidal:
+First, create a new test account that we'll use for this tutorial:
+
+```bash
+flow accounts create
+```
+
+Name it `tidal-test` and select `emulator` for the network.
+
+This will generate a new account with a new key pair. The CLI will output the account address and key information - save this information as you'll need it for signing transactions.
+
+Fund the account with:
+
+```bash
+flow accounts fund
+```
+
+Select the entry for:
+
+```bash
+0x0x179b6b1cb6755e31 (tidal-test) [emulator]
+```
+
+### Step 2: Grant Beta Access
+
+Before setting up your account, you need to grant beta access to your `tidal-test` account. This is required during the closed beta phase:
+
+```bash
+# Grant beta access to your account
+flow transactions send cadence/transactions/tidal-yield/admin/grant_beta.cdc \
+  --network emulator --payer emulator-account --proposer tidal-test --authorizer emulator-account,tidal-test
+```
+
+:::info
+
+In a Cadence [transaction], the proposer, payer, and authorizer roles are all natively separate. Account abstraction (sponsored transactions) and multi-sig are supported out of the box.
+
+:::
+
+This transaction grants the necessary beta badge to your account, allowing it to create Tides.
+
+### Step 3: Set Up Your Account
+
+Now ensure your account has the necessary setup for Tidal:
 
 ```bash
 # Setup user account with TideManager
 flow transactions send cadence/transactions/tidal-yield/setup.cdc \
-  --network emulator --signer test-user
+  --network emulator --signer tidal-test
 ```
 
-This transaction creates a TideManager resource in your account's storage and publishes the necessary capabilities.
+This transaction creates a `TideManager` resource in your account's storage and publishes the necessary capabilities.
 
-**Note**: During the closed beta phase, beta access is required to create Tides across all networks (emulator, testnet, mainnet). The setup scripts automatically grant this access to the deployer account on each respective network.
+**Note**: During the closed beta phase, beta access is required to create Tides across all networks (emulator, testnet, mainnet). The `grant_beta` transaction grant this access to the selected account on the network it is called on.
 
-### Step 2: Create a Position
+### Step 4: Create a Position
 
-Create a Tide position with 100 FLOW tokens as collateral:
+Now let's create and manage a Tide position. First, let's check what strategies are available:
+
+```bash
+flow scripts execute cadence/scripts/tidal-yield/get_supported_strategies.cdc --network emulator
+```
+
+You should see output similar to:
+
+```
+Result: [Type<A.f8d6e0586b0a20c7.TidalYieldStrategies.TracerStrategy>()]
+```
+
+Create a Tide position with 100 FLOW tokens as collateral, using the Tracer strategy:
 
 ```bash
 flow transactions send cadence/transactions/tidal-yield/create_tide.cdc \
-  --network emulator --signer test-user \
+  --network emulator --signer tidal-test \
   --args-json '[
     {"type":"String","value":"A.f8d6e0586b0a20c7.TidalYieldStrategies.TracerStrategy"},
     {"type":"String","value":"A.0ae53cb6e3f42a79.FlowToken.Vault"},
@@ -211,20 +312,36 @@ flow transactions send cadence/transactions/tidal-yield/create_tide.cdc \
 
 This transaction:
 
-- Creates a new Tide using the TracerStrategy
+- Creates a new Tide using the Tracer Strategy
 - Deposits 100 FLOW tokens as initial collateral
 - Sets up the complete DeFi Actions stack including AutoBalancer
 - Returns a Tide ID for future reference
 
-### Step 3: Verify Position Creation
+### Step 5: Verify Position Creation
 
 Check that your position was created successfully by querying your Tide IDs:
 
 ```bash
 flow scripts execute cadence/scripts/tidal-yield/get_tide_ids.cdc \
   --network emulator \
-  --args-json '[{"type":"Address","value":"0xf3fcd2c1a78f5eee"}]'
+  --args-json '[{"type":"Address","value":"0x179b6b1cb6755e31"}]'
 ```
+
+Replace `0x179b6b1cb6755e31` with the address of your `tidal-test` account. You can find this address by running:
+
+```bash
+flow accounts list --network emulator
+```
+
+Look for the `tidal-test` account entry to get its address.
+
+After running the script, you should see:
+
+```bash
+Result: [0]
+```
+
+This is the array of your Tide IDs. You've only created one, hence the `0` in the array. Your Tide position is live and ready for further operations.
 
 ### Review of the Core Contracts
 
@@ -240,7 +357,7 @@ The main contract orchestrates the entire yield farming system:
 
 #### 2. TidalYieldStrategies.cdc - Strategy Implementations
 
-Implements the TracerStrategy that demonstrates the power of DeFi Actions composition:
+Implements the Tracer Strategy that demonstrates the power of DeFi Actions composition:
 
 ```cadence
 access(all) resource TracerStrategy : TidalYield.Strategy, DeFiActions.IdentifiableResource {
@@ -262,10 +379,10 @@ Manages automated rebalancing of positions:
 
 ### Understanding the FLOW → MOET → YieldToken Flow
 
-The TracerStrategy creates a sophisticated token flow:
+The Tracer Strategy creates a sophisticated token flow:
 
 ```
-User Deposit (FLOW) → TidalProtocol Position → MOET Issuance → Swap to YieldToken → AutoBalancer
+User Deposit (FLOW) → Tidal Protocol Position → MOET Issuance → Swap to YieldToken → AutoBalancer
                                                ↑
                                          YieldToken → Swap to FLOW → Recollateralize Position
 ```
@@ -274,7 +391,7 @@ Here's how it works:
 
 1. **Initial Position Opening**:
 
-   - User deposits FLOW → TidalProtocol Position
+   - User deposits FLOW → Tidal Protocol Position
    - Position issues MOET → Swaps to YieldToken
    - YieldToken held in AutoBalancer
 
@@ -288,67 +405,7 @@ Here's how it works:
    - **Over-Collateralized** (YieldToken value > 105%): Excess YieldToken → Swap to FLOW → Add to Position Collateral
    - **Under-Collateralized** (YieldToken value < 95%): YieldToken → Swap to FLOW → Add to Position Collateral → Reduce loan risk
 
-## Creating Your First Tide
-
-Now let's create and manage a Tide position. First, let's check what strategies are available:
-
-```bash
-flow scripts execute cadence/scripts/tidal-yield/get_supported_strategies.cdc --network emulator
-```
-
-You should see output similar to:
-
-```
-Result: [Type<@TidalYieldStrategies.TracerStrategy>()]
-```
-
-### Setting Up a User Account
-
-Before creating a Tide, we need to set up a user account with the necessary capabilities:
-
-```bash
-# Setup user account with TideManager
-flow transactions send cadence/transactions/tidal-yield/setup.cdc \
-  --network emulator --signer test-user
-```
-
-This transaction:
-
-- Creates a TideManager resource in the user's storage
-- Publishes public capabilities for the TideManager
-- Issues authorized capabilities for later access
-
-### Creating Your First Tide
-
-Now let's create a Tide with 100 FLOW tokens:
-
-```bash
-flow transactions send cadence/transactions/tidal-yield/create_tide.cdc \
-  --network emulator --signer test-user \
-  --args-json '[
-    {"type":"String","value":"A.f8d6e0586b0a20c7.TidalYieldStrategies.TracerStrategy"},
-    {"type":"String","value":"A.0ae53cb6e3f42a79.FlowToken.Vault"},
-    {"type":"UFix64","value":"100.0"}
-  ]'
-```
-
-This transaction:
-
-- Creates a new Tide using the TracerStrategy
-- Deposits 100 FLOW tokens as initial collateral
-- Calculates borrowing capacity: 100 FLOW × $0.50 × 0.8 ÷ 1.3 = ~30.77 MOET
-- Sets up the complete DeFi Actions stack including AutoBalancer
-- Returns a Tide ID for future reference
-
-### Querying Your Tide
-
-Let's check what Tide IDs you have:
-
-```bash
-flow scripts execute cadence/scripts/tidal-yield/get_tide_ids.cdc \
-  --network emulator \
-  --args-json '[{"type":"Address","value":"0xf3fcd2c1a78f5eee"}]'
-```
+## Querying Your Tide Further
 
 Check the balance of your Tide:
 
@@ -356,9 +413,15 @@ Check the balance of your Tide:
 flow scripts execute cadence/scripts/tidal-yield/get_tide_balance.cdc \
   --network emulator \
   --args-json '[
-    {"type":"Address","value":"0xf3fcd2c1a78f5eee"},
+    {"type":"Address","value":"0x179b6b1cb6755e31"},
     {"type":"UInt64","value":"0"}
   ]'
+```
+
+You'll see:
+
+```bash
+Result: 100.00000000
 ```
 
 ### Getting Complete Position Information
@@ -368,7 +431,7 @@ For a comprehensive view of your position, use the complete position info script
 ```bash
 flow scripts execute cadence/scripts/tidal-yield/get_complete_user_position_info.cdc \
   --network emulator \
-  --args-json '[{"type":"Address","value":"0xf3fcd2c1a78f5eee"}]'
+  --args-json '[{"type":"Address","value":"0x179b6b1cb6755e31"}]'
 ```
 
 This script returns detailed information including:
@@ -377,38 +440,79 @@ This script returns detailed information including:
 - YieldToken information (balance, value, price)
 - Debt information (estimated MOET debt)
 - Health metrics (leverage ratio, health ratio, net worth)
+- Portfolio summary across all positions
 
-### Inspecting AutoBalancer Ratios
+Your result will be similar to:
 
-Let's examine the AutoBalancer configuration:
+```bash
+Result: s.16ac6f2142667a95c3d09f33ee8a8fdf4455d56865960df49589e0882c801680.CompleteUserSummary(userAddress: 0x179b6b1cb6755e31, totalPositions: 1, portfolioSummary: s.16ac6f2142667a95c3d09f33ee8a8fdf4455d56865960df49589e0882c801680.PortfolioSummary(totalCollateralValue: 30.76923076, totalYieldTokenValue: 30.76923076, totalEstimatedDebtValue: 30.76923076, totalNetWorth: 30.76923076, averageLeverageRatio: 3.00000000, portfolioHealthRatio: 1.00000000), positions: [s.16ac6f2142667a95c3d09f33ee8a8fdf4455d56865960df49589e0882c801680.CompletePositionInfo(tideId: 0, collateralInfo: s.16ac6f2142667a95c3d09f33ee8a8fdf4455d56865960df49589e0882c801680.CollateralInfo(collateralType: "A.0ae53cb6e3f42a79.FlowToken.Vault", availableBalance: 30.76923076, collateralValue: 15.38461538, collateralPrice: 0.50000000, supportedTypes: ["A.0ae53cb6e3f42a79.FlowToken.Vault"]), yieldTokenInfo: s.16ac6f2142667a95c3d09f33ee8a8fdf4455d56865960df49589e0882c801680.YieldTokenInfo(yieldTokenBalance: 30.76923076, yieldTokenValue: 30.76923076, yieldTokenPrice: 1.00000000, yieldTokenIdentifier: "A.f8d6e0586b0a20c7.YieldToken.Vault", isActive: true), debtInfo: s.16ac6f2142667a95c3d09f33ee8a8fdf4455d56865960df49589e0882c801680.DebtInfo(estimatedMoetDebt: 30.76923076, estimatedDebtValue: 30.76923076, moetPrice: 1.00000000, loanTokenIdentifier: "A.f8d6e0586b0a20c7.MOET.Vault"), healthMetrics: s.16ac6f2142667a95c3d09f33ee8a8fdf4455d56865960df49589e0882c801680.HealthMetrics(realAvailableBalance: 30.76923076, estimatedCollateralValue: 15.38461538, liquidationRiskThreshold: 1.10000000, autoRebalanceThreshold: 1.10000000, optimalHealthRatio: 1.30000000, maxEfficiencyThreshold: 1.50000000, netWorth: 15.38461538, leverageRatio: 3.00000000, yieldTokenRatio: 1.00000000, estimatedHealth: 1300000.00000000))], timestamp: 1761068654.00000000)
+```
+
+### Understanding AutoBalancer Architecture
+
+Each Tide gets its own dedicated AutoBalancer with a unique ID:
+
+- **Global Storage**: AutoBalancers are stored in the `TidalYieldAutoBalancers` contract (not in user accounts)
+- **Per-Tide**: Each Tide gets its own AutoBalancer identified by Tide ID (0, 1, 2, etc.)
+- **Sequential IDs**: Tide IDs are assigned sequentially across all users
+- **Multiple Tides**: You can create multiple Tides, each with its own AutoBalancer
+- **Automatic Cleanup**: When you close a Tide, its AutoBalancer is automatically destroyed
+
+**Example**: If you create Tide 0, another user creates Tide 1, and you create another Tide 2, you'll have AutoBalancers with IDs 0, 1, and 2 respectively. Users may have more than one Tide and more than one AutoBalancer.
+
+Let's examine the AutoBalancer configuration. Your AutoBalancer ids match your tide ids, so if you want, you can run the script again to find them:
+
+```bash
+flow scripts execute cadence/scripts/tidal-yield/get_tide_ids.cdc \
+  --network emulator \
+  --args-json '[{"type":"Address","value":"YOUR_ACCOUNT_ADDRESS"}]'
+```
+
+Then, run the script to get the **balance** for one of the ids returned:
 
 ```bash
 flow scripts execute cadence/scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
   --network emulator \
-  --args-json '[
-    {"type":"Address","value":"0xf3fcd2c1a78f5eee"},
-    {"type":"UInt64","value":"0"}
-  ]'
+  --args-json '[{"type":"UInt64","value":"0"}]'
 ```
 
-Check the current value of the AutoBalancer:
+You'll see something similar to:
+
+```bash
+Result: 30.76923076
+```
+
+This is the **raw balance** in the YieldToken from the mock contract.
+
+Check the current USD **value** of the AutoBalancer:
 
 ```bash
 flow scripts execute cadence/scripts/tidal-yield/get_auto_balancer_current_value_by_id.cdc \
   --network emulator \
   --args-json '[
-    {"type":"Address","value":"0xf3fcd2c1a78f5eee"},
     {"type":"UInt64","value":"0"}
   ]'
 ```
 
+You should see something similar to:
+
+```bash
+Result: 30.76923076
+```
+
+:::info
+
+You may have noticed that these values are identical. This is because the emulator chain doesn't produce blocks unless you send a transaction, and because you've set the value of the YieldToken to $1.00 USD. So 30.76923076 \* 1.00 USD is $30.76923076.
+
+:::
+
 ## Understanding the Strategy Architecture
 
-The TracerStrategy demonstrates sophisticated DeFi Actions composition. Let's examine how it works:
+The Tracer Strategy demonstrates sophisticated DeFi Actions composition. Let's examine how it works:
 
 ### Strategy Composition
 
-The TracerStrategyComposer creates a complex stack of DeFi Actions:
+The Tracer Strategy Composer creates a complex stack of DeFi Actions:
 
 ```cadence
 // Configure AutoBalancer for this stack
@@ -453,7 +557,7 @@ flow transactions send cadence/transactions/tidal-yield/admin/rebalance_auto_bal
   ]'
 ```
 
-## Advanced Operations
+## Additional Operations
 
 ### Depositing Additional Funds
 
@@ -461,12 +565,19 @@ Add more funds to an existing Tide:
 
 ```bash
 flow transactions send cadence/transactions/tidal-yield/deposit_to_tide.cdc \
-  --network emulator --signer test-user \
+  --network emulator --signer tidal-test \
   --args-json '[
     {"type":"UInt64","value":"0"},
-    {"type":"String","value":"A.0ae53cb6e3f42a79.FlowToken.Vault"},
     {"type":"UFix64","value":"50.0"}
   ]'
+```
+
+You should see several events, and you can check that the balance changed in the account with `flow accounts list` and on the Tide with:
+
+```bash
+flow scripts execute cadence/scripts/tidal-yield/get_tide_balance.cdc \
+  --network emulator \
+  --args-json '[{"type":"Address","value":"0x179b6b1cb6755e31"},{"type":"UInt64","value":"0"}]'
 ```
 
 ### Withdrawing from a Tide
@@ -475,7 +586,7 @@ Withdraw funds from your Tide:
 
 ```bash
 flow transactions send cadence/transactions/tidal-yield/withdraw_from_tide.cdc \
-  --network emulator --signer test-user \
+  --network emulator --signer tidal-test \
   --args-json '[
     {"type":"UInt64","value":"0"},
     {"type":"UFix64","value":"25.0"}
@@ -488,7 +599,7 @@ Close your Tide and withdraw all funds:
 
 ```bash
 flow transactions send cadence/transactions/tidal-yield/close_tide.cdc \
-  --network emulator --signer test-user \
+  --network emulator --signer tidal-test \
   --args-json '[{"type":"UInt64","value":"0"}]'
 ```
 
@@ -501,7 +612,7 @@ Let's trace through what happens when you create a Tide:
 ```
 User deposits 100 FLOW
     ↓
-TidalProtocol Position created
+Tidal Protocol Position created
     ↓
 Position issues MOET (based on collateral factor 0.8 = 80 FLOW worth)
     ↓
@@ -566,7 +677,7 @@ You explored:
 - How to query comprehensive position information
 - The sophisticated DeFi Actions composition that powers the platform
 
-The TracerStrategy demonstrates the power of composable DeFi Actions, creating a self-balancing yield farming position that automatically optimizes returns while managing risk through intelligent rebalancing mechanisms.
+The Tracer Strategy demonstrates the power of composable DeFi Actions, creating a self-balancing yield farming position that automatically optimizes returns while managing risk through intelligent rebalancing mechanisms.
 
 Tidal represents a significant advancement in DeFi infrastructure, enabling complex yield strategies that were previously impossible to implement on-chain due to the limitations of traditional blockchain architectures.
 
@@ -574,7 +685,7 @@ Tidal represents a significant advancement in DeFi infrastructure, enabling comp
 
 [Cadence]: https://cadence-lang.org/docs
 [DeFi Actions]: https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions
-[TidalProtocol]: https://github.com/onflow/tidal-protocol
+[Tidal Protocol]: https://github.com/onflow/tidal-protocol
 [Flow CLI]: https://developers.flow.com/tools/flow-cli
 [accounts]: https://developers.flow.com/build/cadence/basics/accounts
 [scripts]: https://developers.flow.com/build/cadence/basics/scripts
