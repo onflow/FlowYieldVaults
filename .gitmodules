@@ -14,3 +14,6 @@
 [submodule "lib/MORE-Vaults-Core"]
 	path = lib/MORE-Vaults-Core
 	url = https://github.com/MORE-Vaults/MORE-Vaults-Core
+[submodule "lib/tidal-protocol-research"]
+	path = lib/tidal-protocol-research
+	url = https://github.com/unit-zero-labs/tidal-protocol-research.git
