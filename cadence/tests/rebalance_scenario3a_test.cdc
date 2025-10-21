@@ -85,7 +85,7 @@ fun setup() {
 	// open wrapped position (pushToDrawDownSink)
 	// the equivalent of depositing reserves
 	let openRes = executeTransaction(
-		"../transactions/mocks/position/create_wrapped_position.cdc",
+		"../../lib/TidalProtocol/cadence/tests/transactions/mock-tidal-protocol-consumer/create_wrapped_position.cdc",
 		[reserveAmount/2.0, /storage/flowTokenVault, true],
 		protocolAccount
 	)
@@ -122,6 +122,7 @@ fun test_RebalanceTideScenario3A() {
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	log("[TEST] flow balance before \(flowBalanceBefore)")
 	mintFlow(to: user, amount: fundingAmount)
+    grantBeta(tidalYieldAccount, user)
 
 	createTide(
 		signer: user,

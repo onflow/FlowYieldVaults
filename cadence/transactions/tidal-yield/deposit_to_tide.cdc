@@ -3,6 +3,7 @@ import "FungibleTokenMetadataViews"
 import "ViewResolver"
 
 import "TidalYield"
+import "TidalYieldClosedBeta"
 
 /// Deposits to an existing Tide stored in the signer's TideManager
 ///
@@ -12,8 +13,15 @@ import "TidalYield"
 transaction(id: UInt64, amount: UFix64) {
     let manager: &TidalYield.TideManager
     let depositVault: @{FungibleToken.Vault}
+    let betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge
 
-    prepare(signer: auth(BorrowValue) &Account) {
+    prepare(signer: auth(BorrowValue, CopyValue) &Account) {
+        let betaCap = signer.storage.copy<Capability<auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge>>(from: TidalYieldClosedBeta.UserBetaCapStoragePath)
+            ?? panic("Signer does not have a BetaBadge stored at path \(TidalYieldClosedBeta.UserBetaCapStoragePath) - configure and retry")
+
+        self.betaRef = betaCap.borrow()
+            ?? panic("Capability does not contain correct reference")
+ 
         // reference the signer's TideManager & underlying Tide
         self.manager = signer.storage.borrow<&TidalYield.TideManager>(from: TidalYield.TideManagerStoragePath)
             ?? panic("Signer does not have a TideManager stored at path \(TidalYield.TideManagerStoragePath) - configure and retry")
@@ -36,6 +44,6 @@ transaction(id: UInt64, amount: UFix64) {
     }
 
     execute {
-        self.manager.depositToTide(id, from: <-self.depositVault)
+        self.manager.depositToTide(betaRef: self.betaRef, id, from: <-self.depositVault)
     }
 }

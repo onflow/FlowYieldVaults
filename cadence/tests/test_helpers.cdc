@@ -17,8 +17,32 @@ fun _executeTransaction(_ path: String, _ args: [AnyStruct], _ signer: Test.Test
         authorizers: [signer.address],
         signers: [signer],
         arguments: args
-    )    
+    )
     return Test.executeTransaction(txn)
+}
+
+access(all)
+fun grantProtocolBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
+    let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
+    let betaTxn = Test.Transaction(
+        code: Test.readFile("../../lib/TidalProtocol/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc"),
+        authorizers: [admin.address, grantee.address],
+        signers: signers,
+        arguments: []
+    )
+    return Test.executeTransaction(betaTxn)
+}
+
+access(all)
+fun grantBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
+    let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
+    let betaTxn = Test.Transaction(
+        code: Test.readFile("../transactions/tidal-yield/admin/grant_beta.cdc"),
+        authorizers: [admin.address, grantee.address],
+        signers: signers,
+        arguments: []
+    )
+    return Test.executeTransaction(betaTxn)
 }
 
 /* --- Setup helpers --- */
@@ -95,7 +119,7 @@ access(all) fun deployContracts() {
 
     err = Test.deployContract(
         name: "MockTidalProtocolConsumer",
-        path: "../contracts/mocks/MockTidalProtocolConsumer.cdc",
+        path: "../../lib/TidalProtocol/cadence/contracts/mocks/MockTidalProtocolConsumer.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -107,6 +131,7 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+    // TidalYieldClosedBeta deployed only when needed (origin/main)
     err = Test.deployContract(
         name: "TidalYield",
         path: "../contracts/TidalYield.cdc",
@@ -135,18 +160,8 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-}
 
-access(all)
-fun ensurePoolFactoryAndCreatePool(signer: Test.TestAccount, defaultTokenIdentifier: String) {
-    // TidalProtocol init stores a PoolFactory at the protocol account as part of contract init.
-    // If for any reason it's missing, no separate tx exists here; we just proceed to create the pool.
-    let res = _executeTransaction(
-        "../transactions/tidal-protocol/pool-factory/create_and_store_pool.cdc",
-        [defaultTokenIdentifier],
-        signer
-    )
-    Test.expect(res, Test.beSucceeded())
+    setupBetaAccess()
 }
 
 access(all)
@@ -423,4 +438,27 @@ access(all) fun formatPercent(_ percent: UFix64): String {
 
 /* --- Const Helpers --- */
 access(all) let TOLERANCE = 0.00000001
+
+access(all) fun setupBetaAccess(): Void {
+    let protocolAccount = Test.getAccount(0x0000000000000008)
+    let tidalYieldAccount = Test.getAccount(0x0000000000000009)
+    let protocolBeta = grantProtocolBeta(protocolAccount, protocolAccount)
+    Test.expect(protocolBeta, Test.beSucceeded())
+
+    let tidalYieldBeta = grantProtocolBeta(protocolAccount, tidalYieldAccount)
+    Test.expect(tidalYieldBeta, Test.beSucceeded())
+}
+
+// Returns the balance for a given Vault 'Type' if present, otherwise nil.
+access(all) fun findBalance(
+    details: TidalProtocol.PositionDetails,
+    vaultType: Type
+): UFix64? {
+    for b in details.balances {
+        if b.vaultType == vaultType {
+            return b.balance
+        }
+    }
+    return nil
+}
 

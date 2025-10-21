@@ -34,6 +34,7 @@ fun test_CreateTideSucceeds() {
 
     let user = Test.createAccount()
     mintFlow(to: user, amount: fundingAmount)
+    grantBeta(tidalYieldAccount, user)
 
     createTide(
         signer: user,
@@ -56,6 +57,7 @@ fun test_CloseTideSucceeds() {
 
     let user = Test.createAccount()
     mintFlow(to: user, amount: fundingAmount)
+    grantBeta(tidalYieldAccount, user)
 
     createTide(
         signer: user,
