@@ -131,7 +131,12 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    // TidalYieldClosedBeta deployed only when needed (origin/main)
+    err = Test.deployContract(
+        name: "TidalYieldClosedBeta",
+        path: "../contracts/TidalYieldClosedBeta.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "TidalYield",
         path: "../contracts/TidalYield.cdc",
@@ -162,6 +167,18 @@ access(all) fun deployContracts() {
     Test.expect(err, Test.beNil())
 
     setupBetaAccess()
+}
+
+access(all)
+fun ensurePoolFactoryAndCreatePool(signer: Test.TestAccount, defaultTokenIdentifier: String) {
+    // TidalProtocol init stores a PoolFactory at the protocol account as part of contract init.
+    // If for any reason it's missing, no separate tx exists here; we just proceed to create the pool.
+    let res = _executeTransaction(
+        "../transactions/tidal-protocol/pool-factory/create_and_store_pool.cdc",
+        [defaultTokenIdentifier],
+        signer
+    )
+    Test.expect(res, Test.beSucceeded())
 }
 
 access(all)
