@@ -55,9 +55,11 @@ Mock FungibleToken implementations representing:
 #### Testnet
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
 |---|---|---|---|
-| FlowActions | TBD | TBD | TBD |
-| TidalProtocol | TBD | TBD | TBD |
-| TidalYieldStrategies | TBD | TBD | TBD |
+| FlowActions | 0x2ab6f469ee0dfbb6 | DeFiActions | TBD |
+| TidalProtocol | 0x2ab6f469ee0dfbb6 | TidalProtocol | TBD |
+| TidalYield | 0x2ab6f469ee0dfbb6 | TidalYield | TBD |
+| TidalYieldStrategies | 0x2ab6f469ee0dfbb6 | TidalYieldStrategies | TBD |
+| MOET | 0x2ab6f469ee0dfbb6 | MOET | - |
 | USDC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_d431955d55a99ef69beb96ba34718d0f9fbc91b1 | 0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1 |
 | wBTC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6 | 0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6 |
 | wETH | 0xdfc20aee650fcbdf | EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848 | 0x059A77239daFa770977DD9f1E98632C3E4559848 |
