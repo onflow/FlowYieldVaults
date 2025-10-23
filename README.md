@@ -50,6 +50,24 @@ Mock FungibleToken implementations representing:
 - Uses oracle prices to calculate swap rates
 - Manages liquidity connectors for different token pairs
 
+### Contract Deployments
+
+#### Testnet
+| Asset Name | Cadence Address | Cadence Contract Name | EVM |
+|---|---|---|
+| FlowActions | - | - |
+| TidalProtocol | - | - |
+| TidalYieldStrategies | - | - |
+| USDC | - | - |
+| wBTC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6 | 0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6 |
+| wETH | 0xdfc20aee650fcbdf | EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848 | 0x059A77239daFa770977DD9f1E98632C3E4559848 |
+
+#### Mainnet
+| Contract Name | Cadence | EVM |
+|---|---|---|
+|  | TBD | TBD |
+|  | TBD | TBD |
+
 ## How the System Works
 
 Below is an overview of the initial prototype Tracer Strategy in the broader context of TidalProtocol and the Tidal platform.
