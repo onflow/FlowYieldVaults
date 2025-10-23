@@ -1,6 +1,6 @@
 # Tidal Smart Contracts
 
-Tidal is a yield farming platform built on the Flow blockchain using Cadence 1.0. The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via TidalProtocol's Active Lending Platform. Tidal aims to support yield-generating strategies, automatically optimizing returns through DeFiActions components and auto-balancing mechanisms.
+Tidal is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via TidalProtocol's Active Lending Platform. Tidal aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
 
 ## System Architecture
 
@@ -9,22 +9,25 @@ The Tidal platform consists of several interconnected components:
 ### Core Contracts
 
 #### 1. TidalYield.cdc - Main Platform Contract
+
 The main contract that orchestrates the entire yield farming system:
 
 - **Strategy Interface**: Defines yield-generating strategies that can deposit/withdraw tokens
-- **StrategyComposer**: Creates and manages different strategy implementations  
+- **StrategyComposer**: Creates and manages different strategy implementations
 - **StrategyFactory**: Manages multiple strategy composers and creates strategy instances
 - **Tide Resource**: Represents a user's position in a specific strategy
 - **TideManager**: Manages multiple Tide positions for a user account
 
 #### 2. TidalYieldStrategies.cdc - Strategy Implementations
+
 Implements specific yield strategies:
 
 - **TracerStrategy**: A strategy that uses TidalProtocol lending positions with auto-balancing
-- **TracerStrategyComposer**: Creates TracerStrategy instances with complex DeFiActions stacking
+- **TracerStrategyComposer**: Creates TracerStrategy instances with complex DeFi Actions stacking
 - **StrategyComposerIssuer**: Controls access to strategy composer creation
 
 #### 3. TidalYieldAutoBalancers.cdc - Auto-Balancing System
+
 Manages automated rebalancing of positions:
 
 - Stores AutoBalancer instances in contract storage
@@ -34,18 +37,22 @@ Manages automated rebalancing of positions:
 ### Token Contracts
 
 #### YieldToken.cdc & MOET.cdc
+
 Mock FungibleToken implementations representing:
+
 - **YieldToken**: Receipt tokens for yield-bearing positions
 - **MOET**: TidalProtocol's synthetic stablecoin
 
 ### Mock Infrastructure
 
 #### MockOracle.cdc
+
 - Provides price feeds for testing and demonstrations
 - Supports price manipulation for testing scenarios
 - Implements DeFiActions.PriceOracle interface
 
-#### MockSwapper.cdc  
+#### MockSwapper.cdc
+
 - Simulates token swapping functionality
 - Uses oracle prices to calculate swap rates
 - Manages liquidity connectors for different token pairs
@@ -55,7 +62,8 @@ Mock FungibleToken implementations representing:
 Below is an overview of the initial prototype Tracer Strategy in the broader context of TidalProtocol and the Tidal platform.
 
 ### 1. Strategy Architecture
-The TracerStrategy demonstrates the power of DeFiActions composition:
+
+The TracerStrategy demonstrates the power of DeFi Actions composition:
 
 ```
 User Deposit (FLOW) → TidalProtocol Position → MOET Issuance → Swap to YieldToken → AutoBalancer
@@ -64,15 +72,18 @@ User Deposit (FLOW) → TidalProtocol Position → MOET Issuance → Swap to Yie
 ```
 
 ### 2. Auto-Balancing Mechanism
+
 - AutoBalancers monitor the value of deposits vs. current token holdings
 - When balance moves outside configured thresholds (±5%), automatic rebalancing occurs
 - Excess value flows into position recollateralization
 - Insufficient value triggers position adjustments
 
-### 3. DeFiActions Integration
-The system heavily uses DeFiActions components:
+### 3. DeFi Actions Integration
+
+The system heavily uses [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components:
+
 - **Sinks**: Accept token deposits
-- **Sources**: Provide token withdrawals  
+- **Sources**: Provide token withdrawals
 - **Swappers**: Handle token conversions
 - **AutoBalancers**: Maintain optimal position ratios
 
@@ -80,38 +91,47 @@ The system heavily uses DeFiActions components:
 
 ### Scripts (Read Operations)
 
+[Cadence Scripts](https://developers.flow.com/build/cadence/basics/scripts) are written in Cadence and take advantage of [Native Data Availability](https://developers.flow.com/blockchain-development-tutorials/cadence/cadence-advantages/native-data-availibility-with-cadence-scripts) read and format any public data on the blockchain in the way the developer needs it, without relying on pre-existing view functions in the contract.
+
 #### `scripts/tidal-yield/get_tide_ids.cdc`
+
 ```cadence
 // Returns all Tide IDs for a given user address
 access(all) fun main(address: Address): [UInt64]?
 ```
 
 #### `scripts/tokens/get_balance.cdc`
-```cadence  
+
+```cadence
 // Get token balance for an account
 access(all) fun main(account: Address, vaultPath: StoragePath): UFix64
 ```
 
 ### Transactions (Write Operations)
 
+[Cadence Transactions](https://cadence-lang.org/docs/language/transactions) are written in Cadence and allow you to [compose](https://developers.flow.com/blockchain-development-tutorials/cadence/cadence-advantages/compose-with-cadence-transactions) several function calls to several contracts within a single user approval.
+
 #### Setup
+
 ```cadence
 // Setup user account for Tidal platform
 transaction setup()
 ```
 
 #### Creating Tides
+
 ```cadence
 // Create a new yield position
 transaction create_tide(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
 ```
 
 #### Managing Positions
+
 ```cadence
 // Deposit additional funds to existing Tide
 transaction deposit_to_tide(id: UInt64, amount: UFix64)
 
-// Withdraw funds from a Tide  
+// Withdraw funds from a Tide
 transaction withdraw_from_tide(id: UInt64, amount: UFix64)
 
 // Close a Tide and withdraw all funds
@@ -121,16 +141,19 @@ transaction close_tide(id: UInt64)
 ## Development Environment
 
 ### Local Setup
+
 The `local/setup_emulator.sh` script provides emulator configuration for local development and testing.
 
 ### Flow Configuration
-`flow.json` contains network configurations and contract deployment settings.
+
+`flow.json` contains network configurations and contract deployment settings. It is created and managed with the [Flow CLI](https://developers.flow.com/build/tools/flow-cli).
 
 ## Rebalancing and Recollateralizing
 
 The Tidal platform implements sophisticated automatic rebalancing and recollateralizing mechanisms to maintain healthy loan positions and optimize yield generation.
 
 **Important Distinction:** The system has TWO different rebalancing mechanisms:
+
 1. **AutoBalancer Rebalancing** (DFB): Maintains optimal ratio between YieldToken holdings and expected deposit value
 2. **Position Rebalancing** (TidalProtocol): Maintains healthy collateralization ratios for lending positions
 
@@ -139,41 +162,49 @@ These work together but serve different purposes and can trigger independently b
 ### How Auto-Balancing Works
 
 Each TracerStrategy includes an AutoBalancer with configured thresholds:
+
 - **Lower Threshold: 0.95** (5% below target)
 - **Upper Threshold: 1.05** (5% above target)
 
 The AutoBalancer continuously monitors the **value ratio** between:
+
 - Current YieldToken holdings (actual balance)
 - Expected value based on initial deposits (target balance)
 
 ### Rebalancing Scenarios
 
 #### 1. Overflown AutoBalancer Value (Upper Threshold Exceeded)
+
 **When:** Current YieldToken value > 105% historical value of deposits
 **Cause:** YieldToken price has increased OR position became over-collateralized leading to excess token holdings
 **Action:** AutoBalancer deposits excess YieldToken to the rebalanceSink, swapping to FLOW and recollateralizing the TidalProtocol position.
 
 **Automated Flow:**
+
 ```
 YieldToken (excess) → Swap to FLOW → Deposit to TidalProtocol Position (recollateralization)
 ```
 
-**Result:** 
+**Result:**
+
 - Excess value moved from YieldToken holdings back to collateral
 - Position health improved through additional collateralization
 - Maintained optimal balance between yield tokens and position safety
 
 #### 2. Under-Collateralized Position (Lower Threshold Breached)
+
 **When:** YieldToken value < 95% of expected value  
 **Cause:** Collateral price dropped or lending position at risk
 **Action:** Position needs more collateral to maintain healthy loan-to-value ratio
 
 **Automated Flow:**
+
 ```
 YieldToken → Swap to FLOW → Add to Position Collateral → Reduce loan risk
 ```
 
 **Result:**
+
 - Position becomes healthier with improved collateralization ratio
 - Reduced liquidation risk
 - Maintained borrowing capacity
@@ -181,6 +212,7 @@ YieldToken → Swap to FLOW → Add to Position Collateral → Reduce loan risk
 ### Technical Implementation
 
 #### AutoBalancer Configuration
+
 ```cadence
 let autoBalancer = TidalYieldAutoBalancers._initNewAutoBalancer(
     oracle: oracle,               // Price feeds for value calculations
@@ -194,26 +226,30 @@ let autoBalancer = TidalYieldAutoBalancers._initNewAutoBalancer(
 ```
 
 #### Token Flow Architecture
+
 The system creates a sophisticated token flow:
 
 1. **Initial Position Opening:**
+
    - User deposits FLOW → TidalProtocol Position
    - Position issues MOET → Swaps to YieldToken
    - YieldToken held in AutoBalancer
 
 2. **Rebalancing Infrastructure:**
    - `abaSwapSink`: MOET → YieldToken → AutoBalancer
-   - `abaSwapSource`: YieldToken → MOET (from AutoBalancer)  
+   - `abaSwapSource`: YieldToken → MOET (from AutoBalancer)
    - `positionSwapSink`: YieldToken → FLOW → Position (recollateralizing)
 
 ### Manual vs Automatic Rebalancing
 
 #### Automatic Rebalancing
+
 - Triggered when deposits/withdrawals push ratios outside thresholds
 - Happens during normal Strategy operations
 - No user intervention required
 
-#### Manual Rebalancing  
+#### Manual Rebalancing
+
 **Transaction:** `transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc`
 
 ```cadence
@@ -222,12 +258,14 @@ transaction rebalance_auto_balancer_by_id(id: UInt64, force: Bool)
 ```
 
 **Parameters:**
+
 - `id`: Tide ID associated with the AutoBalancer
 - `force`: Whether to bypass threshold checks
 
 ### Monitoring Rebalancing
 
 #### Check AutoBalancer Balance
+
 **Script:** `scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc`
 
 ```cadence
@@ -236,7 +274,9 @@ access(all) fun main(id: UInt64): UFix64?
 ```
 
 #### Monitor Position Health
+
 Users can track their position status by comparing:
+
 - AutoBalancer YieldToken balance (actual)
 - Expected value based on deposits (target)
 - Current price ratios from oracle
@@ -244,13 +284,13 @@ Users can track their position status by comparing:
 ### Benefits of Automated Rebalancing
 
 1. **Risk Management**: Prevents liquidation by maintaining healthy collateral ratios
-2. **Capital Efficiency**: Maximizes borrowing capacity when collateral appreciates  
+2. **Capital Efficiency**: Maximizes borrowing capacity when collateral appreciates
 3. **Yield Optimization**: Continuously adjusts to market conditions
 4. **User Experience**: No manual intervention required for position maintenance
 
-### Integration with DeFiActions
+### Integration with DeFi Actions
 
-The rebalancing system leverages DeFiActions components:
+The rebalancing system leverages DeFi Actions components:
 
 - **Sinks**: Route tokens into rebalancing flows
 - **Sources**: Extract tokens for rebalancing operations
@@ -267,6 +307,7 @@ The TidalProtocol implements a sophisticated interest rate system that governs b
 ### How Interest Rates Work
 
 #### 1. Interest Rate Calculation
+
 Interest rates are determined dynamically based on supply and demand:
 
 - **Debit Interest Rate**: The rate charged on borrowed tokens
@@ -274,6 +315,7 @@ Interest rates are determined dynamically based on supply and demand:
 - **Utilization-Based**: Rates adjust based on the ratio of borrowed to supplied tokens
 
 #### 2. Interest Curves
+
 The protocol uses `InterestCurve` implementations to calculate rates:
 
 ```cadence
@@ -289,6 +331,7 @@ access(all) struct SimpleInterestCurve: InterestCurve {
 ```
 
 #### 3. Compound Interest Implementation
+
 Interest compounds continuously using per-second calculations:
 
 - **Per-Second Rates**: Yearly rates converted to per-second multipliers
@@ -298,6 +341,7 @@ Interest compounds continuously using per-second calculations:
 ### Interest Index System
 
 #### Scaled Balances
+
 The protocol uses "scaled balances" for efficiency:
 
 ```
@@ -306,11 +350,13 @@ True Balance = Scaled Balance × Interest Index
 ```
 
 **Benefits:**
+
 - No need to update every position when interest accrues
 - Only update when deposits/withdrawals occur
 - Interest automatically compounds through index growth
 
 #### Interest Index Updates
+
 ```cadence
 // Interest index compounds over time
 newIndex = oldIndex × (perSecondRate ^ elapsedSeconds)
@@ -319,12 +365,14 @@ newIndex = oldIndex × (perSecondRate ^ elapsedSeconds)
 ### Interest Rate Types
 
 #### Credit Interest (Lender Earnings)
+
 - **Earned by**: Token depositors (lenders)
 - **Rate Calculation**: `(debitIncome - insuranceReserve) / totalCreditBalance`
 - **Insurance Deduction**: 0.1% of credit balance reserved for protocol security
 - **Distribution**: Paid to all credit positions proportionally
 
 #### Debit Interest (Borrower Costs)
+
 - **Paid by**: Token borrowers
 - **Rate Determination**: Set by interest curve based on utilization
 - **Market Driven**: High demand = higher rates
@@ -333,6 +381,7 @@ newIndex = oldIndex × (perSecondRate ^ elapsedSeconds)
 ### Interest Rate Parameters
 
 #### Per-Token Configuration
+
 Each supported token has individual interest parameters:
 
 ```cadence
@@ -348,6 +397,7 @@ pool.addSupportedToken(
 ```
 
 #### Risk Factors
+
 - **Collateral Factor**: Percentage of token value that can be borrowed against
 - **Borrow Factor**: Additional risk adjustment for debt calculations
 - **Interest Curve**: Algorithm determining base interest rates
@@ -355,6 +405,7 @@ pool.addSupportedToken(
 ### How Interest Affects Positions
 
 #### Position Health Impact
+
 Interest accrual affects position health over time:
 
 ```
@@ -367,6 +418,7 @@ Health = Effective Collateral / Effective Debt
 ```
 
 #### Automatic Rebalancing with Interest
+
 The rebalancing system accounts for interest:
 
 1. **Interest Accrual**: Debt grows, collateral may earn yield
@@ -377,6 +429,7 @@ The rebalancing system accounts for interest:
 ### Interest Rate Examples
 
 #### High Utilization Scenario
+
 ```
 Total Credit Balance: 1,000,000 FLOW
 Total Debit Balance: 800,000 FLOW
@@ -388,8 +441,9 @@ Credit Interest Rate: 6.4% APY (after insurance deduction)
 ```
 
 #### Low Utilization Scenario
+
 ```
-Total Credit Balance: 1,000,000 FLOW  
+Total Credit Balance: 1,000,000 FLOW
 Total Debit Balance: 200,000 FLOW
 Utilization: 20%
 
@@ -401,11 +455,13 @@ Credit Interest Rate: 0.36% APY (after insurance deduction)
 ### Monitoring Interest Rates
 
 #### For Position Holders
+
 - **Borrow Costs**: Monitor debit interest on borrowed amounts
 - **Earning Rates**: Track credit interest on deposited collateral
 - **Health Impact**: Watch how interest affects position health over time
 
 #### For Protocol Governance
+
 - **Rate Optimization**: Adjust interest curves based on market conditions
 - **Risk Management**: Monitor utilization ratios and adjust parameters
 - **Protocol Revenue**: Track insurance reserves and protocol fees
@@ -413,16 +469,19 @@ Credit Interest Rate: 0.36% APY (after insurance deduction)
 ### Interest Rate Security
 
 #### Insurance Mechanism
+
 - **Reserve Fund**: 0.1% of credit balance reserved for protocol security
 - **Liquidation Protection**: Reserves help cover bad debt from liquidations
 - **Rate Stability**: Insurance provides buffer for rate calculations
 
 #### Risk Management
+
 - **Dynamic Rates**: Automatically adjust to market conditions
 - **Utilization Caps**: Prevent over-borrowing through rate increases
 - **Oracle Integration**: Interest calculations use real-time price data
 
 The interest rate system is designed to:
+
 1. **Balance Supply/Demand**: Higher rates when utilization is high
 2. **Incentivize Stability**: Rewards for providing liquidity during high demand
 3. **Manage Risk**: Insurance reserves and dynamic adjustments protect the protocol
@@ -439,18 +498,21 @@ The TidalProtocol implements a sophisticated loan health system that determines 
 Before diving into the mechanics, it's important to understand the core terminology used throughout the TidalProtocol loan system:
 
 #### Position-Related Terms
+
 - **Position**: A lending/borrowing account that holds collateral and debt across multiple token types
 - **Position ID (pid)**: Unique identifier for each lending position in the protocol
 - **Position Health**: Numerical ratio representing the safety of a lending position (Effective Collateral ÷ Effective Debt)
 - **Balance Direction**: Whether a token balance is Credit (collateral/deposit) or Debit (borrowed/debt)
 
 #### Value Calculation Terms
+
 - **Effective Collateral**: Total USD value of all collateral deposits, adjusted by their respective Collateral Factors
 - **Effective Debt**: Total USD value of all borrowed amounts, adjusted by their respective Borrow Factors
 - **Oracle Price**: Real-time market price of tokens provided by price oracles (e.g., FLOW = $1.00, YieldToken = $2.00)
 - **Token Value**: Raw USD value of token amount (Token Amount × Oracle Price)
 
 #### Risk Parameter Terms
+
 - **Collateral Factor**: Percentage (0.0-1.0) of a token's value that counts toward borrowing capacity (e.g., 0.8 = 80%)
 - **Borrow Factor**: Risk adjustment (0.0-1.0) applied to borrowed amounts for additional safety margins
 - **Target Health**: Optimal health ratio (default: 1.3) that the protocol maintains through automatic rebalancing
@@ -458,12 +520,14 @@ Before diving into the mechanics, it's important to understand the core terminol
 - **Maximum Health**: Upper bound that triggers automatic draw-down of excess collateral
 
 #### Interest and Balance Terms
+
 - **Scaled Balance**: Stored balance amount that doesn't change with interest accrual
 - **True Balance**: Actual current balance including accumulated interest (Scaled Balance × Interest Index)
 - **Interest Index**: Compound multiplier that tracks accumulated interest over time
 - **Token State**: Global state tracking interest rates, indices, and lending parameters for each token type
 
 #### System Operation Terms
+
 - **Liquidation**: Forced closure of unhealthy positions to protect the protocol and lenders
 - **Rebalancing**: Automatic adjustment of positions to maintain target health ratios
 - **Top-Up Source**: Optional funding source that can add collateral to prevent liquidation
@@ -478,6 +542,7 @@ Position Health = Effective Collateral / Effective Debt
 ```
 
 #### Health Computation Function
+
 ```cadence
 // From TidalProtocol.cdc
 access(all) fun healthComputation(effectiveCollateral: UFix64, effectiveDebt: UFix64): UFix64 {
@@ -494,28 +559,34 @@ access(all) fun healthComputation(effectiveCollateral: UFix64, effectiveDebt: UF
 ### Effective Collateral and Effective Debt
 
 #### Effective Collateral Calculation
+
 For each token type in a position:
+
 ```
 Token Value = Token Amount × Oracle Price
 Effective Collateral += Token Value × Collateral Factor
 ```
 
 #### Effective Debt Calculation
+
 For each borrowed token type:
+
 ```
-Token Value = Token Amount × Oracle Price  
+Token Value = Token Amount × Oracle Price
 Effective Debt += Token Value ÷ Borrow Factor
 ```
 
 ### Risk Parameters
 
 #### Collateral Factor
+
 - **Definition**: Percentage of token value that can be used as collateral
 - **Range**: 0.0 to 1.0 (0% to 100%)
 - **Purpose**: Manages risk based on token volatility and liquidity
 - **Example**: FLOW with 0.8 collateral factor means 80% of FLOW value counts toward borrowing capacity
 
-#### Borrow Factor  
+#### Borrow Factor
+
 - **Definition**: Risk adjustment applied to borrowed amounts
 - **Range**: 0.0 to 1.0 (0% to 100%)
 - **Purpose**: Additional safety margin for high-risk borrowing scenarios
@@ -524,18 +595,21 @@ Effective Debt += Token Value ÷ Borrow Factor
 ### Health Thresholds
 
 #### Target Health
+
 - **Default Value**: 1.3 (130% collateralization)
 - **Purpose**: Optimal health level the protocol maintains through rebalancing
-- **Getter**: `getTargetHealth()` 
+- **Getter**: `getTargetHealth()`
 - **Setter**: `setTargetHealth(targetHealth: UFix64)` (governance only)
 
 #### Minimum Health
-- **Default Value**: 1.1 (110% collateralization)  
+
+- **Default Value**: 1.1 (110% collateralization)
 - **Purpose**: Liquidation threshold - positions below this health are at risk
 - **Getter**: `getMinHealth()`
 - **Setter**: `setMinHealth(minHealth: UFix64)` (governance only)
 
 #### Maximum Health
+
 - **Purpose**: Upper bound for automatic rebalancing
 - **Behavior**: Positions above this trigger draw-down to target health
 
@@ -552,6 +626,7 @@ let maxBorrowableTokens = maxBorrowableValue × borrowFactor ÷ borrowTokenPrice
 ```
 
 #### Real Example with TracerStrategy
+
 1. **User deposits 100 FLOW at $1.00 each**
 2. **FLOW collateral factor: 0.8 (80%)**
 3. **Target health: 1.3 (130%)**
@@ -569,6 +644,7 @@ Max MOET Borrowable = $61.54 × 1.0 ÷ $1.00 = 61.54 MOET
 The protocol uses **scaled balances** for efficient interest calculations:
 
 #### True vs Scaled Balance
+
 ```cadence
 // Convert scaled balance to actual balance
 fun scaledBalanceToTrueBalance(scaledBalance: UFix64, interestIndex: UInt64): UFix64 {
@@ -578,6 +654,7 @@ fun scaledBalanceToTrueBalance(scaledBalance: UFix64, interestIndex: UInt64): UF
 ```
 
 #### Interest Index Compounding
+
 ```cadence
 // Interest compounds continuously
 newIndex = oldIndex × (perSecondRate ^ elapsedSeconds)
@@ -586,6 +663,7 @@ newIndex = oldIndex × (perSecondRate ^ elapsedSeconds)
 ### Position Health Monitoring
 
 #### Balance Sheet Structure
+
 ```cadence
 access(all) struct BalanceSheet {
     access(all) let effectiveCollateral: UFix64
@@ -595,16 +673,17 @@ access(all) struct BalanceSheet {
 ```
 
 #### Health Calculation for Multi-Token Positions
+
 ```cadence
 access(all) fun positionHealth(pid: UInt64): UFix64 {
     var effectiveCollateral = 0.0
     var effectiveDebt = 0.0
-    
+
     for type in position.balances.keys {
         let balance = position.balances[type]!
         let tokenState = self.tokenState(type: type)
         let tokenPrice = self.priceOracle.price(ofToken: type)!
-        
+
         if balance.direction == BalanceDirection.Credit {
             // Collateral calculation
             let trueBalance = scaledBalanceToTrueBalance(
@@ -613,9 +692,9 @@ access(all) fun positionHealth(pid: UInt64): UFix64 {
             )
             let value = tokenPrice * trueBalance
             effectiveCollateral += (value * self.collateralFactor[type]!)
-            
+
         } else {
-            // Debt calculation  
+            // Debt calculation
             let trueBalance = scaledBalanceToTrueBalance(
                 scaledBalance: balance.scaledBalance,
                 interestIndex: tokenState.debitInterestIndex
@@ -624,7 +703,7 @@ access(all) fun positionHealth(pid: UInt64): UFix64 {
             effectiveDebt += (value / self.borrowFactor[type]!)
         }
     }
-    
+
     return healthComputation(effectiveCollateral: effectiveCollateral, effectiveDebt: effectiveDebt)
 }
 ```
@@ -632,6 +711,7 @@ access(all) fun positionHealth(pid: UInt64): UFix64 {
 ### Available Funds Calculations
 
 #### Funds Available Above Target Health
+
 The protocol calculates how much can be withdrawn while maintaining target health:
 
 ```cadence
@@ -639,11 +719,13 @@ access(all) fun fundsAvailableAboveTargetHealth(pid: UInt64, type: Type, targetH
 ```
 
 **Logic:**
+
 1. Calculate current effective collateral and debt
 2. Determine maximum debt increase that maintains target health
 3. Convert to token amount using price oracle and borrow factor
 
 #### Funds Required for Target Health
+
 Calculates additional deposits needed to reach target health:
 
 ```cadence
@@ -653,23 +735,28 @@ access(all) fun fundsRequiredForTargetHealth(pid: UInt64, type: Type, targetHeal
 ### Health-Based Operations
 
 #### Withdrawal Validation
+
 ```cadence
 access(all) fun healthAfterWithdrawal(pid: UInt64, type: Type, amount: UFix64): UFix64
 ```
+
 - Returns projected health after withdrawal
 - Values below 1.0 indicate withdrawal would fail
 - Used to prevent unhealthy withdrawals
 
 #### Deposit Impact
+
 ```cadence
 access(all) fun healthAfterDeposit(pid: UInt64, type: Type, amount: UFix64): UFix64
 ```
+
 - Calculates health improvement from deposits
 - Accounts for debt payoff vs collateral increase
 
 ### Automatic Rebalancing Integration
 
 #### Position Health Monitoring
+
 The protocol continuously monitors position health and triggers rebalancing:
 
 ```cadence
@@ -679,7 +766,7 @@ let balanceSheet = self.positionBalanceSheet(pid: pid)
 if balanceSheet.health < position.targetHealth {
     // Under-collateralized: need more collateral or debt payoff
     // Trigger top-up from repayment source
-    
+
 } else if balanceSheet.health > position.targetHealth {
     // Over-collateralized: can borrow more or withdraw excess
     // Trigger draw-down to sink
@@ -687,6 +774,7 @@ if balanceSheet.health < position.targetHealth {
 ```
 
 #### TracerStrategy Health Management
+
 The TracerStrategy leverages this health system:
 
 1. **Initial Position**: Deposits FLOW, borrows MOET at target health (1.3)
@@ -697,11 +785,13 @@ The TracerStrategy leverages this health system:
 ### Liquidation Protection
 
 #### Minimum Health Enforcement
+
 - Positions below `minHealth` (1.1) trigger automatic intervention
 - System attempts to use `repaymentSource` before liquidation
 - Multiple rebalancing attempts before declaring position unhealthy
 
 #### Top-Up Source Integration
+
 ```cadence
 // Position structure includes automatic top-up capability
 access(EImplementation) var topUpSource: {DeFiActions.Source}?
@@ -710,6 +800,7 @@ access(EImplementation) var topUpSource: {DeFiActions.Source}?
 ### Oracle Price Integration
 
 #### Real-Time Health Updates
+
 ```cadence
 // All health calculations use live oracle prices
 let tokenPrice = self.priceOracle.price(ofToken: type)!
@@ -717,6 +808,7 @@ let value = tokenPrice * trueBalance
 ```
 
 #### Multi-Token Support
+
 - Each token type has individual collateral and borrow factors
 - Oracle provides prices in terms of default token (typically FLOW)
 - Health calculations aggregate across all position tokens
@@ -724,16 +816,19 @@ let value = tokenPrice * trueBalance
 ### Key Features for Yield Strategies
 
 #### Dynamic Borrowing Capacity
+
 - Borrowing capacity increases with collateral value appreciation
 - Automatic recognition of additional borrowing room
 - Enables strategies to leverage favorable market conditions
 
-#### Interest-Aware Calculations  
+#### Interest-Aware Calculations
+
 - All balance calculations include accrued interest
 - Compound interest affects both collateral and debt over time
 - Health automatically adjusts for interest accumulation
 
 #### Multi-Asset Position Management
+
 - Single position can hold multiple collateral and debt types
 - Cross-collateralization enables complex strategies
 - Unified health calculation across all assets
@@ -756,9 +851,6 @@ This section provides a step-by-step guide to test rebalancing functionality in 
 
 ![COLLATERAL PRICE DOWN](./2-tidal-diagram.png)
 
-The entrypoint for position rebalancing is really the Pool, not the MockOracle. Also, it's not clear to me if the squares are entities or process states. This is how I imagine the undercollateralized process flow.
-
-
 ### Yield Token Price Changes
 
                            YIELD TOKEN PRICE REBALANCING WITH CONTRACT INTERACTIONS
@@ -767,9 +859,7 @@ The entrypoint for position rebalancing is really the Pool, not the MockOracle. 
 
 The AutoBalancer deposits to a Sink, withdrawing YIELD from the nested Vault. The inner Sink is a SwapSink that swaps from YIELD to FLOW and then deposits to a PositionSink. The deposited FLOW makes its way to the Pool and recollateralizes the position, increasing the position's size. The protocol then pushes the surplus value to its drawDownSink. That drawDownSink is also a SwapSink that takes the deposited MOET, swaps it to YIELD and then deposits the swapped tokens to the AutoBalancerSink. That sink then finally deposits the YIELD to the AutoBalancer on which the rebalance was initially called, increasing the valueOfDeposits and closing the loop.
 
-
 YIELD TOKEN DOWN Scenario not currently supported
-
 
 ### Prerequisites
 
@@ -793,6 +883,7 @@ Each scenario below is completely self-contained and can be run independently. Y
 **Expected Outcome:** If AutoBalancer triggers: fewer YieldTokens (sold for collateral), stronger position health
 
 ### Complete Self-Contained Test:
+
 ```bash
 #!/bin/bash
 echo "=== SCENARIO 1: FLOW PRICE INCREASE ==="
@@ -918,6 +1009,7 @@ echo "- FLOW price increase may trigger AutoBalancer rebalanceSink if YieldToken
 ```
 
 **What You Should See:**
+
 - **Position health improves** (higher FLOW collateral value)
 - **AutoBalancer may trigger rebalanceSink** if YieldToken holdings exceed threshold
 - **If rebalancing occurs: YieldToken balance decreases** (sold for additional collateral)
@@ -931,6 +1023,7 @@ echo "- FLOW price increase may trigger AutoBalancer rebalanceSink if YieldToken
 **Expected Outcome:** Position health stabilized through topUpSource mechanism, may reduce YieldToken holdings
 
 ### Complete Self-Contained Test:
+
 ```bash
 #!/bin/bash
 echo "=== SCENARIO 2: FLOW PRICE DECREASE ==="
@@ -1059,6 +1152,7 @@ echo "- Position health stabilized through topUpSource mechanism"
 ```
 
 **What You Should See:**
+
 - **Position health at risk** (lower FLOW collateral value)
 - **May trigger topUpSource mechanism** (AutoBalancer provides collateral if configured)
 - **AutoBalancer balance may decrease** if used as topUpSource for position health
@@ -1072,6 +1166,7 @@ echo "- Position health stabilized through topUpSource mechanism"
 **Expected Outcome:** Gains captured and transferred to collateral, AutoBalancer rebalanced, stronger position health
 
 ### Complete Self-Contained Test:
+
 ```bash
 #!/bin/bash
 echo "=== SCENARIO 3: YIELD TOKEN PRICE INCREASE ==="
@@ -1204,6 +1299,7 @@ echo "- AutoBalancer rebalanced to target ratio"
 ```
 
 **What You Should See:**
+
 - **AutoBalancer triggers rebalanceSink** (YieldToken value exceeds threshold)
 - **YieldToken balance decreases** (excess tokens sold at higher price)
 - **Position strengthened** with gains transferred to collateral
@@ -1217,6 +1313,7 @@ echo "- AutoBalancer rebalanced to target ratio"
 **Expected Outcome:** AutoBalancer cannot self-correct, manual intervention or position-level rebalancing may be needed
 
 ### Complete Self-Contained Test:
+
 ```bash
 #!/bin/bash
 echo "=== SCENARIO 4: YIELD TOKEN PRICE DECREASE ==="
@@ -1349,13 +1446,14 @@ echo "- Manual intervention or position-level rebalancing may be needed"
 ```
 
 **What You Should See:**
+
 - **AutoBalancer CANNOT rebalance** (no rebalanceSource configured)
 - **YieldToken balance unchanged** (no automatic top-up mechanism)
 - **Portfolio remains under-valued** (manual intervention may be needed)
 
 ---
 
-## Notes for Junior Engineers
+## Notes
 
 1. **Each scenario is completely independent** - run any scenario without running others first
 2. **Only prerequisite is deployed contracts** - each scenario handles its own setup
@@ -1368,6 +1466,7 @@ echo "- Manual intervention or position-level rebalancing may be needed"
 ### Key Metrics to Monitor
 
 #### AutoBalancer Health
+
 ```bash
 # Current YieldToken holdings in AutoBalancer
 scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc
@@ -1377,6 +1476,7 @@ scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc
 ```
 
 #### Position Metrics
+
 ```bash
 # Overall position health (collateralization ratio)
 scripts/tidal-protocol/position_health.cdc
@@ -1386,6 +1486,7 @@ scripts/tidal-protocol/get_available_balance.cdc
 ```
 
 #### User Balance
+
 ```bash
 # Total FLOW available for withdrawal from Tide
 scripts/tidal-yield/get_tide_balance.cdc
@@ -1397,18 +1498,21 @@ scripts/tokens/get_balance.cdc
 ### Understanding the Results
 
 #### Successful Over-Collateralization Test
+
 - Price increase → More borrowing capacity
 - AutoBalancer YieldToken balance increases
 - More MOET borrowed and converted to YieldTokens
 - User's withdrawable balance increases
 
-#### Successful Under-Collateralization Test  
+#### Successful Under-Collateralization Test
+
 - Price decrease → Position at risk
 - AutoBalancer sells YieldTokens for FLOW
 - Additional FLOW added as collateral to position
 - Position health maintained/improved
 
 #### Threshold Behavior
+
 - **Automatic rebalancing** only occurs when ratios exceed ±5% thresholds
 - **Manual rebalancing** (`force: true`) bypasses thresholds
 - **No rebalancing** occurs if within 0.95-1.05 range and `force: false`
@@ -1416,12 +1520,14 @@ scripts/tokens/get_balance.cdc
 ### Troubleshooting
 
 #### Common Issues:
+
 1. **"Could not borrow AutoBalancer"** - Ensure Tide ID is correct
 2. **"No price set for token"** - Set initial prices for all tokens before testing
 3. **"Insufficient liquidity"** - Fund MockSwapper with adequate token reserves
 4. **"Position not found"** - Verify TidalProtocol position ID (different from Tide ID)
 
 #### Debugging Commands:
+
 ```bash
 # Check if oracle has price set
 flow scripts execute scripts/mocks/oracle/get_price.cdc --arg String:"TOKEN_TYPE"
@@ -1438,22 +1544,26 @@ This testing framework allows you to validate that the rebalancing system correc
 ## Key Features
 
 ### 1. Composable Strategies
-- Strategies are built by composing DeFiActions components
+
+- Strategies are built by composing [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions)
 - Each strategy can have different risk/reward profiles
 - New strategies can be added by implementing the Strategy interface
 
 ### 2. Automated Management
+
 - Auto-balancers continuously monitor and optimize positions
 - Reduces need for manual intervention
 - Maintains target risk parameters automatically
 
 ### 3. Multi-Asset Support
+
 - Platform designed to support multiple token types
 - Strategies can be configured for different collateral types
 - Flexible vault management system
 
 ### 4. Resource-Oriented Security
-- Uses Cadence's resource model for secure asset management
+
+- Uses Cadence's [resource model](https://cadence-lang.org/docs/language/resources) for secure asset management
 - Tides are resources owned by users
 - Automatic cleanup when positions are closed
 
@@ -1466,7 +1576,7 @@ The contracts include extensive mock components (MockOracle, MockSwapper, etc.) 
 ## Getting Started
 
 1. **Setup Account**: Run the setup transaction to initialize your TideManager
-2. **Create Strategy**: Use create_tide to open a yield position  
+2. **Create Strategy**: Use create_tide to open a yield position
 3. **Manage Position**: Deposit/withdraw funds as needed
 4. **Monitor Performance**: Use scripts to track your positions
 5. **Close Position**: Use close_tide to exit and reclaim all funds
