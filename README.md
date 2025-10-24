@@ -63,6 +63,7 @@ Mock FungibleToken implementations representing:
 | USDC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_d431955d55a99ef69beb96ba34718d0f9fbc91b1 | 0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1 |
 | wBTC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6 | 0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6 |
 | wETH | 0xdfc20aee650fcbdf | EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848 | 0x059A77239daFa770977DD9f1E98632C3E4559848 |
+| mUSDC (ERC4626) | 0xdfc20aee650fcbdf | EVMVMBridgedToken_4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95 | 0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95 |
 
 #### Mainnet
 | Contract Name | Cadence | EVM |
