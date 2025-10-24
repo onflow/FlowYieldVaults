@@ -41,6 +41,12 @@ import "MockSwapper"
 ///
 access(all) contract TidalYieldStrategies {
 
+    access(all) let univ3FactoryEVMAddress: EVM.EVMAddress
+    access(all) let univ3RouterEVMAddress: EVM.EVMAddress
+    access(all) let univ3QuoterEVMAddress: EVM.EVMAddress
+
+    access(all) let yieldTokenEVMAddress: EVM.EVMAddress
+
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let IssuerStoragePath: StoragePath
 
@@ -133,13 +139,13 @@ access(all) contract TidalYieldStrategies {
             let oracle = MockOracle.PriceOracle()
 
             // assign EVM token addresses & types
-            // TODO: Consider how we're going to handle these addresses across networks, especially testing & CI
-            let yieldTokenEVMAddress = EVM.addressFromString("0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95")
-            let moetTokenEVMAddress = EVM.addressFromString("0x51F5cC5f50afB81e8F23C926080FA38C3024b238")
-            let yieldTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: yieldTokenEVMAddress)
-                ?? panic("YieldToken associated with EVM address \(yieldTokenEVMAddress.toString()) not found in VM Bridge config")
-            let moetTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: moetTokenEVMAddress)
-                ?? panic("Stables associated with EVM address \(moetTokenEVMAddress.toString()) not found in VM Bridge config")
+
+            let moetTokenType: Type = Type<@MOET.Vault>()
+            let moetTokenEVMAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: moetTokenType)
+                ?? panic("MOET not registered in bridge")
+
+            let yieldTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: TidalYieldStrategies.yieldTokenEVMAddress)
+                ?? panic("YieldToken associated with EVM address \(TidalYieldStrategies.yieldTokenEVMAddress.toString()) not found in VM Bridge config")
             // assign collateral & flow token types
             let collateralType = withFunds.getType()
 
@@ -158,10 +164,6 @@ access(all) contract TidalYieldStrategies {
             // enables withdrawals of YieldToken from the AutoBalancer
             let abaSource = autoBalancer.createBalancerSource() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
 
-            // assign uniswap v3 router & quoter addresses
-            let factory = EVM.addressFromString("0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39")
-            let router = EVM.addressFromString("0x2Db6468229F6fB1a77d248Dbb1c386760C257804")
-            let quoter = EVM.addressFromString("0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c")
             // init Stable <> YIELD swappers
             //
             // Stable -> YieldToken
@@ -173,10 +175,10 @@ access(all) contract TidalYieldStrategies {
             //     )
             // TODO: consider how we're going to pass the user's COA capability to the Swapper
             let stableToYieldSwapper = UniswapV3SwapConnectors.Swapper(
-                    factoryAddress: factory,
-                    routerAddress: router,
-                    quoterAddress: quoter,
-                    tokenPath: [moetTokenEVMAddress, yieldTokenEVMAddress],
+                    factoryAddress: TidalYieldStrategies.univ3FactoryEVMAddress,
+                    routerAddress: TidalYieldStrategies.univ3RouterEVMAddress,
+                    quoterAddress: TidalYieldStrategies.univ3QuoterEVMAddress,
+                    tokenPath: [moetTokenEVMAddress, TidalYieldStrategies.yieldTokenEVMAddress],
                     feePath: [3000],
                     inVault: moetTokenType,
                     outVault: yieldTokenType,
@@ -191,10 +193,10 @@ access(all) contract TidalYieldStrategies {
             //         uniqueID: uniqueID
             //     )
             let yieldToStableSwapper = UniswapV3SwapConnectors.Swapper(
-                    factoryAddress: factory,
-                    routerAddress: router,
-                    quoterAddress: quoter,
-                    tokenPath: [yieldTokenEVMAddress, moetTokenEVMAddress],
+                    factoryAddress: TidalYieldStrategies.univ3FactoryEVMAddress,
+                    routerAddress: TidalYieldStrategies.univ3RouterEVMAddress,
+                    quoterAddress: TidalYieldStrategies.univ3QuoterEVMAddress,
+                    tokenPath: [TidalYieldStrategies.yieldTokenEVMAddress, moetTokenEVMAddress],
                     feePath: [3000],
                     inVault: yieldTokenType,
                     outVault: moetTokenType,
@@ -276,7 +278,12 @@ access(all) contract TidalYieldStrategies {
         return coaCap
     }
 
-    init() {
+    init(factoryAddress: String, routerAddress: String, quoterAddress: String, yieldTokenAddress: String) {
+        self.univ3FactoryEVMAddress = EVM.addressFromString(factoryAddress)
+        self.univ3RouterEVMAddress = EVM.addressFromString(routerAddress)
+        self.univ3QuoterEVMAddress = EVM.addressFromString(quoterAddress)
+        self.yieldTokenEVMAddress = EVM.addressFromString(yieldTokenAddress)
+
         self.IssuerStoragePath = StoragePath(identifier: "TidalYieldStrategyComposerIssuer_\(self.account.address)")!
 
         self.account.storage.save(<-create StrategyComposerIssuer(), to: self.IssuerStoragePath)

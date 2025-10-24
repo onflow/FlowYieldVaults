@@ -8,10 +8,10 @@ echo "setup PunchSwap"
 
 ./local/punchswap/setup_punchswap.sh
 
-echo "Setup EVM bridge"
-
-forge script ./solidity/script/01_DeployBridge.s.sol:DeployBridge \
-  --rpc-url http://127.0.0.1:8545 --broadcast --legacy --gas-price 0 --slow
+# echo "Setup EVM bridge"
+#
+# forge script ./solidity/script/01_DeployBridge.s.sol:DeployBridge \
+#   --rpc-url http://127.0.0.1:8545 --broadcast --legacy --gas-price 0 --slow
 
 ./local/punchswap/e2e_punchswap.sh
 

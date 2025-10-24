@@ -660,10 +660,32 @@
 					]
 				},
 				"MockSwapper",
+				"EVMAbiHelpers",
 				"TidalYieldAutoBalancers",
 				"TidalYieldClosedBeta",
 				"TidalYield",
-				"TidalYieldStrategies"
+				"UniswapV3SwapConnectors",
+				{
+					"name": "TidalYieldStrategies",
+					"args": [
+						{
+							"value": "0x986Cb42b0557159431d48fE0A40073296414d410",
+							"type": "String"
+						},
+						{
+							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+							"type": "String"
+						},
+						{
+							"value": "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C",
+							"type": "String"
+						},
+						{
+							"value": "0xaCCF0c4EeD4438Ad31Cd340548f4211a465B6528",
+							"type": "String"
+						}
+					]
+				}
 			],
 			"mock-incrementfi": [
 				"SwapConfig",
@@ -724,11 +746,31 @@
 				"TidalYieldAutoBalancers",
 				"TidalYieldClosedBeta",
 				"TidalYield",
-				"TidalYieldStrategies"
+				{
+					"name": "TidalYieldStrategies",
+					"args": [
+						{
+							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+							"type": "String"
+						},
+						{
+							"value": "0x2Db6468229F6fB1a77d248Dbb1c386760C257804",
+							"type": "String"
+						},
+						{
+							"value": "0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c",
+							"type": "String"
+						},
+						{
+							"value": "0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95",
+							"type": "String"
+						}
+					]
+				}
 			],
-      "testnet-uniswapV3-connectors-deployer": [
+			"testnet-uniswapV3-connectors-deployer": [
 				"UniswapV3SwapConnectors"
-      ]
+			]
 		}
 	}
 }
