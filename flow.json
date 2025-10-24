@@ -164,7 +164,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "a87f1085c356a8e3"
 			}
 		},
 		"YieldToken": {
@@ -614,10 +614,11 @@
 			}
 		},
 		"testnet-uniswapV3-connectors-deployer": {
-			"address": "46be98b71c0a9543",
+			"address": "a87f1085c356a8e3",
 			"key": {
-				"type": "file",
-				"location": "testnet-uniswapV3-connectors-deployer.pkey"
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		}
 	},
@@ -720,12 +721,14 @@
 				},
 				"MockSwapper",
 				"EVMAbiHelpers",
-				"UniswapV3SwapConnectors",
 				"TidalYieldAutoBalancers",
 				"TidalYieldClosedBeta",
 				"TidalYield",
 				"TidalYieldStrategies"
-			]
+			],
+      "testnet-uniswapV3-connectors-deployer": [
+				"UniswapV3SwapConnectors"
+      ]
 		}
 	}
 }
