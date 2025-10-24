@@ -57,6 +57,27 @@ Mock FungibleToken implementations representing:
 - Uses oracle prices to calculate swap rates
 - Manages liquidity connectors for different token pairs
 
+### Contract Deployments
+
+#### Testnet
+| Asset Name | Cadence Address | Cadence Contract Name | EVM |
+|---|---|---|---|
+| FlowActions | 0xd27920b6384e2a78 | DeFiActions | TBD |
+| TidalProtocol | 0xd27920b6384e2a78 | TidalProtocol | TBD |
+| TidalYield | 0xd27920b6384e2a78 | TidalYield | TBD |
+| TidalYieldStrategies | 0xd27920b6384e2a78 | TidalYieldStrategies | TBD |
+| MOET | 0xd27920b6384e2a78 | MOET | 0x51f5cc5f50afb81e8f23c926080fa38c3024b238 |
+| USDC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_d431955d55a99ef69beb96ba34718d0f9fbc91b1 | 0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1 |
+| wBTC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6 | 0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6 |
+| wETH | 0xdfc20aee650fcbdf | EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848 | 0x059A77239daFa770977DD9f1E98632C3E4559848 |
+| mUSDC (ERC4626) | 0xdfc20aee650fcbdf | EVMVMBridgedToken_4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95 | 0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95 |
+
+#### Mainnet
+| Contract Name | Cadence | EVM |
+|---|---|---|
+|  | TBD | TBD |
+|  | TBD | TBD |
+
 ## How the System Works
 
 Below is an overview of the initial prototype Tracer Strategy in the broader context of TidalProtocol and the Tidal platform.
