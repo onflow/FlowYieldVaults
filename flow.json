@@ -59,7 +59,7 @@
 		"MOET": {
 			"source": "./lib/TidalProtocol/cadence/contracts/MOET.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "f3fcd2c1a78f5eee",
 				"testing": "0000000000000008",
 				"testnet": "d27920b6384e2a78"
 			}
@@ -630,15 +630,6 @@
 				"DeFiActions",
 				"FungibleTokenConnectors",
 				"SwapConnectors",
-				{
-					"name": "MOET",
-					"args": [
-						{
-							"value": "1000000.00000000",
-							"type": "UFix64"
-						}
-					]
-				},
 				"DummyConnectors",
 				"TidalProtocol",
 				{
@@ -654,7 +645,7 @@
 					"name": "MockOracle",
 					"args": [
 						{
-							"value": "A.f8d6e0586b0a20c7.MOET.Vault",
+							"value": "A.f3fcd2c1a78f5eee.MOET.Vault",
 							"type": "String"
 						}
 					]
@@ -688,6 +679,15 @@
 				}
 			],
 			"mock-incrementfi": [
+				{
+					"name": "MOET",
+					"args": [
+						{
+							"value": "1000000.00000000",
+							"type": "UFix64"
+						}
+					]
+				},
 				"SwapConfig",
 				"SwapInterfaces",
 				"SwapError",
