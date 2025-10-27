@@ -155,12 +155,12 @@ fun test_multi_agent_flash_crash() {
     var successfulRebalances = 0
     var failedRebalances = 0
     
-    agentIndex = 0
+    var rebalanceIndex: UInt64 = 0
     for agent in agents {
         // Try to rebalance (some will fail due to liquidity constraints)
         let rebalanceRes = _executeTransaction(
             "../transactions/mocks/position/rebalance_position.cdc",
-            [agentIndex, true],
+            [rebalanceIndex, true],
             agent
         )
         if rebalanceRes.status == Test.ResultStatus.succeeded {
@@ -168,7 +168,7 @@ fun test_multi_agent_flash_crash() {
         } else {
             failedRebalances = failedRebalances + 1
         }
-        agentIndex = agentIndex + 1
+        rebalanceIndex = rebalanceIndex + 1
     }
     
     log("MIRROR:successful_rebalances=".concat(successfulRebalances.toString()))
