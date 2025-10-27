@@ -12,6 +12,9 @@ jobs:
   mirror-tests:
     name: Tidal Mirror Tests
     runs-on: ubuntu-latest
+    env:
+      CI: "true"
+      TERM: "dumb"
     steps:
       - uses: actions/checkout@v4
         with:

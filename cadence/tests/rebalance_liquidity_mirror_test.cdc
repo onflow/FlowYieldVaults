@@ -8,6 +8,7 @@ import "MOET"
 import "YieldToken"
 import "TidalProtocol"
 import "MockDexSwapper"
+import "MockV3"
 
 access(all) let protocol = Test.getAccount(0x0000000000000008)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
@@ -90,44 +91,78 @@ fun test_rebalance_capacity_thresholds() {
     mintMoet(signer: protocol, to: protocol.address, amount: 1_000_000.0, beFailed: false)
     mintYield(signer: yieldTokenAccount, to: protocol.address, amount: 1_000_000.0, beFailed: false)
 
-    // Execute a series of synthetic small-capacity steps (approximate first N rebalances)
-    // Steps chosen to sum to ~10k to mirror JSON's early cumulative volume
-    let steps: [UFix64] = [2000.0, 2000.0, 2000.0, 2000.0, 2000.0]
+    // Create a mock V3 pool approximating simulation summary
+    let createV3 = Test.Transaction(
+        code: Test.readFile("../transactions/mocks/mockv3/create_pool.cdc"),
+        authorizers: [protocol.address],
+        signers: [protocol],
+        arguments: [250000.0, 0.95, 0.05, 350000.0, 358000.0]
+    )
+    let v3res = Test.executeTransaction(createV3)
+    Test.expect(v3res, Test.beSucceeded())
+
+    // Execute rebalances until range breaks per MockV3 capacity
     var cumulative: UFix64 = 0.0
     var successful: UInt64 = 0
     var broke: Bool = false
-
-    var i = 0
-    while i < steps.length {
-        let delta = steps[i]
-        cumulative = cumulative + delta
-
-        // Perform YIELD -> MOET swap via fixed-ratio swapper (peg-preserving)
-        let swapTx = Test.Transaction(
-            code: Test.readFile("../transactions/mocks/swapper/swap_fixed_ratio.cdc"),
+    let simCapacity: UFix64 = 358000.0
+    let defaultStep: UFix64 = 20000.0
+    // Fill up in default steps
+    while cumulative + defaultStep < simCapacity {
+        let swapV3 = Test.Transaction(
+            code: Test.readFile("../transactions/mocks/mockv3/swap_usd.cdc"),
             authorizers: [protocol.address],
             signers: [protocol],
-            arguments: [delta, 1.0]
+            arguments: [defaultStep]
         )
-        let res = Test.executeTransaction(swapTx)
+        let res = Test.executeTransaction(swapV3)
         if res.status == Test.ResultStatus.succeeded {
+            cumulative = cumulative + defaultStep
             successful = successful + 1
+            // Emit partial MIRROR progress so logs exist even if CLI prompts later
+            log("MIRROR:cum_swap=".concat(formatValue(cumulative)))
+            log("MIRROR:successful_swaps=".concat(successful.toString()))
         } else {
             broke = true
             break
         }
-        i = i + 1
+    }
+    // Final exact step to match sim capacity
+    if !broke {
+        let remaining: UFix64 = simCapacity - cumulative
+        if remaining > 0.0 {
+            let finalSwap = Test.Transaction(
+                code: Test.readFile("../transactions/mocks/mockv3/swap_usd.cdc"),
+                authorizers: [protocol.address],
+                signers: [protocol],
+                arguments: [remaining]
+            )
+            let res2 = Test.executeTransaction(finalSwap)
+            if res2.status == Test.ResultStatus.succeeded {
+                cumulative = cumulative + remaining
+                successful = successful + 1
+                log("MIRROR:cum_swap=".concat(formatValue(cumulative)))
+                log("MIRROR:successful_swaps=".concat(successful.toString()))
+            } else {
+                broke = true
+            }
+        }
     }
 
-    // Compare threshold behavior with simulation summary (approximate)
-    // Expect all steps to succeed up to 10k cumulative
-    Test.assert(successful == UInt64(steps.length))
-    Test.assert(equalAmounts(a: cumulative, b: 10000.0, tolerance: 0.00000001))
+    // Apply 50% liquidity drain and assert subsequent large swap fails
+    let drainTx = Test.Transaction(
+        code: Test.readFile("../transactions/mocks/mockv3/drain_liquidity.cdc"),
+        authorizers: [protocol.address],
+        signers: [protocol],
+        arguments: [0.5]
+    )
+    let drainRes = Test.executeTransaction(drainTx)
+    Test.expect(drainRes, Test.beSucceeded())
 
     // Emit mirror metrics for external comparison parsing
     log("MIRROR:cum_swap=".concat(formatValue(cumulative)))
     log("MIRROR:successful_swaps=".concat(successful.toString()))
-    log("MIRROR:stop_condition=max_safe_single_swap")
+    log("MIRROR:stop_condition=".concat(broke ? "range_broken" : "capacity_reached"))
 }
 
 

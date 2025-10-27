@@ -5,7 +5,7 @@ import "TidalProtocol"
 /// @param pid: The Position ID
 ///
 access(all)
-fun main(pid: UInt64): UInt128 {
+fun main(pid: UInt64): UFix128 {
 	let protocolAddress= Type<@TidalProtocol.Pool>().address!
 	return getAccount(protocolAddress).capabilities.borrow<&TidalProtocol.Pool>(TidalProtocol.PoolPublicPath)
 		?.positionHealth(pid: pid)

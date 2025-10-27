@@ -168,13 +168,21 @@ access(all) contract TidalYieldStrategies {
             // Swaps YieldToken & provides swapped MOET, sourcing YieldToken from the AutoBalancer
             let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
 
-            // open a TidalProtocol position (current API)
-            let position = TidalProtocol.openPosition(
-                    collateral: <-withFunds,
+            // open a TidalProtocol position (updated API for UFix128)
+            let poolCap = TidalYieldStrategies.account.storage.load<Capability<auth(TidalProtocol.EParticipant, TidalProtocol.EPosition) &TidalProtocol.Pool>>(
+                from: TidalProtocol.PoolCapStoragePath
+            ) ?? panic("Missing pool capability")
+
+            let poolRef = poolCap.borrow() ?? panic("Invalid Pool Cap")
+
+            let pid = poolRef.createPosition(
+                    funds: <-withFunds,
                     issuanceSink: abaSwapSink,
                     repaymentSource: abaSwapSource,
                     pushToDrawDownSink: true
                 )
+            let position = TidalProtocol.Position(id: pid, pool: poolCap)
+            TidalYieldStrategies.account.storage.save(poolCap, to: TidalProtocol.PoolCapStoragePath)
 
             // get Sink & Source connectors relating to the new Position
             let positionSink = position.createSinkWithOptions(type: collateralType, pushToDrawDownSink: true)

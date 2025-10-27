@@ -72,6 +72,13 @@
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
+		"MockV3": {
+			"source": "cadence/contracts/mocks/MockV3.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009"
+			}
+		},
 		"MockDexSwapper": {
 			"source": "./lib/TidalProtocol/cadence/contracts/mocks/MockDexSwapper.cdc",
 			"aliases": {

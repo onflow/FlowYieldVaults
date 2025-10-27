@@ -68,6 +68,26 @@ fun test_moet_depeg_health_resilience() {
     // MOET depeg to 0.95 (debt token price down)
     setMockOraclePrice(signer: protocol, forTokenIdentifier: moetType, price: 0.95)
 
+    // Create a mock V3 pool approximating simulation summary
+    let createV3 = Test.Transaction(
+        code: Test.readFile("../transactions/mocks/mockv3/create_pool.cdc"),
+        authorizers: [protocol.address],
+        signers: [protocol],
+        arguments: [250000.0, 0.95, 0.05, 350000.0, 358000.0]
+    )
+    let v3res = Test.executeTransaction(createV3)
+    Test.expect(v3res, Test.beSucceeded())
+
+    // Apply 50% liquidity drain
+    let drainTx = Test.Transaction(
+        code: Test.readFile("../transactions/mocks/mockv3/drain_liquidity.cdc"),
+        authorizers: [protocol.address],
+        signers: [protocol],
+        arguments: [0.5]
+    )
+    let drainRes = Test.executeTransaction(drainTx)
+    Test.expect(drainRes, Test.beSucceeded())
+
     let hMin = getPositionHealth(pid: pid, beFailed: false)
     log("MIRROR:hf_min=".concat(formatHF(hMin)))
 
@@ -75,7 +95,7 @@ fun test_moet_depeg_health_resilience() {
     log("MIRROR:hf_after=".concat(formatHF(hAfter)))
 
     // Expect HF not to decrease due to lower debt token price (allow small tolerance)
-    let tol = 10000000000000000000 as UInt128
+    let tol = 0.01 as UFix128
     Test.assert(hAfter + tol >= hBefore)
 }
 
