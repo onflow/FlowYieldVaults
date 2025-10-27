@@ -1,9 +1,20 @@
-
-❗   Version warning: a new version of Flow CLI is available (v2.8.3).
-   Read the installation guide for upgrade instructions: https://developers.flow.com/tools/flow-cli/install 
-
+11:34PM INF [1;34mLOG:[0m "MIRROR:hf_before=1.150000000005031250000022"
+11:34PM INF [1;34mLOG:[0m "MIRROR:coll_before=1000.00000000"
+11:34PM INF [1;34mLOG:[0m "MIRROR:debt_before=695.65217391"
+11:34PM INF [1;34mLOG:[0m "MIRROR:hf_min=0.805000000003521875000015"
+11:34PM INF [1;34mLOG:[0m "MIRROR:hf_after=0.805000000003521875000015"
+11:34PM INF [1;34mLOG:[0m "MIRROR:coll_after=1000.00000000"
+11:34PM INF [1;34mLOG:[0m "MIRROR:debt_after=695.65217391"
+11:34PM INF [1;34mLOG:[0m "MIRROR:liq_count=0"
 
 Test results: "/Users/keshavgupta/tidal-sc/cadence/tests/flow_flash_crash_mirror_test.cdc"
-- PASS: test_flow_flash_crash_liquidation_path
+- FAIL: test_flow_flash_crash_liquidation_path
+		Execution failed:
+			error: assertion failed
+			   --> /Users/keshavgupta/tidal-sc/cadence/tests/flow_flash_crash_mirror_test.cdc:175:4
+			
+			Was this error unhelpful?
+			Consider suggesting an improvement here: https://github.com/onflow/cadence/issues.
+			
 
 

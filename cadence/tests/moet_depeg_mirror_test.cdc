@@ -59,6 +59,14 @@ fun setup() {
 
 access(all)
 fun test_moet_depeg_health_resilience() {
+    // NOTE: This test validates ATOMIC protocol behavior where MOET depeg improves HF
+    // (debt value decreases). The simulation's lower HF (0.775) includes agent rebalancing
+    // losses through 50% drained liquidity pools. For multi-agent scenario with
+    // liquidity-constrained trading, see moet_depeg_with_liquidity_crisis_test.cdc.
+    // 
+    // This test correctly shows HF improvement when debt token depegs.
+    // Simulation includes trading dynamics and slippage losses not captured here.
+    
     safeReset()
     let pid: UInt64 = 0
 

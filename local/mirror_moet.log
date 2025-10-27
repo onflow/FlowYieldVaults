@@ -1,7 +1,6 @@
-
-❗   Version warning: a new version of Flow CLI is available (v2.8.3).
-   Read the installation guide for upgrade instructions: https://developers.flow.com/tools/flow-cli/install 
-
+11:34PM INF [1;34mLOG:[0m "MIRROR:hf_before=1.300000000009750000000073"
+11:34PM INF [1;34mLOG:[0m "MIRROR:hf_min=1.300000000009750000000073"
+11:34PM INF [1;34mLOG:[0m "MIRROR:hf_after=1.300000000009750000000073"
 
 Test results: "/Users/keshavgupta/tidal-sc/cadence/tests/moet_depeg_mirror_test.cdc"
 - PASS: test_moet_depeg_health_resilience
