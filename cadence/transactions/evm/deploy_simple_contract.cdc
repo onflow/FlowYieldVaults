@@ -4,12 +4,12 @@ import "EVM"
 /// @param bytecodeHex: The contract bytecode as a hex string (without 0x prefix)
 transaction(bytecodeHex: String) {
     prepare(signer: auth(Storage, SaveValue) &Account) {
-        // Get or create COA
-        var coaRef = signer.storage.borrow<&EVM.CadenceOwnedAccount>(from: /storage/evm)
+        // Get or create COA with Owner authorization
+        var coaRef = signer.storage.borrow<auth(EVM.Owner) &EVM.CadenceOwnedAccount>(from: /storage/evm)
         if coaRef == nil {
             let coa <- EVM.createCadenceOwnedAccount()
             signer.storage.save(<-coa, to: /storage/evm)
-            coaRef = signer.storage.borrow<&EVM.CadenceOwnedAccount>(from: /storage/evm)
+            coaRef = signer.storage.borrow<auth(EVM.Owner) &EVM.CadenceOwnedAccount>(from: /storage/evm)
         }
         
         let coa = coaRef!
@@ -24,11 +24,11 @@ transaction(bytecodeHex: String) {
             hex = hex.slice(from: 2, upTo: hex.length)
         }
         
-        // Parse hex bytes
+        // Parse hex bytes (UInt8.fromString now requires 0x prefix)
         while i < hex.length {
             if i + 2 <= hex.length {
-                let byteStr = hex.slice(from: i, upTo: i + 2)
-                if let byte = UInt8.fromString(byteStr, radix: 16) {
+                let byteStr = "0x".concat(hex.slice(from: i, upTo: i + 2))
+                if let byte = UInt8.fromString(byteStr) {
                     code.append(byte)
                 }
             }
@@ -42,8 +42,10 @@ transaction(bytecodeHex: String) {
             value: EVM.Balance(attoflow: 0)
         )
         
-        log("✅ Contract deployed at: ".concat(deployResult.deployedAddress.toString()))
+        // deployResult is EVM.Result type - just log gas used for now
+        log("✅ Contract deployed successfully")
         log("   Gas used: ".concat(deployResult.gasUsed.toString()))
+        log("   Status: ".concat(deployResult.status == EVM.Status.successful ? "success" : "failed"))
     }
 }
 
