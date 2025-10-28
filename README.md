@@ -839,7 +839,7 @@ flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connecto
   --signer test-account
 
 flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connector.cdc \
-  "/storage/moetTokenVault_0xf8d6e0586b0a20c7" \
+  "/storage/moetTokenVault_0xf3fcd2c1a78f5eee" \
   --signer test-account
 
 flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connector.cdc \

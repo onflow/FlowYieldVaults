@@ -53,7 +53,7 @@ flow transactions send "./lib/TidalProtocol/DeFiActions/cadence/transactions/inc
 	0.0 \
 	0.0 \
 	$DEADLINE.0 \
-	/storage/moetTokenVault_0xf8d6e0586b0a20c7 \
+	/storage/moetTokenVault_0xf3fcd2c1a78f5eee \
 	/storage/yieldTokenVault_0xf8d6e0586b0a20c7 \
 	false \
 	--signer $SIGNER
