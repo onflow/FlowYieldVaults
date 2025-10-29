@@ -60,8 +60,9 @@ transaction(
     if inType == Type<@MOET.Vault>() {
         tokenInStoragePath = MOET.VaultStoragePath
     } else {
+        let inAddr = EVM.addressFromString(tokenInAddressHex)
         tokenInStoragePath = StoragePath(identifier: "EVMVMBridgedToken_".concat(
-            tokenInAddressHex.slice(from: 2, upTo: tokenInAddressHex.length).toLower()
+            inAddr.toString()
         ).concat("Vault"))!
     }
     
@@ -69,8 +70,9 @@ transaction(
     if outType == Type<@MOET.Vault>() {
         tokenOutStoragePath = MOET.VaultStoragePath
     } else {
+        let outAddr = EVM.addressFromString(tokenOutAddressHex)
         tokenOutStoragePath = StoragePath(identifier: "EVMVMBridgedToken_".concat(
-            tokenOutAddressHex.slice(from: 2, upTo: tokenOutAddressHex.length).toLower()
+            outAddr.toString()
         ).concat("Vault"))!
     }
 
