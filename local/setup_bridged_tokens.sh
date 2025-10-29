@@ -46,8 +46,8 @@ TICK_LOWER=-600
 TICK_UPPER=600
 
 # desired deposits
-A0=1000000000000
-A1=1000000000000
+A0=1000000000000000000000000 # 1_000_000 e18
+A1=1000000000000 # 1_000_000 e6
 # min amounts with ~1% slippage buffer (EDIT if you like)
 A0_MIN=$(cast --from-wei $A0 | awk '{printf "%.0f", $1*0.99*1e18}')
 A1_MIN=$(cast --from-wei $A1 | awk '{printf "%.0f", $1*0.99*1e18}')
