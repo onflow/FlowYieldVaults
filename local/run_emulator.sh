@@ -1,4 +1,4 @@
-flow emulator --setup-vm-bridge=false &
+flow emulator --contracts &
 
 # Port to check
 PORT=8080
