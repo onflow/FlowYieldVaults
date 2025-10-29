@@ -88,6 +88,13 @@
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
+		"TidalMath": {
+			"source": "./lib/TidalProtocol/cadence/lib/TidalMath.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
 		"TidalProtocol": {
 			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
 			"aliases": {
@@ -333,6 +340,7 @@
 			"emulator-account": [
 				"FlowEVMBridgeHandlerInterfaces",
 				"USDCFlow",
+				"TidalMath",
 				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",
 				"DeFiActions",
