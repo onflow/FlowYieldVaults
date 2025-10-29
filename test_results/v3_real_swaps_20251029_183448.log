@@ -1,0 +1,9 @@
+MIRROR:test=v3_real_swaps
+MIRROR:simulation_baseline=358000
+MIRROR:step_size=2000
+
+MIRROR:final_cumulative=0
+MIRROR:simulation_baseline=358000
+MIRROR:total_swaps=1
+MIRROR:difference=358000
+MIRROR:difference_pct=100.0
