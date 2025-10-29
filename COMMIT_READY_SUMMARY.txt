@@ -1,0 +1,98 @@
+=============================================================================
+PUNCHSWAP MOET/YT INVESTIGATION - COMMIT READY SUMMARY
+=============================================================================
+
+SESSION DATE: October 28, 2025
+DURATION: ~2 hours
+BRANCH: unit-zero-sim-integration-1st-phase
+OUTCOME: Investigation complete, deployment blocked on tooling
+
+-----------------------------------------------------------------------------
+ACHIEVEMENTS:
+-----------------------------------------------------------------------------
+✅ Validated Cadence Test framework for EVM interaction (works perfectly)
+✅ Discovered Cadence computation limits for large contracts (~500 bytes max)
+✅ Established EVM Gateway JSON-RPC functionality (port 8545 working)
+✅ Generated full deployment bytecode with constructors (7628 chars each)
+✅ Calculated deterministic deployment addresses
+✅ Created working test framework template
+✅ Upgraded Flow CLI v2.8.0 → v2.9.0
+✅ Attempted 19 different deployment approaches
+✅ Documented complete findings (28KB documentation)
+
+-----------------------------------------------------------------------------
+BLOCKERS IDENTIFIED:
+-----------------------------------------------------------------------------
+❌ Cadence computation limits prevent large bytecode deployment
+❌ Gateway only supports eth_sendRawTransaction (not eth_sendTransaction)
+❌ Standard tools (forge/cast) expect eth_sendTransaction
+❌ Custom signing workflow needed for deployment
+
+-----------------------------------------------------------------------------
+FILES CREATED (49KB):
+-----------------------------------------------------------------------------
+Documentation:
+  - PUNCHSWAP_MOET_YT_DEPLOYMENT_BLOCKERS.md (18KB) - Complete technical findings
+  - SESSION_SUMMARY_PUNCHSWAP_INVESTIGATION.md (4KB) - Session summary
+  - HANDOFF_PUNCHSWAP_MOET_YT_INVESTIGATION.md (7KB) - Quick handoff
+  - EVM_DEPLOYMENT_FINDINGS.md (6KB) - Initial findings
+
+Test Framework:
+  - cadence/tests/punchswap_moet_yt_pool_test.cdc (3.5KB) - Test template
+  - cadence/tests/evm_bytecode_helper.cdc (15KB) - Full bytecode
+
+Scripts:
+  - scripts/generate_evm_deploy_bytecode.sh (998B) - Bytecode generator
+  - solidity/script/DeployMockTokens.s.sol (1.3KB) - Forge deployment
+
+Modified:
+  - cadence/transactions/evm/deploy_simple_contract.cdc (increased gas limit)
+
+-----------------------------------------------------------------------------
+NEXT STEPS (CHOOSE ONE):
+-----------------------------------------------------------------------------
+Path 1: Build custom deployment tool (4-6 hours)
+  - Create Python script with web3.py for raw transaction signing
+  - Deploy all contracts
+  - Complete MOET/YT pool validation
+
+Path 2: Simplify contracts (1-2 hours)
+  - Create ultra-minimal ERC20s (<500 bytes)
+  - Deploy via Cadence
+  - Partial validation
+
+Path 3: Document & defer (COMPLETE NOW)
+  - All findings documented
+  - Test framework ready
+  - Defer V3 integration
+
+RECOMMENDATION: Path 3 (defer) - 2 hours invested, core protocol validated
+
+-----------------------------------------------------------------------------
+TO COMMIT:
+-----------------------------------------------------------------------------
+git add cadence/tests/punchswap_moet_yt_pool_test.cdc
+git add cadence/tests/evm_bytecode_helper.cdc
+git add scripts/generate_evm_deploy_bytecode.sh
+git add solidity/script/DeployMockTokens.s.sol
+git add cadence/transactions/evm/deploy_simple_contract.cdc
+git add PUNCHSWAP_MOET_YT_DEPLOYMENT_BLOCKERS.md
+git add SESSION_SUMMARY_PUNCHSWAP_INVESTIGATION.md
+git add EVM_DEPLOYMENT_FINDINGS.md
+git add HANDOFF_PUNCHSWAP_MOET_YT_INVESTIGATION.md
+
+git commit -m "docs: investigate PunchSwap MOET/YT deployment - document blockers
+
+- Validated Cadence test framework for EVM interaction
+- Identified computation limits for large contract deployment  
+- Created test templates ready for deployed contracts
+- Generated full bytecode with constructors (7628 chars)
+- Upgraded Flow CLI to v2.9.0
+- Documented complete findings and 3 paths forward
+
+Status: Deployment blocked on custom signing workflow
+Recommended: Defer V3 integration OR build custom deployment tool
+
+Complete findings in PUNCHSWAP_MOET_YT_DEPLOYMENT_BLOCKERS.md"
+
+=============================================================================

@@ -18,9 +18,9 @@ Liquidation did not execute due to quote constraints; hf_after equals hf_min.
 
 | Metric | Mirror | Sim | Delta | Tolerance | Pass |
 | --- | ---: | ---: | ---: | ---: | :---: |
-| hf_min | 0.80500000 | 0.72936791 | 0.07563209 | 1.00e-04 | FAIL |
-| hf_after | 0.80500000 | N/A (no liq) |  |  | PASS |
-| liq_count | 0.00000000 | - |  |  | PASS |
+| hf_min | None | 0.72936791 |  | 1.00e-04 | FAIL |
+| hf_after | None | 1.00000000 |  | 1.00e-04 | FAIL |
+| liq_count | None | - |  |  | PASS |
 
 
 ### MOET Depeg
@@ -34,7 +34,7 @@ scenario or agent behavior during liquidity-constrained rebalancing. Cadence beh
 
 | Metric | Mirror | Sim | Delta | Tolerance | Pass |
 | --- | ---: | ---: | ---: | ---: | :---: |
-| hf_min | 1.30000000 | 1.0+ (expected) |  |  | PASS |
+| hf_min | None | 0.77507692 |  | 1.00e-04 | FAIL |
 
 
 ### Rebalance Capacity
@@ -43,9 +43,7 @@ scenario or agent behavior during liquidity-constrained rebalancing. Cadence beh
 
 | Metric | Mirror | Sim | Delta | Tolerance | Pass |
 | --- | ---: | ---: | ---: | ---: | :---: |
-| cum_swap | 358000.00000000 | 358000.00000000 | 0.00000000 | 1.00e-06 | PASS |
-| stop_condition | capacity_reached | - |  |  | PASS |
-| successful_swaps | 18.00000000 | - |  |  | PASS |
+| cum_swap | None | 358000.00000000 |  | 1.00e-06 | FAIL |
 
 
 ### Notes
