@@ -104,6 +104,13 @@
 				"testnet": "d27920b6384e2a78"
 			}
 		},
+		"TidalMath": {
+			"source": "./lib/TidalProtocol/cadence/lib/TidalMath.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000007"
+			}
+		},
 		"TidalProtocol": {
 			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
 			"aliases": {
@@ -531,6 +538,14 @@
 				"mainnet": "a6850776a94e6551"
 			}
 		},
+		"USDCFlow": {
+			"source": "mainnet://f1ab99c82dee3526.USDCFlow",
+			"hash": "221e4f6b0d3cfc61d6baab6c968d962ff019a58e1eff43835daa7e62258c8fc5",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "f1ab99c82dee3526"
+			}
+		},
 		"ViewResolver": {
 			"source": "mainnet://1d7e57aa55817448.ViewResolver",
 			"hash": "374a1994046bac9f6228b4843cb32393ef40554df9bd9907a702d098a2987bde",
@@ -636,6 +651,7 @@
 				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",
 				"DeFiActions",
+				"TidalMath",
 				"FungibleTokenConnectors",
 				"SwapConnectors",
 				"DummyConnectors",
