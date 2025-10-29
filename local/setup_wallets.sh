@@ -13,6 +13,6 @@ flow transactions send ./cadence/transactions/mocks/add_gw_keys.cdc --signer evm
 # evm-gateway
 flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0xe03daebed8ca0615 1000.0
 
-# tidal
+# tidal (needs more FLOW for storage - large contracts)
 echo "fund tidal"
-flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0x045a1763c93006ca 1000.0
+flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0x045a1763c93006ca 10000.0
