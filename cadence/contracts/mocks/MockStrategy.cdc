@@ -112,7 +112,6 @@ access(all) contract MockStrategy {
         }
 
         access(contract) fun burnCallback() {} // no-op
-
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
             return DeFiActions.ComponentInfo(
                 type: self.getType(),
@@ -143,7 +142,7 @@ access(all) contract MockStrategy {
             uniqueID: DeFiActions.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
         ): @{TidalYield.Strategy} {
-            let id = DeFiActions.createUniqueIdentifier()
+            let id = uniqueID
             let strat <- create Strategy(
                 id: id,
                 sink: Sink(id),

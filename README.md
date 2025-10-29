@@ -2,6 +2,17 @@
 
 Tidal is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via TidalProtocol's Active Lending Platform. Tidal aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
 
+## Recent Updates
+
+### PunchSwap V3 Integration ✅
+The repository now includes full integration with PunchSwap V3 (Uniswap V3-compatible) pools via Flow EVM:
+- **Setup Scripts**: Automated deployment of PunchSwap v3 contracts to local EVM
+- **Bridge Integration**: Seamless token bridging between Cadence and EVM
+- **Mirror Tests**: Enhanced validation using real v3 pools instead of mocks
+- **Documentation**: Comprehensive guides for setup and testing
+
+See [`docs/v3-mirror-test-setup.md`](docs/v3-mirror-test-setup.md) for details.
+
 ## System Architecture
 
 The Tidal platform consists of several interconnected components:
@@ -951,7 +962,7 @@ flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connecto
   --signer test-account
 
 flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connector.cdc \
-  "/storage/moetTokenVault_0xf8d6e0586b0a20c7" \
+  "/storage/moetTokenVault_0xf3fcd2c1a78f5eee" \
   --signer test-account
 
 flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connector.cdc \

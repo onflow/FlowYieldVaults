@@ -11,3 +11,15 @@
 [submodule "solidity/lib/forge-std"]
 	path = solidity/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "lib/MORE-Vaults-Core"]
+	path = lib/MORE-Vaults-Core
+	url = https://github.com/MORE-Vaults/MORE-Vaults-Core
+[submodule "lib/tidal-protocol-research"]
+	path = lib/tidal-protocol-research
+	url = https://github.com/unit-zero-labs/tidal-protocol-research.git
+[submodule "lib/flow-evm-bridge"]
+	path = lib/flow-evm-bridge
+	url = git@github.com:onflow/flow-evm-bridge.git
+[submodule "solidity/lib/openzeppelin-contracts"]
+	path = solidity/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts

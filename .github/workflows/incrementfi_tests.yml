@@ -17,6 +17,8 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
           submodules: recursive
+      - name: Update submodules to latest main
+        run: git submodule update --init --remote --recursive
       - name: Install Flow CLI
         run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v2.2.17
       - name: Flow CLI Version

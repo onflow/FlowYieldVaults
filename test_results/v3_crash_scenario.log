@@ -1,0 +1,26 @@
+═══════════════════════════════════════════════════════════════
+  V3 POOL BEHAVIOR DURING FLASH CRASH
+═══════════════════════════════════════════════════════════════
+
+Scenario: 30% FLOW flash crash
+Question: How does V3 pool handle liquidation swaps?
+
+Testing liquidation-sized swap on V3 pool...
+Amount: 100k MOET equivalent
+
+Step 1: Approving MOET...
+status               1 (success)
+MOET Balance: 258919999820 [2.589e11]
+
+Step 2: Executing liquidation swap...
+
+═══════════════════════════════════════════════════════════════
+  RESULTS
+═══════════════════════════════════════════════════════════════
+
+✅ V3 pool handled liquidation swap successfully
+MIRROR:v3_liquidation_swap=success
+
+Note: Flash crash test validates TidalProtocol health factors
+V3 integration shows pool can handle liquidation swaps
+

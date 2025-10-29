@@ -2,6 +2,7 @@ import Test
 
 import "MOET"
 import "TidalProtocol"
+import "DeFiActionsMathUtils"
 
 /* --- Test execution helpers --- */
 
@@ -43,6 +44,19 @@ fun grantBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.Tran
         arguments: []
     )
     return Test.executeTransaction(betaTxn)
+}
+
+// Grants TidalProtocol pool capability with EParticipant + EPosition entitlements
+access(all)
+fun grantTidalProtocolPoolCap(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
+    let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
+    let capTxn = Test.Transaction(
+        code: Test.readFile("../../lib/TidalProtocol/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc"),
+        authorizers: [admin.address, grantee.address],
+        signers: signers,
+        arguments: []
+    )
+    return Test.executeTransaction(capTxn)
 }
 
 /* --- Setup helpers --- */
@@ -90,6 +104,12 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
+        name: "TidalMath",
+        path: "../../lib/TidalProtocol/cadence/lib/TidalMath.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
         name: "TidalProtocol",
         path: "../../lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
         arguments: []
@@ -120,6 +140,12 @@ access(all) fun deployContracts() {
     err = Test.deployContract(
         name: "MockTidalProtocolConsumer",
         path: "../../lib/TidalProtocol/cadence/contracts/mocks/MockTidalProtocolConsumer.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "MockV3",
+        path: "../contracts/mocks/MockV3.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -158,7 +184,27 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
 
-    setupBetaAccess()
+    // Mock DEX swapper used by liquidation via DEX tests
+    err = Test.deployContract(
+        name: "MockDexSwapper",
+        path: "../../lib/TidalProtocol/cadence/contracts/mocks/MockDexSwapper.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    // Beta access not required for mirror tests
+}
+
+access(all)
+fun ensurePoolFactoryAndCreatePool(signer: Test.TestAccount, defaultTokenIdentifier: String) {
+    // TidalProtocol init stores a PoolFactory at the protocol account as part of contract init.
+    // If for any reason it's missing, no separate tx exists here; we just proceed to create the pool.
+    let res = _executeTransaction(
+        "../transactions/tidal-protocol/pool-factory/create_and_store_pool.cdc",
+        [defaultTokenIdentifier],
+        signer
+    )
+    Test.expect(res, Test.beSucceeded())
 }
 
 access(all)
@@ -204,6 +250,15 @@ fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
     let res = _executeScript("../scripts/tidal-yield/get_auto_balancer_current_value_by_id.cdc", [id])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
+}
+
+access(all)
+fun getPositionHealth(pid: UInt64, beFailed: Bool): UFix128 {
+    let res = _executeScript("../scripts/tidal-protocol/position_health.cdc",
+            [pid]
+        )
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+    return res.status == Test.ResultStatus.failed ? 0.0 : res.returnValue as! UFix128
 }
 
 access(all)
@@ -253,6 +308,12 @@ fun createAndStorePool(signer: Test.TestAccount, defaultTokenIdentifier: String,
         signer
     )
     Test.expect(createRes, beFailed ? Test.beFailed() : Test.beSucceeded())
+    
+    // Grant pool capability to the signer account after pool creation (required for UFix128 API)
+    if !beFailed {
+        let poolCapRes = grantTidalProtocolPoolCap(signer, signer)
+        Test.expect(poolCapRes, Test.beSucceeded())
+    }
 }
 
 access(all)
@@ -412,6 +473,18 @@ access(all) fun formatValue(_ value: UFix64): String {
     return parts[0].concat(".").concat(padded)
 }
 
+access(all) fun hfToUFix64(_ value: UInt128): UFix64 {
+    return DeFiActionsMathUtils.toUFix64Round(value)
+}
+
+access(all) fun formatHF(_ value: UFix128): String {
+    if value == UFix128.max {
+        return "inf"
+    }
+    // UFix128 can be directly converted to string
+    return value.toString()
+}
+
 access(all) fun formatDrift(_ drift: UFix64): String {
     // Handle negative drift by checking if we're dealing with a wrapped negative
     // In Cadence, UFix64 can't be negative, so we need to handle this differently
@@ -430,11 +503,16 @@ access(all) let TOLERANCE = 0.00000001
 access(all) fun setupBetaAccess(): Void {
     let protocolAccount = Test.getAccount(0x0000000000000008)
     let tidalYieldAccount = Test.getAccount(0x0000000000000009)
-    let protocolBeta = grantProtocolBeta(protocolAccount, protocolAccount)
+    
+    // Grant TidalYield beta access
+    let protocolBeta = grantBeta(protocolAccount, protocolAccount)
     Test.expect(protocolBeta, Test.beSucceeded())
 
-    let tidalYieldBeta = grantProtocolBeta(protocolAccount, tidalYieldAccount)
+    let tidalYieldBeta = grantBeta(protocolAccount, tidalYieldAccount)
     Test.expect(tidalYieldBeta, Test.beSucceeded())
+    
+    // Note: TidalProtocol pool capability is now granted automatically in createAndStorePool()
+    // for the account that creates the pool. If other accounts need access, grant it explicitly.
 }
 
 // Returns the balance for a given Vault 'Type' if present, otherwise nil.

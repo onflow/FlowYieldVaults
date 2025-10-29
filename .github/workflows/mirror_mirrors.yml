@@ -1,0 +1,64 @@
+name: Mirror Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  mirror-tests:
+    name: Tidal Mirror Tests
+    runs-on: ubuntu-latest
+    env:
+      CI: "true"
+      TERM: "dumb"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+          submodules: recursive
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.23.x"
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Install Flow CLI
+        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)"
+      - name: Flow CLI Version
+        run: flow version
+      - name: Update PATH
+        run: echo "/root/.local/bin" >> $GITHUB_PATH
+      - name: Install Flow dependencies
+        run: flow deps install --skip-alias --skip-deployments
+      - name: Run Emulator
+        run: ./local/run_emulator.sh
+      - name: Setup Emulator
+        run: ./local/setup_emulator.sh
+      - name: Setup Wallets
+        run: ./local/setup_wallets.sh
+      - name: Ensure runner is executable
+        run: chmod +x scripts/run_mirrors_and_compare.sh
+      - name: Run mirror tests and generate report
+        run: |
+          bash scripts/run_mirrors_and_compare.sh
+          python3 scripts/save_mirror_markdown.py
+      - name: Upload mirror artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirror-results
+          path: |
+            docs/mirror_report.md
+            docs/mirror_run.md
+            local/mirror_flow.log
+            local/mirror_moet.log
+            local/mirror_rebalance.log
+
+
