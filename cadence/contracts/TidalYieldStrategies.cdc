@@ -151,14 +151,14 @@ access(all) contract TidalYieldStrategies {
 
             // configure and AutoBalancer for this stack
             let autoBalancer = TidalYieldAutoBalancers._initNewAutoBalancer(
-                    oracle: oracle,             // used to determine value of deposits & when to rebalance
-                    vaultType: yieldTokenType,  // the type of Vault held by the AutoBalancer
-                    lowerThreshold: 0.95,       // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
-                    upperThreshold: 1.05,       // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
-                    rebalanceSink: nil,         // nil on init - will be set once a PositionSink is available
-                    rebalanceSource: nil,       // nil on init - not set for TracerStrategy
-                    uniqueID: uniqueID          // identifies AutoBalancer as part of this Strategy
-                )
+                oracle: oracle,             // used to determine value of deposits & when to rebalance
+                vaultType: yieldTokenType,  // the type of Vault held by the AutoBalancer
+                lowerThreshold: 0.95,       // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
+                upperThreshold: 1.05,       // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
+                rebalanceSink: nil,         // nil on init - will be set once a PositionSink is available
+                rebalanceSource: nil,       // nil on init - not set for TracerStrategy
+                uniqueID: uniqueID          // identifies AutoBalancer as part of this Strategy
+            )
             // enables deposits of YieldToken to the AutoBalancer
             let abaSink = autoBalancer.createBalancerSink() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
             // enables withdrawals of YieldToken from the AutoBalancer
@@ -175,16 +175,16 @@ access(all) contract TidalYieldStrategies {
             //     )
             // TODO: consider how we're going to pass the user's COA capability to the Swapper
             let stableToYieldSwapper = UniswapV3SwapConnectors.Swapper(
-                    factoryAddress: TidalYieldStrategies.univ3FactoryEVMAddress,
-                    routerAddress: TidalYieldStrategies.univ3RouterEVMAddress,
-                    quoterAddress: TidalYieldStrategies.univ3QuoterEVMAddress,
-                    tokenPath: [moetTokenEVMAddress, TidalYieldStrategies.yieldTokenEVMAddress],
-                    feePath: [3000],
-                    inVault: moetTokenType,
-                    outVault: yieldTokenType,
-                    coaCapability: TidalYieldStrategies._getCOACapability(),
-                    uniqueID: uniqueID
-                )
+                factoryAddress: TidalYieldStrategies.univ3FactoryEVMAddress,
+                routerAddress: TidalYieldStrategies.univ3RouterEVMAddress,
+                quoterAddress: TidalYieldStrategies.univ3QuoterEVMAddress,
+                tokenPath: [moetTokenEVMAddress, TidalYieldStrategies.yieldTokenEVMAddress],
+                feePath: [3000],
+                inVault: moetTokenType,
+                outVault: yieldTokenType,
+                coaCapability: TidalYieldStrategies._getCOACapability(),
+                uniqueID: uniqueID
+            )
             // YieldToken -> Stable
             // TODO: Update to use UniswapV3SwapConnectors
             // let yieldToStableSwapper = MockSwapper.Swapper(
@@ -193,16 +193,16 @@ access(all) contract TidalYieldStrategies {
             //         uniqueID: uniqueID
             //     )
             let yieldToStableSwapper = UniswapV3SwapConnectors.Swapper(
-                    factoryAddress: TidalYieldStrategies.univ3FactoryEVMAddress,
-                    routerAddress: TidalYieldStrategies.univ3RouterEVMAddress,
-                    quoterAddress: TidalYieldStrategies.univ3QuoterEVMAddress,
-                    tokenPath: [TidalYieldStrategies.yieldTokenEVMAddress, moetTokenEVMAddress],
-                    feePath: [3000],
-                    inVault: yieldTokenType,
-                    outVault: moetTokenType,
-                    coaCapability: TidalYieldStrategies._getCOACapability(),
-                    uniqueID: uniqueID
-                )
+                factoryAddress: TidalYieldStrategies.univ3FactoryEVMAddress,
+                routerAddress: TidalYieldStrategies.univ3RouterEVMAddress,
+                quoterAddress: TidalYieldStrategies.univ3QuoterEVMAddress,
+                tokenPath: [TidalYieldStrategies.yieldTokenEVMAddress, moetTokenEVMAddress],
+                feePath: [3000],
+                inVault: yieldTokenType,
+                outVault: moetTokenType,
+                coaCapability: TidalYieldStrategies._getCOACapability(),
+                uniqueID: uniqueID
+            )
 
             // init SwapSink directing swapped funds to AutoBalancer
             //
@@ -219,11 +219,11 @@ access(all) contract TidalYieldStrategies {
             let poolRef = poolCap.borrow() ?? panic("Invalid Pool Cap")
 
             let pid = poolRef.createPosition(
-                    funds: <-withFunds,
-                    issuanceSink: abaSwapSink,
-                    repaymentSource: abaSwapSource,
-                    pushToDrawDownSink: true
-                )
+                funds: <-withFunds,
+                issuanceSink: abaSwapSink,
+                repaymentSource: abaSwapSource,
+                pushToDrawDownSink: true
+            )
             let position = TidalProtocol.Position(id: pid, pool: poolCap)
             TidalYieldStrategies.account.storage.save(poolCap, to: TidalProtocol.PoolCapStoragePath)
 
@@ -233,10 +233,10 @@ access(all) contract TidalYieldStrategies {
 
             // init YieldToken -> FLOW Swapper
             let yieldToFlowSwapper = MockSwapper.Swapper(
-                    inVault: yieldTokenType,
-                    outVault: collateralType, 
-                    uniqueID: uniqueID
-                )
+                inVault: yieldTokenType,
+                outVault: collateralType, 
+                uniqueID: uniqueID
+            )
             // allows for YieldToken to be deposited to the Position
             let positionSwapSink = SwapConnectors.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
 
