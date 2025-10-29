@@ -15,3 +15,15 @@ testnet-deployer.pkey
 testnet-uniswapV3-connectors-deployer.pkey
 mock-strategy-deployer.pkey
 local/deployed_addresses.env
+
+# EVM gateway database
+db/
+
+# Forge artifacts
+broadcast/
+cache/
+solidity/lib/local_deploy.txt
+
+# Test results and logs
+test_results/
+*.log

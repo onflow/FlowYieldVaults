@@ -4,6 +4,9 @@
 
 The UniswapV3 swap transaction from Cadence was failing on the emulator, while direct EVM transactions using `cast` were working correctly.
 
+**Client Report:**
+> "I can swap MOET for USDC using cast, but the same swap transaction doesn't work from cadence"
+
 **Symptoms:**
 - `cast send` commands to the Uniswap router worked fine
 - Cadence transactions using `UniswapV3SwapConnectors.Swapper` failed
@@ -13,6 +16,8 @@ The UniswapV3 swap transaction from Cadence was failing on the emulator, while d
 ## Root Cause
 
 The transaction file `cadence/transactions/connectors/univ3-swap-connector.cdc` was missing the required `factoryAddress` parameter when initializing the `UniswapV3SwapConnectors.Swapper`.
+
+This parameter is required by the Swapper to query pool information (reserves, liquidity, tick data) before executing swaps.
 
 ### Code Issue
 
@@ -71,27 +76,28 @@ Updated `cadence/transactions/connectors/univ3-swap-connector.cdc` to include th
 
 ## Testing
 
-To test the fix:
+### Quick Test (Verify Fix Works)
 
-```bash
-# Make sure emulator and EVM gateway are running
-./local/run_emulator.sh
-./local/run_evm_gateway.sh
-
-# Run the setup scripts
-./local/setup_emulator.sh
-./local/punchswap/setup_punchswap.sh
-./local/punchswap/e2e_punchswap.sh
-./local/setup_bridged_tokens.sh
-
-# Test the swap
-./local/test_swap_fix.sh
-```
-
-Or test directly:
 ```bash
 flow transactions send ./cadence/transactions/connectors/univ3-swap-connector.cdc --signer tidal --gas-limit 9999
 ```
+
+Expected: Transaction passes Swapper initialization (may fail later due to missing pool/liquidity, which is fine)
+
+### Full E2E Test (Complete Verification)
+
+```bash
+# Run the complete enhanced e2e flow
+./local/univ3_test.sh
+```
+
+This now includes:
+- All original setup steps
+- Automated vault creation for bridged tokens
+- Cadence swap test at the end
+- Better error handling throughout
+
+See `E2E_IMPROVEMENTS.md` for details on what was enhanced.
 
 ## Why Cast Worked But Cadence Didn't
 
@@ -103,11 +109,30 @@ flow transactions send ./cadence/transactions/connectors/univ3-swap-connector.cd
 
 Without the factory address, the Cadence code couldn't query pool information, causing the transaction to fail before even reaching the router.
 
+## E2E Setup Enhancements
+
+As part of fixing this issue, the original e2e setup was enhanced with several innovations:
+
+1. **Automated Vault Creation** - `cadence/transactions/helpers/setup_bridged_token_vault.cdc`
+   - Automatically creates vaults for bridged EVM tokens
+   - Integrated into `setup_bridged_tokens.sh`
+
+2. **Reusable Helper Scripts** - `cadence/scripts/helpers/get_moet_evm_address.cdc`
+   - Gets MOET's EVM address after bridging
+   - Proper error handling
+
+3. **Parameterized Swap Transaction** - `cadence/transactions/connectors/univ3-swap-connector-parameterized.cdc`
+   - Accepts all addresses as parameters for flexibility
+   - Works with any token pair
+
+See `E2E_IMPROVEMENTS.md` for complete details.
+
 ## Related Files
 
 - `lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc` - Connector implementation
 - `cadence/contracts/TidalYieldStrategies.cdc` - Already had the fix applied
 - `local/punchswap/flow-emulator.json` - Contains deployed contract addresses
+- `E2E_IMPROVEMENTS.md` - Documents all e2e setup enhancements
 
 ## Additional Notes
 
