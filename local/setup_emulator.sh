@@ -6,12 +6,10 @@ flow deploy
 
 flow transactions send ./cadence/transactions/moet/setup_vault.cdc 
 flow transactions send ./cadence/transactions/moet/mint_moet.cdc 0x045a1763c93006ca 1000000.0 --signer tidal
-flow transactions send ./lib/flow-evm-bridge/cadence/transactions/example-assets/setup/setup_generic_vault.cdc "A.f8d6e0586b0a20c7.EVMVMBridgedToken_accf0c4eed4438ad31cd340548f4211a465b6528.Vault" --signer tidal
 
 # set mocked prices in the MockOracle contract, initialized with MOET as unitOfAccount
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.0ae53cb6e3f42a79.FlowToken.Vault' 0.5 --signer tidal
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.045a1763c93006ca.YieldToken.Vault' 1.0 --signer tidal
-flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.f8d6e0586b0a20c7.EVMVMBridgedToken_accf0c4eed4438ad31cd340548f4211a465b6528.Vault' 1.0 --signer tidal
 
 # configure TidalProtocol
 #
@@ -32,7 +30,6 @@ flow transactions send ./cadence/transactions/tidal-protocol/pool-governance/add
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/flowTokenVault --signer tidal
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/moetTokenVault_0x045a1763c93006ca --signer tidal
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/yieldTokenVault_0x045a1763c93006ca --signer tidal
-flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_accf0c4eed4438ad31cd340548f4211a465b6528Vault --signer tidal
 # add TracerStrategy as supported Strategy with the ability to initialize when new Tides are created
 flow transactions send ./cadence/transactions/tidal-yield/admin/add_strategy_composer.cdc \
     'A.045a1763c93006ca.TidalYieldStrategies.TracerStrategy' \
@@ -51,3 +48,4 @@ flow transactions send ./lib/TidalProtocol/cadence/tests/transactions/tidal-prot
 TIDAL_COA=0x$(flow scripts execute ./lib/flow-evm-bridge/cadence/scripts/evm/get_evm_address_string.cdc 045a1763c93006ca --format inline | sed -E 's/"([^"]+)"/\1/')
 echo $TIDAL_COA
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/transfer_flow_to_cadence_or_evm.cdc $TIDAL_COA 100.0 --signer tidal --gas-limit 9999
+

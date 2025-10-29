@@ -61,3 +61,7 @@ cast send $POSITION_MANAGER \
   --rpc-url $RPC_URL \
   --gas-limit 1200000
 
+flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.f8d6e0586b0a20c7.EVMVMBridgedToken_accf0c4eed4438ad31cd340548f4211a465b6528.Vault' 1.0 --signer tidal
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/example-assets/setup/setup_generic_vault.cdc "A.f8d6e0586b0a20c7.EVMVMBridgedToken_accf0c4eed4438ad31cd340548f4211a465b6528.Vault" --signer tidal
+flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_accf0c4eed4438ad31cd340548f4211a465b6528Vault --signer tidal
+
