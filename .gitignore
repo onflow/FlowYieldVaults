@@ -12,4 +12,5 @@ solidity/out/
 
 testnet-deployer.pkey
 testnet-uniswapV3-connectors-deployer.pkey
-mock-strategy-deployer.pkeylocal/deployed_addresses.env
+mock-strategy-deployer.pkey
+local/deployed_addresses.env
