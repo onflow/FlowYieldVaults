@@ -40,7 +40,7 @@ if [ -n "$MOET_EVM_FOR_SWAP" ] && [ -n "$USDC_ADDR" ]; then
     echo "Testing swap: MOET (0x$MOET_EVM_FOR_SWAP) → USDC ($USDC_ADDR)"
     
     # Use the parameterized version for flexibility
-    flow transactions send ./cadence/transactions/connectors/univ3-swap-connector-parameterized.cdc \
+    SWAP_OUTPUT=$(flow transactions send ./cadence/transactions/connectors/univ3-swap-connector-parameterized.cdc \
         "0x986Cb42b0557159431d48fE0A40073296414d410" \
         "0x2Db6468229F6fB1a77d248Dbb1c386760C257804" \
         "0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c" \
@@ -48,12 +48,22 @@ if [ -n "$MOET_EVM_FOR_SWAP" ] && [ -n "$USDC_ADDR" ]; then
         "$USDC_ADDR" \
         3000 \
         1.0 \
-        --signer tidal --gas-limit 9999
+        --signer tidal --gas-limit 9999 2>&1)
     
-    if [ $? -eq 0 ]; then
+    echo "$SWAP_OUTPUT"
+    
+    # Check if transaction actually succeeded (not just sealed)
+    if echo "$SWAP_OUTPUT" | grep -q "✅ SEALED" && ! echo "$SWAP_OUTPUT" | grep -q "❌ Transaction Error"; then
         echo ""
         echo "✅ SUCCESS: Cadence swap transaction executed successfully!"
         echo "   The factoryAddress fix is working correctly."
+    elif echo "$SWAP_OUTPUT" | grep -q "Missing TokenIn vault"; then
+        echo ""
+        echo "⚠️  Swap failed: Missing MOET vault in bridged token path"
+        echo "   This is expected - MOET uses native Cadence vault, not bridged path."
+        echo "   Using original transaction instead..."
+        echo ""
+        flow transactions send ./cadence/transactions/connectors/univ3-swap-connector.cdc --signer tidal --gas-limit 9999
     else
         echo ""
         echo "⚠️  Swap transaction had issues. Check error messages above."

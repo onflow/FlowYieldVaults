@@ -54,13 +54,25 @@ transaction(
     )
 
     // Construct storage paths
-    let tokenInStoragePath = StoragePath(identifier: "EVMVMBridgedToken_".concat(
-        tokenInAddressHex.slice(from: 2, upTo: tokenInAddressHex.length).toLower()
-    ).concat("Vault"))!
+    // For MOET (native Cadence token), use MOET.VaultStoragePath
+    // For bridged tokens, construct the EVMVMBridgedToken path
+    let tokenInStoragePath: StoragePath
+    if inType == Type<@MOET.Vault>() {
+        tokenInStoragePath = MOET.VaultStoragePath
+    } else {
+        tokenInStoragePath = StoragePath(identifier: "EVMVMBridgedToken_".concat(
+            tokenInAddressHex.slice(from: 2, upTo: tokenInAddressHex.length).toLower()
+        ).concat("Vault"))!
+    }
     
-    let tokenOutStoragePath = StoragePath(identifier: "EVMVMBridgedToken_".concat(
-        tokenOutAddressHex.slice(from: 2, upTo: tokenOutAddressHex.length).toLower()
-    ).concat("Vault"))!
+    let tokenOutStoragePath: StoragePath
+    if outType == Type<@MOET.Vault>() {
+        tokenOutStoragePath = MOET.VaultStoragePath
+    } else {
+        tokenOutStoragePath = StoragePath(identifier: "EVMVMBridgedToken_".concat(
+            tokenOutAddressHex.slice(from: 2, upTo: tokenOutAddressHex.length).toLower()
+        ).concat("Vault"))!
+    }
 
     // Withdraw
     let withdrawRef = acct.storage

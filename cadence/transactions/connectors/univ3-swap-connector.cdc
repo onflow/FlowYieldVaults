@@ -17,11 +17,12 @@ transaction() {
 
     let quoter = EVM.addressFromString("0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c")
 
-    // let usdc  = EVM.addressFromString("0x5e65b6B04fbA51D95409712978Cb91E99d93aE73") // Testnet USDC
-    // let wflow = EVM.addressFromString("0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e") // Testnet WFLOW
-
-    let tokenIn = EVM.addressFromString("0x51f5cc5f50afb81e8f23c926080fa38c3024b238") // MOET
-    let tokenOut = EVM.addressFromString("0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95") // More Vaults mUSDC
+    // Note: Update these addresses based on actual deployment
+    // To get MOET EVM address: flow scripts execute ./cadence/scripts/helpers/get_moet_evm_address.cdc
+    // To get USDC address: check local/deployed_addresses.env
+    
+    let tokenIn = EVM.addressFromString("0x9a7b1d144828c356ec23ec862843fca4a8ff829e") // MOET (update after bridging)
+    let tokenOut = EVM.addressFromString("0x8C7187932B862F962f1471c6E694aeFfb9F5286D") // USDC (update after deployment)
 
     // Vault types for in/out
 
@@ -42,7 +43,9 @@ transaction() {
     )
 
     let tokenInStoragePath = MOET.VaultStoragePath
-    let tokenOutStoragePath = /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault
+    // Construct USDC vault path dynamically from tokenOut address
+    let usdcPathId = "EVMVMBridgedToken_".concat(tokenOut.toString()).concat("Vault")
+    let tokenOutStoragePath = StoragePath(identifier: usdcPathId)!
 
     // Withdraw
     let withdrawRef = acct.storage
