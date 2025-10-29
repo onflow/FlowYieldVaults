@@ -48,3 +48,9 @@ flow transactions send ./lib/TidalProtocol/cadence/tests/transactions/tidal-prot
 TIDAL_COA=0x$(flow scripts execute ./lib/flow-evm-bridge/cadence/scripts/evm/get_evm_address_string.cdc 045a1763c93006ca --format inline | sed -E 's/"([^"]+)"/\1/')
 echo $TIDAL_COA
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/transfer_flow_to_cadence_or_evm.cdc $TIDAL_COA 100.0 --signer tidal --gas-limit 9999
+
+echo "Bridge MOET to EVM (required for TracerStrategy)"
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.045a1763c93006ca.MOET.Vault" --signer emulator-account --gas-limit 9999 --signer tidal
+
+echo "Bridge YieldToken to EVM (required for TracerStrategy)"
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.045a1763c93006ca.YieldToken.Vault" --signer emulator-account --gas-limit 9999 --signer tidal
