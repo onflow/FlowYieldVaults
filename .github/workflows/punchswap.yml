@@ -24,7 +24,7 @@ jobs:
           cache-dependency-path: |
             **/go.sum
       - name: Install Flow CLI
-        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v2.2.17
+        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)"
       - name: Flow CLI Version
         run: flow version
       - name: Update PATH
