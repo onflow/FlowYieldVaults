@@ -11,6 +11,8 @@ transaction() {
     let coaCap: Capability<auth(EVM.Owner) &EVM.CadenceOwnedAccount> =
       acct.capabilities.storage.issue<auth(EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
 
+    let factory = EVM.addressFromString("0x986Cb42b0557159431d48fE0A40073296414d410")
+
     let router = EVM.addressFromString("0x2Db6468229F6fB1a77d248Dbb1c386760C257804")
 
     let quoter = EVM.addressFromString("0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c")
@@ -28,6 +30,7 @@ transaction() {
     let outType: Type = FlowEVMBridgeConfig.getTypeAssociated(with: tokenOut) ?? panic("invalid moreVaultUSDC out type")
 
     let swapper = UniswapV3SwapConnectors.Swapper(
+      factoryAddress: factory,
       routerAddress: router,
       quoterAddress: quoter,
       tokenPath: [tokenIn, tokenOut],
