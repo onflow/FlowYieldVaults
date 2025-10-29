@@ -2,6 +2,7 @@ import "FungibleToken"
 import "EVM"
 import "UniswapV3SwapConnectors"
 import "FlowEVMBridgeConfig"
+import "MOET"
 
 transaction() {
 
@@ -17,12 +18,13 @@ transaction() {
     // let usdc  = EVM.addressFromString("0x5e65b6B04fbA51D95409712978Cb91E99d93aE73") // Testnet USDC
     // let wflow = EVM.addressFromString("0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e") // Testnet WFLOW
 
-    let tokenIn = EVM.addressFromString("0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1") // mockUSDC
+    let tokenIn = EVM.addressFromString("0x51f5cc5f50afb81e8f23c926080fa38c3024b238") // MOET
     let tokenOut = EVM.addressFromString("0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95") // More Vaults mUSDC
 
     // Vault types for in/out
 
-    let inType: Type = FlowEVMBridgeConfig.getTypeAssociated(with: tokenIn) ?? panic("invalid mockUSDC in type")
+    //let inType: Type = FlowEVMBridgeConfig.getTypeAssociated(with: tokenIn) ?? panic("invalid MOET out type")
+    let inType: Type = Type<@MOET.Vault>()
     let outType: Type = FlowEVMBridgeConfig.getTypeAssociated(with: tokenOut) ?? panic("invalid moreVaultUSDC out type")
 
     let swapper = UniswapV3SwapConnectors.Swapper(
@@ -36,7 +38,7 @@ transaction() {
       uniqueID: nil
     )
 
-    let tokenInStoragePath = /storage/EVMVMBridgedToken_d431955d55a99ef69beb96ba34718d0f9fbc91b1Vault
+    let tokenInStoragePath = MOET.VaultStoragePath
     let tokenOutStoragePath = /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault
 
     // Withdraw
