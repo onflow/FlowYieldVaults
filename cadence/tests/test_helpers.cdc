@@ -57,6 +57,11 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
+        name: "TidalMath",
+        path: "../../lib/TidalProtocol/cadence/lib/TidalMath.cdc",
+        arguments: []
+    )
+    err = Test.deployContract(
         name: "DeFiActionsMathUtils",
         path: "../../lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
         arguments: []
