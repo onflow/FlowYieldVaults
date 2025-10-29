@@ -30,15 +30,29 @@ echo "set USDC token price"
 USDC_TYPE_ID="A.f8d6e0586b0a20c7.EVMVMBridgedToken_$(echo $USDC_ADDR | sed 's/0x//' | tr '[:upper:]' '[:lower:]').Vault"
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc "$USDC_TYPE_ID" 1.0 --signer tidal
 
+echo "setup USDC vault for tidal account"
+flow transactions send ./cadence/transactions/helpers/setup_bridged_token_vault.cdc $USDC_ADDR --signer tidal --gas-limit 9999
+
 echo "bridge WBTC to Cadence"
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc $WBTC_ADDR --signer emulator-account --gas-limit 9999 --signer tidal
+
+echo "setup WBTC vault for tidal account"
+flow transactions send ./cadence/transactions/helpers/setup_bridged_token_vault.cdc $WBTC_ADDR --signer tidal --gas-limit 9999
 
 echo "bridge MOET to EVM"
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.045a1763c93006ca.MOET.Vault" --signer emulator-account --gas-limit 9999 --signer tidal
 
 #flow transactions send ../cadence/tests/transactions/create_univ3_pool.cdc
 
-MOET_EVM_ADDRESS=0x$(flow scripts execute ./cadence/tests/scripts/get_moet_evm_address.cdc --format inline | sed -E 's/"([^"]+)"/\1/')
+echo "get MOET EVM address"
+MOET_EVM_ADDRESS=0x$(flow scripts execute ./cadence/scripts/helpers/get_moet_evm_address.cdc --format inline 2>&1 | sed -E 's/"([^"]+)"/\1/' | tr -d '\n')
+
+if [ -z "$MOET_EVM_ADDRESS" ] || [ "$MOET_EVM_ADDRESS" = "0x" ]; then
+    echo "❌ ERROR: Could not get MOET EVM address. Make sure MOET is bridged to EVM first."
+    exit 1
+fi
+
+echo "MOET EVM Address: $MOET_EVM_ADDRESS"
 
 echo "create pool"
 cast send $POSITION_MANAGER \
