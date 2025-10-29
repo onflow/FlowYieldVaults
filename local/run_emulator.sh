@@ -1,4 +1,4 @@
-flow emulator &
+flow emulator --contracts &
 
 # Port to check
 PORT=8080

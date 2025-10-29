@@ -13,7 +13,7 @@ echo_info() {
 # echo_info "Creating new Flow account for test user..."
 # flow accounts create --network "$FLOW_NETWORK" --key "$(cat $TEST_USER_PUBKEY_PATH)"
 
-flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0xf3fcd2c1a78f5eee 1000.0
+flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0xf3fcd2c1a78f5eee 1000.0  --signer tidal
 
 # 2. Setup MOET and YIELD vault, and create swap pairs
 #
@@ -28,11 +28,11 @@ flow transactions send ./cadence/transactions/mocks/incrementfi/setup.cdc ${SWAP
 #
 # 3. transfer funds to FLOW, MOET, and YIELD vaults
 #
-flow transactions send ./cadence/transactions/mocks/incrementfi/transfer_amm_tokens.cdc f3fcd2c1a78f5eee 1000.0
+flow transactions send ./cadence/transactions/mocks/incrementfi/transfer_amm_tokens.cdc f3fcd2c1a78f5eee 1000.0 --signer tidal
 # 
 # 4. create swap pair
 #
-flow transactions send ./lib/TidalProtocol/DeFiActions/cadence/transactions/increment-fi/create_swap_pair.cdc $MOET_IDENTIFIER $YIELD_IDENTIFIER false
+flow transactions send ./lib/TidalProtocol/DeFiActions/cadence/transactions/increment-fi/create_swap_pair.cdc $MOET_IDENTIFIER $YIELD_IDENTIFIER false --signer tidal
 #
 #
 # 5. add liquidity to the AMMs
@@ -53,8 +53,8 @@ flow transactions send "./lib/TidalProtocol/DeFiActions/cadence/transactions/inc
 	0.0 \
 	0.0 \
 	$DEADLINE.0 \
-	/storage/moetTokenVault_0xf8d6e0586b0a20c7 \
-	/storage/yieldTokenVault_0xf8d6e0586b0a20c7 \
+	/storage/moetTokenVault_0x045a1763c93006ca \
+	/storage/yieldTokenVault_0x045a1763c93006ca \
 	false \
 	--signer $SIGNER
 #

@@ -3,155 +3,173 @@
 		"DeFiActions": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"DeFiActionsMathUtils": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"DeFiActionsUtils": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"DummyConnectors": {
 			"source": "./lib/TidalProtocol/cadence/contracts/mocks/DummyConnectors.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
+			}
+		},
+		"EVMAbiHelpers": {
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000007",
+				"testnet": "d27920b6384e2a78"
+			}
+		},
+		"EVMTokenConnectors": {
+			"source": "cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009",
+				"testnet": "b88ba0e976146cd1"
 			}
 		},
 		"FungibleTokenConnectors": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"MOET": {
 			"source": "./lib/TidalProtocol/cadence/contracts/MOET.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"MockOracle": {
 			"source": "cadence/contracts/mocks/MockOracle.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"MockStrategy": {
 			"source": "cadence/contracts/mocks/MockStrategy.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"MockSwapper": {
 			"source": "cadence/contracts/mocks/MockSwapper.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
-			}
-		},
-		"MockV3": {
-			"source": "cadence/contracts/mocks/MockV3.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
-			}
-		},
-		"MockDexSwapper": {
-			"source": "./lib/TidalProtocol/cadence/contracts/mocks/MockDexSwapper.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"MockTidalProtocolConsumer": {
 			"source": "./lib/TidalProtocol/cadence/contracts/mocks/MockTidalProtocolConsumer.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"SwapConnectors": {
 			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"TidalProtocol": {
 			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"TidalYield": {
 			"source": "cadence/contracts/TidalYield.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"TidalYieldAutoBalancers": {
 			"source": "cadence/contracts/TidalYieldAutoBalancers.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"TidalYieldClosedBeta": {
 			"source": "cadence/contracts/TidalYieldClosedBeta.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		},
 		"TidalYieldStrategies": {
 			"source": "cadence/contracts/TidalYieldStrategies.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
+			}
+		},
+		"UniswapV3SwapConnectors": {
+			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000007",
+				"testnet": "a87f1085c356a8e3"
 			}
 		},
 		"YieldToken": {
 			"source": "cadence/contracts/mocks/YieldToken.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000010",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d27920b6384e2a78"
 			}
 		}
 	},
 	"dependencies": {
+		"ArrayUtils": {
+			"source": "mainnet://1e4aa0b87d10b141.ArrayUtils",
+			"hash": "e70ddc2f0c7c72158a3f6c68de3a131e1f49e2908ad83eac0308f9e2953957d5",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141"
+			}
+		},
 		"Burner": {
 			"source": "mainnet://f233dcee88fe0abe.Burner",
 			"hash": "71af18e227984cd434a3ad00bb2f3618b76482842bae920ee55662c37c8bf331",
@@ -159,6 +177,33 @@
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "f233dcee88fe0abe",
 				"testnet": "9a0766d93b6608b7"
+			}
+		},
+		"CrossVMMetadataViews": {
+			"source": "mainnet://1d7e57aa55817448.CrossVMMetadataViews",
+			"hash": "dded0271279d3ca75f30b56f7552994d8b8bc4f75ef94a4a8d9d6b089e06c25c",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1d7e57aa55817448",
+				"testnet": "631e88ae7f1d7c20"
+			}
+		},
+		"CrossVMNFT": {
+			"source": "mainnet://1e4aa0b87d10b141.CrossVMNFT",
+			"hash": "a9e2ba34ecffda196c58f5c1439bc257d48d0c81457597eb58eb5f879dd95e5a",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141"
+			}
+		},
+		"CrossVMToken": {
+			"source": "mainnet://1e4aa0b87d10b141.CrossVMToken",
+			"hash": "6d5c16804247ab9f1234b06383fa1bed42845211dba22582748abd434296650c",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"EVM": {
@@ -170,12 +215,119 @@
 				"testnet": "8c5303eaa26202d6"
 			}
 		},
+		"FlowEVMBridge": {
+			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridge",
+			"hash": "01ca127d0c7668b4d71fddd99a0ff527b7a95bc4d42074ba6a7cf63e62ba9841",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeAccessor": {
+			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeAccessor",
+			"hash": "3976b314476838a624786be25c8ecd7af37b6aae2654e9db225c3c964100ce3f",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeConfig": {
+			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeConfig",
+			"hash": "8cfbe61228b181a654ea45a26e79334f5907199801b94c4e639a67e2068160db",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeCustomAssociationTypes": {
+			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeCustomAssociationTypes",
+			"hash": "12bf631191d7d2c2621f002e616cfeb8319c58e753ecccd08f516315149e2066",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeCustomAssociations": {
+			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeCustomAssociations",
+			"hash": "59366ff81d3e23cd96f362f1f1feb99f8d0cac66b6137926748e5f13f031a51c",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
 		"FlowEVMBridgeHandlerInterfaces": {
 			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeHandlerInterfaces",
 			"hash": "7e0e28eb8fb30595249384cb8c7a44eae3884700d0a6c3139240c0d19e4dc173",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeHandlers": {
+			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeHandlers",
+			"hash": "ffd564ff27cbaaa304257bbce02f6015f6c4c4aa5a3dad8b2276977d8ff0c352",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeNFTEscrow": {
+			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeNFTEscrow",
+			"hash": "2881ec6db6dde705b2919185230890aba85b4e0cca4537721181588fba7ae4ad",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeResolver": {
+			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeResolver",
+			"hash": "4f771894f560063ee59d8ae481c8dd7bc942ac8b51926924a5320fec569d666a",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeTemplates": {
+			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeTemplates",
+			"hash": "8f27b22450f57522d93d3045038ac9b1935476f4216f57fe3bb82929c71d7aa6",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeTokenEscrow": {
+			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeTokenEscrow",
+			"hash": "b5ec7c0a16e1c49004b2ed072c5eadc8c382e43351982b4a3050422f116b8f46",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeUtils": {
+			"source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeUtils",
+			"hash": "8582adc5ae360ab746dab61b0b4d00974ff05483679e838475d4577827e6fb01",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"FlowStorageFees": {
@@ -214,6 +366,71 @@
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
+		"IBridgePermissions": {
+			"source": "mainnet://1e4aa0b87d10b141.IBridgePermissions",
+			"hash": "431a51a6cca87773596f79832520b19499fe614297eaef347e49383f2ae809af",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"ICrossVM": {
+			"source": "mainnet://1e4aa0b87d10b141.ICrossVM",
+			"hash": "e14dcb25f974e216fd83afdc0d0f576ae7014988755a4777b06562ffb06537bc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"ICrossVMAsset": {
+			"source": "mainnet://1e4aa0b87d10b141.ICrossVMAsset",
+			"hash": "aa1fbd979c9d7806ea8ea66311e2a4257c5a4051eef020524a0bda4d8048ed57",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"IEVMBridgeNFTMinter": {
+			"source": "mainnet://1e4aa0b87d10b141.IEVMBridgeNFTMinter",
+			"hash": "65ec734429c12b70cd97ad8ea2c2bc4986fab286744921ed139d9b45da92e77e",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"IEVMBridgeTokenMinter": {
+			"source": "mainnet://1e4aa0b87d10b141.IEVMBridgeTokenMinter",
+			"hash": "223adb675415984e9c163d15c5922b5c77dc5036bf6548d0b87afa27f4f0a9d9",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"IFlowEVMNFTBridge": {
+			"source": "mainnet://1e4aa0b87d10b141.IFlowEVMNFTBridge",
+			"hash": "c6f5962bde2060b4490bd62c7a05e048536aab17e430cf6aa4e5b893b06f8302",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"IFlowEVMTokenBridge": {
+			"source": "mainnet://1e4aa0b87d10b141.IFlowEVMTokenBridge",
+			"hash": "573a038b1e9c26504f6aa32a091e88168591b7f93feeff9ac0343285488a8eb3",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
 		"MetadataViews": {
 			"source": "mainnet://1d7e57aa55817448.MetadataViews",
 			"hash": "9032f46909e729d26722cbfcee87265e4f81cd2912e936669c0e6b510d007e81",
@@ -232,12 +449,46 @@
 				"testnet": "631e88ae7f1d7c20"
 			}
 		},
+		"ScopedFTProviders": {
+			"source": "mainnet://1e4aa0b87d10b141.ScopedFTProviders",
+			"hash": "d4709f4a5ff1a7c2422c4fc63d26d3d8444ef7c5ae222cd710b8912d02ca7cca",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"Serialize": {
+			"source": "mainnet://1e4aa0b87d10b141.Serialize",
+			"hash": "50bf2599bac68e3fb0e426a262e7db2eed91b90c0a5ad57e70688cbf93282b4f",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141"
+			}
+		},
+		"SerializeMetadata": {
+			"source": "mainnet://1e4aa0b87d10b141.SerializeMetadata",
+			"hash": "7be42ac4e42fd3019ab6771f205abeb80ded5a461649a010b1a0668533909012",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141"
+			}
+		},
 		"StableSwapFactory": {
 			"source": "mainnet://b063c16cac85dbd1.StableSwapFactory",
 			"hash": "46318aee6fd29616c8048c23210d4c4f5b172eb99a0ca911fbd849c831a52a0b",
 			"aliases": {
 				"emulator": "f3fcd2c1a78f5eee",
 				"mainnet": "b063c16cac85dbd1"
+			}
+		},
+		"StringUtils": {
+			"source": "mainnet://1e4aa0b87d10b141.StringUtils",
+			"hash": "a2a029e106525b53f1a2bbb25aedd161bf79dce66f76bae1a2d75a63522b6460",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141"
 			}
 		},
 		"SwapConfig": {
@@ -280,14 +531,6 @@
 				"mainnet": "a6850776a94e6551"
 			}
 		},
-		"USDCFlow": {
-			"source": "mainnet://f1ab99c82dee3526.USDCFlow",
-			"hash": "221e4f6b0d3cfc61d6baab6c968d962ff019a58e1eff43835daa7e62258c8fc5",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "f1ab99c82dee3526"
-			}
-		},
 		"ViewResolver": {
 			"source": "mainnet://1d7e57aa55817448.ViewResolver",
 			"hash": "374a1994046bac9f6228b4843cb32393ef40554df9bd9907a702d098a2987bde",
@@ -326,6 +569,13 @@
 				"location": "local/mock-incrementfi.pkey"
 			}
 		},
+		"mock-strategy-deployer": {
+			"address": "a176eb9f47426b96",
+			"key": {
+				"type": "file",
+				"location": "mock-strategy-deployer.pkey"
+			}
+		},
 		"test-user": {
 			"address": "179b6b1cb6755e31",
 			"key": {
@@ -334,60 +584,38 @@
 			}
 		},
 		"testnet-admin": {
-			"address": "2ab6f469ee0dfbb6",
+			"address": "d27920b6384e2a78",
 			"key": {
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
+		},
+		"testnet-deployer": {
+			"address": "29242c62f18538c9",
+			"key": {
+				"type": "file",
+				"location": "testnet-deployer.pkey"
+			}
+		},
+		"testnet-uniswapV3-connectors-deployer": {
+			"address": "a87f1085c356a8e3",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
+		"tidal": {
+			"address": "045a1763c93006ca",
+			"key": {
+				"type": "file",
+				"location": "local/tidal.pkey"
+			}
 		}
 	},
 	"deployments": {
 		"emulator": {
-			"emulator-account": [
-				"FlowEVMBridgeHandlerInterfaces",
-				"USDCFlow",
-				"DeFiActionsMathUtils",
-				"DeFiActionsUtils",
-				"DeFiActions",
-				"FlowStorageFees",
-				"FungibleTokenConnectors",
-				"SwapConnectors",
-				{
-					"name": "MOET",
-					"args": [
-						{
-							"value": "1000000.00000000",
-							"type": "UFix64"
-						}
-					]
-				},
-				"DummyConnectors",
-				"TidalProtocol",
-				{
-					"name": "YieldToken",
-					"args": [
-						{
-							"value": "1000000.00000000",
-							"type": "UFix64"
-						}
-					]
-				},
-				{
-					"name": "MockOracle",
-					"args": [
-						{
-							"value": "A.f8d6e0586b0a20c7.MOET.Vault",
-							"type": "String"
-						}
-					]
-				},
-				"MockSwapper",
-				"TidalYieldAutoBalancers",
-				"TidalYieldClosedBeta",
-				"TidalYield",
-				"TidalYieldStrategies"
-			],
 			"mock-incrementfi": [
 				"SwapConfig",
 				"SwapInterfaces",
@@ -403,6 +631,69 @@
 				},
 				"StableSwapFactory",
 				"SwapRouter"
+			],
+			"tidal": [
+				"DeFiActionsMathUtils",
+				"DeFiActionsUtils",
+				"DeFiActions",
+				"FungibleTokenConnectors",
+				"SwapConnectors",
+				"DummyConnectors",
+				"TidalProtocol",
+				{
+					"name": "MOET",
+					"args": [
+						{
+							"value": "1000000.00000000",
+							"type": "UFix64"
+						}
+					]
+				},
+				{
+					"name": "YieldToken",
+					"args": [
+						{
+							"value": "1000000.00000000",
+							"type": "UFix64"
+						}
+					]
+				},
+				{
+					"name": "MockOracle",
+					"args": [
+						{
+							"value": "A.045a1763c93006ca.MOET.Vault",
+							"type": "String"
+						}
+					]
+				},
+				"MockSwapper",
+				"EVMAbiHelpers",
+				"TidalYieldAutoBalancers",
+				"TidalYieldClosedBeta",
+				"TidalYield",
+				"UniswapV3SwapConnectors",
+				{
+					"name": "TidalYieldStrategies",
+					"args": [
+						{
+							"value": "0x986Cb42b0557159431d48fE0A40073296414d410",
+							"type": "String"
+						},
+						{
+							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+							"type": "String"
+						},
+						{
+							"value": "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C",
+							"type": "String"
+						},
+						{
+							"value": "0xaCCF0c4EeD4438Ad31Cd340548f4211a465B6528",
+							"type": "String"
+						}
+					]
+				}
 			]
 		},
 		"testnet": {
@@ -437,16 +728,40 @@
 					"name": "MockOracle",
 					"args": [
 						{
-							"value": "A.2ab6f469ee0dfbb6.MOET.Vault",
+							"value": "A.d27920b6384e2a78.MOET.Vault",
 							"type": "String"
 						}
 					]
 				},
 				"MockSwapper",
+				"EVMAbiHelpers",
 				"TidalYieldAutoBalancers",
 				"TidalYieldClosedBeta",
 				"TidalYield",
-				"TidalYieldStrategies"
+				{
+					"name": "TidalYieldStrategies",
+					"args": [
+						{
+							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+							"type": "String"
+						},
+						{
+							"value": "0x2Db6468229F6fB1a77d248Dbb1c386760C257804",
+							"type": "String"
+						},
+						{
+							"value": "0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c",
+							"type": "String"
+						},
+						{
+							"value": "0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95",
+							"type": "String"
+						}
+					]
+				}
+			],
+			"testnet-uniswapV3-connectors-deployer": [
+				"UniswapV3SwapConnectors"
 			]
 		}
 	}
