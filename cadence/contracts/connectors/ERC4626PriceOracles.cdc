@@ -27,23 +27,25 @@ access(all) contract ERC4626PriceOracles {
         access(all) let vault: EVM.EVMAddress
         /// The asset type serving as the price basis in the ERC4626 vault
         access(self) let asset: Type
-        /// The COA capability to use for the ERC4626 vault
-        access(self) let coa: Capability<&EVM.CadenceOwnedAccount>
         /// The UniqueIdentifier of this component
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
 
-        init(asset: Type, vault: EVM.EVMAddress, coa: Capability<&EVM.CadenceOwnedAccount>, uniqueID: DeFiActions.UniqueIdentifier?) {
+        init(asset: Type, vault: EVM.EVMAddress, uniqueID: DeFiActions.UniqueIdentifier?) {
             pre {
                 asset.isSubtype(of: Type<@{FungibleToken.Vault}>()):
                 "Provided asset \(asset.identifier) is not a Vault type"
                 FlowEVMBridgeConfig.getEVMAddressAssociated(with: asset) != nil:
                 "Provided asset \(asset.identifier) is not associated with ERC20 - ensure the type & ERC20 contracts are associated via the VM bridge"
-                coa.check():
-                "Provided COA Capability is invalid - need Capability<&EVM.CadenceOwnedAccount>"
             }
+            assert(
+                ERC4626Utils.underlyingAssetEVMAddress(vault: vault)
+                    ?.equals(FlowEVMBridgeConfig.getEVMAddressAssociated(with: asset)!)
+                    ?? false,
+                message: "Provided asset \(asset.identifier) does not underly vault \(vault.toString())"
+            )
+
             self.asset = asset
             self.vault = vault
-            self.coa = coa
             self.uniqueID = uniqueID
         }
 
@@ -60,9 +62,9 @@ access(all) contract ERC4626PriceOracles {
         ///
         /// @return The current price of the ERC4626 vault denominated in the underlying asset type
         access(all) fun price(ofToken: Type): UFix64? {
-            let totalAssets = ERC4626Utils.totalAssets(coa: self.coa.borrow()!, vault: self.vault)
-            let totalShares = ERC4626Utils.totalShares(coa: self.coa.borrow()!, vault: self.vault)
-            if totalAssets == nil || totalShares == nil {
+            let totalAssets = ERC4626Utils.totalAssets(vault: self.vault)
+            let totalShares = ERC4626Utils.totalShares(vault: self.vault)
+            if totalAssets == nil || totalShares == nil || totalShares == UInt256(0) {
                 return nil
             }
             var price = totalAssets! / totalShares!

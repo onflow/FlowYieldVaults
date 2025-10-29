@@ -13,6 +13,7 @@ import "FlowEVMBridgeConfig"
 ///
 access(all) contract ERC4626Utils {
 
+    /// COA used to make calls to the ERC4626 vault
     access(self) let callingCOA: @EVM.CadenceOwnedAccount
 
     /// Normalizes decimals of the given amount to the target decimals

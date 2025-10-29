@@ -75,7 +75,7 @@ access(all) contract ERC4626SinkConnectors {
                 return 0.0
             }
             // Check the ERC4626 vault has capacity to deposit the assets
-            let max = ERC4626Utils.maxDeposit(coa: coa!, vault: self.vault, receiver: coa!.address())
+            let max = ERC4626Utils.maxDeposit(vault: self.vault, receiver: coa!.address())
             return max != nil ? FlowEVMBridgeUtils.convertERC20AmountToCadenceAmount(max!, erc20Address: self.assetEVMAddress) : 0.0
         }
         /// Deposits up to the Sink's capacity from the provided Vault
