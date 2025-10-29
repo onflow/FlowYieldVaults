@@ -4,9 +4,6 @@
 
 The UniswapV3 swap transaction from Cadence was failing on the emulator, while direct EVM transactions using `cast` were working correctly.
 
-**Client Report:**
-> "I can swap MOET for USDC using cast, but the same swap transaction doesn't work from cadence"
-
 **Symptoms:**
 - `cast send` commands to the Uniswap router worked fine
 - Cadence transactions using `UniswapV3SwapConnectors.Swapper` failed
