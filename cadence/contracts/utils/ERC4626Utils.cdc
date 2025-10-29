@@ -1,5 +1,6 @@
 import "EVM"
 import "FlowEVMBridgeUtils"
+import "FlowEVMBridgeConfig"
 
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 /// THIS CONTRACT IS IN BETA AND IS NOT FINALIZED - INTERFACES MAY CHANGE AND/OR PENDING CHANGES MAY REQUIRE REDEPLOYMENT
@@ -11,6 +12,8 @@ import "FlowEVMBridgeUtils"
 /// OpenZeppelin ERC4626 implementation and support view methods on the underlying ERC4626 contract.
 ///
 access(all) contract ERC4626Utils {
+
+    access(self) let callingCOA: @EVM.CadenceOwnedAccount
 
     /// Normalizes decimals of the given amount to the target decimals
     ///
@@ -31,24 +34,25 @@ access(all) contract ERC4626Utils {
         return res
     }
 
-    /// Returns the total shares issued by the ERC4626 vault
+    /// Returns the EVM address of the underlying asset for the given ERC4626 vault
     ///
-    /// @param coa The COA used to call the ERC4626 vault
     /// @param vault The address of the ERC4626 vault
     ///
-    /// @return The total shares issued by the ERC4626 vault
-    access(all) fun totalShares(coa: &EVM.CadenceOwnedAccount, vault: EVM.EVMAddress): UInt256? {
+    /// @return The EVM address of the underlying asset for the given ERC4626 vault
+    access(all)
+    fun underlyingAssetEVMAddress(vault: EVM.EVMAddress): EVM.EVMAddress? {
+        let coa = &ERC4626Utils.callingCOA as &EVM.CadenceOwnedAccount
         let callRes = coa.dryCall(
                 to: vault,
-                data: EVM.encodeABIWithSignature("totalSupply()", []),
+                data: EVM.encodeABIWithSignature("asset()", []),
                 gasLimit: 100_000,
                 value: EVM.Balance(attoflow: 0)
             )
         if callRes.status != EVM.Status.successful || callRes.data.length == 0 {
             return nil
         }
-        let totalShares = EVM.decodeABI(types: [Type<UInt256>()], data: callRes.data)
-        return totalShares[0] as! UInt256
+        let decoded = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callRes.data)
+        return decoded[0] as! EVM.EVMAddress
     }
 
     /// Returns the total assets managed by the ERC4626 vault
@@ -58,10 +62,33 @@ access(all) contract ERC4626Utils {
     ///
     /// @return The total assets managed by the ERC4626 vault. Callers should anticipate the address of the asset and
     ///         the decimals of the asset being returned.
-    access(all) fun totalAssets(coa: &EVM.CadenceOwnedAccount, vault: EVM.EVMAddress): UInt256? {
+    access(all) fun totalAssets(vault: EVM.EVMAddress): UInt256? {
+        let coa = &ERC4626Utils.callingCOA as &EVM.CadenceOwnedAccount
         let callRes = coa.dryCall(
                 to: vault,
                 data: EVM.encodeABIWithSignature("totalAssets()", []),
+                gasLimit: 100_000,
+                value: EVM.Balance(attoflow: 0)
+            )
+        if callRes.status != EVM.Status.successful || callRes.data.length == 0 {
+            return nil
+        }
+        let totalAssets = EVM.decodeABI(types: [Type<UInt256>()], data: callRes.data)
+        return totalAssets[0] as! UInt256
+    }
+
+    /// Returns the total shares issued by the ERC4626 vault
+    ///
+    /// @param coa The COA used to call the ERC4626 vault
+    /// @param vault The address of the ERC4626 vault
+    ///
+    /// @return The total shares issued by the ERC4626 vault. Callers should anticipate the address of the asset and
+    ///         the decimals of the asset being returned.
+    access(all) fun totalShares(vault: EVM.EVMAddress): UInt256? {
+        let coa = &ERC4626Utils.callingCOA as &EVM.CadenceOwnedAccount
+        let callRes = coa.dryCall(
+                to: vault,
+                data: EVM.encodeABIWithSignature("totalSupply()", []),
                 gasLimit: 100_000,
                 value: EVM.Balance(attoflow: 0)
             )
@@ -81,7 +108,8 @@ access(all) contract ERC4626Utils {
     /// @return The maximum amount of assets that can be deposited into the ERC4626 vault for the receiver, returned in
     ///         the asset's decimals.
     access(all)
-    fun maxDeposit(coa: &EVM.CadenceOwnedAccount, vault: EVM.EVMAddress, receiver: EVM.EVMAddress): UInt256? {
+    fun maxDeposit(vault: EVM.EVMAddress, receiver: EVM.EVMAddress): UInt256? {
+        let coa = &ERC4626Utils.callingCOA as &EVM.CadenceOwnedAccount
         let callRes = coa.dryCall(
                 to: vault,
                 data: EVM.encodeABIWithSignature("maxDeposit(address)", [receiver]),
@@ -104,7 +132,8 @@ access(all) contract ERC4626Utils {
     /// @return The amount of shares that would be minted for the given asset amount under current conditions. Callers
     ///         should anticipate the address of the asset and the decimals of the vault shares being returned.
     access(all)
-    fun previewDeposit(coa: &EVM.CadenceOwnedAccount, vault: EVM.EVMAddress, assetAmount: UInt256): UInt256? {
+    fun previewDeposit(vault: EVM.EVMAddress, assetAmount: UInt256): UInt256? {
+        let coa = &ERC4626Utils.callingCOA as &EVM.CadenceOwnedAccount
         let callRes = coa.dryCall(
                 to: vault,
                 data: EVM.encodeABIWithSignature("previewDeposit(uint256)", [assetAmount]),
@@ -116,5 +145,9 @@ access(all) contract ERC4626Utils {
         }
         let previewDeposit = EVM.decodeABI(types: [Type<UInt256>()], data: callRes.data)
         return previewDeposit[0] as! UInt256
+    }
+
+    init() {
+        self.callingCOA <- EVM.createCadenceOwnedAccount()
     }
 }
