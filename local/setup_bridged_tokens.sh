@@ -1,15 +1,16 @@
 #!/bin/bash
 
-# Load dynamically deployed addresses if available
+# Always load the base environment for other variables (RPC_URL, PK_ACCOUNT, etc.)
+source ./local/punchswap/punchswap.env
+
+# Then optionally override token addresses with dynamically deployed ones
 if [ -f ./local/deployed_addresses.env ]; then
     echo "=== Loading dynamically deployed addresses ==="
     source ./local/deployed_addresses.env
     echo "USDC_ADDR: $USDC_ADDR"
     echo "WBTC_ADDR: $WBTC_ADDR"
 else
-    # Fallback to punchswap.env if deployed_addresses.env doesn't exist
-    echo "=== Using addresses from punchswap.env (fallback) ==="
-    source ./local/punchswap/punchswap.env
+    echo "=== Using token addresses from punchswap.env ==="
     echo "USDC_ADDR: $USDC_ADDR"
     echo "WBTC_ADDR: $WBTC_ADDR"
 fi
