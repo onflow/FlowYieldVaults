@@ -13,9 +13,9 @@ transaction() {
 
     let factory = EVM.addressFromString("0x986Cb42b0557159431d48fE0A40073296414d410")
 
-    let router = EVM.addressFromString("0x2Db6468229F6fB1a77d248Dbb1c386760C257804")
+    let router = EVM.addressFromString("0x497ad81a7Fe6Be58457475f6A21C70c0Ceddca0B") // SwapRouter02
 
-    let quoter = EVM.addressFromString("0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c")
+    let quoter = EVM.addressFromString("0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C") // QuoterV2
 
     // Note: Update these addresses based on actual deployment
     // To get MOET EVM address: flow scripts execute ./cadence/scripts/helpers/get_moet_evm_address.cdc
