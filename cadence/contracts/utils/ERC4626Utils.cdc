@@ -23,7 +23,7 @@ access(all) contract ERC4626Utils {
     /// @param targetDecimals The target decimals to normalize to
     ///
     /// @return The normalized amount
-    access(all) fun normalizeDecimals(amount: UInt256, originalDecimals: UInt8, targetDecimals: UInt8): UInt256 {
+    access(all) view fun normalizeDecimals(amount: UInt256, originalDecimals: UInt8, targetDecimals: UInt8): UInt256 {
         var res = amount
         if originalDecimals > targetDecimals {
             // decimals is greater than targetDecimals - truncate the fractional part
@@ -42,13 +42,7 @@ access(all) contract ERC4626Utils {
     /// @return The EVM address of the underlying asset for the given ERC4626 vault
     access(all)
     fun underlyingAssetEVMAddress(vault: EVM.EVMAddress): EVM.EVMAddress? {
-        let coa = &ERC4626Utils.callingCOA as &EVM.CadenceOwnedAccount
-        let callRes = coa.dryCall(
-                to: vault,
-                data: EVM.encodeABIWithSignature("asset()", []),
-                gasLimit: 100_000,
-                value: EVM.Balance(attoflow: 0)
-            )
+        let callRes = self._dryCall(to: vault, signature: "asset()", args: [], gasLimit: 100_000)
         if callRes.status != EVM.Status.successful || callRes.data.length == 0 {
             return nil
         }
@@ -58,19 +52,12 @@ access(all) contract ERC4626Utils {
 
     /// Returns the total assets managed by the ERC4626 vault
     ///
-    /// @param coa The COA used to call the ERC4626 vault
     /// @param vault The address of the ERC4626 vault
     ///
     /// @return The total assets managed by the ERC4626 vault. Callers should anticipate the address of the asset and
     ///         the decimals of the asset being returned.
     access(all) fun totalAssets(vault: EVM.EVMAddress): UInt256? {
-        let coa = &ERC4626Utils.callingCOA as &EVM.CadenceOwnedAccount
-        let callRes = coa.dryCall(
-                to: vault,
-                data: EVM.encodeABIWithSignature("totalAssets()", []),
-                gasLimit: 100_000,
-                value: EVM.Balance(attoflow: 0)
-            )
+        let callRes = self._dryCall(to: vault, signature: "totalAssets()", args: [], gasLimit: 100_000)
         if callRes.status != EVM.Status.successful || callRes.data.length == 0 {
             return nil
         }
@@ -80,19 +67,12 @@ access(all) contract ERC4626Utils {
 
     /// Returns the total shares issued by the ERC4626 vault
     ///
-    /// @param coa The COA used to call the ERC4626 vault
     /// @param vault The address of the ERC4626 vault
     ///
     /// @return The total shares issued by the ERC4626 vault. Callers should anticipate the address of the asset and
     ///         the decimals of the asset being returned.
     access(all) fun totalShares(vault: EVM.EVMAddress): UInt256? {
-        let coa = &ERC4626Utils.callingCOA as &EVM.CadenceOwnedAccount
-        let callRes = coa.dryCall(
-                to: vault,
-                data: EVM.encodeABIWithSignature("totalSupply()", []),
-                gasLimit: 100_000,
-                value: EVM.Balance(attoflow: 0)
-            )
+        let callRes = self._dryCall(to: vault, signature: "totalSupply()", args: [], gasLimit: 100_000)
         if callRes.status != EVM.Status.successful || callRes.data.length == 0 {
             return nil
         }
@@ -102,7 +82,6 @@ access(all) contract ERC4626Utils {
 
     /// Returns the maximum amount of assets that can be deposited into the ERC4626 vault
     ///
-    /// @param coa The COA used to call the ERC4626 vault
     /// @param vault The address of the ERC4626 vault
     /// @param receiver The address of the receiver of the deposit
     ///
@@ -110,13 +89,7 @@ access(all) contract ERC4626Utils {
     ///         the asset's decimals.
     access(all)
     fun maxDeposit(vault: EVM.EVMAddress, receiver: EVM.EVMAddress): UInt256? {
-        let coa = &ERC4626Utils.callingCOA as &EVM.CadenceOwnedAccount
-        let callRes = coa.dryCall(
-                to: vault,
-                data: EVM.encodeABIWithSignature("maxDeposit(address)", [receiver]),
-                gasLimit: 100_000,
-                value: EVM.Balance(attoflow: 0)
-            )
+        let callRes = self._dryCall(to: vault, signature: "maxDeposit(address)", args: [receiver], gasLimit: 100_000)
         if callRes.status != EVM.Status.successful || callRes.data.length == 0 {
             return nil
         }
@@ -126,26 +99,46 @@ access(all) contract ERC4626Utils {
 
     /// Returns the amount of shares that would be minted for the given asset amount under current conditions
     ///
-    /// @param coa The COA used to call the ERC4626 vault
     /// @param vault The address of the ERC4626 vault
-    /// @param assetAmount The amount of assets to deposit denominated in the asset's decimals
+    /// @param shares The amount of shares to mint denominated in the shares' decimals
+    ///
+    /// @return The amount of assets that would be required to mint the given shares under current conditions. Callers
+    ///         should anticipate the address of the asset and the decimals of the asset being returned.
+    access(all)
+    fun previewMint(vault: EVM.EVMAddress, shares: UInt256): UInt256? {
+        let callRes = self._dryCall(to: vault, signature: "previewMint(uint256)", args: [shares], gasLimit: 100_000)
+        if callRes.status != EVM.Status.successful || callRes.data.length == 0 {
+            return nil
+        }
+        let previewMint = EVM.decodeABI(types: [Type<UInt256>()], data: callRes.data)
+        return previewMint[0] as! UInt256
+    }
+
+    /// Returns the amount of shares that would be minted for the given asset amount under current conditions
+    ///
+    /// @param vault The address of the ERC4626 vault
+    /// @param assets The amount of assets to deposit denominated in the asset's decimals
     ///
     /// @return The amount of shares that would be minted for the given asset amount under current conditions. Callers
     ///         should anticipate the address of the asset and the decimals of the vault shares being returned.
     access(all)
-    fun previewDeposit(vault: EVM.EVMAddress, assetAmount: UInt256): UInt256? {
-        let coa = &ERC4626Utils.callingCOA as &EVM.CadenceOwnedAccount
-        let callRes = coa.dryCall(
-                to: vault,
-                data: EVM.encodeABIWithSignature("previewDeposit(uint256)", [assetAmount]),
-                gasLimit: 100_000,
-                value: EVM.Balance(attoflow: 0)
-            )
+    fun previewDeposit(vault: EVM.EVMAddress, assets: UInt256): UInt256? {
+        let callRes = self._dryCall(to: vault, signature: "previewDeposit(uint256)", args: [assets], gasLimit: 100_000)
         if callRes.status != EVM.Status.successful || callRes.data.length == 0 {
             return nil
         }
         let previewDeposit = EVM.decodeABI(types: [Type<UInt256>()], data: callRes.data)
         return previewDeposit[0] as! UInt256
+    }
+
+    access(self) fun _dryCall(to: EVM.EVMAddress, signature: String, args: [AnyStruct], gasLimit: UInt64): EVM.Result {
+        let coa = &ERC4626Utils.callingCOA as &EVM.CadenceOwnedAccount
+        return coa.dryCall(
+            to: to,
+            data: EVM.encodeABIWithSignature(signature, args),
+            gasLimit: gasLimit,
+            value: EVM.Balance(attoflow: 0)
+        )
     }
 
     init() {
