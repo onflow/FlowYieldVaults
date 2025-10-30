@@ -41,6 +41,8 @@ jobs:
         run: ./local/setup_wallets.sh
       - name: Run EVM gateway
         run: ./local/run_evm_gateway.sh
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
       - name: Deploy Punchswap contracts
         run: ./local/punchswap/setup_punchswap.sh
       - name: Setup Punchswap pools
