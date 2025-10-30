@@ -80,6 +80,23 @@ access(all) contract ERC4626Utils {
         return totalAssets[0] as! UInt256
     }
 
+    /// Returns the maximum amount of shares that can be redeemed from the given owner's balance in the ERC4626 vault
+    ///
+    /// @param vault The address of the ERC4626 vault
+    /// @param owner The address of the owner of the shares to redeem
+    ///
+    /// @return The maximum amount of shares that can be redeemed from the given owner's balance in the ERC4626 vault.
+    ///         Callers should anticipate the address of the shares and the decimals of the shares being returned.
+    access(all)
+    fun maxRedeem(vault: EVM.EVMAddress, owner: EVM.EVMAddress): UInt256? {
+        let callRes = self._dryCall(to: vault, signature: "maxRedeem(address)", args: [owner], gasLimit: 100_000)
+        if callRes.status != EVM.Status.successful || callRes.data.length == 0 {
+            return nil
+        }
+        let maxRedeem = EVM.decodeABI(types: [Type<UInt256>()], data: callRes.data)
+        return maxRedeem[0] as! UInt256
+    }
+
     /// Returns the maximum amount of assets that can be deposited into the ERC4626 vault
     ///
     /// @param vault The address of the ERC4626 vault
@@ -131,9 +148,16 @@ access(all) contract ERC4626Utils {
         return previewDeposit[0] as! UInt256
     }
 
+    /// Performs a dry call using the calling COA
+    ///
+    /// @param to The address of the contract to dry call
+    /// @param signature The signature of the function to dry call
+    /// @param args The arguments to pass to the function
+    /// @param gasLimit The gas limit for the dry call
+    ///
+    /// @return The result of the dry call
     access(self) fun _dryCall(to: EVM.EVMAddress, signature: String, args: [AnyStruct], gasLimit: UInt64): EVM.Result {
-        let coa = &ERC4626Utils.callingCOA as &EVM.CadenceOwnedAccount
-        return coa.dryCall(
+        return self.callingCOA.dryCall(
             to: to,
             data: EVM.encodeABIWithSignature(signature, args),
             gasLimit: gasLimit,
