@@ -1,9 +1,14 @@
+import "Burner"
 import "FungibleToken"
 import "EVM"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 import "DeFiActions"
+import "DeFiActionsUtils"
+import "ERC4626SinkConnectors"
+import "SwapConnectors"
 import "EVMTokenConnectors"
+import "ERC4626Utils"
 
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 /// THIS CONTRACT IS IN BETA AND IS NOT FINALIZED - INTERFACES MAY CHANGE AND/OR PENDING CHANGES MAY REQUIRE REDEPLOYMENT
@@ -35,21 +40,23 @@ access(all) contract ERC4626Swappers {
         /// The type of the bridged ERC4626 vault
         access(self) let vaultType: Type
         /// The COA capability to use for the ERC4626 vault
-        access(self) let coa: Capability<auth(EVM.Call) &EVM.CadenceOwnedAccount>
+        access(self) let coa: Capability<auth(EVM.Call, EVM.Bridge) &EVM.CadenceOwnedAccount>
         /// The token sink to use for the ERC4626 vault
-        access(self) let tokenSink: EVMTokenConnectors.Sink
+        access(self) let assetSink: ERC4626SinkConnectors.AssetSink
+        /// The token source to use for the ERC4626 vault
+        access(self) let shareSource: EVMTokenConnectors.Source
         /// The optional UniqueIdentifier of the ERC4626 vault
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
 
         init(
             asset: Type,
             vault: EVM.EVMAddress,
-            coa: Capability<auth(EVM.Call) &EVM.CadenceOwnedAccount>,
+            coa: Capability<auth(EVM.Call, EVM.Bridge) &EVM.CadenceOwnedAccount>,
             feeSource: {DeFiActions.Sink, DeFiActions.Source},
             uniqueID: DeFiActions.UniqueIdentifier?
         ) {
             pre {
-                asset.isSubtype(of: Type<@{FungibleToken.Vault}>()):
+                DeFiActionsUtils.definingContractIsFungibleToken(asset):
                 "Provided asset \(asset.identifier) is not a Vault type"
                 coa.check():
                 "Provided COA Capability is invalid - need Capability<&EVM.CadenceOwnedAccount>"
@@ -58,16 +65,25 @@ access(all) contract ERC4626Swappers {
             self.assetEVMAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: asset)
                 ?? panic("Provided asset \(asset.identifier) is not associated with ERC20 - ensure the type & ERC20 contracts are associated via the VM bridge")
             self.vault = vault
+            self.vaultType = FlowEVMBridgeConfig.getTypeAssociated(with: vault)
+                ?? panic("Provided ERC4626 Vault \(vault.toString()) is not associated with a Cadence FungibleToken - ensure the type & ERC4626 contracts are associated via the VM bridge")
+
             self.coa = coa
-            self.tokenSink = EVMTokenConnectors.Sink(
-                max: nil,
-                depositVaultType: asset,
-                address: coa.borrow()!.address(),
+            self.assetSink = ERC4626SinkConnectors.AssetSink(
+                asset: asset,
+                vault: vault,
+                coa: coa,
                 feeSource: feeSource,
                 uniqueID: uniqueID
             )
-            self.vaultType = FlowEVMBridgeConfig.getTypeAssociated(with: vault)
-                ?? panic("Provided ERC4626 Vault \(vault.toString()) is not associated with a Cadence FungibleToken - ensure the type & ERC4626 contracts are associated via the VM bridge")
+            self.shareSource = EVMTokenConnectors.Source(
+                min: nil,
+                withdrawVaultType: self.vaultType,
+                coa: coa,
+                feeSource: feeSource,
+                uniqueID: uniqueID
+            )
+            
             self.uniqueID = uniqueID
         }
 
@@ -81,17 +97,71 @@ access(all) contract ERC4626Swappers {
         }
         /// The estimated amount required to provide a Vault with the desired output balance
         access(all) fun quoteIn(forDesired: UFix64, reverse: Bool): {DeFiActions.Quote} {
-            panic("TODO: Implement quoteIn") // TODO: see ERC4626.previewMint()
+            let uintForDesired = FlowEVMBridgeUtils.convertCadenceAmountToERC20Amount(forDesired, erc20Address: self.vault)
+            if let uintRequired = ERC4626Utils.previewMint(vault: self.vault, shares: uintForDesired) {
+                let ufixRequired = FlowEVMBridgeUtils.convertERC20AmountToCadenceAmount(uintRequired, erc20Address: self.assetEVMAddress)
+                return SwapConnectors.BasicQuote(
+                    inType: self.asset,
+                    outType: self.vaultType,
+                    inAmount: 0.0,
+                    outAmount: ufixRequired
+                )
+            }
+            return SwapConnectors.BasicQuote(
+                inType: self.asset,
+                outType: self.vaultType,
+                inAmount: 0.0,
+                outAmount: 0.0
+            )
         }
         /// The estimated amount delivered out for a provided input balance
         access(all) fun quoteOut(forProvided: UFix64, reverse: Bool): {DeFiActions.Quote} {
-            panic("TODO: Implement quoteOut") // TODO: see ERC4626.convertToShares()
+            let uintForProvided = FlowEVMBridgeUtils.convertCadenceAmountToERC20Amount(forProvided, erc20Address: self.assetEVMAddress)
+            if let uintShares = ERC4626Utils.previewDeposit(vault: self.vault, assets: uintForProvided) {
+                let ufixShares = FlowEVMBridgeUtils.convertERC20AmountToCadenceAmount(uintShares, erc20Address: self.vault)
+                return SwapConnectors.BasicQuote(
+                    inType: self.asset,
+                    outType: self.vaultType,
+                    inAmount: 0.0,
+                    outAmount: ufixShares
+                )
+            }
+            return SwapConnectors.BasicQuote(
+                inType: self.asset,
+                outType: self.vaultType,
+                inAmount: 0.0,
+                outAmount: 0.0
+            )
         }
         /// Performs a swap taking a Vault of type inVault, outputting a resulting outVault. Implementations may choose
         /// to swap along a pre-set path or an optimal path of a set of paths or even set of contained Swappers adapted
         /// to use multiple Flow swap protocols.
         access(all) fun swap(quote: {DeFiActions.Quote}?, inVault: @{FungibleToken.Vault}): @{FungibleToken.Vault} {
-            panic("TODO: Implement swap") // TODO: perform the deposit & return the bridged shares
+            if inVault.balance == 0.0 {
+                // nothing to swap - burn the inVault and return an empty outVault
+                Burner.burn(<-inVault)
+                return <- DeFiActionsUtils.getEmptyVault(self.vaultType)
+            }
+
+            // assign or get the quote for the swap
+            let _quote = quote ?? self.quoteOut(forProvided: inVault.balance, reverse: false)
+
+            // get the before available shares
+            let beforeAvailable = self.shareSource.minimumAvailable()
+
+            // deposit the inVault into the asset sink
+            self.assetSink.depositCapacity(from: &inVault as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
+            assert(self.assetSink.minimumCapacity() > 0.0, message: "Expected ERC4626 Asset Sink to have capacity after depositing")
+            Burner.burn(<-inVault)
+
+            // get the after available shares
+            let afterAvailable = self.shareSource.minimumAvailable()
+            assert(afterAvailable > beforeAvailable, message: "Expected ERC4626 Vault \(self.vault.toString()) to have more shares after depositing")
+
+            // withdraw the available difference in shares
+            let availableDiff = afterAvailable - beforeAvailable
+            let sharesVault <- self.shareSource.withdrawAvailable(maxAmount: availableDiff)
+            return <- sharesVault
         }
         /// Performs a swap taking a Vault of type outVault, outputting a resulting inVault. Implementations may choose
         /// to swap along a pre-set path or an optimal path of a set of paths or even set of contained Swappers adapted
@@ -108,7 +178,8 @@ access(all) contract ERC4626Swappers {
                 type: self.getType(),
                 id: self.id(),
                 innerComponents: [
-                    self.tokenSink.getComponentInfo()
+                    self.assetSink.getComponentInfo(),
+                    self.shareSource.getComponentInfo()
                 ]
             )
         }
