@@ -174,7 +174,8 @@
 			"hash": "e70ddc2f0c7c72158a3f6c68de3a131e1f49e2908ad83eac0308f9e2953957d5",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007"
 			}
 		},
 		"Burner": {
@@ -200,7 +201,8 @@
 			"hash": "a9e2ba34ecffda196c58f5c1439bc257d48d0c81457597eb58eb5f879dd95e5a",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007"
 			}
 		},
 		"CrossVMToken": {
@@ -248,6 +250,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -257,6 +260,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -266,6 +270,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -295,6 +300,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -334,6 +340,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -388,6 +395,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -397,6 +405,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -406,6 +415,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -425,6 +435,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -471,7 +482,8 @@
 			"hash": "50bf2599bac68e3fb0e426a262e7db2eed91b90c0a5ad57e70688cbf93282b4f",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007"
 			}
 		},
 		"SerializeMetadata": {
@@ -479,7 +491,8 @@
 			"hash": "7be42ac4e42fd3019ab6771f205abeb80ded5a461649a010b1a0668533909012",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000001"
 			}
 		},
 		"StableSwapFactory": {
@@ -487,7 +500,8 @@
 			"hash": "46318aee6fd29616c8048c23210d4c4f5b172eb99a0ca911fbd849c831a52a0b",
 			"aliases": {
 				"emulator": "f3fcd2c1a78f5eee",
-				"mainnet": "b063c16cac85dbd1"
+				"mainnet": "b063c16cac85dbd1",
+				"testing": "0000000000000007"
 			}
 		},
 		"StringUtils": {
@@ -495,7 +509,8 @@
 			"hash": "a2a029e106525b53f1a2bbb25aedd161bf79dce66f76bae1a2d75a63522b6460",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "1e4aa0b87d10b141"
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007"
 			}
 		},
 		"SwapConfig": {
@@ -503,7 +518,8 @@
 			"hash": "ccafdb89804887e4e39a9b8fdff5c0ff0d0743505282f2a8ecf86c964e691c82",
 			"aliases": {
 				"emulator": "f3fcd2c1a78f5eee",
-				"mainnet": "b78ef7afa52ff906"
+				"mainnet": "b78ef7afa52ff906",
+				"testing": "0000000000000007"
 			}
 		},
 		"SwapError": {
@@ -511,7 +527,8 @@
 			"hash": "7d13a652a1308af387513e35c08b4f9a7389a927bddf08431687a846e4c67f21",
 			"aliases": {
 				"emulator": "f3fcd2c1a78f5eee",
-				"mainnet": "b78ef7afa52ff906"
+				"mainnet": "b78ef7afa52ff906",
+				"testing": "0000000000000007"
 			}
 		},
 		"SwapFactory": {
@@ -519,7 +536,8 @@
 			"hash": "1142e0102c8597e405e24ed2c6e5579b0faeca41f656818db10f3142a83493d2",
 			"aliases": {
 				"emulator": "f3fcd2c1a78f5eee",
-				"mainnet": "b063c16cac85dbd1"
+				"mainnet": "b063c16cac85dbd1",
+				"testing": "0000000000000007"
 			}
 		},
 		"SwapInterfaces": {
@@ -527,7 +545,8 @@
 			"hash": "570bb4b9c8da8e0caa8f428494db80779fb906a66cc1904c39a2b9f78b89c6fa",
 			"aliases": {
 				"emulator": "f3fcd2c1a78f5eee",
-				"mainnet": "b78ef7afa52ff906"
+				"mainnet": "b78ef7afa52ff906",
+				"testing": "0000000000000007"
 			}
 		},
 		"SwapRouter": {
@@ -535,7 +554,8 @@
 			"hash": "2ae9ecd237b7ea36b4fcc87f415d181b437543722a64f18094e026252607932c",
 			"aliases": {
 				"emulator": "f3fcd2c1a78f5eee",
-				"mainnet": "a6850776a94e6551"
+				"mainnet": "a6850776a94e6551",
+				"testing": "0000000000000007"
 			}
 		},
 		"USDCFlow": {
@@ -543,7 +563,8 @@
 			"hash": "221e4f6b0d3cfc61d6baab6c968d962ff019a58e1eff43835daa7e62258c8fc5",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "f1ab99c82dee3526"
+				"mainnet": "f1ab99c82dee3526",
+				"testing": "0000000000000007"
 			}
 		},
 		"ViewResolver": {
