@@ -25,7 +25,9 @@ access(all) contract ERC4626Swappers {
     ///
     /// An implementation of the DeFiActions.Swapper interface to swap assets to 4626 shares where the input token is
     /// underlying asset in the 4626 vault. Both the asset & the 4626 shares must be onboarded to the VM bridge in order
-    /// for liquidity to flow between Cadnece & EVM.
+    /// for liquidity to flow between Cadnece & EVM. These "swaps" are performed by depositing the input asset into the
+    /// ERC4626 vault and withdrawing the resulting shares from the ERC4626 vault.
+    ///
     /// NOTE: Since ERC4626 vaults typically do not support synchronous withdrawals, this Swapper only supports the
     ///     default inType -> outType path via swap() and reverts on swapBack() since the withdrawal cannot be returned
     ///     synchronously.
