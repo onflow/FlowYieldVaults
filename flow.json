@@ -1,7 +1,7 @@
 {
 	"contracts": {
 		"DeFiActions": {
-			"source": "./lib/FlowALP/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
@@ -9,7 +9,7 @@
 			}
 		},
 		"DeFiActionsMathUtils": {
-			"source": "./lib/FlowALP/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
@@ -17,7 +17,7 @@
 			}
 		},
 		"DeFiActionsUtils": {
-			"source": "./lib/FlowALP/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
@@ -33,7 +33,7 @@
 			}
 		},
 		"FungibleTokenConnectors": {
-			"source": "./lib/FlowALP/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
@@ -81,7 +81,7 @@
 			}
 		},
 		"SwapConnectors": {
-			"source": "./lib/FlowALP/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",

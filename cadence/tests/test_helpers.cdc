@@ -25,7 +25,7 @@ access(all)
 fun grantProtocolBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
     let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
     let betaTxn = Test.Transaction(
-        code: Test.readFile("../../lib/FlowALP/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc"),
+        code: Test.readFile("../../lib/FlowALP/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc"),
         authorizers: [admin.address, grantee.address],
         signers: signers,
         arguments: []
@@ -52,7 +52,7 @@ access(all) fun deployContracts() {
     // DeFiActions contracts
     var err = Test.deployContract(
         name: "DeFiActionsUtils",
-        path: "../../lib/FlowALP/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -63,25 +63,25 @@ access(all) fun deployContracts() {
     )
     err = Test.deployContract(
         name: "DeFiActionsMathUtils",
-        path: "../../lib/FlowALP/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "DeFiActions",
-        path: "../../lib/FlowALP/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "SwapConnectors",
-        path: "../../lib/FlowALP/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "FungibleTokenConnectors",
-        path: "../../lib/FlowALP/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -168,7 +168,7 @@ access(all) fun deployContracts() {
 
 access(all)
 fun setupFlowALP(signer: Test.TestAccount) {
-    let res = _executeTransaction("../transactions/tidal-protocol/create_and_store_pool.cdc",
+    let res = _executeTransaction("../transactions/flow-alp/create_and_store_pool.cdc",
             [],
             signer
         )
@@ -213,7 +213,7 @@ fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
 
 access(all)
 fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowALP.PositionDetails {
-    let res = _executeScript("../scripts/tidal-protocol/position_details.cdc",
+    let res = _executeScript("../scripts/flow-alp/position_details.cdc",
             [pid]
         )
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
@@ -224,7 +224,7 @@ fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowALP.PositionDetails {
 access(all)
 fun getReserveBalanceForType(vaultIdentifier: String): UFix64 {
     let res = _executeScript(
-        "../../lib/FlowALP/cadence/scripts/tidal-protocol/get_reserve_balance_for_type.cdc",
+        "../../lib/FlowALP/cadence/scripts/flow-alp/get_reserve_balance_for_type.cdc",
             [vaultIdentifier]
         )
     Test.expect(res, Test.beSucceeded())
@@ -240,7 +240,7 @@ fun positionAvailableBalance(
     beFailed: Bool
 ): UFix64 {
     let res = _executeScript(
-        "../scripts/tidal-protocol/get_available_balance.cdc",
+        "../scripts/flow-alp/get_available_balance.cdc",
             [pid, type, pullFromSource]
         )
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
@@ -253,7 +253,7 @@ fun positionAvailableBalance(
 access(all)
 fun createAndStorePool(signer: Test.TestAccount, defaultTokenIdentifier: String, beFailed: Bool) {
     let createRes = _executeTransaction(
-        "../transactions/tidal-protocol/pool-factory/create_and_store_pool.cdc",
+        "../transactions/flow-alp/pool-factory/create_and_store_pool.cdc",
         [defaultTokenIdentifier],
         signer
     )
@@ -270,7 +270,7 @@ fun addSupportedTokenSimpleInterestCurve(
     depositCapacityCap: UFix64
 ) {
     let additionRes = _executeTransaction(
-        "../transactions/tidal-protocol/pool-governance/add_supported_token_simple_interest_curve.cdc",
+        "../transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc",
         [ tokenTypeIdentifier, collateralFactor, borrowFactor, depositRate, depositCapacityCap ],
         signer
     )
@@ -280,7 +280,7 @@ fun addSupportedTokenSimpleInterestCurve(
 access(all)
 fun rebalancePosition(signer: Test.TestAccount, pid: UInt64, force: Bool, beFailed: Bool) {
     let rebalanceRes = _executeTransaction(
-        "../transactions/tidal-protocol/pool-management/rebalance_position.cdc",
+        "../transactions/flow-alp/pool-management/rebalance_position.cdc",
         [ pid, force ],
         signer
     )
@@ -349,7 +349,7 @@ fun rebalanceTide(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: B
 
 // access(all)
 // fun rebalancePosition(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
-//     let res = _executeTransaction("../../lib/FlowALP/cadence/transactions/tidal-protocol/pool-management/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
+//     let res = _executeTransaction("../../lib/FlowALP/cadence/transactions/flow-alp/pool-management/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
 //     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 // }
 

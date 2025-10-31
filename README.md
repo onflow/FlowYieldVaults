@@ -1008,7 +1008,7 @@ flow transactions send cadence/transactions/tidal-yield/admin/rebalance_auto_bal
   $TIDE_ID true \
   --signer test-account
 
-flow transactions send cadence/transactions/tidal-protocol/pool-management/rebalance_position.cdc \
+flow transactions send cadence/transactions/flow-alp/pool-management/rebalance_position.cdc \
   $TIDE_ID true \
   --signer test-account
 
@@ -1500,10 +1500,10 @@ scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc
 
 ```bash
 # Overall position health (collateralization ratio)
-scripts/tidal-protocol/position_health.cdc
+scripts/flow-alp/position_health.cdc
 
 # Available balance for withdrawal from position
-scripts/tidal-protocol/get_available_balance.cdc
+scripts/flow-alp/get_available_balance.cdc
 ```
 
 #### User Balance
