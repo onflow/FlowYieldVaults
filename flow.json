@@ -95,6 +95,22 @@
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
+		"FlowTransactionScheduler": {
+			"source": "mainnet://e467b9dd11fa00df.FlowTransactionScheduler",
+			"hash": "b4ffff99e53d7a837744c473da51bdb062486497cb9d4a56b1e2a880d0539d9c",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "e467b9dd11fa00df",
+				"testnet": "8c5303eaa26202d6"
+			}
+		},
+		"FlowTransactionSchedulerUtils": {
+			"source": "mainnet://e467b9dd11fa00df.FlowTransactionSchedulerUtils",
+			"hash": "2e26d0bf8e6278b79880a47cb3cd55c499777fb96d76bde3f647b546805bc470",
+			"aliases": {
+				"mainnet": "e467b9dd11fa00df"
+			}
+		},
 		"FlowVaults": {
 			"source": "cadence/contracts/FlowVaults.cdc",
 			"aliases": {

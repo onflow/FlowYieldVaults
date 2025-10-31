@@ -3,6 +3,7 @@ import "Burner"
 import "FungibleToken"
 // DeFiActions
 import "DeFiActions"
+import "FlowTransactionScheduler"
 
 /// FlowVaultsAutoBalancers
 ///
@@ -67,6 +68,7 @@ access(all) contract FlowVaultsAutoBalancers {
                 upperThreshold: upperThreshold,
                 rebalanceSink: rebalanceSink,
                 rebalanceSource: rebalanceSource,
+                recurringConfig: nil,
                 uniqueID: uniqueID
             )
         self.account.storage.save(<-autoBalancer, to: storagePath)
@@ -77,7 +79,8 @@ access(all) contract FlowVaultsAutoBalancers {
         self.account.capabilities.publish(publicCap, at: publicPath)
 
         // issue private capability & set within AutoBalancer
-        let authorizedCap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw) &DeFiActions.AutoBalancer>(storagePath)
+        let authorizedCap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw, FlowTransactionScheduler.Execute
+) &DeFiActions.AutoBalancer>(storagePath)
         autoBalancerRef.setSelfCapability(authorizedCap)
 
         // ensure proper configuration before closing
