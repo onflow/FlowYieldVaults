@@ -8,14 +8,6 @@
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
-		"DeFiActionsMathUtils": {
-			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
-			}
-		},
 		"DeFiActionsUtils": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
 			"aliases": {
@@ -341,7 +333,6 @@
 				"FlowEVMBridgeHandlerInterfaces",
 				"USDCFlow",
 				"FlowALPMath",
-				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",
 				"DeFiActions",
 				"FlowStorageFees",
@@ -401,7 +392,6 @@
 		},
 		"testnet": {
 			"testnet-admin": [
-				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",
 				"DeFiActions",
 				"FlowStorageFees",

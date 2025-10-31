@@ -62,12 +62,6 @@ access(all) fun deployContracts() {
         arguments: []
     )
     err = Test.deployContract(
-        name: "DeFiActionsMathUtils",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
         name: "DeFiActions",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
         arguments: []
