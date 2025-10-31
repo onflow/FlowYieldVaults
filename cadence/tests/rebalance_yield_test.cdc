@@ -41,7 +41,7 @@ fun setup() {
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
 
-    // setup TidalProtocol with a Pool & add FLOW as supported token
+    // setup FlowALP with a Pool & add FLOW as supported token
     createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
     addSupportedTokenSimpleInterestCurve(
         signer: protocolAccount,
@@ -55,7 +55,7 @@ fun setup() {
     // open wrapped position (pushToDrawDownSink)
     // the equivalent of depositing reserves
     let openRes = executeTransaction(
-        "../../lib/TidalProtocol/cadence/tests/transactions/mock-tidal-protocol-consumer/create_wrapped_position.cdc",
+        "../../lib/FlowALP/cadence/tests/transactions/mock-tidal-protocol-consumer/create_wrapped_position.cdc",
         [reserveAmount/2.0, /storage/flowTokenVault, true],
         protocolAccount
     )

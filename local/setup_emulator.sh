@@ -8,7 +8,7 @@ flow deploy
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.0ae53cb6e3f42a79.FlowToken.Vault' 0.5
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.f8d6e0586b0a20c7.YieldToken.Vault' 1.0
 
-# configure TidalProtocol
+# configure FlowALP
 #
 # create Pool with MOET as default token
 flow transactions send ./cadence/transactions/tidal-protocol/pool-factory/create_and_store_pool.cdc 'A.f8d6e0586b0a20c7.MOET.Vault'
@@ -34,7 +34,7 @@ flow transactions send ./cadence/transactions/tidal-yield/admin/add_strategy_com
 
 # grant PoolBeta cap
 echo "Grant Protocol Beta access to TidalYield"
-flow transactions send ./lib/TidalProtocol/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc \
+flow transactions send ./lib/FlowALP/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc \
   --authorizer emulator-account,emulator-account \
   --proposer emulator-account \
   --payer emulator-account

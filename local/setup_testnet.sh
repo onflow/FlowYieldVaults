@@ -8,7 +8,7 @@ flow project deploy --network testnet --update
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.7e60df042a9c0868.FlowToken.Vault' 0.5 --network testnet --signer testnet-admin
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.2ab6f469ee0dfbb6.YieldToken.Vault' 1.0 --network testnet --signer testnet-admin
 
-# configure TidalProtocol
+# configure FlowALP
 #
 # create Pool with MOET as default token
 flow transactions send ./cadence/transactions/tidal-protocol/pool-factory/create_and_store_pool.cdc 'A.2ab6f469ee0dfbb6.MOET.Vault' --network testnet --signer testnet-admin
@@ -38,7 +38,7 @@ flow transactions send ./cadence/transactions/tidal-yield/admin/add_strategy_com
 
 # grant PoolBeta cap
 echo "Grant Protocol Beta access to TidalYield"
-flow transactions send ./lib/TidalProtocol/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc \
+flow transactions send ./lib/FlowALP/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc \
   --authorizer testnet-admin,testnet-admin \
   --proposer testnet-admin \
   --payer testnet-admin \

@@ -1,7 +1,7 @@
 {
 	"contracts": {
 		"DeFiActions": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
+			"source": "./lib/FlowALP/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
@@ -9,7 +9,7 @@
 			}
 		},
 		"DeFiActionsMathUtils": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
+			"source": "./lib/FlowALP/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
@@ -17,7 +17,7 @@
 			}
 		},
 		"DeFiActionsUtils": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
+			"source": "./lib/FlowALP/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
@@ -25,7 +25,7 @@
 			}
 		},
 		"DummyConnectors": {
-			"source": "./lib/TidalProtocol/cadence/contracts/mocks/DummyConnectors.cdc",
+			"source": "./lib/FlowALP/cadence/contracts/mocks/DummyConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000008",
@@ -33,7 +33,7 @@
 			}
 		},
 		"FungibleTokenConnectors": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
+			"source": "./lib/FlowALP/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
@@ -41,7 +41,7 @@
 			}
 		},
 		"MOET": {
-			"source": "./lib/TidalProtocol/cadence/contracts/MOET.cdc",
+			"source": "./lib/FlowALP/cadence/contracts/MOET.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000008",
@@ -72,8 +72,8 @@
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
-		"MockTidalProtocolConsumer": {
-			"source": "./lib/TidalProtocol/cadence/contracts/mocks/MockTidalProtocolConsumer.cdc",
+		"MockFlowALPConsumer": {
+			"source": "./lib/FlowALP/cadence/contracts/mocks/MockFlowALPConsumer.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000008",
@@ -81,7 +81,7 @@
 			}
 		},
 		"SwapConnectors": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
+			"source": "./lib/FlowALP/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
@@ -89,14 +89,14 @@
 			}
 		},
 		"TidalMath": {
-			"source": "./lib/TidalProtocol/cadence/lib/TidalMath.cdc",
+			"source": "./lib/FlowALP/cadence/lib/TidalMath.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
-		"TidalProtocol": {
-			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
+		"FlowALP": {
+			"source": "./lib/FlowALP/cadence/contracts/FlowALP.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000008",
@@ -357,7 +357,7 @@
 					]
 				},
 				"DummyConnectors",
-				"TidalProtocol",
+				"FlowALP",
 				{
 					"name": "YieldToken",
 					"args": [
@@ -417,7 +417,7 @@
 					]
 				},
 				"DummyConnectors",
-				"TidalProtocol",
+				"FlowALP",
 				{
 					"name": "YieldToken",
 					"args": [

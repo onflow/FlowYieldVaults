@@ -6,7 +6,7 @@ import "DeFiActionsUtils"
 import "DeFiActions"
 import "SwapConnectors"
 // Lending protocol
-import "TidalProtocol"
+import "FlowALP"
 // TidalYield platform
 import "TidalYieldClosedBeta"
 import "TidalYield"
@@ -37,7 +37,7 @@ access(all) contract TidalYieldStrategies {
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let IssuerStoragePath: StoragePath
 
-    /// This is the first Strategy implementation, wrapping a TidalProtocol Position along with its related Sink &
+    /// This is the first Strategy implementation, wrapping a FlowALP Position along with its related Sink &
     /// Source. While this object is a simple wrapper for the top-level collateralized position, the true magic of the
     /// DeFiActions is in the stacking of the related connectors. This stacking logic can be found in the
     /// TracerStrategyComposer construct.
@@ -45,11 +45,11 @@ access(all) contract TidalYieldStrategies {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
-        access(self) let position: TidalProtocol.Position
+        access(self) let position: FlowALP.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
 
-        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: TidalProtocol.Position) {
+        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: FlowALP.Position) {
             self.uniqueID = id
             self.position = position
             self.sink = position.createSink(type: collateralType)
@@ -167,9 +167,9 @@ access(all) contract TidalYieldStrategies {
             // Swaps YieldToken & provides swapped MOET, sourcing YieldToken from the AutoBalancer
             let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMoetSwapper, source: abaSource, uniqueID: uniqueID)
 
-            // open a TidalProtocol position
-            let poolCap = TidalYieldStrategies.account.storage.load<Capability<auth(TidalProtocol.EParticipant, TidalProtocol.EPosition) &TidalProtocol.Pool>>(
-                from: TidalProtocol.PoolCapStoragePath
+            // open a FlowALP position
+            let poolCap = TidalYieldStrategies.account.storage.load<Capability<auth(FlowALP.EParticipant, FlowALP.EPosition) &FlowALP.Pool>>(
+                from: FlowALP.PoolCapStoragePath
             ) ?? panic("Missing pool capability")
 
             let poolRef = poolCap.borrow() ?? panic("Invalid Pool Cap")
@@ -180,8 +180,8 @@ access(all) contract TidalYieldStrategies {
                     repaymentSource: abaSwapSource,
                     pushToDrawDownSink: true
                 )
-            let position = TidalProtocol.Position(id: pid, pool: poolCap)
-            TidalYieldStrategies.account.storage.save(poolCap, to: TidalProtocol.PoolCapStoragePath)
+            let position = FlowALP.Position(id: pid, pool: poolCap)
+            TidalYieldStrategies.account.storage.save(poolCap, to: FlowALP.PoolCapStoragePath)
 
             // get Sink & Source connectors relating to the new Position
             let positionSink = position.createSinkWithOptions(type: collateralType, pushToDrawDownSink: true)

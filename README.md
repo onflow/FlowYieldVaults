@@ -1,6 +1,6 @@
 # Tidal Smart Contracts
 
-Tidal is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via TidalProtocol's Active Lending Platform. Tidal aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
+Tidal is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via FlowALP's Active Lending Platform. Tidal aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
 
 ## System Architecture
 
@@ -22,7 +22,7 @@ The main contract that orchestrates the entire yield farming system:
 
 Implements specific yield strategies:
 
-- **TracerStrategy**: A strategy that uses TidalProtocol lending positions with auto-balancing
+- **TracerStrategy**: A strategy that uses FlowALP lending positions with auto-balancing
 - **TracerStrategyComposer**: Creates TracerStrategy instances with complex DeFi Actions stacking
 - **StrategyComposerIssuer**: Controls access to strategy composer creation
 
@@ -41,7 +41,7 @@ Manages automated rebalancing of positions:
 Mock FungibleToken implementations representing:
 
 - **YieldToken**: Receipt tokens for yield-bearing positions
-- **MOET**: TidalProtocol's synthetic stablecoin
+- **MOET**: FlowALP's synthetic stablecoin
 
 ### Mock Infrastructure
 
@@ -63,7 +63,7 @@ Mock FungibleToken implementations representing:
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
 |---|---|---|---|
 | FlowActions | 0xd27920b6384e2a78 | DeFiActions | TBD |
-| TidalProtocol | 0xd27920b6384e2a78 | TidalProtocol | TBD |
+| FlowALP | 0xd27920b6384e2a78 | FlowALP | TBD |
 | TidalYield | 0xd27920b6384e2a78 | TidalYield | TBD |
 | TidalYieldStrategies | 0xd27920b6384e2a78 | TidalYieldStrategies | TBD |
 | MOET | 0xd27920b6384e2a78 | MOET | 0x51f5cc5f50afb81e8f23c926080fa38c3024b238 |
@@ -80,14 +80,14 @@ Mock FungibleToken implementations representing:
 
 ## How the System Works
 
-Below is an overview of the initial prototype Tracer Strategy in the broader context of TidalProtocol and the Tidal platform.
+Below is an overview of the initial prototype Tracer Strategy in the broader context of FlowALP and the Tidal platform.
 
 ### 1. Strategy Architecture
 
 The TracerStrategy demonstrates the power of DeFi Actions composition:
 
 ```
-User Deposit (FLOW) → TidalProtocol Position → MOET Issuance → Swap to YieldToken → AutoBalancer
+User Deposit (FLOW) → FlowALP Position → MOET Issuance → Swap to YieldToken → AutoBalancer
                                                ↑
                                          YieldToken → Swap to FLOW → Recollateralize Position
 ```
@@ -176,7 +176,7 @@ The Tidal platform implements sophisticated automatic rebalancing and recollater
 **Important Distinction:** The system has TWO different rebalancing mechanisms:
 
 1. **AutoBalancer Rebalancing** (DFB): Maintains optimal ratio between YieldToken holdings and expected deposit value
-2. **Position Rebalancing** (TidalProtocol): Maintains healthy collateralization ratios for lending positions
+2. **Position Rebalancing** (FlowALP): Maintains healthy collateralization ratios for lending positions
 
 These work together but serve different purposes and can trigger independently based on market conditions.
 
@@ -198,12 +198,12 @@ The AutoBalancer continuously monitors the **value ratio** between:
 
 **When:** Current YieldToken value > 105% historical value of deposits
 **Cause:** YieldToken price has increased OR position became over-collateralized leading to excess token holdings
-**Action:** AutoBalancer deposits excess YieldToken to the rebalanceSink, swapping to FLOW and recollateralizing the TidalProtocol position.
+**Action:** AutoBalancer deposits excess YieldToken to the rebalanceSink, swapping to FLOW and recollateralizing the FlowALP position.
 
 **Automated Flow:**
 
 ```
-YieldToken (excess) → Swap to FLOW → Deposit to TidalProtocol Position (recollateralization)
+YieldToken (excess) → Swap to FLOW → Deposit to FlowALP Position (recollateralization)
 ```
 
 **Result:**
@@ -252,7 +252,7 @@ The system creates a sophisticated token flow:
 
 1. **Initial Position Opening:**
 
-   - User deposits FLOW → TidalProtocol Position
+   - User deposits FLOW → FlowALP Position
    - Position issues MOET → Swaps to YieldToken
    - YieldToken held in AutoBalancer
 
@@ -323,7 +323,7 @@ This creates a fully automated yield farming system that adapts to market condit
 
 ## Interest Rate System
 
-The TidalProtocol implements a sophisticated interest rate system that governs borrowing costs and lending yields. This system is fundamental to the protocol's economics and affects all lending positions.
+The FlowALP implements a sophisticated interest rate system that governs borrowing costs and lending yields. This system is fundamental to the protocol's economics and affects all lending positions.
 
 ### How Interest Rates Work
 
@@ -508,15 +508,15 @@ The interest rate system is designed to:
 3. **Manage Risk**: Insurance reserves and dynamic adjustments protect the protocol
 4. **Enable Automation**: Continuous compounding without manual intervention
 
-This interest system is what enables the TidalProtocol to function as a sustainable lending platform while providing the foundation for complex yield farming strategies built on top.
+This interest system is what enables the FlowALP to function as a sustainable lending platform while providing the foundation for complex yield farming strategies built on top.
 
-## TidalProtocol Loan Health Mechanism
+## FlowALP Loan Health Mechanism
 
-The TidalProtocol implements a sophisticated loan health system that determines borrowing capacity, monitors position safety, and prevents liquidations. This system is fundamental to how the TracerStrategy calculates how much can be borrowed against a user's initial collateral position.
+The FlowALP implements a sophisticated loan health system that determines borrowing capacity, monitors position safety, and prevents liquidations. This system is fundamental to how the TracerStrategy calculates how much can be borrowed against a user's initial collateral position.
 
 ### Key Definitions
 
-Before diving into the mechanics, it's important to understand the core terminology used throughout the TidalProtocol loan system:
+Before diving into the mechanics, it's important to understand the core terminology used throughout the FlowALP loan system:
 
 #### Position-Related Terms
 
@@ -565,7 +565,7 @@ Position Health = Effective Collateral / Effective Debt
 #### Health Computation Function
 
 ```cadence
-// From TidalProtocol.cdc
+// From FlowALP.cdc
 access(all) fun healthComputation(effectiveCollateral: UFix64, effectiveDebt: UFix64): UFix64 {
     if effectiveCollateral == 0.0 {
         return 0.0
@@ -854,7 +854,7 @@ let value = tokenPrice * trueBalance
 - Cross-collateralization enables complex strategies
 - Unified health calculation across all assets
 
-This comprehensive loan health system enables the TidalProtocol to safely support leveraged yield farming strategies while maintaining strict risk management and protecting user funds from liquidation through automated rebalancing mechanisms.
+This comprehensive loan health system enables the FlowALP to safely support leveraged yield farming strategies while maintaining strict risk management and protecting user funds from liquidation through automated rebalancing mechanisms.
 
 ## Testing Rebalancing
 
@@ -1545,7 +1545,7 @@ scripts/tokens/get_balance.cdc
 1. **"Could not borrow AutoBalancer"** - Ensure Tide ID is correct
 2. **"No price set for token"** - Set initial prices for all tokens before testing
 3. **"Insufficient liquidity"** - Fund MockSwapper with adequate token reserves
-4. **"Position not found"** - Verify TidalProtocol position ID (different from Tide ID)
+4. **"Position not found"** - Verify FlowALP position ID (different from Tide ID)
 
 #### Debugging Commands:
 
