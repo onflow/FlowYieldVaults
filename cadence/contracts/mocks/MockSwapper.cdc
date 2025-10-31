@@ -112,7 +112,7 @@ access(all) contract MockSwapper {
 
             let uintAmount = FlowALPMath.toUFix128(amount)
             let uintInAmount = out ? uintAmount : FlowALPMath.div(uintAmount, uintPrice)
-            let uintOutAmount = out ? FlowALPMath.mul(uintAmount, uintPrice) : uintAmount
+            let uintOutAmount = out ? uintAmount * uintPrice : uintAmount
 
             let inAmount = FlowALPMath.toUFix64Round(uintInAmount)
             let outAmount = FlowALPMath.toUFix64Round(uintOutAmount)
