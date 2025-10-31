@@ -1,6 +1,6 @@
-import "TidalYield"
+import "FlowVaults"
 
-/// Adds the provided Strategy type to the Tidal StrategyFactory as built by the given StrategyComposer type
+/// Adds the provided Strategy type to the FlowVaults StrategyFactory as built by the given StrategyComposer type
 ///
 /// @param strategyIdentifier: The Type identifier of the Strategy to add to the StrategyFactory
 /// @param composerIdentifier: The Type identifier of the StrategyComposer that builds the Strategy Type
@@ -10,9 +10,9 @@ transaction(strategyIdentifier: String, composerIdentifier: String, issuerStorag
     /// The Strategy Type to add to the StrategyFactory
     let strategyType: Type
     /// The StrategyComposer that builds the Strategy Type
-    let composer: @{TidalYield.StrategyComposer}
+    let composer: @{FlowVaults.StrategyComposer}
     /// Authorized reference to the StrategyFactory to which the Strategy Type & StrategyComposer will be added
-    let factory: auth(Mutate) &TidalYield.StrategyFactory
+    let factory: auth(Mutate) &FlowVaults.StrategyFactory
 
     prepare(signer: auth(BorrowValue) &Account) {
         // construct the types
@@ -20,13 +20,13 @@ transaction(strategyIdentifier: String, composerIdentifier: String, issuerStorag
         let composerType = CompositeType(composerIdentifier) ?? panic("Invalid StrategyComposer type \(composerIdentifier)")
 
         // borrow reference to StrategyComposerIssuer & create the StategyComposer
-        let issuer = signer.storage.borrow<&{TidalYield.StrategyComposerIssuer}>(from: issuerStoragePath)
+        let issuer = signer.storage.borrow<&{FlowVaults.StrategyComposerIssuer}>(from: issuerStoragePath)
             ?? panic("Could not borrow reference to StrategyComposerIssuer from \(issuerStoragePath)")
         self.composer <- issuer.issueComposer(composerType)
 
         // assign StrategyFactory
-        self.factory = signer.storage.borrow<auth(Mutate) &TidalYield.StrategyFactory>(from: TidalYield.FactoryStoragePath)
-            ?? panic("Could not borrow reference to StrategyFactory from \(TidalYield.FactoryStoragePath)")
+        self.factory = signer.storage.borrow<auth(Mutate) &FlowVaults.StrategyFactory>(from: FlowVaults.FactoryStoragePath)
+            ?? panic("Could not borrow reference to StrategyFactory from \(FlowVaults.FactoryStoragePath)")
     }
 
     execute {

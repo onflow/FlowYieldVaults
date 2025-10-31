@@ -2,8 +2,8 @@ import "FungibleToken"
 import "FungibleTokenMetadataViews"
 import "ViewResolver"
 
-import "TidalYield"
-import "TidalYieldClosedBeta"
+import "FlowVaults"
+import "FlowVaultsClosedBeta"
 
 /// Deposits to an existing Tide stored in the signer's TideManager
 ///
@@ -11,20 +11,20 @@ import "TidalYieldClosedBeta"
 /// @param amount: The amount to deposit into the new Tide, denominated in the Tide's Vault type
 ///
 transaction(id: UInt64, amount: UFix64) {
-    let manager: &TidalYield.TideManager
+    let manager: &FlowVaults.TideManager
     let depositVault: @{FungibleToken.Vault}
-    let betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge
+    let betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge
 
     prepare(signer: auth(BorrowValue, CopyValue) &Account) {
-        let betaCap = signer.storage.copy<Capability<auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge>>(from: TidalYieldClosedBeta.UserBetaCapStoragePath)
-            ?? panic("Signer does not have a BetaBadge stored at path \(TidalYieldClosedBeta.UserBetaCapStoragePath) - configure and retry")
+        let betaCap = signer.storage.copy<Capability<auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge>>(from: FlowVaultsClosedBeta.UserBetaCapStoragePath)
+            ?? panic("Signer does not have a BetaBadge stored at path \(FlowVaultsClosedBeta.UserBetaCapStoragePath) - configure and retry")
 
         self.betaRef = betaCap.borrow()
             ?? panic("Capability does not contain correct reference")
  
         // reference the signer's TideManager & underlying Tide
-        self.manager = signer.storage.borrow<&TidalYield.TideManager>(from: TidalYield.TideManagerStoragePath)
-            ?? panic("Signer does not have a TideManager stored at path \(TidalYield.TideManagerStoragePath) - configure and retry")
+        self.manager = signer.storage.borrow<&FlowVaults.TideManager>(from: FlowVaults.TideManagerStoragePath)
+            ?? panic("Signer does not have a TideManager stored at path \(FlowVaults.TideManagerStoragePath) - configure and retry")
         let tide = self.manager.borrowTide(id: id) ?? panic("Tide with ID \(id) was not found")
 
         // get the data for where the vault type is canoncially stored

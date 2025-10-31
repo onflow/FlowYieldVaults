@@ -6,14 +6,14 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "TidalYieldStrategies"
+import "FlowVaultsStrategies"
 import "FlowALP"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
-access(all) let tidalYieldAccount = Test.getAccount(0x0000000000000009)
+access(all) let flowVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@TidalYieldStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowVaultsStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -57,8 +57,8 @@ fun setup() {
 	
 
 	// set mocked token prices
-	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
-	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
+	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
+	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
 
 	// mint tokens & set liquidity in mock swapper contract
 	let reserveAmount = 100_000_00.0
@@ -93,10 +93,10 @@ fun setup() {
 
 	// enable mocked Strategy creation
 	addStrategyComposer(
-		signer: tidalYieldAccount,
+		signer: flowVaultsAccount,
 		strategyIdentifier: strategyIdentifier,
-		composerIdentifier: Type<@TidalYieldStrategies.TracerStrategyComposer>().identifier,
-		issuerStoragePath: TidalYieldStrategies.IssuerStoragePath,
+		composerIdentifier: Type<@FlowVaultsStrategies.TracerStrategyComposer>().identifier,
+		issuerStoragePath: FlowVaultsStrategies.IssuerStoragePath,
 		beFailed: false
 	)
 
@@ -122,7 +122,7 @@ fun test_RebalanceTideScenario3A() {
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	log("[TEST] flow balance before \(flowBalanceBefore)")
 	mintFlow(to: user, amount: fundingAmount)
-    grantBeta(tidalYieldAccount, user)
+    grantBeta(flowVaultsAccount, user)
 
 	createTide(
 		signer: user,
@@ -138,7 +138,7 @@ fun test_RebalanceTideScenario3A() {
 	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
 	Test.assertEqual(1, tideIDs!.length)
 
-	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPriceDecrease)
+	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPriceDecrease)
 
 	let yieldTokensBefore = getAutoBalancerBalance(id: tideIDs![0])!
 	let debtBefore = getMOETDebtFromPosition(pid: pid)
@@ -178,7 +178,7 @@ fun test_RebalanceTideScenario3A() {
 		message: "Expected MOET debt to be \(expectedDebtValues[0]) but got \(debtBefore)"
 	)
 
-	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 	
 	// Debug: Log position details
@@ -226,9 +226,9 @@ fun test_RebalanceTideScenario3A() {
 		message: "Expected MOET debt after flow price decrease to be \(expectedDebtValues[1]) but got \(debtAfterFlowDecrease)"
 	)
 
-	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPriceIncrease)
+	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPriceIncrease)
 
-	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: true, beFailed: false)
 	//rebalancePosition(signer: protocolAccount, pid: 0, force: true, beFailed: false)
 
 	let yieldTokensAfterYieldPriceIncrease = getAutoBalancerBalance(id: tideIDs![0])!

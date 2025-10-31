@@ -1,5 +1,5 @@
-import "TidalYield"
-import "TidalYieldAutoBalancers"
+import "FlowVaults"
+import "FlowVaultsAutoBalancers"
 import "FlowALP"
 import "MockOracle"
 import "YieldToken"
@@ -155,7 +155,7 @@ access(all) struct PortfolioSummary {
 
 access(all)
 fun main(address: Address): CompleteUserSummary {
-    let tideManager = getAccount(address).capabilities.borrow<&TidalYield.TideManager>(TidalYield.TideManagerPublicPath)
+    let tideManager = getAccount(address).capabilities.borrow<&FlowVaults.TideManager>(FlowVaults.TideManagerPublicPath)
     
     if tideManager == nil {
         return CompleteUserSummary(
@@ -181,7 +181,7 @@ fun main(address: Address): CompleteUserSummary {
     let moetPrice = oracle.price(ofToken: Type<@MOET.Vault>()) ?? 1.0
     let flowPrice = oracle.price(ofToken: Type<@FlowToken.Vault>()) ?? 1.0
     
-    // Note: FlowALP positions and Tidal tides use different ID systems
+    // Note: FlowALP positions and FlowVaults tides use different ID systems
     // We'll calculate health manually since tide IDs don't correspond to FlowALP position IDs
     
     var totalCollateralValue = 0.0
@@ -192,7 +192,7 @@ fun main(address: Address): CompleteUserSummary {
     
     for tideId in tideIds {
         if let tide = tideManager!.borrowTide(id: tideId) {
-            let autoBalancer = TidalYieldAutoBalancers.borrowAutoBalancer(id: tideId)
+            let autoBalancer = FlowVaultsAutoBalancers.borrowAutoBalancer(id: tideId)
             let yieldTokenBalance = autoBalancer?.vaultBalance() ?? 0.0
             
             // Use the AutoBalancer's balance as the primary balance source

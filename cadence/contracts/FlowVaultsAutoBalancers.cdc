@@ -4,10 +4,10 @@ import "FungibleToken"
 // DeFiActions
 import "DeFiActions"
 
-/// TidalYieldAutoBalancers
+/// FlowVaultsAutoBalancers
 ///
 /// This contract deals with the storage, retrieval and cleanup of DeFiActions AutoBalancers as they are used in
-/// TidalYield defined Strategies.
+/// FlowVaults defined Strategies.
 ///
 /// AutoBalancers are stored in contract account storage at paths derived by their related DeFiActions.UniqueIdentifier.id
 /// which identifies all DeFiActions components in the stack related to their composite Strategy.
@@ -15,7 +15,7 @@ import "DeFiActions"
 /// When a Tide and necessarily the related Strategy is closed & burned, the related AutoBalancer and its Capabilities
 /// are destroyed and deleted
 ///
-access(all) contract TidalYieldAutoBalancers {
+access(all) contract FlowVaultsAutoBalancers {
 
     /// The path prefix used for StoragePath & PublicPath derivations
     access(all) let pathPrefix: String
@@ -100,7 +100,7 @@ access(all) contract TidalYieldAutoBalancers {
             ) ?? panic("Could not borrow reference to AutoBalancer with UniqueIdentifier.id \(id) from StoragePath \(storagePath)")
     }
 
-    /// Called by strategies defined in the TidalYield account which leverage account-hosted AutoBalancers when a
+    /// Called by strategies defined in the FlowVaults account which leverage account-hosted AutoBalancers when a
     /// Strategy is burned
     access(account) fun _cleanupAutoBalancer(id: UInt64) {
         let storagePath = self.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
@@ -118,6 +118,6 @@ access(all) contract TidalYieldAutoBalancers {
     }
 
     init() {
-        self.pathPrefix = "TidalYieldAutoBalancer_"
+        self.pathPrefix = "FlowVaultsAutoBalancer_"
     }
 }

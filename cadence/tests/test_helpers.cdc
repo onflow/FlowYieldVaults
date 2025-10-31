@@ -37,7 +37,7 @@ access(all)
 fun grantBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
     let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
     let betaTxn = Test.Transaction(
-        code: Test.readFile("../transactions/tidal-yield/admin/grant_beta.cdc"),
+        code: Test.readFile("../transactions/flow-vaults/admin/grant_beta.cdc"),
         authorizers: [admin.address, grantee.address],
         signers: signers,
         arguments: []
@@ -57,8 +57,8 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "TidalMath",
-        path: "../../lib/FlowALP/cadence/lib/TidalMath.cdc",
+        name: "FlowALPMath",
+        path: "../../lib/FlowALP/cadence/lib/FlowALPMath.cdc",
         arguments: []
     )
     err = Test.deployContract(
@@ -129,28 +129,28 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     
-    // TidalYield contracts
+    // FlowVaults contracts
     err = Test.deployContract(
-        name: "TidalYieldAutoBalancers",
-        path: "../contracts/TidalYieldAutoBalancers.cdc",
+        name: "FlowVaultsAutoBalancers",
+        path: "../contracts/FlowVaultsAutoBalancers.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "TidalYieldClosedBeta",
-        path: "../contracts/TidalYieldClosedBeta.cdc",
+        name: "FlowVaultsClosedBeta",
+        path: "../contracts/FlowVaultsClosedBeta.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "TidalYield",
-        path: "../contracts/TidalYield.cdc",
+        name: "FlowVaults",
+        path: "../contracts/FlowVaults.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "TidalYieldStrategies",
-        path: "../contracts/TidalYieldStrategies.cdc",
+        name: "FlowVaultsStrategies",
+        path: "../contracts/FlowVaultsStrategies.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -185,28 +185,28 @@ fun getBalance(address: Address, vaultPublicPath: PublicPath): UFix64? {
 
 access(all)
 fun getTideIDs(address: Address): [UInt64]? {
-    let res = _executeScript("../scripts/tidal-yield/get_tide_ids.cdc", [address])
+    let res = _executeScript("../scripts/flow-vaults/get_tide_ids.cdc", [address])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! [UInt64]?
 }
 
 access(all)
 fun getTideBalance(address: Address, tideID: UInt64): UFix64? {
-    let res = _executeScript("../scripts/tidal-yield/get_tide_balance.cdc", [address, tideID])
+    let res = _executeScript("../scripts/flow-vaults/get_tide_balance.cdc", [address, tideID])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
 }
 
 access(all)
 fun getAutoBalancerBalance(id: UInt64): UFix64? {
-    let res = _executeScript("../scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc", [id])
+    let res = _executeScript("../scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc", [id])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
 }
 
 access(all)
 fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
-    let res = _executeScript("../scripts/tidal-yield/get_auto_balancer_current_value_by_id.cdc", [id])
+    let res = _executeScript("../scripts/flow-vaults/get_auto_balancer_current_value_by_id.cdc", [id])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
 }
@@ -313,7 +313,7 @@ fun mintYield(signer: Test.TestAccount, to: Address, amount: UFix64, beFailed: B
 
 access(all)
 fun addStrategyComposer(signer: Test.TestAccount, strategyIdentifier: String, composerIdentifier: String, issuerStoragePath: StoragePath, beFailed: Bool) {
-    let addRes = _executeTransaction("../transactions/tidal-yield/admin/add_strategy_composer.cdc",
+    let addRes = _executeTransaction("../transactions/flow-vaults/admin/add_strategy_composer.cdc",
             [ strategyIdentifier, composerIdentifier, issuerStoragePath ],
             signer
         )
@@ -328,7 +328,7 @@ fun createTide(
     amount: UFix64,
     beFailed: Bool
 ) {
-    let res = _executeTransaction("../transactions/tidal-yield/create_tide.cdc",
+    let res = _executeTransaction("../transactions/flow-vaults/create_tide.cdc",
             [ strategyIdentifier, vaultIdentifier, amount ],
             signer
         )
@@ -337,13 +337,13 @@ fun createTide(
 
 access(all)
 fun closeTide(signer: Test.TestAccount, id: UInt64, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/tidal-yield/close_tide.cdc", [id], signer)
+    let res = _executeTransaction("../transactions/flow-vaults/close_tide.cdc", [id], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
 access(all)
 fun rebalanceTide(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
+    let res = _executeTransaction("../transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
@@ -434,12 +434,12 @@ access(all) let TOLERANCE = 0.00000001
 
 access(all) fun setupBetaAccess(): Void {
     let protocolAccount = Test.getAccount(0x0000000000000008)
-    let tidalYieldAccount = Test.getAccount(0x0000000000000009)
+    let flowVaultsAccount = Test.getAccount(0x0000000000000009)
     let protocolBeta = grantProtocolBeta(protocolAccount, protocolAccount)
     Test.expect(protocolBeta, Test.beSucceeded())
 
-    let tidalYieldBeta = grantProtocolBeta(protocolAccount, tidalYieldAccount)
-    Test.expect(tidalYieldBeta, Test.beSucceeded())
+    let flowVaultsBeta = grantProtocolBeta(protocolAccount, flowVaultsAccount)
+    Test.expect(flowVaultsBeta, Test.beSucceeded())
 }
 
 // Returns the balance for a given Vault 'Type' if present, otherwise nil.

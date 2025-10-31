@@ -1,4 +1,4 @@
-access(all) contract TidalYieldClosedBeta {
+access(all) contract FlowVaultsClosedBeta {
 
     access(all) entitlement Admin
     access(all) entitlement Beta
@@ -62,7 +62,7 @@ access(all) contract TidalYieldClosedBeta {
         self.issuedCapIDs[addr] = AccessInfo(cap.id, false)
 
         if let ctrl = self.account.capabilities.storage.getController(byCapabilityID: cap.id) {
-            ctrl.setTag("tidalyield-beta")
+            ctrl.setTag("flowvaults-beta")
         }
 
         emit BetaGranted(addr: addr, capID: cap.id)
@@ -82,13 +82,13 @@ access(all) contract TidalYieldClosedBeta {
 
     // 2) A small in-account helper resource that performs privileged ops
     access(all) resource AdminHandle {
-        access(Admin) fun grantBeta(addr: Address): Capability<auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge> {
-            TidalYieldClosedBeta._ensureBadge(addr)
-            return TidalYieldClosedBeta._issueBadgeCap(addr)
+        access(Admin) fun grantBeta(addr: Address): Capability<auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge> {
+            FlowVaultsClosedBeta._ensureBadge(addr)
+            return FlowVaultsClosedBeta._issueBadgeCap(addr)
         }
 
         access(Admin) fun revokeByAddress(addr: Address) {
-            TidalYieldClosedBeta._revokeByAddress(addr)
+            FlowVaultsClosedBeta._revokeByAddress(addr)
         }
     }
 
@@ -125,10 +125,10 @@ access(all) contract TidalYieldClosedBeta {
 
     init() {
         self.AdminHandleStoragePath = StoragePath(
-            identifier: "TidalYieldClosedBetaAdmin_\(self.account.address)"
+            identifier: "FlowVaultsClosedBetaAdmin_\(self.account.address)"
         )!
         self.UserBetaCapStoragePath = StoragePath(
-            identifier: "TidalYieldUserBetaCap_\(self.account.address)"
+            identifier: "FlowVaultsUserBetaCap_\(self.account.address)"
         )!
 
         self.issuedCapIDs = {}

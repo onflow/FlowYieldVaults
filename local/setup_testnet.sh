@@ -22,22 +22,22 @@ flow transactions send ./cadence/transactions/flow-alp/pool-governance/add_suppo
     --network testnet \
     --signer testnet-admin
 
-# configure TidalYield
+# configure FlowVaults
 # 
 # wire up liquidity to MockSwapper, mocking AMM liquidity sources
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/flowTokenVault --network testnet --signer testnet-admin
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/moetTokenVault_0x2ab6f469ee0dfbb6 --network testnet --signer testnet-admin
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/yieldTokenVault_0x2ab6f469ee0dfbb6 --network testnet --signer testnet-admin
 # add TracerStrategy as supported Strategy with the ability to initialize when new Tides are created
-flow transactions send ./cadence/transactions/tidal-yield/admin/add_strategy_composer.cdc \
-    'A.2ab6f469ee0dfbb6.TidalYieldStrategies.TracerStrategy' \
-    'A.2ab6f469ee0dfbb6.TidalYieldStrategies.TracerStrategyComposer' \
-    /storage/TidalYieldStrategyComposerIssuer_0x2ab6f469ee0dfbb6 \
+flow transactions send ./cadence/transactions/flow-vaults/admin/add_strategy_composer.cdc \
+    'A.2ab6f469ee0dfbb6.FlowVaultsStrategies.TracerStrategy' \
+    'A.2ab6f469ee0dfbb6.FlowVaultsStrategies.TracerStrategyComposer' \
+    /storage/FlowVaultsStrategyComposerIssuer_0x2ab6f469ee0dfbb6 \
     --network testnet \
     --signer testnet-admin
 
 # grant PoolBeta cap
-echo "Grant Protocol Beta access to TidalYield"
+echo "Grant Protocol Beta access to FlowVaults"
 flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc \
   --authorizer testnet-admin,testnet-admin \
   --proposer testnet-admin \

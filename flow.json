@@ -88,8 +88,8 @@
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
-		"TidalMath": {
-			"source": "./lib/FlowALP/cadence/lib/TidalMath.cdc",
+		"FlowALPMath": {
+			"source": "./lib/FlowALP/cadence/lib/FlowALPMath.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -103,32 +103,32 @@
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
-		"TidalYield": {
-			"source": "cadence/contracts/TidalYield.cdc",
+		"FlowVaults": {
+			"source": "cadence/contracts/FlowVaults.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000009",
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
-		"TidalYieldAutoBalancers": {
-			"source": "cadence/contracts/TidalYieldAutoBalancers.cdc",
+		"FlowVaultsAutoBalancers": {
+			"source": "cadence/contracts/FlowVaultsAutoBalancers.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000009",
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
-		"TidalYieldClosedBeta": {
-			"source": "cadence/contracts/TidalYieldClosedBeta.cdc",
+		"FlowVaultsClosedBeta": {
+			"source": "cadence/contracts/FlowVaultsClosedBeta.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000009",
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
-		"TidalYieldStrategies": {
-			"source": "cadence/contracts/TidalYieldStrategies.cdc",
+		"FlowVaultsStrategies": {
+			"source": "cadence/contracts/FlowVaultsStrategies.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000009",
@@ -340,7 +340,7 @@
 			"emulator-account": [
 				"FlowEVMBridgeHandlerInterfaces",
 				"USDCFlow",
-				"TidalMath",
+				"FlowALPMath",
 				"DeFiActionsMathUtils",
 				"DeFiActionsUtils",
 				"DeFiActions",
@@ -377,10 +377,10 @@
 					]
 				},
 				"MockSwapper",
-				"TidalYieldAutoBalancers",
-				"TidalYieldClosedBeta",
-				"TidalYield",
-				"TidalYieldStrategies"
+				"FlowVaultsAutoBalancers",
+				"FlowVaultsClosedBeta",
+				"FlowVaults",
+				"FlowVaultsStrategies"
 			],
 			"mock-incrementfi": [
 				"SwapConfig",
@@ -437,10 +437,10 @@
 					]
 				},
 				"MockSwapper",
-				"TidalYieldAutoBalancers",
-				"TidalYieldClosedBeta",
-				"TidalYield",
-				"TidalYieldStrategies"
+				"FlowVaultsAutoBalancers",
+				"FlowVaultsClosedBeta",
+				"FlowVaults",
+				"FlowVaultsStrategies"
 			]
 		}
 	}

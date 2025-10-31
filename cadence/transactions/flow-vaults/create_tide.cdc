@@ -2,26 +2,26 @@ import "FungibleToken"
 import "FungibleTokenMetadataViews"
 import "ViewResolver"
 
-import "TidalYieldClosedBeta"
-import "TidalYield"
+import "FlowVaultsClosedBeta"
+import "FlowVaults"
 
-/// Opens a new Tide in the Tidal platform, funding the Tide with the specified Vault and amount
+/// Opens a new Tide in the FlowVaults platform, funding the Tide with the specified Vault and amount
 ///
 /// @param strategyIdentifier: The Strategy's Type identifier. Must be a Strategy Type that is currently supported by
-///     TidalYield. See `TidalYield.getSupportedStrategies()` to get those currently supported.
+///     FlowVaults. See `FlowVaults.getSupportedStrategies()` to get those currently supported.
 /// @param vaultIdentifier: The Vault's Type identifier
 ///     e.g. vault.getType().identifier == 'A.0ae53cb6e3f42a79.FlowToken.Vault'
 /// @param amount: The amount to deposit into the new Tide
 ///
 transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64) {
-    let manager: &TidalYield.TideManager
+    let manager: &FlowVaults.TideManager
     let strategy: Type
     let depositVault: @{FungibleToken.Vault}
-    let betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge
+    let betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge
 
     prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability, CopyValue) &Account) {
-        let betaCap = signer.storage.copy<Capability<auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge>>(from: TidalYieldClosedBeta.UserBetaCapStoragePath)
-            ?? panic("Signer does not have a BetaBadge stored at path \(TidalYieldClosedBeta.UserBetaCapStoragePath) - configure and retry")
+        let betaCap = signer.storage.copy<Capability<auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge>>(from: FlowVaultsClosedBeta.UserBetaCapStoragePath)
+            ?? panic("Signer does not have a BetaBadge stored at path \(FlowVaultsClosedBeta.UserBetaCapStoragePath) - configure and retry")
 
         self.betaRef = betaCap.borrow()
             ?? panic("Capability does not contain correct reference")
@@ -47,17 +47,17 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
         self.depositVault <- sourceVault.withdraw(amount: amount)
 
         // configure the TideManager if needed
-        if signer.storage.type(at: TidalYield.TideManagerStoragePath) == nil {
-            signer.storage.save(<-TidalYield.createTideManager(betaRef: self.betaRef), to: TidalYield.TideManagerStoragePath)
-            let cap = signer.capabilities.storage.issue<&TidalYield.TideManager>(TidalYield.TideManagerStoragePath)
-            signer.capabilities.publish(cap, at: TidalYield.TideManagerPublicPath)
+        if signer.storage.type(at: FlowVaults.TideManagerStoragePath) == nil {
+            signer.storage.save(<-FlowVaults.createTideManager(betaRef: self.betaRef), to: FlowVaults.TideManagerStoragePath)
+            let cap = signer.capabilities.storage.issue<&FlowVaults.TideManager>(FlowVaults.TideManagerStoragePath)
+            signer.capabilities.publish(cap, at: FlowVaults.TideManagerPublicPath)
             // issue an authorized capability for later access via Capability controller if needed (e.g. via HybridCustody)
-            signer.capabilities.storage.issue<&TidalYield.TideManager>(
-                    TidalYield.TideManagerStoragePath
+            signer.capabilities.storage.issue<&FlowVaults.TideManager>(
+                    FlowVaults.TideManagerStoragePath
                 )
         }
-        self.manager = signer.storage.borrow<&TidalYield.TideManager>(from: TidalYield.TideManagerStoragePath)
-            ?? panic("Signer does not have a TideManager stored at path \(TidalYield.TideManagerStoragePath) - configure and retry")
+        self.manager = signer.storage.borrow<&FlowVaults.TideManager>(from: FlowVaults.TideManagerStoragePath)
+            ?? panic("Signer does not have a TideManager stored at path \(FlowVaults.TideManagerStoragePath) - configure and retry")
     }
 
     execute {

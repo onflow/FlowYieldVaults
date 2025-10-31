@@ -4,12 +4,12 @@ import "Burner"
 import "ViewResolver"
 // DeFiActions
 import "DeFiActions"
-import "TidalYieldClosedBeta"
+import "FlowVaultsClosedBeta"
 
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ///
-access(all) contract TidalYield {
+access(all) contract FlowVaults {
 
     /* --- FIELDS --- */
 
@@ -204,7 +204,7 @@ access(all) contract TidalYield {
         init(strategyType: Type, withVault: @{FungibleToken.Vault}) {
             self.uniqueID = DeFiActions.createUniqueIdentifier()
             self.vaultType = withVault.getType()
-            let _strategy <- TidalYield.createStrategy(
+            let _strategy <- FlowVaults.createStrategy(
                     type: strategyType,
                     uniqueID: self.uniqueID,
                     withFunds: <-withVault
@@ -233,11 +233,11 @@ access(all) contract TidalYield {
             let _strategy <- self.strategy <- nil
             Burner.burn(<-_strategy)
         }
-        /// TODO: TidalYield specific views
+        /// TODO: FlowVaults specific views
         access(all) view fun getViews(): [Type] {
             return []
         }
-        /// TODO: TidalYield specific view resolution
+        /// TODO: FlowVaults specific view resolution
         access(all) fun resolveView(_ view: Type): AnyStruct? {
             return nil
         }
@@ -319,9 +319,9 @@ access(all) contract TidalYield {
             return self.tides.length
         }
         /// Creates a new Tide executing the specified Strategy with the provided funds
-        access(all) fun createTide(betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge, strategyType: Type, withVault: @{FungibleToken.Vault}) {
+        access(all) fun createTide(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, strategyType: Type, withVault: @{FungibleToken.Vault}) {
             pre {
-                TidalYieldClosedBeta.validateBeta(self.owner?.address!, betaRef):
+                FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
             }
             let balance = withVault.balance
@@ -341,24 +341,24 @@ access(all) contract TidalYield {
         }
         /// Adds an open Tide to this TideManager resource. This effectively transfers ownership of the newly added
         /// Tide to the owner of this TideManager
-        access(all) fun addTide(betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge, _ tide: @Tide) {
+        access(all) fun addTide(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, _ tide: @Tide) {
             pre {
                 self.tides[tide.uniqueID.id] == nil:
                 "Collision with Tide ID \(tide.uniqueID.id) - a Tide with this ID already exists"
 
-                TidalYieldClosedBeta.validateBeta(self.owner?.address!, betaRef):
+                FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
             }
             emit AddedToManager(id: tide.uniqueID.id, owner: self.owner?.address, managerUUID: self.uuid, tokenType: tide.getType().identifier)
             self.tides[tide.uniqueID.id] <-! tide
         }
         /// Deposits additional funds to the specified Tide, reverting if none exists with the provided ID
-        access(all) fun depositToTide(betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge, _ id: UInt64, from: @{FungibleToken.Vault}) {
+        access(all) fun depositToTide(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, _ id: UInt64, from: @{FungibleToken.Vault}) {
             pre {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
 
-                TidalYieldClosedBeta.validateBeta(self.owner?.address!, betaRef):
+                FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
             }
             let tide = (&self.tides[id] as &Tide?)!
@@ -372,12 +372,12 @@ access(all) contract TidalYield {
             return <- self.tides.remove(key: id)!
         }
         /// Withdraws the specified Tide, reverting if none exists with the provided ID
-        access(FungibleToken.Withdraw) fun withdrawTide(betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge, id: UInt64): @Tide {
+        access(FungibleToken.Withdraw) fun withdrawTide(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, id: UInt64): @Tide {
             pre {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
 
-                TidalYieldClosedBeta.validateBeta(self.owner?.address!, betaRef):
+                FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
             }
             return <- self._withdrawTide(id: id)!
@@ -427,7 +427,7 @@ access(all) contract TidalYield {
         return <- self._borrowFactory().createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds)
     }
     /// Creates a TideManager used to create and manage Tides
-    access(all) fun createTideManager(betaRef: auth(TidalYieldClosedBeta.Beta) &TidalYieldClosedBeta.BetaBadge): @TideManager {
+    access(all) fun createTideManager(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge): @TideManager {
         return <-create TideManager()
     }
     /// Creates a StrategyFactory resource
@@ -444,11 +444,11 @@ access(all) contract TidalYield {
     }
 
     init() {
-        var pathIdentifier = "TidalYieldTideManager_\(self.account.address)"
+        var pathIdentifier = "FlowVaultsTideManager_\(self.account.address)"
         self.TideManagerStoragePath = StoragePath(identifier: pathIdentifier)!
         self.TideManagerPublicPath = PublicPath(identifier: pathIdentifier)!
 
-        pathIdentifier = "TidalYieldStrategyFactory_\(self.account.address)"
+        pathIdentifier = "FlowVaultsStrategyFactory_\(self.account.address)"
         self.FactoryStoragePath = StoragePath(identifier: pathIdentifier)!
         self.FactoryPublicPath = PublicPath(identifier: pathIdentifier)!
 

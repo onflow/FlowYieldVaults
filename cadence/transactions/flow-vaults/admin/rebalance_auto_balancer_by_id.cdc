@@ -1,6 +1,6 @@
 import "DeFiActions"
 
-import "TidalYieldAutoBalancers"
+import "FlowVaultsAutoBalancers"
 
 /// Calls on the AutoBalancer to rebalance which will result in a rebalancing around the value of deposits. If force is
 /// `true`, rebalancing should occur regardless of the lower & upper thresholds configured on the AutoBalancer.
@@ -18,7 +18,7 @@ transaction(id: UInt64, force: Bool) {
     
     prepare(signer: auth(BorrowValue) &Account) {
         // derive the path and borrow an authorized reference to the AutoBalancer
-        let storagePath = TidalYieldAutoBalancers.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
+        let storagePath = FlowVaultsAutoBalancers.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
         self.autoBalancer = signer.storage.borrow<auth(DeFiActions.Auto) &DeFiActions.AutoBalancer>(from: storagePath)
             ?? panic("Could not borrow reference to AutoBalancer id \(id) at path \(storagePath)")
     }
