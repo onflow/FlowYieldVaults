@@ -549,7 +549,7 @@ fun transferFlow(signer: Test.TestAccount, recipient: Address, amount: UFix64) {
 access(all)
 fun createCOA(_ signer: Test.TestAccount, fundingAmount: UFix64) {
     let createCOAResult = _executeTransaction(
-        "../../lib/TidalProtocol/DeFiActions/cadence/transactions/evm/create_coa.cdc",
+        "../../lib/FlowALP/FlowActions/cadence/transactions/evm/create_coa.cdc",
         [fundingAmount],
         signer
     )

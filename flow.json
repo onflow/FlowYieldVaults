@@ -3,7 +3,7 @@
 		"DeFiActions": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"mainnet": "6d888f175c158410",
 				"testing": "0000000000000007",
 				"testnet": "0b11b1848a8aa2c0"
