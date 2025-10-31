@@ -31,7 +31,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "6b00ff876c299c61",
-				"testing": "0000000000000007",
+				"testing": "0000000000000008",
 				"testnet": "426f0458ced60037"
 			}
 		},
@@ -40,7 +40,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "6b00ff876c299c61",
-				"testing": "0000000000000007",
+				"testing": "0000000000000008",
 				"testnet": "426f0458ced60037"
 			}
 		},
@@ -104,7 +104,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "6b00ff876c299c61",
-				"testing": "0000000000000007",
+				"testing": "0000000000000008",
 				"testnet": "426f0458ced60037"
 			}
 		},
