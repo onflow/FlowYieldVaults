@@ -27,7 +27,7 @@
 			}
 		},
 		"EVMAbiHelpers": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000007",
@@ -157,7 +157,7 @@
 			}
 		},
 		"MockFlowALPConsumer": {
-			"source": "./lib/TidalProtocol/cadence/contracts/mocks/MockFlowALPConsumer.cdc",
+			"source": "./lib/FlowALP/cadence/contracts/mocks/MockFlowALPConsumer.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
@@ -174,7 +174,7 @@
 			}
 		},
 		"UniswapV3SwapConnectors": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000007",
