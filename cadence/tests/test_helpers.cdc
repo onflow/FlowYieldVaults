@@ -1,7 +1,7 @@
 import Test
 
 import "MOET"
-import "TidalProtocol"
+import "FlowALP"
 
 /* --- Test execution helpers --- */
 
@@ -25,7 +25,7 @@ access(all)
 fun grantProtocolBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
     let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
     let betaTxn = Test.Transaction(
-        code: Test.readFile("../../lib/TidalProtocol/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc"),
+        code: Test.readFile("../../lib/FlowALP/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc"),
         authorizers: [admin.address, grantee.address],
         signers: signers,
         arguments: []
@@ -37,7 +37,7 @@ access(all)
 fun grantBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
     let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
     let betaTxn = Test.Transaction(
-        code: Test.readFile("../transactions/tidal-yield/admin/grant_beta.cdc"),
+        code: Test.readFile("../transactions/flow-vaults/admin/grant_beta.cdc"),
         authorizers: [admin.address, grantee.address],
         signers: signers,
         arguments: []
@@ -52,51 +52,45 @@ access(all) fun deployContracts() {
     // DeFiActions contracts
     var err = Test.deployContract(
         name: "DeFiActionsUtils",
-        path: "../../lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "TidalMath",
-        path: "../../lib/TidalProtocol/cadence/lib/TidalMath.cdc",
+        name: "FlowALPMath",
+        path: "../../lib/FlowALP/cadence/lib/FlowALPMath.cdc",
         arguments: []
     )
-    err = Test.deployContract(
-        name: "DeFiActionsMathUtils",
-        path: "../../lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "DeFiActions",
-        path: "../../lib/TidalProtocol/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "SwapConnectors",
-        path: "../../lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "FungibleTokenConnectors",
-        path: "../../lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
-    // TidalProtocol contracts
+    // FlowALP contracts
     let initialMoetSupply = 0.0
     err = Test.deployContract(
         name: "MOET",
-        path: "../../lib/TidalProtocol/cadence/contracts/MOET.cdc",
+        path: "../../lib/FlowALP/cadence/contracts/MOET.cdc",
         arguments: [initialMoetSupply]
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "TidalProtocol",
-        path: "../../lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
+        name: "FlowALP",
+        path: "../../lib/FlowALP/cadence/contracts/FlowALP.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -123,34 +117,34 @@ access(all) fun deployContracts() {
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
-        name: "MockTidalProtocolConsumer",
-        path: "../../lib/TidalProtocol/cadence/contracts/mocks/MockTidalProtocolConsumer.cdc",
+        name: "MockFlowALPConsumer",
+        path: "../../lib/FlowALP/cadence/contracts/mocks/MockFlowALPConsumer.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     
-    // TidalYield contracts
+    // FlowVaults contracts
     err = Test.deployContract(
-        name: "TidalYieldAutoBalancers",
-        path: "../contracts/TidalYieldAutoBalancers.cdc",
+        name: "FlowVaultsAutoBalancers",
+        path: "../contracts/FlowVaultsAutoBalancers.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "TidalYieldClosedBeta",
-        path: "../contracts/TidalYieldClosedBeta.cdc",
+        name: "FlowVaultsClosedBeta",
+        path: "../contracts/FlowVaultsClosedBeta.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "TidalYield",
-        path: "../contracts/TidalYield.cdc",
+        name: "FlowVaults",
+        path: "../contracts/FlowVaults.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "TidalYieldStrategies",
-        path: "../contracts/TidalYieldStrategies.cdc",
+        name: "FlowVaultsStrategies",
+        path: "../contracts/FlowVaultsStrategies.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -167,8 +161,8 @@ access(all) fun deployContracts() {
 }
 
 access(all)
-fun setupTidalProtocol(signer: Test.TestAccount) {
-    let res = _executeTransaction("../transactions/tidal-protocol/create_and_store_pool.cdc",
+fun setupFlowALP(signer: Test.TestAccount) {
+    let res = _executeTransaction("../transactions/flow-alp/create_and_store_pool.cdc",
             [],
             signer
         )
@@ -185,46 +179,46 @@ fun getBalance(address: Address, vaultPublicPath: PublicPath): UFix64? {
 
 access(all)
 fun getTideIDs(address: Address): [UInt64]? {
-    let res = _executeScript("../scripts/tidal-yield/get_tide_ids.cdc", [address])
+    let res = _executeScript("../scripts/flow-vaults/get_tide_ids.cdc", [address])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! [UInt64]?
 }
 
 access(all)
 fun getTideBalance(address: Address, tideID: UInt64): UFix64? {
-    let res = _executeScript("../scripts/tidal-yield/get_tide_balance.cdc", [address, tideID])
+    let res = _executeScript("../scripts/flow-vaults/get_tide_balance.cdc", [address, tideID])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
 }
 
 access(all)
 fun getAutoBalancerBalance(id: UInt64): UFix64? {
-    let res = _executeScript("../scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc", [id])
+    let res = _executeScript("../scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc", [id])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
 }
 
 access(all)
 fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
-    let res = _executeScript("../scripts/tidal-yield/get_auto_balancer_current_value_by_id.cdc", [id])
+    let res = _executeScript("../scripts/flow-vaults/get_auto_balancer_current_value_by_id.cdc", [id])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
 }
 
 access(all)
-fun getPositionDetails(pid: UInt64, beFailed: Bool): TidalProtocol.PositionDetails {
-    let res = _executeScript("../scripts/tidal-protocol/position_details.cdc",
+fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowALP.PositionDetails {
+    let res = _executeScript("../scripts/flow-alp/position_details.cdc",
             [pid]
         )
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 
-    return res.returnValue as! TidalProtocol.PositionDetails
+    return res.returnValue as! FlowALP.PositionDetails
 }
 
 access(all)
 fun getReserveBalanceForType(vaultIdentifier: String): UFix64 {
     let res = _executeScript(
-        "../../lib/TidalProtocol/cadence/scripts/tidal-protocol/get_reserve_balance_for_type.cdc",
+        "../../lib/FlowALP/cadence/scripts/flow-alp/get_reserve_balance_for_type.cdc",
             [vaultIdentifier]
         )
     Test.expect(res, Test.beSucceeded())
@@ -240,7 +234,7 @@ fun positionAvailableBalance(
     beFailed: Bool
 ): UFix64 {
     let res = _executeScript(
-        "../scripts/tidal-protocol/get_available_balance.cdc",
+        "../scripts/flow-alp/get_available_balance.cdc",
             [pid, type, pullFromSource]
         )
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
@@ -253,7 +247,7 @@ fun positionAvailableBalance(
 access(all)
 fun createAndStorePool(signer: Test.TestAccount, defaultTokenIdentifier: String, beFailed: Bool) {
     let createRes = _executeTransaction(
-        "../transactions/tidal-protocol/pool-factory/create_and_store_pool.cdc",
+        "../transactions/flow-alp/pool-factory/create_and_store_pool.cdc",
         [defaultTokenIdentifier],
         signer
     )
@@ -270,7 +264,7 @@ fun addSupportedTokenSimpleInterestCurve(
     depositCapacityCap: UFix64
 ) {
     let additionRes = _executeTransaction(
-        "../transactions/tidal-protocol/pool-governance/add_supported_token_simple_interest_curve.cdc",
+        "../transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc",
         [ tokenTypeIdentifier, collateralFactor, borrowFactor, depositRate, depositCapacityCap ],
         signer
     )
@@ -280,7 +274,7 @@ fun addSupportedTokenSimpleInterestCurve(
 access(all)
 fun rebalancePosition(signer: Test.TestAccount, pid: UInt64, force: Bool, beFailed: Bool) {
     let rebalanceRes = _executeTransaction(
-        "../transactions/tidal-protocol/pool-management/rebalance_position.cdc",
+        "../transactions/flow-alp/pool-management/rebalance_position.cdc",
         [ pid, force ],
         signer
     )
@@ -313,7 +307,7 @@ fun mintYield(signer: Test.TestAccount, to: Address, amount: UFix64, beFailed: B
 
 access(all)
 fun addStrategyComposer(signer: Test.TestAccount, strategyIdentifier: String, composerIdentifier: String, issuerStoragePath: StoragePath, beFailed: Bool) {
-    let addRes = _executeTransaction("../transactions/tidal-yield/admin/add_strategy_composer.cdc",
+    let addRes = _executeTransaction("../transactions/flow-vaults/admin/add_strategy_composer.cdc",
             [ strategyIdentifier, composerIdentifier, issuerStoragePath ],
             signer
         )
@@ -328,7 +322,7 @@ fun createTide(
     amount: UFix64,
     beFailed: Bool
 ) {
-    let res = _executeTransaction("../transactions/tidal-yield/create_tide.cdc",
+    let res = _executeTransaction("../transactions/flow-vaults/create_tide.cdc",
             [ strategyIdentifier, vaultIdentifier, amount ],
             signer
         )
@@ -337,19 +331,19 @@ fun createTide(
 
 access(all)
 fun closeTide(signer: Test.TestAccount, id: UInt64, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/tidal-yield/close_tide.cdc", [id], signer)
+    let res = _executeTransaction("../transactions/flow-vaults/close_tide.cdc", [id], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
 access(all)
 fun rebalanceTide(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
+    let res = _executeTransaction("../transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
 // access(all)
 // fun rebalancePosition(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
-//     let res = _executeTransaction("../../lib/TidalProtocol/cadence/transactions/tidal-protocol/pool-management/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
+//     let res = _executeTransaction("../../lib/FlowALP/cadence/transactions/flow-alp/pool-management/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
 //     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 // }
 
@@ -357,14 +351,14 @@ fun rebalanceTide(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: B
 
 access(all)
 fun getLastPositionOpenedEvent(_ evts: [AnyStruct]): AnyStruct { // can't return event types directly, they must be cast by caller
-    Test.assert(evts.length > 0, message: "Expected at least 1 TidalProtocol.Opened event but found none")
-    return evts[evts.length - 1] as! TidalProtocol.Opened
+    Test.assert(evts.length > 0, message: "Expected at least 1 FlowALP.Opened event but found none")
+    return evts[evts.length - 1] as! FlowALP.Opened
 }
 
 access(all)
 fun getLastPositionDepositedEvent(_ evts: [AnyStruct]): AnyStruct { // can't return event types directly, they must be cast by caller
-    Test.assert(evts.length > 0, message: "Expected at least 1 TidalProtocol.Deposited event but found none")
-    return evts[evts.length - 1] as! TidalProtocol.Deposited
+    Test.assert(evts.length > 0, message: "Expected at least 1 FlowALP.Deposited event but found none")
+    return evts[evts.length - 1] as! FlowALP.Deposited
 }
 
 /* --- Mock helpers --- */
@@ -434,17 +428,17 @@ access(all) let TOLERANCE = 0.00000001
 
 access(all) fun setupBetaAccess(): Void {
     let protocolAccount = Test.getAccount(0x0000000000000008)
-    let tidalYieldAccount = Test.getAccount(0x0000000000000009)
+    let flowVaultsAccount = Test.getAccount(0x0000000000000009)
     let protocolBeta = grantProtocolBeta(protocolAccount, protocolAccount)
     Test.expect(protocolBeta, Test.beSucceeded())
 
-    let tidalYieldBeta = grantProtocolBeta(protocolAccount, tidalYieldAccount)
-    Test.expect(tidalYieldBeta, Test.beSucceeded())
+    let flowVaultsBeta = grantProtocolBeta(protocolAccount, flowVaultsAccount)
+    Test.expect(flowVaultsBeta, Test.beSucceeded())
 }
 
 // Returns the balance for a given Vault 'Type' if present, otherwise nil.
 access(all) fun findBalance(
-    details: TidalProtocol.PositionDetails,
+    details: FlowALP.PositionDetails,
     vaultType: Type
 ): UFix64? {
     for b in details.balances {

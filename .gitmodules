@@ -1,7 +1,3 @@
-[submodule "lib/TidalProtocol"]
-	path = lib/TidalProtocol
-	url = git@github.com:onflow/TidalProtocol.git
-	branch = main
 [submodule "lib/flow-evm-gateway"]
 	path = lib/flow-evm-gateway
 	url = git@github.com:onflow/flow-evm-gateway.git
@@ -11,3 +7,6 @@
 [submodule "solidity/lib/forge-std"]
 	path = solidity/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "lib/FlowALP"]
+	path = lib/FlowALP
+	url = git@github.com:onflow/FlowALP.git

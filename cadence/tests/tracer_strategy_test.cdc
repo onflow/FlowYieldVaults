@@ -6,14 +6,14 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "TidalYieldStrategies"
-import "TidalProtocol"
+import "FlowVaultsStrategies"
+import "FlowALP"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
-access(all) let tidalYieldAccount = Test.getAccount(0x0000000000000009)
+access(all) let flowVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@TidalYieldStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowVaultsStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -34,8 +34,8 @@ fun setup() {
 	deployContracts()
 
     // set mocked token prices
-    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: startingYieldPrice)
-    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: startingFlowPrice)
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: startingYieldPrice)
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: startingFlowPrice)
 
 	// mint tokens & set liquidity in mock swapper contract
 	let reserveAmount = 100_000_00.0
@@ -47,7 +47,7 @@ fun setup() {
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
 
-    // setup TidalProtocol with a Pool & add FLOW as supported token
+    // setup FlowALP with a Pool & add FLOW as supported token
     createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
     addSupportedTokenSimpleInterestCurve(
         signer: protocolAccount,
@@ -61,7 +61,7 @@ fun setup() {
 	// open wrapped position (pushToDrawDownSink)
 	// the equivalent of depositing reserves
 	let openRes = executeTransaction(
-		"../../lib/TidalProtocol/cadence/tests/transactions/mock-tidal-protocol-consumer/create_wrapped_position.cdc",
+		"../../lib/FlowALP/cadence/tests/transactions/mock-flow-alp-consumer/create_wrapped_position.cdc",
 		[reserveAmount/2.0, /storage/flowTokenVault, true],
 		protocolAccount
 	)
@@ -69,10 +69,10 @@ fun setup() {
 
 	// enable mocked Strategy creation
 	addStrategyComposer(
-		signer: tidalYieldAccount,
+		signer: flowVaultsAccount,
 		strategyIdentifier: strategyIdentifier,
-		composerIdentifier: Type<@TidalYieldStrategies.TracerStrategyComposer>().identifier,
-		issuerStoragePath: TidalYieldStrategies.IssuerStoragePath,
+		composerIdentifier: Type<@FlowVaultsStrategies.TracerStrategyComposer>().identifier,
+		issuerStoragePath: FlowVaultsStrategies.IssuerStoragePath,
 		beFailed: false
 	)
 
@@ -91,7 +91,7 @@ fun test_CreateTideSucceeds() {
 
 	let user = Test.createAccount()
 	mintFlow(to: user, amount: fundingAmount)
-    grantBeta(tidalYieldAccount, user)
+    grantBeta(flowVaultsAccount, user)
 
 	createTide(
 		signer: user,
@@ -114,7 +114,7 @@ fun test_CloseTideSucceeds() {
 
 	let user = Test.createAccount()
 	mintFlow(to: user, amount: fundingAmount)
-    grantBeta(tidalYieldAccount, user)
+    grantBeta(flowVaultsAccount, user)
 
 	createTide(
 		signer: user,
@@ -151,7 +151,7 @@ fun test_RebalanceTideSucceeds() {
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	mintFlow(to: user, amount: fundingAmount)
-    grantBeta(tidalYieldAccount, user)
+    grantBeta(flowVaultsAccount, user)
 
     createTide(signer: user,
         strategyIdentifier: strategyIdentifier,
@@ -159,7 +159,7 @@ fun test_RebalanceTideSucceeds() {
         amount: fundingAmount,
         beFailed: false
     )
-    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<TidalProtocol.Opened>())) as! TidalProtocol.Opened).pid
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALP.Opened>())) as! FlowALP.Opened).pid
 
     var tideIDs = getTideIDs(address: user.address)
     Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
@@ -169,7 +169,7 @@ fun test_RebalanceTideSucceeds() {
     let autoBalancerValueBefore = getAutoBalancerCurrentValue(id: tideID)!
     let tideBalanceBeforePriceIncrease = getTideBalance(address: user.address, tideID: tideID)
 
-    setMockOraclePrice(signer: tidalYieldAccount,
+    setMockOraclePrice(signer: flowVaultsAccount,
         forTokenIdentifier: yieldTokenIdentifier,
         price: startingYieldPrice * (1.0 + yieldTokenPriceIncrease)
     )
@@ -177,13 +177,13 @@ fun test_RebalanceTideSucceeds() {
     let autoBalancerValueAfter = getAutoBalancerCurrentValue(id: tideID)!
     let tideBalanceAfterPriceIncrease = getTideBalance(address: user.address, tideID: tideID)
 
-    rebalanceTide(signer: tidalYieldAccount, id: tideID, force: true, beFailed: false)
+    rebalanceTide(signer: flowVaultsAccount, id: tideID, force: true, beFailed: false)
 
     // TODO - assert against pre- and post- getTideBalance() diff once protocol assesses balance correctly
     //      for now we can use events to intercept fund flows between pre- and post- Position & AutoBalancer state
 
     // assess how much FLOW was deposited into the position
-    let autoBalancerRecollateralizeEvent = getLastPositionDepositedEvent(Test.eventsOfType(Type<TidalProtocol.Deposited>())) as! TidalProtocol.Deposited
+    let autoBalancerRecollateralizeEvent = getLastPositionDepositedEvent(Test.eventsOfType(Type<FlowALP.Deposited>())) as! FlowALP.Deposited
     Test.assertEqual(positionID, autoBalancerRecollateralizeEvent.pid)
     Test.assertEqual(autoBalancerRecollateralizeEvent.amount,
         (autoBalancerValueAfter - autoBalancerValueBefore) / startingFlowPrice
@@ -235,7 +235,7 @@ fun test_RebalanceTideSucceedsAfterYieldPriceDecrease() {
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	mintFlow(to: user, amount: fundingAmount)
-    grantBeta(tidalYieldAccount, user)
+    grantBeta(flowVaultsAccount, user)
 
 	createTide(
 		signer: user,
@@ -244,7 +244,7 @@ fun test_RebalanceTideSucceedsAfterYieldPriceDecrease() {
 		amount: fundingAmount,
 		beFailed: false
 	)
-    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<TidalProtocol.Opened>())) as! TidalProtocol.Opened).pid
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALP.Opened>())) as! FlowALP.Opened).pid
 
 	var tideIDs = getTideIDs(address: user.address)
 	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
@@ -254,13 +254,13 @@ fun test_RebalanceTideSucceedsAfterYieldPriceDecrease() {
 
 	log("Tide balance before yield increase: \(tideBalance ?? 0.0)")
 
-	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: priceDecrease)
+	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: priceDecrease)
 
 	tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
 
 	log("Tide balance before rebalance: \(tideBalance ?? 0.0)")
 
-	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: positionID, force: true, beFailed: false)
 
 	closeTide(signer: user, id: tideIDs![0], beFailed: false)
@@ -292,7 +292,7 @@ fun test_RebalanceTideSucceedsAfterCollateralPriceIncrease() {
     // Likely 0.0
     let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
     mintFlow(to: user, amount: fundingAmount)
-    grantBeta(tidalYieldAccount, user)
+    grantBeta(flowVaultsAccount, user)
 
     createTide(
         signer: user,
@@ -301,7 +301,7 @@ fun test_RebalanceTideSucceedsAfterCollateralPriceIncrease() {
         amount: fundingAmount,
         beFailed: false
     )
-    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<TidalProtocol.Opened>())) as! TidalProtocol.Opened).pid
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALP.Opened>())) as! FlowALP.Opened).pid
 
     var tideIDs = getTideIDs(address: user.address)
     Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
@@ -309,7 +309,7 @@ fun test_RebalanceTideSucceedsAfterCollateralPriceIncrease() {
 
     // Set a high collateral price to simulate a scenario where the collateral value increases significantly
     // This should cause the rebalance to increase the amount of Yield tokens held in the Tide
-    setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: collateralPriceIncrease)
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: collateralPriceIncrease)
 
     let yieldTokensBefore = getAutoBalancerBalance(id: tideIDs![0])!
 
@@ -317,7 +317,7 @@ fun test_RebalanceTideSucceedsAfterCollateralPriceIncrease() {
 
     // Rebalance the Tide to adjust the Yield tokens based on the new collateral price
     // Force both tide and position to rebalance
-    rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+    rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: true, beFailed: false)
 
     // Position ID is hardcoded to 1 here since this is the first tide created, 
     // if there is a better way to get the position ID, please let me know

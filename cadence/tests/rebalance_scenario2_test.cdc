@@ -6,15 +6,15 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "TidalYieldStrategies"
-import "TidalProtocol"
-import "TidalYield"
+import "FlowVaultsStrategies"
+import "FlowALP"
+import "FlowVaults"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
-access(all) let tidalYieldAccount = Test.getAccount(0x0000000000000009)
+access(all) let flowVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@TidalYieldStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowVaultsStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -114,8 +114,8 @@ fun setup() {
 	
 
 	// set mocked token prices
-	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
-	setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
+	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
+	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
 
 	// mint tokens & set liquidity in mock swapper contract
 	let reserveAmount = 100_000_00.0
@@ -128,7 +128,7 @@ fun setup() {
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
 
-	// setup TidalProtocol with a Pool & add FLOW as supported token
+	// setup FlowALP with a Pool & add FLOW as supported token
 	createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
 	addSupportedTokenSimpleInterestCurve(
 		signer: protocolAccount,
@@ -142,7 +142,7 @@ fun setup() {
 	// open wrapped position (pushToDrawDownSink)
 	// the equivalent of depositing reserves
 	let openRes = executeTransaction(
-		"../../lib/TidalProtocol/cadence/tests/transactions/mock-tidal-protocol-consumer/create_wrapped_position.cdc",
+		"../../lib/FlowALP/cadence/tests/transactions/mock-flow-alp-consumer/create_wrapped_position.cdc",
 		[reserveAmount/2.0, /storage/flowTokenVault, true],
 		protocolAccount
 	)
@@ -150,10 +150,10 @@ fun setup() {
 
 	// enable mocked Strategy creation
 	addStrategyComposer(
-		signer: tidalYieldAccount,
+		signer: flowVaultsAccount,
 		strategyIdentifier: strategyIdentifier,
-		composerIdentifier: Type<@TidalYieldStrategies.TracerStrategyComposer>().identifier,
-		issuerStoragePath: TidalYieldStrategies.IssuerStoragePath,
+		composerIdentifier: Type<@FlowVaultsStrategies.TracerStrategyComposer>().identifier,
+		issuerStoragePath: FlowVaultsStrategies.IssuerStoragePath,
 		beFailed: false
 	)
 
@@ -182,7 +182,7 @@ fun test_RebalanceTideScenario2() {
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	mintFlow(to: user, amount: fundingAmount)
-    grantBeta(tidalYieldAccount, user)
+    grantBeta(flowVaultsAccount, user)
 
 	createTide(
 		signer: user,
@@ -202,7 +202,7 @@ fun test_RebalanceTideScenario2() {
 
 	log("[TEST] Initial tide balance: \(tideBalance ?? 0.0)")
 
-	rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
 	for index, yieldTokenPrice in yieldPriceIncreases {
@@ -210,13 +210,13 @@ fun test_RebalanceTideScenario2() {
 
 		log("[TEST] Tide balance before yield price \(yieldTokenPrice): \(tideBalance ?? 0.0)")
 
-		setMockOraclePrice(signer: tidalYieldAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldTokenPrice)
+		setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldTokenPrice)
 
 		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
 
 		log("[TEST] Tide balance before yield price \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
 
-		rebalanceTide(signer: tidalYieldAccount, id: tideIDs![0], force: false, beFailed: false)
+		rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: false, beFailed: false)
 		rebalancePosition(signer: protocolAccount, pid: pid, force: false, beFailed: false)
 
 		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])

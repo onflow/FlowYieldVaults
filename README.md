@@ -1,14 +1,14 @@
-# Tidal Smart Contracts
+# FlowVaults Smart Contracts
 
-Tidal is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via TidalProtocol's Active Lending Platform. Tidal aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
+FlowVaults is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via FlowALP's Active Lending Platform. FlowVaults aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
 
 ## System Architecture
 
-The Tidal platform consists of several interconnected components:
+The FlowVaults platform consists of several interconnected components:
 
 ### Core Contracts
 
-#### 1. TidalYield.cdc - Main Platform Contract
+#### 1. FlowVaults.cdc - Main Platform Contract
 
 The main contract that orchestrates the entire yield farming system:
 
@@ -18,15 +18,15 @@ The main contract that orchestrates the entire yield farming system:
 - **Tide Resource**: Represents a user's position in a specific strategy
 - **TideManager**: Manages multiple Tide positions for a user account
 
-#### 2. TidalYieldStrategies.cdc - Strategy Implementations
+#### 2. FlowVaultsStrategies.cdc - Strategy Implementations
 
 Implements specific yield strategies:
 
-- **TracerStrategy**: A strategy that uses TidalProtocol lending positions with auto-balancing
+- **TracerStrategy**: A strategy that uses FlowALP lending positions with auto-balancing
 - **TracerStrategyComposer**: Creates TracerStrategy instances with complex DeFi Actions stacking
 - **StrategyComposerIssuer**: Controls access to strategy composer creation
 
-#### 3. TidalYieldAutoBalancers.cdc - Auto-Balancing System
+#### 3. FlowVaultsAutoBalancers.cdc - Auto-Balancing System
 
 Manages automated rebalancing of positions:
 
@@ -41,7 +41,7 @@ Manages automated rebalancing of positions:
 Mock FungibleToken implementations representing:
 
 - **YieldToken**: Receipt tokens for yield-bearing positions
-- **MOET**: TidalProtocol's synthetic stablecoin
+- **MOET**: FlowALP's synthetic stablecoin
 
 ### Mock Infrastructure
 
@@ -63,9 +63,9 @@ Mock FungibleToken implementations representing:
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
 |---|---|---|---|
 | FlowActions | 0xd27920b6384e2a78 | DeFiActions | TBD |
-| TidalProtocol | 0xd27920b6384e2a78 | TidalProtocol | TBD |
-| TidalYield | 0xd27920b6384e2a78 | TidalYield | TBD |
-| TidalYieldStrategies | 0xd27920b6384e2a78 | TidalYieldStrategies | TBD |
+| FlowALP | 0xd27920b6384e2a78 | FlowALP | TBD |
+| FlowVaults | 0xd27920b6384e2a78 | FlowVaults | TBD |
+| FlowVaultsStrategies | 0xd27920b6384e2a78 | FlowVaultsStrategies | TBD |
 | MOET | 0xd27920b6384e2a78 | MOET | 0x51f5cc5f50afb81e8f23c926080fa38c3024b238 |
 | USDC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_d431955d55a99ef69beb96ba34718d0f9fbc91b1 | 0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1 |
 | wBTC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6 | 0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6 |
@@ -80,14 +80,14 @@ Mock FungibleToken implementations representing:
 
 ## How the System Works
 
-Below is an overview of the initial prototype Tracer Strategy in the broader context of TidalProtocol and the Tidal platform.
+Below is an overview of the initial prototype Tracer Strategy in the broader context of FlowALP and the FlowVaults platform.
 
 ### 1. Strategy Architecture
 
 The TracerStrategy demonstrates the power of DeFi Actions composition:
 
 ```
-User Deposit (FLOW) → TidalProtocol Position → MOET Issuance → Swap to YieldToken → AutoBalancer
+User Deposit (FLOW) → FlowALP Position → MOET Issuance → Swap to YieldToken → AutoBalancer
                                                ↑
                                          YieldToken → Swap to FLOW → Recollateralize Position
 ```
@@ -114,7 +114,7 @@ The system heavily uses [DeFi Actions](https://developers.flow.com/blockchain-de
 
 [Cadence Scripts](https://developers.flow.com/build/cadence/basics/scripts) are written in Cadence and take advantage of [Native Data Availability](https://developers.flow.com/blockchain-development-tutorials/cadence/cadence-advantages/native-data-availibility-with-cadence-scripts) read and format any public data on the blockchain in the way the developer needs it, without relying on pre-existing view functions in the contract.
 
-#### `scripts/tidal-yield/get_tide_ids.cdc`
+#### `scripts/flow-vaults/get_tide_ids.cdc`
 
 ```cadence
 // Returns all Tide IDs for a given user address
@@ -135,7 +135,7 @@ access(all) fun main(account: Address, vaultPath: StoragePath): UFix64
 #### Setup
 
 ```cadence
-// Setup user account for Tidal platform
+// Setup user account for FlowVaults platform
 transaction setup()
 ```
 
@@ -171,12 +171,12 @@ The `local/setup_emulator.sh` script provides emulator configuration for local d
 
 ## Rebalancing and Recollateralizing
 
-The Tidal platform implements sophisticated automatic rebalancing and recollateralizing mechanisms to maintain healthy loan positions and optimize yield generation.
+The FlowVaults platform implements sophisticated automatic rebalancing and recollateralizing mechanisms to maintain healthy loan positions and optimize yield generation.
 
 **Important Distinction:** The system has TWO different rebalancing mechanisms:
 
 1. **AutoBalancer Rebalancing** (DFB): Maintains optimal ratio between YieldToken holdings and expected deposit value
-2. **Position Rebalancing** (TidalProtocol): Maintains healthy collateralization ratios for lending positions
+2. **Position Rebalancing** (FlowALP): Maintains healthy collateralization ratios for lending positions
 
 These work together but serve different purposes and can trigger independently based on market conditions.
 
@@ -198,12 +198,12 @@ The AutoBalancer continuously monitors the **value ratio** between:
 
 **When:** Current YieldToken value > 105% historical value of deposits
 **Cause:** YieldToken price has increased OR position became over-collateralized leading to excess token holdings
-**Action:** AutoBalancer deposits excess YieldToken to the rebalanceSink, swapping to FLOW and recollateralizing the TidalProtocol position.
+**Action:** AutoBalancer deposits excess YieldToken to the rebalanceSink, swapping to FLOW and recollateralizing the FlowALP position.
 
 **Automated Flow:**
 
 ```
-YieldToken (excess) → Swap to FLOW → Deposit to TidalProtocol Position (recollateralization)
+YieldToken (excess) → Swap to FLOW → Deposit to FlowALP Position (recollateralization)
 ```
 
 **Result:**
@@ -235,7 +235,7 @@ YieldToken → Swap to FLOW → Add to Position Collateral → Reduce loan risk
 #### AutoBalancer Configuration
 
 ```cadence
-let autoBalancer = TidalYieldAutoBalancers._initNewAutoBalancer(
+let autoBalancer = FlowVaultsAutoBalancers._initNewAutoBalancer(
     oracle: oracle,               // Price feeds for value calculations
     vaultType: yieldTokenType,    // YieldToken holdings monitored
     lowerThreshold: 0.95,         // Trigger recollateralization at 95%
@@ -252,7 +252,7 @@ The system creates a sophisticated token flow:
 
 1. **Initial Position Opening:**
 
-   - User deposits FLOW → TidalProtocol Position
+   - User deposits FLOW → FlowALP Position
    - Position issues MOET → Swaps to YieldToken
    - YieldToken held in AutoBalancer
 
@@ -271,7 +271,7 @@ The system creates a sophisticated token flow:
 
 #### Manual Rebalancing
 
-**Transaction:** `transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc`
+**Transaction:** `transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc`
 
 ```cadence
 // Force rebalancing regardless of thresholds
@@ -287,7 +287,7 @@ transaction rebalance_auto_balancer_by_id(id: UInt64, force: Bool)
 
 #### Check AutoBalancer Balance
 
-**Script:** `scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc`
+**Script:** `scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc`
 
 ```cadence
 // Returns current YieldToken balance in AutoBalancer
@@ -323,7 +323,7 @@ This creates a fully automated yield farming system that adapts to market condit
 
 ## Interest Rate System
 
-The TidalProtocol implements a sophisticated interest rate system that governs borrowing costs and lending yields. This system is fundamental to the protocol's economics and affects all lending positions.
+The FlowALP implements a sophisticated interest rate system that governs borrowing costs and lending yields. This system is fundamental to the protocol's economics and affects all lending positions.
 
 ### How Interest Rates Work
 
@@ -508,15 +508,15 @@ The interest rate system is designed to:
 3. **Manage Risk**: Insurance reserves and dynamic adjustments protect the protocol
 4. **Enable Automation**: Continuous compounding without manual intervention
 
-This interest system is what enables the TidalProtocol to function as a sustainable lending platform while providing the foundation for complex yield farming strategies built on top.
+This interest system is what enables the FlowALP to function as a sustainable lending platform while providing the foundation for complex yield farming strategies built on top.
 
-## TidalProtocol Loan Health Mechanism
+## FlowALP Loan Health Mechanism
 
-The TidalProtocol implements a sophisticated loan health system that determines borrowing capacity, monitors position safety, and prevents liquidations. This system is fundamental to how the TracerStrategy calculates how much can be borrowed against a user's initial collateral position.
+The FlowALP implements a sophisticated loan health system that determines borrowing capacity, monitors position safety, and prevents liquidations. This system is fundamental to how the TracerStrategy calculates how much can be borrowed against a user's initial collateral position.
 
 ### Key Definitions
 
-Before diving into the mechanics, it's important to understand the core terminology used throughout the TidalProtocol loan system:
+Before diving into the mechanics, it's important to understand the core terminology used throughout the FlowALP loan system:
 
 #### Position-Related Terms
 
@@ -565,7 +565,7 @@ Position Health = Effective Collateral / Effective Debt
 #### Health Computation Function
 
 ```cadence
-// From TidalProtocol.cdc
+// From FlowALP.cdc
 access(all) fun healthComputation(effectiveCollateral: UFix64, effectiveDebt: UFix64): UFix64 {
     if effectiveCollateral == 0.0 {
         return 0.0
@@ -854,7 +854,7 @@ let value = tokenPrice * trueBalance
 - Cross-collateralization enables complex strategies
 - Unified health calculation across all assets
 
-This comprehensive loan health system enables the TidalProtocol to safely support leveraged yield farming strategies while maintaining strict risk management and protecting user funds from liquidation through automated rebalancing mechanisms.
+This comprehensive loan health system enables the FlowALP to safely support leveraged yield farming strategies while maintaining strict risk management and protecting user funds from liquidation through automated rebalancing mechanisms.
 
 ## Testing Rebalancing
 
@@ -866,17 +866,17 @@ This section provides a step-by-step guide to test rebalancing functionality in 
 
 ## Collateral Token Price goes up
 
-![COLLATERAL PRICE UP](./1-tidal-diagram.png)
+![COLLATERAL PRICE UP](./1-flow-vaults-diagram.png)
 
 ## Collateral Token Price goes down
 
-![COLLATERAL PRICE DOWN](./2-tidal-diagram.png)
+![COLLATERAL PRICE DOWN](./2-flow-vaults-diagram.png)
 
 ### Yield Token Price Changes
 
                            YIELD TOKEN PRICE REBALANCING WITH CONTRACT INTERACTIONS
 
-![YIELD TOKEN AUTOBALANCER](./3-tidal-diagram.png)
+![YIELD TOKEN AUTOBALANCER](./3-flow-vaults-diagram.png)
 
 The AutoBalancer deposits to a Sink, withdrawing YIELD from the nested Vault. The inner Sink is a SwapSink that swaps from YIELD to FLOW and then deposits to a PositionSink. The deposited FLOW makes its way to the Pool and recollateralizes the position, increasing the position's size. The protocol then pushes the surplus value to its drawDownSink. That drawDownSink is also a SwapSink that takes the deposited MOET, swaps it to YIELD and then deposits the swapped tokens to the AutoBalancerSink. That sink then finally deposits the YIELD to the AutoBalancer on which the rebalance was initially called, increasing the valueOfDeposits and closing the loop.
 
@@ -893,7 +893,7 @@ YIELD TOKEN DOWN Scenario not currently supported
 
 Each scenario below is completely self-contained and can be run independently. You only need to ensure that **contracts are already deployed** to the Flow emulator. Each scenario handles its own setup, execution, and verification.
 
-**Prerequisites:** Flow emulator running with all Tidal contracts deployed.
+**Prerequisites:** Flow emulator running with all FlowVaults contracts deployed.
 
 ---
 
@@ -914,9 +914,9 @@ echo "Setting up independent test environment..."
 export YOUR_ADDRESS="0xf8d6e0586b0a20c7"  # Default test account
 export INITIAL_DEPOSIT=100.0
 
-# Step 1: Setup account for Tidal platform
-echo "Setting up Tidal account..."
-flow transactions send cadence/transactions/tidal-yield/setup.cdc \
+# Step 1: Setup account for FlowVaults platform
+echo "Setting up FlowVaults account..."
+flow transactions send cadence/transactions/flow-vaults/setup.cdc \
   --signer test-account
 
 # Step 2: Setup token vaults
@@ -960,15 +960,15 @@ flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connecto
 
 # Step 5: Create Tide position
 echo "Creating Tide position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send cadence/transactions/tidal-yield/create_tide.cdc \
-  "A.f8d6e0586b0a20c7.TidalYieldStrategies.TracerStrategy" \
+flow transactions send cadence/transactions/flow-vaults/create_tide.cdc \
+  "A.f8d6e0586b0a20c7.FlowVaultsStrategies.TracerStrategy" \
   "A.0ae53cb6e3f42a79.FlowToken.Vault" \
   $INITIAL_DEPOSIT \
   --signer test-account
 
 # Step 6: Get the Tide ID
 echo "Getting Tide ID..."
-TIDE_ID=$(flow scripts execute cadence/scripts/tidal-yield/get_tide_ids.cdc \
+TIDE_ID=$(flow scripts execute cadence/scripts/flow-vaults/get_tide_ids.cdc \
   $YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
 echo "Tide ID: $TIDE_ID"
 
@@ -983,11 +983,11 @@ flow scripts execute cadence/scripts/mocks/oracle/get_price.cdc \
   "A.f8d6e0586b0a20c7.YieldToken.Vault"
 
 echo "Initial Tide Balance:"
-flow scripts execute cadence/scripts/tidal-yield/get_tide_balance.cdc \
+flow scripts execute cadence/scripts/flow-vaults/get_tide_balance.cdc \
   $YOUR_ADDRESS $TIDE_ID
 
 echo "Initial AutoBalancer Balance:"
-flow scripts execute cadence/scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute cadence/scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
   $TIDE_ID
 
 # Step 8: Execute the test - Increase FLOW price by 20%
@@ -1004,22 +1004,22 @@ flow scripts execute cadence/scripts/mocks/oracle/get_price.cdc \
 
 # Step 9: Trigger rebalancing
 echo "Triggering rebalancing..."
-flow transactions send cadence/transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
+flow transactions send cadence/transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc \
   $TIDE_ID true \
   --signer test-account
 
-flow transactions send cadence/transactions/tidal-protocol/pool-management/rebalance_position.cdc \
+flow transactions send cadence/transactions/flow-alp/pool-management/rebalance_position.cdc \
   $TIDE_ID true \
   --signer test-account
 
 # Step 10: Verify results
 echo "=== VERIFYING RESULTS ==="
 echo "New AutoBalancer Balance (should be HIGHER):"
-flow scripts execute cadence/scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute cadence/scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
   $TIDE_ID
 
 echo "New Tide Balance):"
-flow scripts execute cadence/scripts/tidal-yield/get_tide_balance.cdc \
+flow scripts execute cadence/scripts/flow-vaults/get_tide_balance.cdc \
   $YOUR_ADDRESS $TIDE_ID
 
 echo "SCENARIO 1 COMPLETE!"
@@ -1054,9 +1054,9 @@ echo "Setting up independent test environment..."
 export YOUR_ADDRESS="0xf8d6e0586b0a20c7"  # Default test account
 export INITIAL_DEPOSIT=100.0
 
-# Step 1: Setup account for Tidal platform
-echo "Setting up Tidal account..."
-flow transactions send transactions/tidal-yield/setup.cdc \
+# Step 1: Setup account for FlowVaults platform
+echo "Setting up FlowVaults account..."
+flow transactions send transactions/flow-vaults/setup.cdc \
   --signer test-account
 
 # Step 2: Setup token vaults
@@ -1106,7 +1106,7 @@ flow transactions send transactions/mocks/swapper/set_liquidity_connector.cdc \
 
 # Step 5: Create Tide position
 echo "Creating Tide position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send transactions/tidal-yield/create_tide.cdc \
+flow transactions send transactions/flow-vaults/create_tide.cdc \
   --arg String:"tracer" \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --arg UFix64:$INITIAL_DEPOSIT \
@@ -1114,7 +1114,7 @@ flow transactions send transactions/tidal-yield/create_tide.cdc \
 
 # Step 6: Get the Tide ID
 echo "Getting Tide ID..."
-TIDE_ID=$(flow scripts execute scripts/tidal-yield/get_tide_ids.cdc \
+TIDE_ID=$(flow scripts execute scripts/flow-vaults/get_tide_ids.cdc \
   --arg Address:$YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
 echo "Tide ID: $TIDE_ID"
 
@@ -1129,11 +1129,11 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
 echo "Initial Tide Balance:"
-flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
+flow scripts execute scripts/flow-vaults/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
 
 echo "Initial AutoBalancer Balance:"
-flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$TIDE_ID
 
 # Step 8: Execute the test - Decrease FLOW price by 30%
@@ -1150,7 +1150,7 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
 
 # Step 9: Trigger rebalancing
 echo "Triggering recollateralization..."
-flow transactions send transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
+flow transactions send transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc \
   --arg UInt64:$TIDE_ID \
   --arg Bool:true \
   --signer test-account
@@ -1158,11 +1158,11 @@ flow transactions send transactions/tidal-yield/admin/rebalance_auto_balancer_by
 # Step 10: Verify results
 echo "=== VERIFYING RESULTS ==="
 echo "New AutoBalancer Balance (should be LOWER):"
-flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$TIDE_ID
 
 echo "New Tide Balance (may be lower due to collateral needs):"
-flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
+flow scripts execute scripts/flow-vaults/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
 
 echo "SCENARIO 2 COMPLETE!"
@@ -1197,9 +1197,9 @@ echo "Setting up independent test environment..."
 export YOUR_ADDRESS="0xf8d6e0586b0a20c7"  # Default test account
 export INITIAL_DEPOSIT=100.0
 
-# Step 1: Setup account for Tidal platform
-echo "Setting up Tidal account..."
-flow transactions send transactions/tidal-yield/setup.cdc \
+# Step 1: Setup account for FlowVaults platform
+echo "Setting up FlowVaults account..."
+flow transactions send transactions/flow-vaults/setup.cdc \
   --signer test-account
 
 # Step 2: Setup token vaults
@@ -1249,7 +1249,7 @@ flow transactions send transactions/mocks/swapper/set_liquidity_connector.cdc \
 
 # Step 5: Create Tide position
 echo "Creating Tide position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send transactions/tidal-yield/create_tide.cdc \
+flow transactions send transactions/flow-vaults/create_tide.cdc \
   --arg String:"tracer" \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --arg UFix64:$INITIAL_DEPOSIT \
@@ -1257,7 +1257,7 @@ flow transactions send transactions/tidal-yield/create_tide.cdc \
 
 # Step 6: Get the Tide ID
 echo "Getting Tide ID..."
-TIDE_ID=$(flow scripts execute scripts/tidal-yield/get_tide_ids.cdc \
+TIDE_ID=$(flow scripts execute scripts/flow-vaults/get_tide_ids.cdc \
   --arg Address:$YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
 echo "Tide ID: $TIDE_ID"
 
@@ -1272,11 +1272,11 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
 echo "Initial Tide Balance:"
-flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
+flow scripts execute scripts/flow-vaults/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
 
 echo "Initial AutoBalancer Balance:"
-flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$TIDE_ID
 
 # Step 8: Execute the test - Increase YieldToken price by 15%
@@ -1293,7 +1293,7 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
 
 # Step 9: Trigger rebalancing
 echo "Triggering gain capture..."
-flow transactions send transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
+flow transactions send transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc \
   --arg UInt64:$TIDE_ID \
   --arg Bool:true \
   --signer test-account
@@ -1305,11 +1305,11 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
 echo "New AutoBalancer Balance:"
-flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$TIDE_ID
 
 echo "New Tide Balance (should be HIGHER from captured gains):"
-flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
+flow scripts execute scripts/flow-vaults/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
 
 echo "SCENARIO 3 COMPLETE!"
@@ -1344,9 +1344,9 @@ echo "Setting up independent test environment..."
 export YOUR_ADDRESS="0xf8d6e0586b0a20c7"  # Default test account
 export INITIAL_DEPOSIT=100.0
 
-# Step 1: Setup account for Tidal platform
-echo "Setting up Tidal account..."
-flow transactions send transactions/tidal-yield/setup.cdc \
+# Step 1: Setup account for FlowVaults platform
+echo "Setting up FlowVaults account..."
+flow transactions send transactions/flow-vaults/setup.cdc \
   --signer test-account
 
 # Step 2: Setup token vaults
@@ -1396,7 +1396,7 @@ flow transactions send transactions/mocks/swapper/set_liquidity_connector.cdc \
 
 # Step 5: Create Tide position
 echo "Creating Tide position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send transactions/tidal-yield/create_tide.cdc \
+flow transactions send transactions/flow-vaults/create_tide.cdc \
   --arg String:"tracer" \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --arg UFix64:$INITIAL_DEPOSIT \
@@ -1404,7 +1404,7 @@ flow transactions send transactions/tidal-yield/create_tide.cdc \
 
 # Step 6: Get the Tide ID
 echo "Getting Tide ID..."
-TIDE_ID=$(flow scripts execute scripts/tidal-yield/get_tide_ids.cdc \
+TIDE_ID=$(flow scripts execute scripts/flow-vaults/get_tide_ids.cdc \
   --arg Address:$YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
 echo "Tide ID: $TIDE_ID"
 
@@ -1419,11 +1419,11 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
 echo "Initial Tide Balance:"
-flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
+flow scripts execute scripts/flow-vaults/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
 
 echo "Initial AutoBalancer Balance:"
-flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$TIDE_ID
 
 # Step 8: Execute the test - Decrease YieldToken price by 15%
@@ -1440,7 +1440,7 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
 
 # Step 9: Trigger rebalancing
 echo "Triggering portfolio restoration..."
-flow transactions send transactions/tidal-yield/admin/rebalance_auto_balancer_by_id.cdc \
+flow transactions send transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc \
   --arg UInt64:$TIDE_ID \
   --arg Bool:true \
   --signer test-account
@@ -1452,11 +1452,11 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
 echo "New AutoBalancer Balance (should be HIGHER in token count):"
-flow scripts execute scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$TIDE_ID
 
 echo "New Tide Balance:"
-flow scripts execute scripts/tidal-yield/get_tide_balance.cdc \
+flow scripts execute scripts/flow-vaults/get_tide_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
 
 echo "SCENARIO 4 COMPLETE!"
@@ -1490,7 +1490,7 @@ echo "- Manual intervention or position-level rebalancing may be needed"
 
 ```bash
 # Current YieldToken holdings in AutoBalancer
-scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc
+scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc
 
 # Compare against expected value based on deposits
 # Ratio should stay between 0.95 - 1.05 for healthy positions
@@ -1500,17 +1500,17 @@ scripts/tidal-yield/get_auto_balancer_balance_by_id.cdc
 
 ```bash
 # Overall position health (collateralization ratio)
-scripts/tidal-protocol/position_health.cdc
+scripts/flow-alp/position_health.cdc
 
 # Available balance for withdrawal from position
-scripts/tidal-protocol/get_available_balance.cdc
+scripts/flow-alp/get_available_balance.cdc
 ```
 
 #### User Balance
 
 ```bash
 # Total FLOW available for withdrawal from Tide
-scripts/tidal-yield/get_tide_balance.cdc
+scripts/flow-vaults/get_tide_balance.cdc
 
 # Your account token balances
 scripts/tokens/get_balance.cdc
@@ -1545,7 +1545,7 @@ scripts/tokens/get_balance.cdc
 1. **"Could not borrow AutoBalancer"** - Ensure Tide ID is correct
 2. **"No price set for token"** - Set initial prices for all tokens before testing
 3. **"Insufficient liquidity"** - Fund MockSwapper with adequate token reserves
-4. **"Position not found"** - Verify TidalProtocol position ID (different from Tide ID)
+4. **"Position not found"** - Verify FlowALP position ID (different from Tide ID)
 
 #### Debugging Commands:
 
@@ -1554,10 +1554,10 @@ scripts/tokens/get_balance.cdc
 flow scripts execute scripts/mocks/oracle/get_price.cdc --arg String:"TOKEN_TYPE"
 
 # Check your Tide IDs
-flow scripts execute scripts/tidal-yield/get_tide_ids.cdc --arg Address:0xYourAddress
+flow scripts execute scripts/flow-vaults/get_tide_ids.cdc --arg Address:0xYourAddress
 
 # Check supported strategies
-flow scripts execute scripts/tidal-yield/get_supported_strategies.cdc
+flow scripts execute scripts/flow-vaults/get_supported_strategies.cdc
 ```
 
 This testing framework allows you to validate that the rebalancing system correctly responds to market conditions while maintaining position safety and optimizing yield generation.

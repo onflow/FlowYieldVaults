@@ -1,47 +1,115 @@
 {
 	"contracts": {
 		"DeFiActions": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/interfaces/DeFiActions.cdc",
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "6d888f175c158410",
 				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
-			}
-		},
-		"DeFiActionsMathUtils": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsMathUtils.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "0b11b1848a8aa2c0"
 			}
 		},
 		"DeFiActionsUtils": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "6d888f175c158410",
 				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "0b11b1848a8aa2c0"
 			}
 		},
 		"DummyConnectors": {
-			"source": "./lib/TidalProtocol/cadence/contracts/mocks/DummyConnectors.cdc",
+			"source": "./lib/FlowALP/cadence/contracts/mocks/DummyConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000008",
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
-		"FungibleTokenConnectors": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
+		"FlowALP": {
+			"source": "./lib/FlowALP/cadence/contracts/FlowALP.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007",
+				"mainnet": "6b00ff876c299c61",
+				"testing": "0000000000000008",
+				"testnet": "426f0458ced60037"
+			}
+		},
+		"FlowALPMath": {
+			"source": "./lib/FlowALP/cadence/lib/FlowALPMath.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "6b00ff876c299c61",
+				"testing": "0000000000000008",
+				"testnet": "426f0458ced60037"
+			}
+		},
+		"FlowTransactionScheduler": {
+			"source": "mainnet://e467b9dd11fa00df.FlowTransactionScheduler",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "e467b9dd11fa00df",
+				"testnet": "8c5303eaa26202d6"
+			}
+		},
+		"FlowTransactionSchedulerUtils": {
+			"source": "mainnet://e467b9dd11fa00df.FlowTransactionSchedulerUtils",
+			"aliases": {
+				"mainnet": "e467b9dd11fa00df"
+			}
+		},
+		"FlowVaults": {
+			"source": "cadence/contracts/FlowVaults.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009",
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
+		"FlowVaultsAutoBalancers": {
+			"source": "cadence/contracts/FlowVaultsAutoBalancers.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009",
+				"testnet": "2ab6f469ee0dfbb6"
+			}
+		},
+		"FlowVaultsClosedBeta": {
+			"source": "cadence/contracts/FlowVaultsClosedBeta.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009",
+				"testnet": "2ab6f469ee0dfbb6"
+			}
+		},
+		"FlowVaultsStrategies": {
+			"source": "cadence/contracts/FlowVaultsStrategies.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009",
+				"testnet": "2ab6f469ee0dfbb6"
+			}
+		},
+		"FungibleTokenConnectors": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "0c237e1265caa7a3",
+				"testing": "0000000000000007",
+				"testnet": "4cd02f8de4122c84"
+			}
+		},
 		"MOET": {
-			"source": "./lib/TidalProtocol/cadence/contracts/MOET.cdc",
+			"source": "./lib/FlowALP/cadence/contracts/MOET.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "6b00ff876c299c61",
+				"testing": "0000000000000008",
+				"testnet": "426f0458ced60037"
+			}
+		},
+		"MockFlowALPConsumer": {
+			"source": "./lib/FlowALP/cadence/contracts/mocks/MockFlowALPConsumer.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000008",
@@ -72,67 +140,13 @@
 				"testnet": "2ab6f469ee0dfbb6"
 			}
 		},
-		"MockTidalProtocolConsumer": {
-			"source": "./lib/TidalProtocol/cadence/contracts/mocks/MockTidalProtocolConsumer.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000008",
-				"testnet": "2ab6f469ee0dfbb6"
-			}
-		},
 		"SwapConnectors": {
-			"source": "./lib/TidalProtocol/DeFiActions/cadence/contracts/connectors/SwapConnectors.cdc",
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "e1a479f0cb911df9",
 				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
-			}
-		},
-		"TidalMath": {
-			"source": "./lib/TidalProtocol/cadence/lib/TidalMath.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
-			}
-		},
-		"TidalProtocol": {
-			"source": "./lib/TidalProtocol/cadence/contracts/TidalProtocol.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000008",
-				"testnet": "2ab6f469ee0dfbb6"
-			}
-		},
-		"TidalYield": {
-			"source": "cadence/contracts/TidalYield.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
-			}
-		},
-		"TidalYieldAutoBalancers": {
-			"source": "cadence/contracts/TidalYieldAutoBalancers.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
-			}
-		},
-		"TidalYieldClosedBeta": {
-			"source": "cadence/contracts/TidalYieldClosedBeta.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
-			}
-		},
-		"TidalYieldStrategies": {
-			"source": "cadence/contracts/TidalYieldStrategies.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "ad228f1c13a97ec1"
 			}
 		},
 		"YieldToken": {
@@ -340,8 +354,7 @@
 			"emulator-account": [
 				"FlowEVMBridgeHandlerInterfaces",
 				"USDCFlow",
-				"TidalMath",
-				"DeFiActionsMathUtils",
+				"FlowALPMath",
 				"DeFiActionsUtils",
 				"DeFiActions",
 				"FlowStorageFees",
@@ -357,7 +370,7 @@
 					]
 				},
 				"DummyConnectors",
-				"TidalProtocol",
+				"FlowALP",
 				{
 					"name": "YieldToken",
 					"args": [
@@ -377,10 +390,10 @@
 					]
 				},
 				"MockSwapper",
-				"TidalYieldAutoBalancers",
-				"TidalYieldClosedBeta",
-				"TidalYield",
-				"TidalYieldStrategies"
+				"FlowVaultsAutoBalancers",
+				"FlowVaultsClosedBeta",
+				"FlowVaults",
+				"FlowVaultsStrategies"
 			],
 			"mock-incrementfi": [
 				"SwapConfig",
@@ -401,23 +414,7 @@
 		},
 		"testnet": {
 			"testnet-admin": [
-				"DeFiActionsMathUtils",
-				"DeFiActionsUtils",
-				"DeFiActions",
-				"FlowStorageFees",
-				"FungibleTokenConnectors",
-				"SwapConnectors",
-				{
-					"name": "MOET",
-					"args": [
-						{
-							"value": "1000000.00000000",
-							"type": "UFix64"
-						}
-					]
-				},
 				"DummyConnectors",
-				"TidalProtocol",
 				{
 					"name": "YieldToken",
 					"args": [
@@ -437,10 +434,10 @@
 					]
 				},
 				"MockSwapper",
-				"TidalYieldAutoBalancers",
-				"TidalYieldClosedBeta",
-				"TidalYield",
-				"TidalYieldStrategies"
+				"FlowVaultsAutoBalancers",
+				"FlowVaultsClosedBeta",
+				"FlowVaults",
+				"FlowVaultsStrategies"
 			]
 		}
 	}
