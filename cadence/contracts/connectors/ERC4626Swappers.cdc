@@ -41,8 +41,6 @@ access(all) contract ERC4626Swappers {
         access(self) let vault: EVM.EVMAddress
         /// The type of the bridged ERC4626 vault
         access(self) let vaultType: Type
-        /// The COA capability to use for the ERC4626 vault
-        access(self) let coa: Capability<auth(EVM.Call, EVM.Bridge) &EVM.CadenceOwnedAccount>
         /// The token sink to use for the ERC4626 vault
         access(self) let assetSink: ERC4626SinkConnectors.AssetSink
         /// The token source to use for the ERC4626 vault
@@ -70,7 +68,6 @@ access(all) contract ERC4626Swappers {
             self.vaultType = FlowEVMBridgeConfig.getTypeAssociated(with: vault)
                 ?? panic("Provided ERC4626 Vault \(vault.toString()) is not associated with a Cadence FungibleToken - ensure the type & ERC4626 contracts are associated via the VM bridge")
 
-            self.coa = coa
             self.assetSink = ERC4626SinkConnectors.AssetSink(
                 asset: asset,
                 vault: vault,
