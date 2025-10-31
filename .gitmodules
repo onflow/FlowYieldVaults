@@ -1,7 +1,3 @@
-[submodule "lib/TidalProtocol"]
-	path = lib/TidalProtocol
-	url = git@github.com:onflow/TidalProtocol.git
-	branch = main
 [submodule "lib/flow-evm-gateway"]
 	path = lib/flow-evm-gateway
 	url = git@github.com:onflow/flow-evm-gateway.git
@@ -17,3 +13,6 @@
 [submodule "solidity/lib/openzeppelin-contracts"]
 	path = solidity/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "lib/FlowALP"]
+	path = lib/FlowALP
+	url = git@github.com:onflow/FlowALP.git

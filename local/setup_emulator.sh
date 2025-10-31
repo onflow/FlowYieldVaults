@@ -11,12 +11,12 @@ flow transactions send ./cadence/transactions/moet/mint_moet.cdc 0x045a1763c9300
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.0ae53cb6e3f42a79.FlowToken.Vault' 0.5 --signer tidal
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.045a1763c93006ca.YieldToken.Vault' 1.0 --signer tidal
 
-# configure TidalProtocol
+# configure FlowALP
 #
 # create Pool with MOET as default token
-flow transactions send ./cadence/transactions/tidal-protocol/pool-factory/create_and_store_pool.cdc 'A.045a1763c93006ca.MOET.Vault' --signer tidal
+flow transactions send ./cadence/transactions/flow-alp/pool-factory/create_and_store_pool.cdc 'A.045a1763c93006ca.MOET.Vault' --signer tidal
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
-flow transactions send ./cadence/transactions/tidal-protocol/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
     'A.0ae53cb6e3f42a79.FlowToken.Vault' \
     0.8 \
     1.0 \
@@ -24,22 +24,22 @@ flow transactions send ./cadence/transactions/tidal-protocol/pool-governance/add
     1_000_000.0 \
     --signer tidal
 
-# configure TidalYield
+# configure FlowVaults
 # 
 # wire up liquidity to MockSwapper, mocking AMM liquidity sources
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/flowTokenVault --signer tidal
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/moetTokenVault_0x045a1763c93006ca --signer tidal
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/yieldTokenVault_0x045a1763c93006ca --signer tidal
 # add TracerStrategy as supported Strategy with the ability to initialize when new Tides are created
-flow transactions send ./cadence/transactions/tidal-yield/admin/add_strategy_composer.cdc \
-    'A.045a1763c93006ca.TidalYieldStrategies.TracerStrategy' \
-    'A.045a1763c93006ca.TidalYieldStrategies.TracerStrategyComposer' \
-    /storage/TidalYieldStrategyComposerIssuer_0x045a1763c93006ca \
+flow transactions send ./cadence/transactions/flow-vaults/admin/add_strategy_composer.cdc \
+    'A.045a1763c93006ca.FlowVaultsStrategies.TracerStrategy' \
+    'A.045a1763c93006ca.FlowVaultsStrategies.TracerStrategyComposer' \
+    /storage/FlowVaultsStrategyComposerIssuer_0x045a1763c93006ca \
     --signer tidal
 
 # grant PoolBeta cap
-echo "Grant Protocol Beta access to TidalYield"
-flow transactions send ./lib/TidalProtocol/cadence/tests/transactions/tidal-protocol/pool-management/03_grant_beta.cdc \
+echo "Grant Protocol Beta access to TidalVaults"
+flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc \
   --authorizer tidal,tidal \
   --proposer tidal \
   --payer tidal

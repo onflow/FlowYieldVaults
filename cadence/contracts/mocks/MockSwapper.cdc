@@ -5,7 +5,7 @@ import "MockOracle"
 
 import "DeFiActions"
 import "SwapConnectors"
-import "DeFiActionsMathUtils"
+import "FlowALPMath"
 
 ///
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
@@ -94,12 +94,12 @@ access(all) contract MockSwapper {
             let inTokenPrice = self.oracle.price(ofToken: self.inType())
             ?? panic("Price for token \(self.inType().identifier) is currently unavailable")
 
-            let uintOutTokenPrice = DeFiActionsMathUtils.toUInt128(outTokenPrice)
-            let uintInTokenPrice = DeFiActionsMathUtils.toUInt128(inTokenPrice)
+            let uintOutTokenPrice = FlowALPMath.toUFix128(outTokenPrice)
+            let uintInTokenPrice = FlowALPMath.toUFix128(inTokenPrice)
 
             // the original formula is correct, but lacks precision
             // let price = reverse  ? outTokenPrice / inTokenPrice : inTokenPrice / outTokenPrice
-            let uintPrice = reverse ? DeFiActionsMathUtils.div(uintOutTokenPrice, uintInTokenPrice) : DeFiActionsMathUtils.div(uintInTokenPrice, uintOutTokenPrice)
+            let uintPrice = reverse ? FlowALPMath.div(uintOutTokenPrice, uintInTokenPrice) : FlowALPMath.div(uintInTokenPrice, uintOutTokenPrice)
 
             if amount == UFix64.max {
                 return SwapConnectors.BasicQuote(
@@ -110,12 +110,12 @@ access(all) contract MockSwapper {
                 )
             }
 
-            let uintAmount = DeFiActionsMathUtils.toUInt128(amount)
-            let uintInAmount = out ? uintAmount : DeFiActionsMathUtils.div(uintAmount, uintPrice)
-            let uintOutAmount = out ? DeFiActionsMathUtils.mul(uintAmount, uintPrice) : uintAmount
+            let uintAmount = FlowALPMath.toUFix128(amount)
+            let uintInAmount = out ? uintAmount : FlowALPMath.div(uintAmount, uintPrice)
+            let uintOutAmount = out ? uintAmount * uintPrice : uintAmount
 
-            let inAmount = DeFiActionsMathUtils.toUFix64Round(uintInAmount)
-            let outAmount = DeFiActionsMathUtils.toUFix64Round(uintOutAmount)
+            let inAmount = FlowALPMath.toUFix64Round(uintInAmount)
+            let outAmount = FlowALPMath.toUFix64Round(uintOutAmount)
 
             return SwapConnectors.BasicQuote(
                 inType: reverse ? self.outVault : self.inVault,

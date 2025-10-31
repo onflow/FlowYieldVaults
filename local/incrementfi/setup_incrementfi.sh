@@ -32,7 +32,7 @@ flow transactions send ./cadence/transactions/mocks/incrementfi/transfer_amm_tok
 # 
 # 4. create swap pair
 #
-flow transactions send ./lib/TidalProtocol/DeFiActions/cadence/transactions/increment-fi/create_swap_pair.cdc $MOET_IDENTIFIER $YIELD_IDENTIFIER false --signer tidal
+flow transactions send ./lib/FlowALP/FlowActions/cadence/transactions/increment-fi/create_swap_pair.cdc $MOET_IDENTIFIER $YIELD_IDENTIFIER false --signer tidal
 #
 #
 # 5. add liquidity to the AMMs
@@ -45,7 +45,7 @@ DEADLINE=$((BLOCK_TS + 600))
 echo $MOET_KEY
 echo $YIELD_KEY
 echo $DEADLINE
-flow transactions send "./lib/TidalProtocol/DeFiActions/cadence/transactions/increment-fi/add_liquidity.cdc" \
+flow transactions send "./lib/FlowALP/FlowActions/cadence/transactions/increment-fi/add_liquidity.cdc" \
 	"$MOET_KEY" \
 	"$YIELD_KEY" \
 	100.0 \
