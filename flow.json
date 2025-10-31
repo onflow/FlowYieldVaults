@@ -4,16 +4,18 @@
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
+        "mainnet": "6d888f175c158410",
 				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "0b11b1848a8aa2c0"
 			}
 		},
 		"DeFiActionsUtils": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
+        "mainnet": "6d888f175c158410",
 				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "0b11b1848a8aa2c0"
 			}
 		},
 		"DummyConnectors": {
@@ -28,16 +30,18 @@
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
+        "mainnet": "0c237e1265caa7a3"
 				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "4cd02f8de4122c84"
 			}
 		},
 		"MOET": {
 			"source": "./lib/FlowALP/cadence/contracts/MOET.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000008",
-				"testnet": "2ab6f469ee0dfbb6"
+        "mainnet": "6b00ff876c299c61",
+				"testing": "0000000000000007",
+        "testnet": "426f0458ced60037"
 			}
 		},
 		"MockOracle": {
@@ -76,23 +80,27 @@
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
+        "mainnet": "e1a479f0cb911df9",
 				"testing": "0000000000000007",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "ad228f1c13a97ec1"
 			}
 		},
 		"FlowALPMath": {
 			"source": "./lib/FlowALP/cadence/lib/FlowALPMath.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
+        "mainnet": "6b00ff876c299c61",
+				"testing": "0000000000000007",
+        "testnet": "426f0458ced60037"
 			}
 		},
 		"FlowALP": {
 			"source": "./lib/FlowALP/cadence/contracts/FlowALP.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000008",
-				"testnet": "2ab6f469ee0dfbb6"
+        "mainnet": "6b00ff876c299c61",
+				"testing": "0000000000000007",
+        "testnet": "426f0458ced60037"
 			}
 		},
 		"FlowTransactionScheduler": {
@@ -408,22 +416,7 @@
 		},
 		"testnet": {
 			"testnet-admin": [
-				"DeFiActionsUtils",
-				"DeFiActions",
-				"FlowStorageFees",
-				"FungibleTokenConnectors",
-				"SwapConnectors",
-				{
-					"name": "MOET",
-					"args": [
-						{
-							"value": "1000000.00000000",
-							"type": "UFix64"
-						}
-					]
-				},
 				"DummyConnectors",
-				"FlowALP",
 				{
 					"name": "YieldToken",
 					"args": [
