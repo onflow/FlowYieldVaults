@@ -690,7 +690,7 @@
 				"StableSwapFactory",
 				"SwapRouter"
 			],
-			"tidal": [
+			"emulator-tidal": [
 				"DeFiActionsUtils",
 				"DeFiActions",
 				"FlowALPMath",
