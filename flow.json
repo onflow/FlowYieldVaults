@@ -664,11 +664,11 @@
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
-		"tidal": {
+		"emulator-tidal": {
 			"address": "045a1763c93006ca",
 			"key": {
 				"type": "file",
-				"location": "local/tidal.pkey"
+				"location": "local/emulator-tidal.pkey"
 			}
 		}
 	},
@@ -756,7 +756,6 @@
 		},
 		"testnet": {
 			"testnet-admin": [
-				"DummyConnectors",
 				{
 					"name": "YieldToken",
 					"args": [
@@ -779,7 +778,6 @@
 				"FlowVaultsAutoBalancers",
 				"FlowVaultsClosedBeta",
 				"FlowVaults",
-				"EVMAbiHelpers",
 				{
 					"name": "FlowVaultsStrategies",
 					"args": [
@@ -803,6 +801,7 @@
 				}
 			],
 			"testnet-uniswapV3-connectors-deployer": [
+				"EVMAbiHelpers",
 				"UniswapV3SwapConnectors"
 			]
 		}
