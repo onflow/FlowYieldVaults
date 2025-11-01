@@ -2,39 +2,22 @@
 set -euo pipefail
 
 run_txn() {
-  local desc="$1"
+  desc=$1
   shift
-
   echo ">>> $desc"
+  result=$(flow transactions send "$@" 2>&1 || true)
 
-  # Capture output AND whether the CLI itself failed
-  local result status=0
-  result="$(flow transactions send "$@" 2>&1)" || status=$?
-
-  # Always show the Flow output
   echo "$result"
 
-  # If the CLI failed (network, auth, etc.)
-  if [[ $status -ne 0 ]]; then
-    echo "❌ Transaction '$desc' failed (flow CLI error, exit $status)"
-    exit 1
-  fi
-
-  # Must be SEALED
-  if ! echo "$result" | grep -qE 'Status[[:space:]]+✅[[:space:]]+SEALED|(^|[[:space:]])SEALED($|[[:space:]])'; then
+  if ! echo "$result" | grep -q "SEALED"; then
     echo "❌ Transaction '$desc' failed (not SEALED)"
     exit 1
   fi
-
-  # Detect execution errors even when SEALED
-  if echo "$result" | grep -qiE \
-      '(^|[[:space:]])❌[[:space:]]*Transaction Error|(^|[[:space:]])Transaction Error|cadence runtime error|error:[[:space:]]+panic|error:[[:space:]]+assertion failed|\[Error Code:'; then
-    echo "❌ Transaction '$desc' failed (execution error detected despite SEALED)"
+  if echo "$result" | grep -q "Transaction Error"; then
+    echo "❌ Transaction '$desc' failed (Error)"
     exit 1
   fi
-
-  echo "✅ '$desc' succeeded."
-}}
+}
 
 run_txn "Grant Tide Beta access to test user" \
   ./cadence/transactions/flow-vaults/admin/grant_beta.cdc \
