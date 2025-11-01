@@ -664,7 +664,7 @@
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
-		"emulator-tidal": {
+		"tidal": {
 			"address": "045a1763c93006ca",
 			"key": {
 				"type": "file",
@@ -690,7 +690,7 @@
 				"StableSwapFactory",
 				"SwapRouter"
 			],
-			"emulator-tidal": [
+			"tidal": [
 				"DeFiActionsUtils",
 				"DeFiActions",
 				"FlowALPMath",
