@@ -109,7 +109,7 @@
 		"FungibleTokenConnectors": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "045a1763c93006ca",
 				"mainnet": "0c237e1265caa7a3",
 				"testing": "0000000000000007",
 				"testnet": "4cd02f8de4122c84"
