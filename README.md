@@ -960,7 +960,7 @@ flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connecto
 
 # Step 5: Create Tide position
 echo "Creating Tide position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send cadence/transactions/tidal-yield/create_tide.cdc \
+flow transactions send cadence/transactions/flow-vaults/create_tide.cdc \
   "A.045a1763c93006ca.FlowVaultsStrategies.TracerStrategy" \
   "A.0ae53cb6e3f42a79.FlowToken.Vault" \
   $INITIAL_DEPOSIT \

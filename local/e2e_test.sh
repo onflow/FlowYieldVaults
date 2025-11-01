@@ -31,7 +31,7 @@ run_txn "Transfer Flow tokens" \
 
 run_txn "Creating Tide[0]" \
   ./cadence/transactions/flow-vaults/create_tide.cdc \
-  A.045a1763c93006ca.TidalYieldStrategies.TracerStrategy \
+  A.045a1763c93006ca.FlowVaultsStrategies.TracerStrategy \
   A.0ae53cb6e3f42a79.FlowToken.Vault \
   100.0 \
   --signer test-user \
