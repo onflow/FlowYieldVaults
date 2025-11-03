@@ -25,10 +25,10 @@ jobs:
         run: echo "/root/.local/bin" >> $GITHUB_PATH
       - name: Run emulator
         run: ./local/run_emulator.sh 
-      - name: Create wallets
-        run: ./local/setup_wallets.sh
       - name: Install Flow deps 
         run: flow deps install --skip-alias --skip-deployments
+      - name: Create wallets
+        run: ./local/setup_wallets.sh
       - name: Deploy contracts
         run: flow deploy
       - name: Setup IncrementFi

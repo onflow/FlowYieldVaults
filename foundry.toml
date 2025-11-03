@@ -5,4 +5,8 @@ libs = ["./solidity/lib"]
 script = "./solidity/script"
 test = "./solidity/test"
 
+
+remappings = [
+  "@openzeppelin/=./solidity/lib/openzeppelin-contracts/"
+]
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

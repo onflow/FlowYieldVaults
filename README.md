@@ -935,12 +935,12 @@ flow transactions send cadence/transactions/mocks/oracle/set_price.cdc \
   --signer test-account
 
 flow transactions send cadence/transactions/mocks/oracle/set_price.cdc \
-  "A.f8d6e0586b0a20c7.YieldToken.Vault" \
+  "A.045a1763c93006ca.YieldToken.Vault" \
   2.0 \
   --signer test-account
 
 flow transactions send cadence/transactions/mocks/oracle/set_price.cdc \
-  "A.f8d6e0586b0a20c7.MOET.Vault" \
+  "A.045a1763c93006ca.MOET.Vault" \
   1.0 \
   --signer test-account
 
@@ -951,17 +951,17 @@ flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connecto
   --signer test-account
 
 flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connector.cdc \
-  "/storage/moetTokenVault_0xf8d6e0586b0a20c7" \
+  "/storage/moetTokenVault_0x045a1763c93006ca" \
   --signer test-account
 
 flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connector.cdc \
-  "/storage/yieldTokenVault_0xf8d6e0586b0a20c7" \
+  "/storage/yieldTokenVault_0x045a1763c93006ca" \
   --signer test-account
 
 # Step 5: Create Tide position
 echo "Creating Tide position with $INITIAL_DEPOSIT FLOW..."
 flow transactions send cadence/transactions/flow-vaults/create_tide.cdc \
-  "A.f8d6e0586b0a20c7.FlowVaultsStrategies.TracerStrategy" \
+  "A.045a1763c93006ca.FlowVaultsStrategies.TracerStrategy" \
   "A.0ae53cb6e3f42a79.FlowToken.Vault" \
   $INITIAL_DEPOSIT \
   --signer test-account
@@ -980,7 +980,7 @@ flow scripts execute cadence/scripts/mocks/oracle/get_price.cdc \
 
 echo "Initial YieldToken Price:"
 flow scripts execute cadence/scripts/mocks/oracle/get_price.cdc \
-  "A.f8d6e0586b0a20c7.YieldToken.Vault"
+  "A.045a1763c93006ca.YieldToken.Vault"
 
 echo "Initial Tide Balance:"
 flow scripts execute cadence/scripts/flow-vaults/get_tide_balance.cdc \

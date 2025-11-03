@@ -37,9 +37,19 @@ jobs:
         run: flow deps install --skip-alias --skip-deployments
       - name: Run Emulator
         run: ./local/run_emulator.sh
-      - name: Setup Emulator
-        run: ./local/setup_emulator.sh
       - name: Setup Wallets
         run: ./local/setup_wallets.sh
+      - name: Run EVM gateway
+        run: ./local/run_evm_gateway.sh
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+      - name: Deploy Punchswap contracts
+        run: ./local/punchswap/setup_punchswap.sh
+      - name: Setup Punchswap pools
+        run: ./local/punchswap/e2e_punchswap.sh
+      - name: Setup Emulator
+        run: ./local/setup_emulator.sh
+      - name: Setup bridged tokens
+        run: ./local/setup_bridged_tokens.sh
       - name: Run E2E test
         run: ./local/e2e_test.sh
