@@ -25,7 +25,7 @@ RUN bash -lc '\
   set -euo pipefail; \
   mkdir -p "$SEED_DIR"; \
   echo "▶ Start emulator (build-time) with --persist to ${SEED_DIR}"; \
-  flow emulator start --verbose --persist "$SEED_DIR" > /tmp/emulator-build.log 2>&1 & \
+  flow emulator start --verbose --contracts --persist "$SEED_DIR" > /tmp/emulator-build.log 2>&1 & \
   EM_PID=$!; \
   echo -n "⏳ Waiting for emulator ... "; \
   for i in {1..60}; do nc -z 127.0.0.1 3569 && break || { echo -n "."; sleep 1; }; done; echo; \
@@ -43,7 +43,7 @@ RUN bash -lc '\
 
 # ---------- RUNTIME ----------
 EXPOSE 3569 8080
-ENV FLOW_EMULATOR_FLAGS="--verbose --persist /seed/state"
+ENV FLOW_EMULATOR_FLAGS="--verbose --contracts --persist /seed/state"
 
 # At runtime we just start the emulator that already contains the baked state.
 ENTRYPOINT [ "bash", "-lc", "flow emulator start $FLOW_EMULATOR_FLAGS" ]
