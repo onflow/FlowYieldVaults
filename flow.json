@@ -23,7 +23,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "d1f6f66148960224"
 			}
 		},
 		"EVMAbiHelpers": {
@@ -31,7 +31,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000007",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "3ebb7d2595e97cd2"
 			}
 		},
 		"EVMTokenConnectors": {
@@ -79,7 +79,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d1f6f66148960224"
 			}
 		},
 		"FlowVaultsAutoBalancers": {
@@ -87,7 +87,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d1f6f66148960224"
 			}
 		},
 		"FlowVaultsClosedBeta": {
@@ -95,7 +95,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d1f6f66148960224"
 			}
 		},
 		"FlowVaultsStrategies": {
@@ -103,7 +103,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "d1f6f66148960224"
 			}
 		},
 		"FungibleTokenConnectors": {
@@ -129,7 +129,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "d1f6f66148960224"
 			}
 		},
 		"MockOracle": {
@@ -137,7 +137,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "d1f6f66148960224"
 			}
 		},
 		"MockStrategy": {
@@ -145,7 +145,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "d1f6f66148960224"
 			}
 		},
 		"MockSwapper": {
@@ -153,7 +153,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "d1f6f66148960224"
 			}
 		},
 		"MockFlowALPConsumer": {
@@ -161,7 +161,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "d1f6f66148960224"
 			}
 		},
 		"SwapConnectors": {
@@ -178,7 +178,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000007",
-				"testnet": "a87f1085c356a8e3"
+				"testnet": "3ebb7d2595e97cd2"
 			}
 		},
 		"YieldToken": {
@@ -186,7 +186,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000010",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "d1f6f66148960224"
 			}
 		}
 	},
@@ -642,7 +642,7 @@
 			}
 		},
 		"testnet-admin": {
-			"address": "d27920b6384e2a78",
+			"address": "d1f6f66148960224",
 			"key": {
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
@@ -657,7 +657,7 @@
 			}
 		},
 		"testnet-uniswapV3-connectors-deployer": {
-			"address": "a87f1085c356a8e3",
+			"address": "3ebb7d2595e97cd2",
 			"key": {
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
@@ -769,7 +769,7 @@
 					"name": "MockOracle",
 					"args": [
 						{
-							"value": "A.d27920b6384e2a78.MOET.Vault",
+							"value": "A.426f0458ced60037.MOET.Vault",
 							"type": "String"
 						}
 					]
