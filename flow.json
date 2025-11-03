@@ -156,14 +156,6 @@
 				"testnet": "d1f6f66148960224"
 			}
 		},
-		"MockFlowALPConsumer": {
-			"source": "./lib/FlowALP/cadence/contracts/mocks/MockFlowALPConsumer.cdc",
-			"aliases": {
-				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000008",
-				"testnet": "d1f6f66148960224"
-			}
-		},
 		"SwapConnectors": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
@@ -649,11 +641,12 @@
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
-		"testnet-deployer": {
-			"address": "29242c62f18538c9",
+		"testnet-flow-alp-deployer": {
+			"address": "426f0458ced60037",
 			"key": {
-				"type": "file",
-				"location": "testnet-deployer.pkey"
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
 		"testnet-uniswapV3-connectors-deployer": {
@@ -683,7 +676,7 @@
 					"args": [
 						{
 							"value": "0xf3fcd2c1a78f5eee",
-                      "type": "Address"
+							"type": "Address"
 						}
 					]
 				},
