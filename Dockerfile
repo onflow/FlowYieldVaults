@@ -32,7 +32,11 @@ RUN bash -lc '\
   echo "▶ Seeding"; \
   # Your seed scripts can use `--network emulator` exactly like at runtime:
   [ -x ./local/setup_wallets.sh ] && ./local/setup_wallets.sh || true; \
+  [ -x ./local/run_evm_gateway.sh ] && ./local/run_evm_gateway.sh || true; \
+  [ -x ./local/setup_punchswap.sh ] && ./local/setup_punchswap.sh || true; \
+  [ -x ./local/e2e_punchswap.sh ] && ./local/e2e_punchswap.sh || true; \
   [ -x ./local/setup_emulator.sh ] && ./local/setup_emulator.sh || true; \
+  [ -x ./local/setup_bridged_tokens.sh ] && ./local/setup_bridged_tokens.sh || true; \
   echo "▶ Stop emulator (build-time)"; \
   kill $EM_PID && wait $EM_PID || true \
 '
