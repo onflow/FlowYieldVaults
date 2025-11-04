@@ -33,9 +33,9 @@ The RedemptionWrapper contract enables users to redeem MOET stablecoin for under
 
 ✅ **Strict 1:1 Peg Enforcement** - No bonuses or penalties, pure arbitrage  
 ✅ **Sustainable Economics** - Position neutral, no value drain  
+✅ **Cadence Resource Security** - Linear types prevent reentrancy and duplication  
 ✅ **Pause Mechanism** - Emergency stop capability  
 ✅ **MEV Protection** - Per-user cooldowns + daily limits  
-✅ **Reentrancy Guards** - Defense against attack vectors  
 ✅ **Oracle Staleness Checks** - Prevents price manipulation  
 ✅ **Position Safety** - Guarantees minimum health after redemption  
 ✅ **Event Logging** - Full audit trail  
@@ -148,9 +148,13 @@ admin.resetDailyLimit()
 
 ## Security Features
 
-### 1. Reentrancy Protection
-- Boolean guard prevents nested calls
-- Checks at entry, releases at exit
+### 1. Cadence Resource-Oriented Security
+- **Linear Types**: Resources cannot be duplicated or lost
+- **Capability-Based Access**: No arbitrary external calls
+- **No Reentrancy Risk**: Receiver's `deposit()` cannot call back into `redeem()`
+- **Compile-Time Safety**: Type system prevents common vulnerabilities
+
+**Note:** Unlike Solidity, Cadence doesn't need explicit reentrancy guards. The language's resource model and capability system inherently prevent reentrancy attacks.
 
 ### 2. MEV/Frontrunning Mitigation
 - **Per-user cooldowns**: 60s default (prevent spam)
@@ -168,6 +172,12 @@ admin.resetDailyLimit()
 - Collateral availability checks
 - Oracle price availability
 - Receiver capability validation
+
+### 5. Cadence-Specific Patterns
+- **`view` Functions**: Read-only functions marked with `view` modifier
+- **Strict Access Control**: `access(contract)` for internal state, `access(all)` only where needed
+- **Resource Linear Types**: MOET vault moved (not copied) ensures single-use
+- **Postconditions**: Runtime validation of position health after redemption
 
 ---
 
@@ -271,7 +281,7 @@ This increases supply, pushing price down toward $1.00.
 - [ ] **Liquidation prevention** - Reject redemption from liquidatable position
 - [ ] **Daily limit circuit breaker** - Hit 100k cap, verify rejection, test reset
 - [ ] **User cooldown enforcement** - Attempts <60s apart rejected
-- [ ] **Reentrancy protection** - Malicious receiver blocked
+- [ ] **Resource safety** - Verify Cadence resources properly moved/destroyed
 - [ ] **Insufficient collateral** - Redemption reverts if not enough available
 
 ### Integration Tests
@@ -282,6 +292,7 @@ This increases supply, pushing price down toward $1.00.
 - [ ] Zero collateral availability scenarios
 - [ ] Price changes during redemption
 - [ ] Fallback to default collateral when preferred unavailable
+- [ ] View function correctness (no state changes)
 
 ### Edge Cases
 

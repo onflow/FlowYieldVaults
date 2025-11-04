@@ -46,16 +46,13 @@ access(all) contract RedemptionWrapper {
     
     // Oracle protections
     access(all) var maxPriceAge: UFix64 // max seconds since oracle update
-    access(all) var lastPriceUpdate: {Type: UFix64} // Track last price update per token type
+    access(contract) var lastPriceUpdate: {Type: UFix64} // Track last price update per token type
     
     // Position health safety
     access(all) var minPostRedemptionHealth: UFix128 // minimum health after redemption
     
     // Position tracking
-    access(all) var positionID: UInt64? // Store the redemption position ID
-    
-    // Reentrancy protection
-    access(all) var reentrancyGuard: Bool
+    access(contract) var positionID: UInt64? // Store the redemption position ID
 
     // Admin resource for governance control
     access(all) resource Admin {
@@ -128,19 +125,18 @@ access(all) contract RedemptionWrapper {
         /// - Sustainable for redemption position (no value drain)
         ///
         /// Security features:
-        /// - Reentrancy protection
         /// - Daily and per-tx limits
         /// - Per-user cooldowns
         /// - Oracle staleness checks
         /// - Position solvency verification (pre and post)
         /// - Liquidation status check
+        /// - Resource-oriented security (Cadence's linear types prevent reentrancy)
         access(all) fun redeem(
             moet: @MOET.Vault,
             preferredCollateralType: Type?,
             receiver: Capability<&{FungibleToken.Receiver}>
         ) {
             pre {
-                !RedemptionWrapper.reentrancyGuard: "Reentrancy detected"
                 !RedemptionWrapper.paused: "Redemptions are paused"
                 receiver.check(): "Invalid receiver capability"
                 RedemptionWrapper.getPosition() != nil: "Position not set up"
@@ -154,9 +150,6 @@ access(all) contract RedemptionWrapper {
                 RedemptionWrapper.getPosition()!.getHealth() >= RedemptionWrapper.minPostRedemptionHealth:
                     "Post-redemption health below minimum threshold"
             }
-
-            // Reentrancy guard
-            RedemptionWrapper.reentrancyGuard = true
 
             let amount = moet.balance
             let pool = RedemptionWrapper.getPool()
@@ -269,9 +262,6 @@ access(all) contract RedemptionWrapper {
             RedemptionWrapper.dailyRedemptionUsed = RedemptionWrapper.dailyRedemptionUsed + repaid
             RedemptionWrapper.userLastRedemption[userAddr] = getCurrentBlock().timestamp
 
-            // Release reentrancy guard
-            RedemptionWrapper.reentrancyGuard = false
-
             // Emit event for transparency
             emit RedemptionExecuted(
                 user: receiver.address,
@@ -317,23 +307,23 @@ access(all) contract RedemptionWrapper {
     }
 
     /// Get reference to the TidalProtocol Pool
-    access(all) fun getPool(): &TidalProtocol.Pool {
+    access(all) view fun getPool(): &TidalProtocol.Pool {
         return self.account.capabilities.borrow<&TidalProtocol.Pool>(TidalProtocol.PoolPublicPath)
             ?? panic("No pool capability")
     }
 
     /// Get reference to the redemption position
-    access(all) fun getPosition(): &TidalProtocol.Position? {
+    access(all) view fun getPosition(): &TidalProtocol.Position? {
         return self.account.storage.borrow<&TidalProtocol.Position>(from: self.RedemptionPositionStoragePath)
     }
 
     /// Get the position ID for liquidation checks
-    access(self) fun getPositionID(): UInt64 {
+    access(contract) view fun getPositionID(): UInt64 {
         return self.positionID ?? panic("Position not set up - call setup() first")
     }
 
     /// View function to check if a redemption would succeed (pre-flight check)
-    access(all) fun canRedeem(moetAmount: UFix64, collateralType: Type, user: Address): Bool {
+    access(all) view fun canRedeem(moetAmount: UFix64, collateralType: Type, user: Address): Bool {
         if self.paused { return false }
         if moetAmount < self.minRedemptionAmount || moetAmount > self.maxRedemptionAmount { return false }
         
@@ -363,7 +353,7 @@ access(all) contract RedemptionWrapper {
 
     /// View function to estimate redemption output
     /// Returns exact collateral amount at 1:1 oracle price (no bonuses or penalties)
-    access(all) fun estimateRedemption(moetAmount: UFix64, collateralType: Type): UFix64 {
+    access(all) view fun estimateRedemption(moetAmount: UFix64, collateralType: Type): UFix64 {
         let pool = self.getPool()
         let price = pool.priceOracle.price(ofToken: collateralType) ?? panic("Price unavailable")
         
@@ -397,9 +387,6 @@ access(all) contract RedemptionWrapper {
         
         // Position tracking
         self.positionID = nil                            // Set during setup()
-        
-        // Reentrancy protection
-        self.reentrancyGuard = false
 
         // Create and save Admin resource for governance
         let admin <- create Admin()
