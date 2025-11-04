@@ -57,55 +57,12 @@ fun test_redemption_one_to_one_parity() {
     setupMoetVault(protocolAccount, beFailed: false)
     giveFlowTokens(to: protocolAccount, amount: 1000.0)
     
-    // Setup redemption position via transaction
-    let setupCode = """
-        import RedemptionWrapper from 0x0000000000000007
-        import FlowToken from 0x0000000000000003
-        import MOET from 0x0000000000000007
-        import FlowALP from 0x0000000000000007
-        import DeFiActions from 0x0000000000000007
-        import FungibleTokenConnectors from 0x0000000000000007
-        
-        transaction(flowAmount: UFix64) {
-            prepare(signer: auth(Storage, Capabilities) &Account) {
-                // Get Flow collateral
-                let flowVault <- signer.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)!
-                    .withdraw(amount: flowAmount)
-                
-                // Create issuance sink (where borrowed MOET goes)
-                let moetReceiver = signer.capabilities.get<&MOET.Vault>(/public/moetBalance)
-                let issuanceSink = FungibleTokenConnectors.VaultReceiverSink(receiver: moetReceiver)
-                
-                // Setup redemption position
-                RedemptionWrapper.setup(
-                    initialCollateral: <-flowVault,
-                    issuanceSink: issuanceSink,
-                    repaymentSource: nil
-                )
-            }
-        }
-    """
-    
-    let setupTx = Test.Transaction(
-        code: setupCode,
-        authorizers: [protocolAccount.address],
-        signers: [protocolAccount],
-        arguments: [500.0]
-    )
-    let setupRes = Test.executeTransaction(setupTx)
+    // Setup redemption position
+    let setupRes = setupRedemptionPosition(signer: protocolAccount, flowAmount: 500.0)
     Test.expect(setupRes, Test.beSucceeded())
     
-    // Verify position was created
-    let positionHealthScript = """
-        import RedemptionWrapper from 0x0000000000000007
-        
-        access(all) fun main(): UFix128 {
-            return RedemptionWrapper.getPosition()!.getHealth()
-        }
-    """
-    let healthRes = Test.executeScript(positionHealthScript, [])
-    Test.expect(healthRes, Test.beSucceeded())
-    let health = healthRes.returnValue! as! UFix128
+    // Verify position was created and check health
+    let health = getRedemptionPositionHealth()
     log("Initial position health: ".concat(health.toString()))
     
     // User setup
@@ -116,43 +73,7 @@ fun test_redemption_one_to_one_parity() {
     mintMoet(signer: protocolAccount, to: user.address, amount: 100.0, beFailed: false)
     
     // Execute redemption
-    let redeemCode = """
-        import RedemptionWrapper from 0x0000000000000007
-        import MOET from 0x0000000000000007
-        import FlowToken from 0x0000000000000003
-        import FungibleToken from 0xee82856bf20e2aa6
-        
-        transaction(moetAmount: UFix64) {
-            prepare(signer: auth(Storage, Capabilities) &Account) {
-                // Get MOET to redeem
-                let moetVault <- signer.storage.borrow<auth(FungibleToken.Withdraw) &MOET.Vault>(from: /storage/moetBalance)!
-                    .withdraw(amount: moetAmount)
-                
-                // Get Flow receiver capability
-                let flowReceiver = signer.capabilities.get<&{FungibleToken.Receiver}>(/public/flowTokenReceiver)
-                
-                // Get redeemer capability
-                let redeemer = getAccount(0x0000000000000007)
-                    .capabilities.borrow<&RedemptionWrapper.Redeemer>(RedemptionWrapper.PublicRedemptionPath)
-                    ?? panic("No redeemer capability")
-                
-                // Execute redemption
-                redeemer.redeem(
-                    moet: <-moetVault,
-                    preferredCollateralType: nil, // Use default (Flow)
-                    receiver: flowReceiver
-                )
-            }
-        }
-    """
-    
-    let redeemTx = Test.Transaction(
-        code: redeemCode,
-        authorizers: [user.address],
-        signers: [user],
-        arguments: [100.0]
-    )
-    let redeemRes = Test.executeTransaction(redeemTx)
+    let redeemRes = redeemMoet(user: user, amount: 100.0)
     Test.expect(redeemRes, Test.beSucceeded())
     
     // Verify user received exactly 50 Flow (100 MOET / $2.00 price = 50 Flow)
@@ -176,47 +97,11 @@ fun test_position_neutrality() {
     transferFlowTokens(to: protocolAccount, amount: 2000.0)
     
     // Setup redemption position
-    let setupCode = Test.readFile("./transactions/redemption/setup_redemption_position.cdc")
-    let setupTx = Test.Transaction(
-        code: setupCode,
-        authorizers: [protocolAccount.address],
-        signers: [protocolAccount],
-        arguments: [1000.0] // 1000 Flow collateral
-    )
-    let setupRes = Test.executeTransaction(setupTx)
+    let setupRes = setupRedemptionPosition(signer: protocolAccount, flowAmount: 1000.0)
     Test.expect(setupRes, Test.beSucceeded())
     
     // Get initial position state
-    let initialDetailsScript = """
-        import RedemptionWrapper from 0x0000000000000007
-        import FlowALP from 0x0000000000000007
-        import MOET from 0x0000000000000007
-        import FlowToken from 0x0000000000000003
-        
-        access(all) fun main(): {String: UFix64} {
-            let position = RedemptionWrapper.getPosition()!
-            let balances = position.getBalances()
-            
-            var flowCollateral: UFix64 = 0.0
-            var moetDebt: UFix64 = 0.0
-            
-            for bal in balances {
-                if bal.vaultType == Type<@FlowToken.Vault>() && bal.direction == FlowALP.BalanceDirection.Credit {
-                    flowCollateral = bal.balance
-                }
-                if bal.vaultType == Type<@MOET.Vault>() && bal.direction == FlowALP.BalanceDirection.Debit {
-                    moetDebt = bal.balance
-                }
-            }
-            
-            return {
-                "flowCollateral": flowCollateral,
-                "moetDebt": moetDebt
-            }
-        }
-    """
-    
-    let initialRes = Test.executeScript(initialDetailsScript, [])
+    let initialRes = _executeScript("./scripts/redemption/get_position_details.cdc", [])
     Test.expect(initialRes, Test.beSucceeded())
     let initialState = initialRes.returnValue! as! {String: UFix64}
     let initialFlow = initialState["flowCollateral"]!
@@ -229,18 +114,11 @@ fun test_position_neutrality() {
     setupMoetVault(user, beFailed: false)
     mintMoet(signer: protocolAccount, to: user.address, amount: 200.0, beFailed: false)
     
-    let redeemCode = Test.readFile("./transactions/redemption/redeem_moet.cdc")
-    let redeemTx = Test.Transaction(
-        code: redeemCode,
-        authorizers: [user.address],
-        signers: [user],
-        arguments: [200.0]
-    )
-    let redeemRes = Test.executeTransaction(redeemTx)
+    let redeemRes = redeemMoet(user: user, amount: 200.0)
     Test.expect(redeemRes, Test.beSucceeded())
     
     // Get final position state
-    let finalRes = Test.executeScript(initialDetailsScript, [])
+    let finalRes = _executeScript("./scripts/redemption/get_position_details.cdc", [])
     Test.expect(finalRes, Test.beSucceeded())
     let finalState = finalRes.returnValue! as! {String: UFix64}
     let finalFlow = finalState["flowCollateral"]!
@@ -275,32 +153,11 @@ fun test_daily_limit_circuit_breaker() {
     Test.expect(setupRes, Test.beSucceeded())
     
     // Configure lower daily limit for testing (1000 MOET)
-    let configCode = """
-        import RedemptionWrapper from 0x0000000000000007
-        import FlowALPMath from 0x0000000000000007
-        
-        transaction() {
-            prepare(admin: auth(Storage) &Account) {
-                let adminRef = admin.storage.borrow<&RedemptionWrapper.Admin>(
-                    from: RedemptionWrapper.AdminStoragePath
-                ) ?? panic("No admin resource")
-                
-                adminRef.setProtectionParams(
-                    redemptionCooldown: 1.0,        // 1 second for testing
-                    dailyRedemptionLimit: 1000.0,   // 1000 MOET daily limit
-                    maxPriceAge: 3600.0,
-                    minPostRedemptionHealth: FlowALPMath.toUFix128(1.15)
-                )
-            }
-        }
-    """
-    let configTx = Test.Transaction(
-        code: configCode,
-        authorizers: [protocolAccount.address],
-        signers: [protocolAccount],
-        arguments: []
+    let configRes = _executeTransaction(
+        "./transactions/redemption/configure_protections.cdc",
+        [1.0, 1000.0, 3600.0, 1.15], // cooldown, dailyLimit, maxPriceAge, minHealth
+        protocolAccount
     )
-    let configRes = Test.executeTransaction(configTx)
     Test.expect(configRes, Test.beSucceeded())
     
     // User 1: Redeem 600 MOET (should succeed)
@@ -378,8 +235,10 @@ fun test_user_cooldown_enforcement() {
     log("Second redemption correctly rejected (cooldown active)")
     
     // Advance time by 61 seconds
-    for i in 0...60 {
+    var blockCount = 0
+    while blockCount < 61 {
         BlockchainHelpers.commitBlock()
+        blockCount = blockCount + 1
     }
     
     // Third redemption after cooldown: 50 MOET (should succeed)
@@ -466,26 +325,7 @@ fun test_pause_mechanism() {
     mintMoet(to: user, amount: 200.0)
     
     // Pause redemptions
-    let pauseCode = """
-        import RedemptionWrapper from 0x0000000000000007
-        
-        transaction() {
-            prepare(admin: auth(Storage) &Account) {
-                let adminRef = admin.storage.borrow<&RedemptionWrapper.Admin>(
-                    from: RedemptionWrapper.AdminStoragePath
-                ) ?? panic("No admin resource")
-                
-                adminRef.pause()
-            }
-        }
-    """
-    let pauseTx = Test.Transaction(
-        code: pauseCode,
-        authorizers: [protocolAccount.address],
-        signers: [protocolAccount],
-        arguments: []
-    )
-    let pauseRes = Test.executeTransaction(pauseTx)
+    let pauseRes = _executeTransaction("./transactions/redemption/pause_redemptions.cdc", [], protocolAccount)
     Test.expect(pauseRes, Test.beSucceeded())
     log("Redemptions paused")
     
@@ -496,26 +336,7 @@ fun test_pause_mechanism() {
     log("Redemption correctly rejected while paused")
     
     // Unpause
-    let unpauseCode = """
-        import RedemptionWrapper from 0x0000000000000007
-        
-        transaction() {
-            prepare(admin: auth(Storage) &Account) {
-                let adminRef = admin.storage.borrow<&RedemptionWrapper.Admin>(
-                    from: RedemptionWrapper.AdminStoragePath
-                ) ?? panic("No admin resource")
-                
-                adminRef.unpause()
-            }
-        }
-    """
-    let unpauseTx = Test.Transaction(
-        code: unpauseCode,
-        authorizers: [protocolAccount.address],
-        signers: [protocolAccount],
-        arguments: []
-    )
-    let unpauseRes = Test.executeTransaction(unpauseTx)
+    let unpauseRes = _executeTransaction("./transactions/redemption/unpause_redemptions.cdc", [], protocolAccount)
     Test.expect(unpauseRes, Test.beSucceeded())
     log("Redemptions unpaused")
     
@@ -555,16 +376,7 @@ fun test_sequential_redemptions() {
         Test.expect(redeemRes, Test.beSucceeded())
         
         // Check position health after each redemption
-        let healthScript = """
-            import RedemptionWrapper from 0x0000000000000007
-            
-            access(all) fun main(): UFix128 {
-                return RedemptionWrapper.getPosition()!.getHealth()
-            }
-        """
-        let healthRes = Test.executeScript(healthScript, [])
-        Test.expect(healthRes, Test.beSucceeded())
-        let health = healthRes.returnValue! as! UFix128
+        let health = getRedemptionPositionHealth()
         
         log("User ".concat(i.toString()).concat(" redeemed. Position health: ").concat(health.toString()))
         
@@ -592,18 +404,7 @@ fun test_view_functions() {
     let user = Test.createAccount()
     
     // Test estimateRedemption
-    let estimateScript = """
-        import RedemptionWrapper from 0x0000000000000007
-        import FlowToken from 0x0000000000000003
-        
-        access(all) fun main(amount: UFix64): UFix64 {
-            return RedemptionWrapper.estimateRedemption(
-                moetAmount: amount,
-                collateralType: Type<@FlowToken.Vault>()
-            )
-        }
-    """
-    let estimateRes = Test.executeScript(estimateScript, [100.0])
+    let estimateRes = _executeScript("./scripts/redemption/estimate_redemption.cdc", [100.0])
     Test.expect(estimateRes, Test.beSucceeded())
     let estimated = estimateRes.returnValue! as! UFix64
     
@@ -612,19 +413,7 @@ fun test_view_functions() {
     log("estimateRedemption correctly calculated 50 Flow for 100 MOET")
     
     // Test canRedeem (before user has MOET)
-    let canRedeemScript = """
-        import RedemptionWrapper from 0x0000000000000007
-        import FlowToken from 0x0000000000000003
-        
-        access(all) fun main(amount: UFix64, user: Address): Bool {
-            return RedemptionWrapper.canRedeem(
-                moetAmount: amount,
-                collateralType: Type<@FlowToken.Vault>(),
-                user: user
-            )
-        }
-    """
-    let canRedeemRes = Test.executeScript(canRedeemScript, [100.0, user.address])
+    let canRedeemRes = _executeScript("./scripts/redemption/can_redeem.cdc", [100.0, user.address])
     Test.expect(canRedeemRes, Test.beSucceeded())
     let canRedeem = canRedeemRes.returnValue! as! Bool
     
@@ -633,7 +422,7 @@ fun test_view_functions() {
     log("canRedeem correctly returns true for valid redemption")
     
     // Test canRedeem with too large amount
-    let canRedeemLargeRes = Test.executeScript(canRedeemScript, [20000.0, user.address])
+    let canRedeemLargeRes = _executeScript("./scripts/redemption/can_redeem.cdc", [20000.0, user.address])
     Test.expect(canRedeemLargeRes, Test.beSucceeded())
     let canRedeemLarge = canRedeemLargeRes.returnValue! as! Bool
     
@@ -656,23 +445,9 @@ fun test_liquidation_prevention() {
     // Crash the Flow price to make position liquidatable
     setMockOraclePrice(signer: protocolAccount, forTokenIdentifier: flowTokenIdentifier, price: 0.5)
     
-    // Check position is now liquidatable
-    let isLiquidatableScript = """
-        import RedemptionWrapper from 0x0000000000000007
-        import FlowALP from 0x0000000000000007
-        
-        access(all) fun main(): Bool {
-            let pool = RedemptionWrapper.getPool()
-            let position = RedemptionWrapper.getPosition()!
-            let positionID = position.getBalances()[0].vaultType.identifier // Hack to get ID
-            
-            let health = position.getHealth()
-            return health < FlowALPMath.toUFix128(1.0)
-        }
-    """
-    let liquidatableRes = Test.executeScript(isLiquidatableScript, [])
-    Test.expect(liquidatableRes, Test.beSucceeded())
-    let isLiquidatable = liquidatableRes.returnValue! as! Bool
+    // Check position health - if less than 1.0, it's liquidatable
+    let health = getRedemptionPositionHealth()
+    let isLiquidatable = health < FlowALPMath.toUFix128(1.0)
     
     if isLiquidatable {
         log("Position is liquidatable (health < 1.0)")
@@ -695,143 +470,49 @@ fun test_liquidation_prevention() {
 
 access(all)
 fun setupRedemptionPosition(signer: Test.TestAccount, flowAmount: UFix64): Test.TransactionResult {
-    let code = """
-        import RedemptionWrapper from 0x0000000000000007
-        import FlowToken from 0x0000000000000003
-        import MOET from 0x0000000000000007
-        import FlowALP from 0x0000000000000007
-        import FungibleToken from 0xee82856bf20e2aa6
-        import FungibleTokenConnectors from 0x0000000000000007
-        
-        transaction(flowAmount: UFix64) {
-            prepare(signer: auth(Storage, Capabilities) &Account) {
-                let flowVault <- signer.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)!
-                    .withdraw(amount: flowAmount)
-                
-                let moetReceiver = signer.capabilities.get<&MOET.Vault>(/public/moetBalance)
-                let issuanceSink = FungibleTokenConnectors.VaultReceiverSink(receiver: moetReceiver)
-                
-                RedemptionWrapper.setup(
-                    initialCollateral: <-flowVault,
-                    issuanceSink: issuanceSink,
-                    repaymentSource: nil
-                )
-            }
-        }
-    """
-    
-    let tx = Test.Transaction(
-        code: code,
-        authorizers: [signer.address],
-        signers: [signer],
-        arguments: [flowAmount]
+    return _executeTransaction(
+        "./transactions/redemption/setup_redemption_position.cdc",
+        [flowAmount],
+        signer
     )
-    return Test.executeTransaction(tx)
 }
 
 access(all)
 fun redeemMoet(user: Test.TestAccount, amount: UFix64): Test.TransactionResult {
-    let code = """
-        import RedemptionWrapper from 0x0000000000000007
-        import MOET from 0x0000000000000007
-        import FungibleToken from 0xee82856bf20e2aa6
-        
-        transaction(moetAmount: UFix64) {
-            prepare(signer: auth(Storage, Capabilities) &Account) {
-                let moetVault <- signer.storage.borrow<auth(FungibleToken.Withdraw) &MOET.Vault>(from: /storage/moetBalance)!
-                    .withdraw(amount: moetAmount)
-                
-                let flowReceiver = signer.capabilities.get<&{FungibleToken.Receiver}>(/public/flowTokenReceiver)
-                
-                let redeemer = getAccount(0x0000000000000007)
-                    .capabilities.borrow<&RedemptionWrapper.Redeemer>(RedemptionWrapper.PublicRedemptionPath)
-                    ?? panic("No redeemer capability")
-                
-                redeemer.redeem(
-                    moet: <-moetVault,
-                    preferredCollateralType: nil,
-                    receiver: flowReceiver
-                )
-            }
-        }
-    """
-    
-    let tx = Test.Transaction(
-        code: code,
-        authorizers: [user.address],
-        signers: [user],
-        arguments: [amount]
+    return _executeTransaction(
+        "./transactions/redemption/redeem_moet.cdc",
+        [amount],
+        user
     )
-    return Test.executeTransaction(tx)
 }
 
 access(all)
 fun setRedemptionCooldown(admin: Test.TestAccount, cooldownSeconds: UFix64): Test.TransactionResult {
-    let code = """
-        import RedemptionWrapper from 0x0000000000000007
-        import FlowALPMath from 0x0000000000000007
-        
-        transaction(cooldown: UFix64) {
-            prepare(admin: auth(Storage) &Account) {
-                let adminRef = admin.storage.borrow<&RedemptionWrapper.Admin>(
-                    from: RedemptionWrapper.AdminStoragePath
-                ) ?? panic("No admin resource")
-                
-                adminRef.setProtectionParams(
-                    redemptionCooldown: cooldown,
-                    dailyRedemptionLimit: 100000.0,
-                    maxPriceAge: 3600.0,
-                    minPostRedemptionHealth: FlowALPMath.toUFix128(1.15)
-                )
-            }
-        }
-    """
-    
-    let tx = Test.Transaction(
-        code: code,
-        authorizers: [admin.address],
-        signers: [admin],
-        arguments: [cooldownSeconds]
+    return _executeTransaction(
+        "./transactions/redemption/configure_protections.cdc",
+        [cooldownSeconds, 100000.0, 3600.0, 1.15],
+        admin
     )
-    return Test.executeTransaction(tx)
 }
 
-/// Give Flow tokens to test account (mints from service account)
+access(all)
+fun getRedemptionPositionHealth(): UFix128 {
+    let res = _executeScript("./scripts/redemption/get_position_health.cdc", [])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue! as! UFix128
+}
+
+/// Give Flow tokens to test account
 access(all)
 fun giveFlowTokens(to: Test.TestAccount, amount: UFix64) {
     let serviceAccount = Test.serviceAccount()
-    
-    let code = """
-        import FlowToken from 0x0000000000000003
-        import FungibleToken from 0xee82856bf20e2aa6
-        
-        transaction(recipient: Address, amount: UFix64) {
-            prepare(service: auth(Storage) &Account) {
-                // Get Flow from service account
-                let flowVault <- service.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)!
-                    .withdraw(amount: amount)
-                
-                // Setup receiver if needed
-                if getAccount(recipient).capabilities.get<&{FungibleToken.Receiver}>(/public/flowTokenReceiver).check() == false {
-                    // Receiver not setup - need to initialize
-                }
-                
-                let receiver = getAccount(recipient).capabilities
-                    .borrow<&{FungibleToken.Receiver}>(/public/flowTokenReceiver)
-                    ?? panic("No receiver")
-                
-                receiver.deposit(from: <-flowVault)
-            }
-        }
-    """
-    
-    let tx = Test.Transaction(
-        code: code,
-        authorizers: [serviceAccount.address],
-        signers: [serviceAccount],
-        arguments: [to.address, amount]
-    )
-    let res = Test.executeTransaction(tx)
-    Test.expect(res, Test.beSucceeded())
+    // Transfer Flow from service account to test account
+    transferFlow(signer: serviceAccount, recipient: to.address, amount: amount)
+}
+
+access(all)
+fun getBalance(address: Address, vaultPublicPath: PublicPath): UFix64? {
+    // Use the helper from test_helpers.cdc
+    return getBalance(address: address, vaultPublicPath: vaultPublicPath)
 }
 
