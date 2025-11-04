@@ -4,8 +4,7 @@
 			"source": "cadence/contracts/RedemptionWrapper.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000007",
-				"testnet": "TBD"
+				"testing": "0000000000000007"
 			}
 		},
 		"DeFiActions": {
