@@ -1,5 +1,6 @@
 .DS_Store
-# flow
+
+# Flow
 *.pkey
 !local/mock-incrementfi.pkey
 !local/emulator-account.pkey
@@ -9,8 +10,18 @@
 imports
 coverage.lcov
 coverage.json
-solidity/out/
 
+# Solidity
+solidity/out/
+cache/
+broadcast/
+db/
+
+# Deployment keys
 testnet-deployer.pkey
 testnet-uniswapV3-connectors-deployer.pkey
 mock-strategy-deployer.pkey
+local/deployed_addresses.env
+
+# PR drafts and temporary documentation
+.pr-drafts/
