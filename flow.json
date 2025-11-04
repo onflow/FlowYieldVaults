@@ -23,7 +23,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
-				"testnet": "d1f6f66148960224"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"EVMAbiHelpers": {
@@ -48,7 +48,7 @@
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
 				"testing": "0000000000000008",
-				"testnet": "426f0458ced60037"
+				"testnet": "c16c0b1229843606"
 			}
 		},
 		"FlowALPMath": {
@@ -57,7 +57,7 @@
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
 				"testing": "0000000000000007",
-				"testnet": "426f0458ced60037"
+				"testnet": "c16c0b1229843606"
 			}
 		},
 		"FlowTransactionScheduler": {
@@ -79,7 +79,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d1f6f66148960224"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"FlowVaultsAutoBalancers": {
@@ -87,7 +87,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d1f6f66148960224"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"FlowVaultsClosedBeta": {
@@ -95,7 +95,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d1f6f66148960224"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"FlowVaultsStrategies": {
@@ -103,7 +103,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d1f6f66148960224"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"FungibleTokenConnectors": {
@@ -121,7 +121,7 @@
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
 				"testing": "0000000000000008",
-				"testnet": "426f0458ced60037"
+				"testnet": "c16c0b1229843606"
 			}
 		},
 		"MockFlowALPConsumer": {
@@ -129,7 +129,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
-				"testnet": "d1f6f66148960224"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"MockOracle": {
@@ -137,7 +137,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d1f6f66148960224"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"MockStrategy": {
@@ -145,7 +145,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d1f6f66148960224"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"MockSwapper": {
@@ -153,7 +153,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d1f6f66148960224"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"SwapConnectors": {
@@ -178,7 +178,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000010",
-				"testnet": "d1f6f66148960224"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		}
 	},
@@ -634,7 +634,7 @@
 			}
 		},
 		"testnet-admin": {
-			"address": "d1f6f66148960224",
+			"address": "3bda2f90274dbc9b",
 			"key": {
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
@@ -642,7 +642,7 @@
 			}
 		},
 		"testnet-flow-alp-deployer": {
-			"address": "426f0458ced60037",
+			"address": "c16c0b1229843606",
 			"key": {
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
@@ -762,7 +762,7 @@
 					"name": "MockOracle",
 					"args": [
 						{
-							"value": "A.426f0458ced60037.MOET.Vault",
+							"value": "A.c16c0b1229843606.MOET.Vault",
 							"type": "String"
 						}
 					]
@@ -771,7 +771,7 @@
 				"FlowVaultsAutoBalancers",
 				"FlowVaultsClosedBeta",
 				"FlowVaults",
-				{
+        {
 					"name": "FlowVaultsStrategies",
 					"args": [
 						{
