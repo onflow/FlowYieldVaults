@@ -670,7 +670,7 @@
 			"key": {
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
-				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
 		"mainnet-uniswapV3-connectors-deployer": {
