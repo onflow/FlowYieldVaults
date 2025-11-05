@@ -17,4 +17,4 @@ flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0xe
 
 # tidal
 echo "fund tidal"
-flow transactions send "./cadence/transactions/flow-token/tragnsfer_flow.cdc" 0x045a1763c93006ca 1000.0
+flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0x045a1763c93006ca 1000.0
