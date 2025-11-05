@@ -23,7 +23,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"EVMAbiHelpers": {
@@ -31,7 +31,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000007",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "3ebb7d2595e97cd2"
 			}
 		},
 		"EVMTokenConnectors": {
@@ -48,7 +48,7 @@
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
 				"testing": "0000000000000008",
-				"testnet": "426f0458ced60037"
+				"testnet": "c16c0b1229843606"
 			}
 		},
 		"FlowALPMath": {
@@ -57,7 +57,7 @@
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
 				"testing": "0000000000000007",
-				"testnet": "426f0458ced60037"
+				"testnet": "c16c0b1229843606"
 			}
 		},
 		"FlowTransactionScheduler": {
@@ -79,7 +79,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"FlowVaultsAutoBalancers": {
@@ -87,7 +87,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"FlowVaultsClosedBeta": {
@@ -95,7 +95,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"FlowVaultsStrategies": {
@@ -103,7 +103,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "2ab6f469ee0dfbb6"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"FungibleTokenConnectors": {
@@ -121,7 +121,7 @@
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
 				"testing": "0000000000000008",
-				"testnet": "426f0458ced60037"
+				"testnet": "c16c0b1229843606"
 			}
 		},
 		"MockFlowALPConsumer": {
@@ -129,7 +129,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"MockOracle": {
@@ -137,7 +137,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"MockStrategy": {
@@ -145,7 +145,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"MockSwapper": {
@@ -153,15 +153,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d27920b6384e2a78"
-			}
-		},
-		"MockFlowALPConsumer": {
-			"source": "./lib/FlowALP/cadence/contracts/mocks/MockFlowALPConsumer.cdc",
-			"aliases": {
-				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000008",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		},
 		"SwapConnectors": {
@@ -178,7 +170,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000007",
-				"testnet": "a87f1085c356a8e3"
+				"testnet": "3ebb7d2595e97cd2"
 			}
 		},
 		"YieldToken": {
@@ -186,7 +178,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000010",
-				"testnet": "d27920b6384e2a78"
+				"testnet": "3bda2f90274dbc9b"
 			}
 		}
 	},
@@ -642,22 +634,23 @@
 			}
 		},
 		"testnet-admin": {
-			"address": "d27920b6384e2a78",
+			"address": "3bda2f90274dbc9b",
 			"key": {
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
-		"testnet-deployer": {
-			"address": "29242c62f18538c9",
+		"testnet-flow-alp-deployer": {
+			"address": "c16c0b1229843606",
 			"key": {
-				"type": "file",
-				"location": "testnet-deployer.pkey"
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
 		"testnet-uniswapV3-connectors-deployer": {
-			"address": "a87f1085c356a8e3",
+			"address": "3ebb7d2595e97cd2",
 			"key": {
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
@@ -683,7 +676,7 @@
 					"args": [
 						{
 							"value": "0xf3fcd2c1a78f5eee",
-                      "type": "Address"
+							"type": "Address"
 						}
 					]
 				},
@@ -769,7 +762,7 @@
 					"name": "MockOracle",
 					"args": [
 						{
-							"value": "A.d27920b6384e2a78.MOET.Vault",
+							"value": "A.c16c0b1229843606.MOET.Vault",
 							"type": "String"
 						}
 					]
@@ -778,7 +771,7 @@
 				"FlowVaultsAutoBalancers",
 				"FlowVaultsClosedBeta",
 				"FlowVaults",
-				{
+        {
 					"name": "FlowVaultsStrategies",
 					"args": [
 						{
