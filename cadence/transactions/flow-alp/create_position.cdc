@@ -9,10 +9,13 @@ import "FungibleTokenConnectors"
 
 transaction(amount: UFix64) {
     prepare(signer: auth(BorrowValue) &Account) {
+        let poolCap = signer.storage
+            .borrow<&Capability<auth(FlowALP.EParticipant, FlowALP.EPosition) &FlowALP.Pool>>(
+                from: FlowALP.PoolCapStoragePath
+            ) ?? panic("no Pool capability saved at PoolCapStoragePath")
 
-        let pool = signer.storage.borrow<auth(FlowALP.EParticipant, FlowALP.EPosition) &FlowALP.Pool>(from: FlowALP.PoolStoragePath)
-            ?? panic("Could not borrow reference to Pool from \(FlowALP.PoolStoragePath) - ensure a Pool has been configured")
-
+        let pool = poolCap.borrow()
+            ?? panic("cap.borrow() failed (link missing or revoked)")
         let vaultRef = signer.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)
             ?? panic("Could not borrow FlowToken vault ref from signer")
 	    let flowFunds <- vaultRef.withdraw(amount: amount)
