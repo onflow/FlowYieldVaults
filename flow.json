@@ -665,6 +665,14 @@
 				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
+		"mainnet-flow-alp-deployer": {
+			"address": "6b00ff876c299c61",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
 		"mainnet-uniswapV3-connectors-deployer": {
 			"address": "a7825d405ac89518",
 			"key": {
@@ -820,7 +828,7 @@
 					"name": "MockOracle",
 					"args": [
 						{
-							"value": "A.b1d63873c3cc9f79.MOET.Vault",
+							"value": "A.6b00ff876c299c61.MOET.Vault",
 							"type": "String"
 						}
 					]
