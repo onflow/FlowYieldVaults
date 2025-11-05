@@ -233,7 +233,7 @@ fun main(address: Address): CompleteUserSummary {
             
             // Get the actual position health from FlowALP.Pool
             // FlowALP positions use sequential IDs (0, 1, 2, ...) while tide IDs are different
-            var actualHealth: UFix64 = 999.0
+            var actualHealth: UFix128 = 999.0
             
             // Try to get the real health from FlowALP.Pool using sequential position IDs
             let protocolAddress = Type<@FlowALP.Pool>().address!
