@@ -658,7 +658,7 @@
 			}
 		},
 		"mainnet-admin": {
-			"address": <TBA>,
+			"address": "b1d63873c3cc9f79",
 			"key": {
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
@@ -666,7 +666,7 @@
 			}
 		},
 		"mainnet-uniswapV3-connectors-deployer": {
-			"address": <TBA>,
+			"address": "a7825d405ac89518",
 			"key": {
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
@@ -820,7 +820,7 @@
 					"name": "MockOracle",
 					"args": [
 						{
-							"value": "A.<TBA>.MOET.Vault",
+							"value": "A.b1d63873c3cc9f79.MOET.Vault",
 							"type": "String"
 						}
 					]
