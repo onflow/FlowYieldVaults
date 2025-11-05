@@ -84,7 +84,7 @@ access(all) struct HealthMetrics {
     access(all) let netWorth: UFix64
     access(all) let leverageRatio: UFix64
     access(all) let yieldTokenRatio: UFix64
-    access(all) let estimatedHealth: UFix64
+    access(all) let estimatedHealth: UFix128
     
     init(
         realAvailableBalance: UFix64,
@@ -92,7 +92,7 @@ access(all) struct HealthMetrics {
         netWorth: UFix64,
         leverageRatio: UFix64,
         yieldTokenRatio: UFix64,
-        estimatedHealth: UFix64
+        estimatedHealth: UFix128 
     ) {
         self.realAvailableBalance = realAvailableBalance
         self.estimatedCollateralValue = estimatedCollateralValue
