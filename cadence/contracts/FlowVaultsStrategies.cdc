@@ -15,9 +15,9 @@ import "FlowVaultsAutoBalancers"
 // tokens
 import "YieldToken"
 import "MOET"
-// amm integration - TODO: Uncomment when bridge integration is ready
+// amm integration
 import "UniswapV3SwapConnectors"
-// vm bridge - TODO: Uncomment when bridge integration is ready
+// vm bridge
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 import "FlowEVMBridge"
