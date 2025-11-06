@@ -448,24 +448,22 @@ access(all) contract FlowVaultsStrategies {
         return coaCap
     }
 
-    init() {
-        // TODO: Initialize these when UniswapV3 integration is ready
-        // For now using MockSwapper so these are not needed
-        self.univ3FactoryEVMAddress = EVM.EVMAddress(bytes: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
-        self.univ3RouterEVMAddress = EVM.EVMAddress(bytes: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
-        self.univ3QuoterEVMAddress = EVM.EVMAddress(bytes: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
-        self.yieldTokenEVMAddress = EVM.EVMAddress(bytes: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+    init(factoryAddress: String, routerAddress: String, quoterAddress: String, yieldTokenAddress: String) {
+        self.univ3FactoryEVMAddress = EVM.addressFromString(factoryAddress)
+        self.univ3RouterEVMAddress = EVM.addressFromString(routerAddress)
+        self.univ3QuoterEVMAddress = EVM.addressFromString(quoterAddress)
+        self.yieldTokenEVMAddress = EVM.addressFromString(yieldTokenAddress)
 
         self.IssuerStoragePath = StoragePath(identifier: "FlowVaultsStrategyComposerIssuer_\(self.account.address)")!
 
         self.account.storage.save(<-create StrategyComposerIssuer(), to: self.IssuerStoragePath)
 
-        // TODO: COA creation will be needed when UniswapV3 integration is ready
-        // For now using MockSwapper so COA is not needed
-        // if self.account.storage.type(at: /storage/evm) == nil {
-        //     self.account.storage.save(<-EVM.createCadenceOwnedAccount(), to: /storage/evm)
-        //     let cap = self.account.capabilities.storage.issue<&EVM.CadenceOwnedAccount>(/storage/evm)
-        //     self.account.capabilities.publish(cap, at: /public/evm)
-        // }
+        // TODO: this is temporary until we have a better way to pass user's COAs to inner connectors
+        // create a COA in this account
+        if self.account.storage.type(at: /storage/evm) == nil {
+            self.account.storage.save(<-EVM.createCadenceOwnedAccount(), to: /storage/evm)
+            let cap = self.account.capabilities.storage.issue<&EVM.CadenceOwnedAccount>(/storage/evm)
+            self.account.capabilities.publish(cap, at: /public/evm)
+        }
     }
 }
