@@ -60,20 +60,6 @@
 				"testnet": "426f0458ced60037"
 			}
 		},
-		"FlowTransactionScheduler": {
-			"source": "mainnet://e467b9dd11fa00df.FlowTransactionScheduler",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "e467b9dd11fa00df",
-				"testnet": "8c5303eaa26202d6"
-			}
-		},
-		"FlowTransactionSchedulerUtils": {
-			"source": "mainnet://e467b9dd11fa00df.FlowTransactionSchedulerUtils",
-			"aliases": {
-				"mainnet": "e467b9dd11fa00df"
-			}
-		},
 		"FlowVaults": {
 			"source": "cadence/contracts/FlowVaults.cdc",
 			"aliases": {
@@ -153,14 +139,6 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "d27920b6384e2a78"
-			}
-		},
-		"MockFlowALPConsumer": {
-			"source": "./lib/FlowALP/cadence/contracts/mocks/MockFlowALPConsumer.cdc",
-			"aliases": {
-				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000008",
 				"testnet": "d27920b6384e2a78"
 			}
 		},
@@ -366,6 +344,15 @@
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
+		"FlowFees": {
+			"source": "mainnet://f919ee77447b7497.FlowFees",
+			"hash": "d02bc8295c0434cf2b0a96a77d992f49f52e7865debda84e7a21e176e163a680",
+			"aliases": {
+				"emulator": "e5a8b7f23e8b548f",
+				"mainnet": "f919ee77447b7497",
+				"testnet": "912d5440f7e3769e"
+			}
+		},
 		"FlowStorageFees": {
 			"source": "mainnet://e467b9dd11fa00df.FlowStorageFees",
 			"hash": "e38d8a95f6518b8ff46ce57dfa37b4b850b3638f33d16333096bc625b6d9b51a",
@@ -382,6 +369,24 @@
 				"emulator": "0ae53cb6e3f42a79",
 				"mainnet": "1654653399040a61",
 				"testnet": "7e60df042a9c0868"
+			}
+		},
+		"FlowTransactionScheduler": {
+			"source": "mainnet://e467b9dd11fa00df.FlowTransactionScheduler",
+			"hash": "312885f5fa3bc70327dfb59edc5da6d30b826002c322db8c566ddf17099310ac",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "e467b9dd11fa00df",
+				"testnet": "8c5303eaa26202d6"
+			}
+		},
+		"FlowTransactionSchedulerUtils": {
+			"source": "mainnet://e467b9dd11fa00df.FlowTransactionSchedulerUtils",
+			"hash": "2e26d0bf8e6278b79880a47cb3cd55c499777fb96d76bde3f647b546805bc470",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "e467b9dd11fa00df",
+				"testnet": "8c5303eaa26202d6"
 			}
 		},
 		"FungibleToken": {
@@ -683,7 +688,7 @@
 					"args": [
 						{
 							"value": "0xf3fcd2c1a78f5eee",
-                      "type": "Address"
+							"type": "Address"
 						}
 					]
 				},
@@ -731,7 +736,7 @@
 				"FlowVaultsClosedBeta",
 				"FlowVaults",
 				"UniswapV3SwapConnectors",
-			"FlowVaultsStrategies"
+				"FlowVaultsStrategies"
 			]
 		},
 		"testnet": {
@@ -758,7 +763,7 @@
 				"FlowVaultsAutoBalancers",
 				"FlowVaultsClosedBeta",
 				"FlowVaults",
-			"FlowVaultsStrategies"
+				"FlowVaultsStrategies"
 			],
 			"testnet-uniswapV3-connectors-deployer": [
 				"EVMAbiHelpers",
