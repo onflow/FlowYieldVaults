@@ -183,6 +183,24 @@ access(all) fun deployContracts() {
     Test.expect(err, Test.beNil())
 
     setupBetaAccess()
+
+    let onboardMOETtoBridgeResult = _executeTransaction(
+        "../../lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
+        [
+            "A.0000000000000008.MOET.Vault"
+        ],
+        bridgeAccount
+    )
+    Test.expect(onboardMOETtoBridgeResult, Test.beSucceeded())  
+
+    let onboardYieldtoBridgeResult = _executeTransaction(
+        "../../lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc",
+        [
+            "aCCF0c4EeD4438Ad31Cd340548f4211a465B6528"
+        ],
+        bridgeAccount
+    )
+    Test.expect(onboardYieldtoBridgeResult, Test.beSucceeded())    
 }
 
 access(all)
