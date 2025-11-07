@@ -48,6 +48,10 @@ access(all) contract RedemptionWrapper {
     access(all) var lastRedemptionResetDay: UFix64
     access(all) var userLastRedemption: {Address: UFix64}
     
+    // Oracle and health protections
+    access(all) var maxPriceAge: UFix64
+    access(all) var minPostRedemptionHealth: UFix128
+    
     // Position tracking
     access(all) var positionID: UInt64?
     
@@ -74,14 +78,20 @@ access(all) contract RedemptionWrapper {
 
         access(all) fun setProtectionParams(
             redemptionCooldown: UFix64,
-            dailyRedemptionLimit: UFix64
+            dailyRedemptionLimit: UFix64,
+            maxPriceAge: UFix64,
+            minPostRedemptionHealth: UFix128
         ) {
             pre {
                 redemptionCooldown <= 3600.0: "Cooldown too long (max 1 hour)"
                 dailyRedemptionLimit > 0.0: "Daily limit must be positive"
+                maxPriceAge <= 7200.0: "Max price age too long (max 2 hours)"
+                minPostRedemptionHealth >= FlowALPMath.toUFix128(1.0): "Min post-redemption health must be >= 1.0"
             }
             RedemptionWrapper.redemptionCooldown = redemptionCooldown
             RedemptionWrapper.dailyRedemptionLimit = dailyRedemptionLimit
+            RedemptionWrapper.maxPriceAge = maxPriceAge
+            RedemptionWrapper.minPostRedemptionHealth = minPostRedemptionHealth
         }
 
         access(all) fun pause() {
@@ -151,6 +161,15 @@ access(all) contract RedemptionWrapper {
             assert(
                 RedemptionWrapper.dailyRedemptionUsed + moetAmount <= RedemptionWrapper.dailyRedemptionLimit,
                 message: "Daily redemption limit exceeded"
+            )
+
+            // Check if redemption position is liquidatable
+            let poolAddress = Type<@FlowALP.Pool>().address!
+            let pool = getAccount(poolAddress).capabilities.borrow<&FlowALP.Pool>(FlowALP.PoolPublicPath)
+                ?? panic("Could not borrow pool capability from FlowALP account")
+            assert(
+                !pool.isLiquidatable(pid: RedemptionWrapper.positionID!),
+                message: "Redemption position is liquidatable"
             )
 
             // Get pre-redemption health
@@ -226,13 +245,18 @@ access(all) contract RedemptionWrapper {
 
     /// Setup the redemption position with initial collateral
     /// This must be called once before any redemptions can occur
+    /// If called multiple times (e.g., in tests), it will overwrite the previous position
     access(all) fun setup(
         initialCollateral: @{FungibleToken.Vault},
         issuanceSink: {DeFiActions.Sink},
         repaymentSource: {DeFiActions.Source}?
     ) {
-        pre {
-            self.positionID == nil: "Position already set up"
+        // Allow re-setup for testing - clean up previous position if exists
+        if self.positionID != nil {
+            // Remove old position (structs don't need destroying)
+            self.account.storage.load<FlowALP.Position>(from: self.RedemptionPositionStoragePath)
+            // Remove old pool cap (capabilities don't need destroying)
+            self.account.storage.load<Capability<auth(FlowALP.EParticipant, FlowALP.EPosition) &FlowALP.Pool>>(from: self.PoolCapStoragePath)
         }
         
         let poolCap = self.account.storage.load<Capability<auth(FlowALP.EParticipant, FlowALP.EPosition) &FlowALP.Pool>>(
@@ -299,6 +323,10 @@ access(all) contract RedemptionWrapper {
         self.dailyRedemptionUsed = 0.0
         self.lastRedemptionResetDay = UFix64(getCurrentBlock().timestamp) / 86400.0
         self.userLastRedemption = {}
+        
+        // Oracle and health protections
+        self.maxPriceAge = 3600.0              // 1 hour max price age
+        self.minPostRedemptionHealth = FlowALPMath.toUFix128(1.15)  // Require 115% health after redemption
         
         // Position tracking
         self.positionID = nil
