@@ -1,4 +1,5 @@
 .DS_Store
+.pr-drafts/
 
 # Flow
 *.pkey
@@ -22,6 +23,3 @@ testnet-deployer.pkey
 testnet-uniswapV3-connectors-deployer.pkey
 mock-strategy-deployer.pkey
 local/deployed_addresses.env
-
-# PR drafts and temporary documentation
-.pr-drafts/

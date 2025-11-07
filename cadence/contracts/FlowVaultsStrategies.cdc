@@ -15,12 +15,12 @@ import "FlowVaultsAutoBalancers"
 // tokens
 import "YieldToken"
 import "MOET"
-// amm integration
-import "UniswapV3SwapConnectors"
-// vm bridge
-import "FlowEVMBridgeConfig"
-import "FlowEVMBridgeUtils"
-import "FlowEVMBridge"
+// amm integration - TODO: Uncomment when bridge integration is ready
+// import "UniswapV3SwapConnectors"
+// vm bridge - TODO: Uncomment when bridge integration is ready
+// import "FlowEVMBridgeConfig"
+// import "FlowEVMBridgeUtils"
+// import "FlowEVMBridge"
 // mocks
 import "MockOracle"
 import "MockSwapper"
@@ -138,14 +138,10 @@ access(all) contract FlowVaultsStrategies {
             // TODO: add ERC4626 price oracle
             let oracle = MockOracle.PriceOracle()
 
-            // assign EVM token addresses & types
+            // assign token types
 
             let moetTokenType: Type = Type<@MOET.Vault>()
-            let moetTokenEVMAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: moetTokenType)
-                ?? panic("MOET not registered in bridge")
-
-            let yieldTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: FlowVaultsStrategies.yieldTokenEVMAddress)
-                ?? panic("YieldToken associated with EVM address \(FlowVaultsStrategies.yieldTokenEVMAddress.toString()) not found in VM Bridge config")
+            let yieldTokenType = Type<@YieldToken.Vault>()
             // assign collateral & flow token types
             let collateralType = withFunds.getType()
 
@@ -167,42 +163,41 @@ access(all) contract FlowVaultsStrategies {
             // init Stable <> YIELD swappers
             //
             // Stable -> YieldToken
-            // TODO: Update to use UniswapV3SwapConnectors
-            // let stableToYieldSwapper = MockSwapper.Swapper(
-            //         inVault: moetTokenType,
-            //         outVault: yieldTokenType,
-            //         uniqueID: uniqueID
-            //     )
-            // TODO: consider how we're going to pass the user's COA capability to the Swapper
-            let stableToYieldSwapper = UniswapV3SwapConnectors.Swapper(
-                factoryAddress: FlowVaultsStrategies.univ3FactoryEVMAddress,
-                routerAddress: FlowVaultsStrategies.univ3RouterEVMAddress,
-                quoterAddress: FlowVaultsStrategies.univ3QuoterEVMAddress,
-                tokenPath: [moetTokenEVMAddress, FlowVaultsStrategies.yieldTokenEVMAddress],
-                feePath: [3000],
-                inVault: moetTokenType,
-                outVault: yieldTokenType,
-                coaCapability: FlowVaultsStrategies._getCOACapability(),
-                uniqueID: uniqueID
-            )
+            let stableToYieldSwapper = MockSwapper.Swapper(
+                    inVault: moetTokenType,
+                    outVault: yieldTokenType,
+                    uniqueID: uniqueID
+                )
+            // TODO: Update to use UniswapV3SwapConnectors when bridge integration is ready
+            // let stableToYieldSwapper = UniswapV3SwapConnectors.Swapper(
+            //     factoryAddress: FlowVaultsStrategies.univ3FactoryEVMAddress,
+            //     routerAddress: FlowVaultsStrategies.univ3RouterEVMAddress,
+            //     quoterAddress: FlowVaultsStrategies.univ3QuoterEVMAddress,
+            //     tokenPath: [moetTokenEVMAddress, FlowVaultsStrategies.yieldTokenEVMAddress],
+            //     feePath: [3000],
+            //     inVault: moetTokenType,
+            //     outVault: yieldTokenType,
+            //     coaCapability: FlowVaultsStrategies._getCOACapability(),
+            //     uniqueID: uniqueID
+            // )
             // YieldToken -> Stable
-            // TODO: Update to use UniswapV3SwapConnectors
-            // let yieldToStableSwapper = MockSwapper.Swapper(
-            //         inVault: yieldTokenType,
-            //         outVault: moetTokenType,
-            //         uniqueID: uniqueID
-            //     )
-            let yieldToStableSwapper = UniswapV3SwapConnectors.Swapper(
-                factoryAddress: FlowVaultsStrategies.univ3FactoryEVMAddress,
-                routerAddress: FlowVaultsStrategies.univ3RouterEVMAddress,
-                quoterAddress: FlowVaultsStrategies.univ3QuoterEVMAddress,
-                tokenPath: [FlowVaultsStrategies.yieldTokenEVMAddress, moetTokenEVMAddress],
-                feePath: [3000],
-                inVault: yieldTokenType,
-                outVault: moetTokenType,
-                coaCapability: FlowVaultsStrategies._getCOACapability(),
-                uniqueID: uniqueID
-            )
+            let yieldToStableSwapper = MockSwapper.Swapper(
+                    inVault: yieldTokenType,
+                    outVault: moetTokenType,
+                    uniqueID: uniqueID
+                )
+            // TODO: Update to use UniswapV3SwapConnectors when bridge integration is ready
+            // let yieldToStableSwapper = UniswapV3SwapConnectors.Swapper(
+            //     factoryAddress: FlowVaultsStrategies.univ3FactoryEVMAddress,
+            //     routerAddress: FlowVaultsStrategies.univ3RouterEVMAddress,
+            //     quoterAddress: FlowVaultsStrategies.univ3QuoterEVMAddress,
+            //     tokenPath: [FlowVaultsStrategies.yieldTokenEVMAddress, moetTokenEVMAddress],
+            //     feePath: [3000],
+            //     inVault: yieldTokenType,
+            //     outVault: moetTokenType,
+            //     coaCapability: FlowVaultsStrategies._getCOACapability(),
+            //     uniqueID: uniqueID
+            // )
 
             // init SwapSink directing swapped funds to AutoBalancer
             //
@@ -278,22 +273,24 @@ access(all) contract FlowVaultsStrategies {
         return coaCap
     }
 
-    init(factoryAddress: String, routerAddress: String, quoterAddress: String, yieldTokenAddress: String) {
-        self.univ3FactoryEVMAddress = EVM.addressFromString(factoryAddress)
-        self.univ3RouterEVMAddress = EVM.addressFromString(routerAddress)
-        self.univ3QuoterEVMAddress = EVM.addressFromString(quoterAddress)
-        self.yieldTokenEVMAddress = EVM.addressFromString(yieldTokenAddress)
+    init() {
+        // TODO: Initialize these when UniswapV3 integration is ready
+        // For now using MockSwapper so these are not needed
+        self.univ3FactoryEVMAddress = EVM.EVMAddress(bytes: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+        self.univ3RouterEVMAddress = EVM.EVMAddress(bytes: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+        self.univ3QuoterEVMAddress = EVM.EVMAddress(bytes: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+        self.yieldTokenEVMAddress = EVM.EVMAddress(bytes: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
 
         self.IssuerStoragePath = StoragePath(identifier: "FlowVaultsStrategyComposerIssuer_\(self.account.address)")!
 
         self.account.storage.save(<-create StrategyComposerIssuer(), to: self.IssuerStoragePath)
 
-        // TODO: this is temporary until we have a better way to pass user's COAs to inner connectors
-        // create a COA in this account
-        if self.account.storage.type(at: /storage/evm) == nil {
-            self.account.storage.save(<-EVM.createCadenceOwnedAccount(), to: /storage/evm)
-            let cap = self.account.capabilities.storage.issue<&EVM.CadenceOwnedAccount>(/storage/evm)
-            self.account.capabilities.publish(cap, at: /public/evm)
-        }
+        // TODO: COA creation will be needed when UniswapV3 integration is ready
+        // For now using MockSwapper so COA is not needed
+        // if self.account.storage.type(at: /storage/evm) == nil {
+        //     self.account.storage.save(<-EVM.createCadenceOwnedAccount(), to: /storage/evm)
+        //     let cap = self.account.capabilities.storage.issue<&EVM.CadenceOwnedAccount>(/storage/evm)
+        //     self.account.capabilities.publish(cap, at: /public/evm)
+        // }
     }
 }
