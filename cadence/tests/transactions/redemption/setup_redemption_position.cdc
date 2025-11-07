@@ -15,8 +15,12 @@ transaction(flowAmount: UFix64) {
             .withdraw(amount: flowAmount)
         
         // Create issuance sink (where borrowed MOET will be sent)
-        let moetReceiver = signer.capabilities.get<&MOET.Vault>(/public/moetBalance)
-        let issuanceSink = FungibleTokenConnectors.VaultReceiverSink(receiver: moetReceiver)
+        let moetVaultCap = signer.capabilities.get<&MOET.Vault>(MOET.VaultPublicPath)
+        let issuanceSink = FungibleTokenConnectors.VaultSink(
+            max: nil,
+            depositVault: moetVaultCap,
+            uniqueID: nil
+        )
         
         // Setup redemption position (no repayment source for testing simplicity)
         RedemptionWrapper.setup(

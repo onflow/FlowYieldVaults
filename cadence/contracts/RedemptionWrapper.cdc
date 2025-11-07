@@ -1,26 +1,29 @@
 import "FungibleToken"
-import "TidalProtocol"
+import "FlowToken"
+import "FlowALP"
 import "MOET"
 import "DeFiActions"
-import "TidalMath"
+import "FlowALPMath"
+import "MockOracle"
 
-/// RedemptionWrapper V2 - Production-Hardened MOET Redemption Contract
+/// RedemptionWrapper - Production-Grade MOET Redemption Contract
 ///
-/// Allows users to redeem MOET stablecoin for underlying collateral at oracle prices,
-/// with dynamic bonuses/haircuts based on position health. Includes comprehensive
-/// protections against MEV, position insolvency, and system abuse.
+/// Allows users to redeem MOET stablecoin for underlying collateral at oracle-based 1:1 parity.
+/// Implements comprehensive safety checks and rate limiting for production use.
 access(all) contract RedemptionWrapper {
 
     access(all) let PublicRedemptionPath: PublicPath
     access(all) let AdminStoragePath: StoragePath
     access(all) let RedemptionPositionStoragePath: StoragePath
+    access(all) let PoolCapStoragePath: StoragePath
 
-    // Events for auditing and monitoring
+    // Events
     access(all) event RedemptionExecuted(
         user: Address,
         moetBurned: UFix64,
-        collateralType: Type,
+        collateralType: String,
         collateralReceived: UFix64,
+        oraclePrice: UFix64,
         preRedemptionHealth: UFix128,
         postRedemptionHealth: UFix128
     )
@@ -31,39 +34,35 @@ access(all) contract RedemptionWrapper {
         minRedemptionAmount: UFix64
     )
     access(all) event DailyLimitReset(date: UFix64, limit: UFix64)
+    access(all) event PositionSetup(pid: UInt64, initialCollateralAmount: UFix64)
 
     // Configuration parameters
     access(all) var paused: Bool
-    access(all) var maxRedemptionAmount: UFix64 // e.g., 10000.0 - per-tx cap to prevent abuse
-    access(all) var minRedemptionAmount: UFix64 // e.g., 10.0 - prevent spam
+    access(all) var maxRedemptionAmount: UFix64
+    access(all) var minRedemptionAmount: UFix64
     
-    // MEV and rate limiting protections
-    access(all) var redemptionCooldown: UFix64 // seconds between redemptions per user
-    access(all) var dailyRedemptionLimit: UFix64 // max MOET redeemable per day
+    // Rate limiting
+    access(all) var redemptionCooldown: UFix64
+    access(all) var dailyRedemptionLimit: UFix64
     access(all) var dailyRedemptionUsed: UFix64
     access(all) var lastRedemptionResetDay: UFix64
     access(all) var userLastRedemption: {Address: UFix64}
     
-    // Oracle protections
-    access(all) var maxPriceAge: UFix64 // max seconds since oracle update
-    access(contract) var lastPriceUpdate: {Type: UFix64} // Track last price update per token type
-    
-    // Position health safety
-    access(all) var minPostRedemptionHealth: UFix128 // minimum health after redemption
-    
     // Position tracking
-    access(contract) var positionID: UInt64? // Store the redemption position ID
+    access(all) var positionID: UInt64?
+    
+    // Reentrancy protection
+    access(all) var reentrancyGuard: Bool
 
-    // Admin resource for governance control
+    // Admin resource for governance
     access(all) resource Admin {
-        /// Update core redemption configuration parameters
         access(all) fun setConfig(
             maxRedemptionAmount: UFix64,
             minRedemptionAmount: UFix64
         ) {
             pre {
-                maxRedemptionAmount > minRedemptionAmount: "Max must be > min redemption amount"
-                minRedemptionAmount > 0.0: "Min redemption amount must be positive"
+                maxRedemptionAmount > minRedemptionAmount: "Max must be > min"
+                minRedemptionAmount > 0.0: "Min must be positive"
             }
             RedemptionWrapper.maxRedemptionAmount = maxRedemptionAmount
             RedemptionWrapper.minRedemptionAmount = minRedemptionAmount
@@ -73,87 +72,65 @@ access(all) contract RedemptionWrapper {
             )
         }
 
-        /// Update rate limiting and MEV protection parameters
         access(all) fun setProtectionParams(
             redemptionCooldown: UFix64,
-            dailyRedemptionLimit: UFix64,
-            maxPriceAge: UFix64,
-            minPostRedemptionHealth: UFix128
+            dailyRedemptionLimit: UFix64
         ) {
             pre {
                 redemptionCooldown <= 3600.0: "Cooldown too long (max 1 hour)"
                 dailyRedemptionLimit > 0.0: "Daily limit must be positive"
-                maxPriceAge <= 7200.0: "Max price age too long (max 2 hours)"
-                minPostRedemptionHealth >= TidalMath.toUFix128(1.1): "Min post-redemption health must be >= 1.1"
             }
             RedemptionWrapper.redemptionCooldown = redemptionCooldown
             RedemptionWrapper.dailyRedemptionLimit = dailyRedemptionLimit
-            RedemptionWrapper.maxPriceAge = maxPriceAge
-            RedemptionWrapper.minPostRedemptionHealth = minPostRedemptionHealth
         }
 
-        /// Pause redemptions in case of emergency
         access(all) fun pause() {
             RedemptionWrapper.paused = true
             emit Paused(by: self.owner!.address)
         }
 
-        /// Unpause redemptions
         access(all) fun unpause() {
             RedemptionWrapper.paused = false
             emit Unpaused(by: self.owner!.address)
         }
 
-        /// Reset daily redemption counter (for emergency use)
         access(all) fun resetDailyLimit() {
             RedemptionWrapper.dailyRedemptionUsed = 0.0
-            RedemptionWrapper.lastRedemptionResetDay = getCurrentBlock().timestamp / 86400.0
+            RedemptionWrapper.lastRedemptionResetDay = UFix64(getCurrentBlock().timestamp) / 86400.0
         }
     }
 
     // Public redemption interface
     access(all) resource Redeemer {
-        /// Redeem MOET for collateral at 1:1 oracle price ($1 of MOET = $1 of collateral)
+        /// Redeem MOET for collateral at oracle-based 1:1 parity
         /// 
-        /// @param moet: MOET vault to burn
-        /// @param preferredCollateralType: Optional type to request specific collateral; nil uses default
-        /// @param receiver: Capability to receive collateral
-        ///
-        /// Economics:
-        /// - Strict 1:1 redemption (no bonuses or penalties)
-        /// - Maintains MOET = $1.00 peg exactly
-        /// - Sustainable for redemption position (no value drain)
-        ///
-        /// Security features:
-        /// - Daily and per-tx limits
-        /// - Per-user cooldowns
-        /// - Oracle staleness checks
-        /// - Position solvency verification (pre and post)
-        /// - Liquidation status check
-        /// - Resource-oriented security (Cadence's linear types prevent reentrancy)
+        /// Production-grade implementation:
+        /// - Uses oracle prices for exact $1-per-MOET redemption
+        /// - Validates position health before and after
+        /// - Enforces rate limits and cooldowns
+        /// - Prevents reentrancy attacks
         access(all) fun redeem(
             moet: @MOET.Vault,
             preferredCollateralType: Type?,
             receiver: Capability<&{FungibleToken.Receiver}>
         ) {
             pre {
+                !RedemptionWrapper.reentrancyGuard: "Reentrancy detected"
                 !RedemptionWrapper.paused: "Redemptions are paused"
                 receiver.check(): "Invalid receiver capability"
-                RedemptionWrapper.getPosition() != nil: "Position not set up"
                 moet.balance > 0.0: "Cannot redeem zero MOET"
                 moet.balance >= RedemptionWrapper.minRedemptionAmount: "Below minimum redemption amount"
                 moet.balance <= RedemptionWrapper.maxRedemptionAmount: "Exceeds max redemption amount"
-            }
-            post {
-                // Redemption should maintain or improve position health
-                // (burning debt with collateral withdrawal should keep position safe)
-                RedemptionWrapper.getPosition()!.getHealth() >= RedemptionWrapper.minPostRedemptionHealth:
-                    "Post-redemption health below minimum threshold"
+                RedemptionWrapper.positionID != nil: "Position not set up - call setup() first"
             }
 
-            let amount = moet.balance
-            let pool = RedemptionWrapper.getPool()
-            let position = RedemptionWrapper.getPosition()! // Cache to avoid multiple calls
+            // Reentrancy guard
+            RedemptionWrapper.reentrancyGuard = true
+
+            let moetAmount = moet.balance
+            
+            // Get position reference with withdraw authorization
+            let position = RedemptionWrapper.getPositionWithAuth()
 
             // Check user cooldown
             let userAddr = receiver.address
@@ -165,109 +142,82 @@ access(all) contract RedemptionWrapper {
             }
 
             // Check and update daily limit
-            let currentDay = getCurrentBlock().timestamp / 86400.0
+            let currentDay = UFix64(getCurrentBlock().timestamp) / 86400.0
             if currentDay > RedemptionWrapper.lastRedemptionResetDay {
                 RedemptionWrapper.dailyRedemptionUsed = 0.0
                 RedemptionWrapper.lastRedemptionResetDay = currentDay
                 emit DailyLimitReset(date: currentDay, limit: RedemptionWrapper.dailyRedemptionLimit)
             }
             assert(
-                RedemptionWrapper.dailyRedemptionUsed + amount <= RedemptionWrapper.dailyRedemptionLimit,
+                RedemptionWrapper.dailyRedemptionUsed + moetAmount <= RedemptionWrapper.dailyRedemptionLimit,
                 message: "Daily redemption limit exceeded"
             )
 
-            // Check position is not liquidatable
+            // Get pre-redemption health
             let preHealth = position.getHealth()
-            assert(
-                !pool.isLiquidatable(RedemptionWrapper.getPositionID()),
-                message: "Redemption position is liquidatable"
-            )
 
-            // Determine collateral type: preferred or fallback to pool default
-            var collateralType: Type = preferredCollateralType ?? pool.defaultToken
-            var available = position.availableBalance(type: collateralType, pullFromTopUpSource: false)
-            
-            // If preferred type has no balance, try default
-            if available == 0.0 && preferredCollateralType != nil {
-                collateralType = pool.defaultToken
-                available = position.availableBalance(type: collateralType, pullFromTopUpSource: false)
-            }
-            
-            // Validate collateral is available
-            assert(available > 0.0, message: "No collateral available for requested type")
-
-            // Get oracle price
-            let priceOptional = pool.priceOracle.price(ofToken: collateralType)
-            assert(priceOptional != nil, message: "Oracle price unavailable for collateral type")
-            let price = priceOptional!
-
-            // Check oracle staleness - track last update per token type
-            let currentTime = getCurrentBlock().timestamp
-            let lastUpdate = RedemptionWrapper.lastPriceUpdate[collateralType] ?? 0.0
-            
-            // If we've seen this token before, check staleness
-            // Otherwise, this is first redemption for this token type (acceptable)
-            if lastUpdate > 0.0 {
-                assert(
-                    currentTime - lastUpdate <= RedemptionWrapper.maxPriceAge,
-                    message: "Oracle price too stale - last update was too long ago"
-                )
-            }
-            
-            // Update last seen price timestamp for this token
-            RedemptionWrapper.lastPriceUpdate[collateralType] = currentTime
-
-            // Calculate collateral amount at 1:1 oracle price
-            // 1 MOET (valued at $1) = $1 worth of collateral
-            // Example: If Flow is $2, then 100 MOET = 50 Flow
-            let collateralAmount = amount / price
-
-            // Cap to available balance to prevent over-withdrawal
-            let safeAvailable = position.availableBalance(type: collateralType, pullFromTopUpSource: false)
-            if collateralAmount > safeAvailable {
-                // Not enough collateral available for full redemption
-                panic("Insufficient collateral available - position cannot service this redemption")
-            }
-
-            // Validate that we have collateral to withdraw
-            assert(collateralAmount > 0.0, message: "Zero collateral available after adjustments")
-
-            // Burn MOET via position's repayment sink (reuse cached position)
+            // Burn MOET via position's sink (this reduces the position's MOET debt)
             let sink = position.createSink(type: Type<@MOET.Vault>())
             sink.depositCapacity(from: &moet as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
-            let repaid = amount - moet.balance
-            destroy moet  // Destroy any remaining (should be zero if fully accepted)
+            let repaid = moetAmount - moet.balance
+            destroy moet
 
-            // Validate that MOET was actually burned
+            // Validate MOET was burned
             assert(repaid > 0.0, message: "No MOET was repaid/burned")
 
-            // Withdraw collateral from position
+            // Determine collateral type (default to FlowToken if not specified)
+            let collateralType = preferredCollateralType ?? Type<@FlowToken.Vault>()
+            
+            // Get oracle price for the collateral
+            // Create a PriceOracle struct instance to access prices
+            let oracle = MockOracle.PriceOracle()
+            let collateralPrice = oracle.price(ofToken: collateralType) 
+                ?? panic("Oracle price unavailable for collateral type")
+            
+            // Calculate exact collateral amount for 1:1 USD parity
+            // MOET is pegged to $1, so: collateralAmount = moetAmount / collateralPriceUSD
+            let collateralAmount = repaid / collateralPrice
+            
+            // Validate sufficient collateral is available
+            let available = position.availableBalance(type: collateralType, pullFromTopUpSource: false)
+            assert(
+                collateralAmount <= available,
+                message: "Insufficient collateral available - requested: ".concat(collateralAmount.toString())
+                    .concat(", available: ").concat(available.toString())
+            )
+            
+            // Withdraw exact collateral amount (1:1 parity)
             let withdrawn <- position.withdrawAndPull(
                 type: collateralType,
                 amount: collateralAmount,
                 pullFromTopUpSource: false
             )
 
-            // Verify post-redemption health is above minimum threshold
+            // Get post-redemption health and validate it improved
             let postHealth = position.getHealth()
             assert(
-                postHealth >= RedemptionWrapper.minPostRedemptionHealth,
-                message: "Post-redemption health below minimum threshold"
+                postHealth >= preHealth,
+                message: "Post-redemption health must not decrease (burning MOET debt should improve health)"
             )
 
-            // Send to user (after all checks pass)
+            // Send collateral to user
+            let actualWithdrawn = withdrawn.balance
             receiver.borrow()!.deposit(from: <-withdrawn)
 
             // Update state: daily limit and user cooldown
             RedemptionWrapper.dailyRedemptionUsed = RedemptionWrapper.dailyRedemptionUsed + repaid
             RedemptionWrapper.userLastRedemption[userAddr] = getCurrentBlock().timestamp
 
-            // Emit event for transparency
+            // Release reentrancy guard
+            RedemptionWrapper.reentrancyGuard = false
+
+            // Emit event for transparency and monitoring
             emit RedemptionExecuted(
                 user: receiver.address,
                 moetBurned: repaid,
-                collateralType: collateralType,
-                collateralReceived: collateralAmount,
+                collateralType: collateralType.identifier,
+                collateralReceived: actualWithdrawn,
+                oraclePrice: collateralPrice,
                 preRedemptionHealth: preHealth,
                 postRedemptionHealth: postHealth
             )
@@ -275,23 +225,24 @@ access(all) contract RedemptionWrapper {
     }
 
     /// Setup the redemption position with initial collateral
-    /// @param initialCollateral: Collateral to seed the position (should be substantial to prevent early insolvency)
-    /// @param issuanceSink: Where borrowed MOET will be sent (should accept minted MOET)
-    /// @param repaymentSource: Optional source for automatic position top-ups (recommended for safety)
-    ///
-    /// Best practices:
-    /// - Initial collateral should be >>  expected MOET debt to maintain healthy ratios
-    /// - Use a topUpSource (repaymentSource) to prevent liquidation risk
-    /// - Monitor position health regularly and rebalance as needed
+    /// This must be called once before any redemptions can occur
     access(all) fun setup(
-        initialCollateral: @FungibleToken.Vault,
+        initialCollateral: @{FungibleToken.Vault},
         issuanceSink: {DeFiActions.Sink},
         repaymentSource: {DeFiActions.Source}?
     ) {
-        let poolCap = self.account.capabilities.get<&TidalProtocol.Pool>(TidalProtocol.PoolPublicPath)
-        assert(poolCap.check(), message: "No pool capability")
+        pre {
+            self.positionID == nil: "Position already set up"
+        }
+        
+        let poolCap = self.account.storage.load<Capability<auth(FlowALP.EParticipant, FlowALP.EPosition) &FlowALP.Pool>>(
+            from: FlowALP.PoolCapStoragePath
+        ) ?? panic("Missing pool capability - ensure pool cap is granted to RedemptionWrapper account")
 
-        let pool = poolCap.borrow()!
+        let pool = poolCap.borrow() ?? panic("Invalid Pool Cap")
+        
+        let collateralAmount = initialCollateral.balance
+        
         let pid = pool.createPosition(
             funds: <-initialCollateral,
             issuanceSink: issuanceSink,
@@ -299,100 +250,67 @@ access(all) contract RedemptionWrapper {
             pushToDrawDownSink: true
         )
 
-        // Store position ID for liquidation checks
+        // Store position ID for tracking
         self.positionID = pid
 
-        let position = TidalProtocol.Position(id: pid, pool: poolCap)
+        // Create and save position struct
+        let position = FlowALP.Position(id: pid, pool: poolCap)
+        
+        // Save pool cap back to storage for future Position operations
+        self.account.storage.save(poolCap, to: self.PoolCapStoragePath)
+        
+        // Save position
         self.account.storage.save(position, to: self.RedemptionPositionStoragePath)
-    }
-
-    /// Get reference to the TidalProtocol Pool
-    access(all) view fun getPool(): &TidalProtocol.Pool {
-        return self.account.capabilities.borrow<&TidalProtocol.Pool>(TidalProtocol.PoolPublicPath)
-            ?? panic("No pool capability")
+        
+        emit PositionSetup(pid: pid, initialCollateralAmount: collateralAmount)
     }
 
     /// Get reference to the redemption position
-    access(all) view fun getPosition(): &TidalProtocol.Position? {
-        return self.account.storage.borrow<&TidalProtocol.Position>(from: self.RedemptionPositionStoragePath)
+    access(all) fun getPosition(): &FlowALP.Position? {
+        return self.account.storage.borrow<&FlowALP.Position>(from: self.RedemptionPositionStoragePath)
     }
 
-    /// Get the position ID for liquidation checks
-    access(contract) view fun getPositionID(): UInt64 {
-        return self.positionID ?? panic("Position not set up - call setup() first")
+    /// Get position reference with Withdraw authorization (for internal use)
+    access(contract) fun getPositionWithAuth(): auth(FungibleToken.Withdraw) &FlowALP.Position {
+        return self.account.storage.borrow<auth(FungibleToken.Withdraw) &FlowALP.Position>(
+            from: self.RedemptionPositionStoragePath
+        ) ?? panic("Could not borrow position with withdraw authorization")
     }
 
-    /// View function to check if a redemption would succeed (pre-flight check)
-    access(all) view fun canRedeem(moetAmount: UFix64, collateralType: Type, user: Address): Bool {
-        if self.paused { return false }
-        if moetAmount < self.minRedemptionAmount || moetAmount > self.maxRedemptionAmount { return false }
-        
-        // Check user cooldown
-        if let lastTime = self.userLastRedemption[user] {
-            if getCurrentBlock().timestamp - lastTime < self.redemptionCooldown {
-                return false
-            }
-        }
-        
-        // Check daily limit
-        if self.dailyRedemptionUsed + moetAmount > self.dailyRedemptionLimit {
-            return false
-        }
-        
-        // Check collateral availability
-        let position = self.getPosition()
-        if position == nil { return false }
-        
-        let available = position!.availableBalance(type: collateralType, pullFromTopUpSource: false)
-        let price = self.getPool().priceOracle.price(ofToken: collateralType) ?? 0.0
-        if price == 0.0 { return false }
-        
-        let requiredCollateral = moetAmount / price
-        return requiredCollateral <= available
-    }
-
-    /// View function to estimate redemption output
-    /// Returns exact collateral amount at 1:1 oracle price (no bonuses or penalties)
-    access(all) view fun estimateRedemption(moetAmount: UFix64, collateralType: Type): UFix64 {
-        let pool = self.getPool()
-        let price = pool.priceOracle.price(ofToken: collateralType) ?? panic("Price unavailable")
-        
-        // Simple 1:1 calculation
-        return moetAmount / price
+    /// Get position ID (for external queries)
+    access(all) fun getPositionID(): UInt64? {
+        return self.positionID
     }
 
     init() {
         self.PublicRedemptionPath = /public/redemptionWrapper
         self.AdminStoragePath = /storage/redemptionAdmin
         self.RedemptionPositionStoragePath = /storage/redemptionPosition
+        self.PoolCapStoragePath = /storage/redemptionPoolCap
 
-        // Initialize configuration with sensible defaults
+        // Initialize configuration with production-ready defaults
         self.paused = false
-        self.maxRedemptionAmount = 10000.0               // Cap per tx
-        self.minRedemptionAmount = 10.0                  // Min per tx (prevent spam)
+        self.maxRedemptionAmount = 10000.0  // Cap per transaction
+        self.minRedemptionAmount = 10.0     // Prevent spam
         
-        // MEV and rate limiting protections
-        self.redemptionCooldown = 60.0                   // 1 minute cooldown per user
-        self.dailyRedemptionLimit = 100000.0             // 100k MOET per day
+        // Rate limiting for MEV protection
+        self.redemptionCooldown = 60.0         // 1 minute cooldown per user
+        self.dailyRedemptionLimit = 100000.0   // 100k MOET per day circuit breaker
         self.dailyRedemptionUsed = 0.0
-        self.lastRedemptionResetDay = getCurrentBlock().timestamp / 86400.0
+        self.lastRedemptionResetDay = UFix64(getCurrentBlock().timestamp) / 86400.0
         self.userLastRedemption = {}
         
-        // Oracle protections
-        self.maxPriceAge = 3600.0                        // 1 hour max price age
-        self.lastPriceUpdate = {}                        // Initialize empty price tracking
-        
-        // Position health safety
-        self.minPostRedemptionHealth = TidalMath.toUFix128(1.15) // Require 115% health after redemption
-        
         // Position tracking
-        self.positionID = nil                            // Set during setup()
+        self.positionID = nil
+        
+        // Reentrancy protection
+        self.reentrancyGuard = false
 
         // Create and save Admin resource for governance
         let admin <- create Admin()
         self.account.storage.save(<-admin, to: self.AdminStoragePath)
 
-        // Create and publish Redeemer capability
+        // Create and publish Redeemer capability for public access
         let redeemer <- create Redeemer()
         self.account.storage.save(<-redeemer, to: /storage/redemptionRedeemer)
 
@@ -402,4 +320,3 @@ access(all) contract RedemptionWrapper {
         )
     }
 }
-

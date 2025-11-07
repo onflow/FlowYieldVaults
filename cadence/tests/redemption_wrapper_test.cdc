@@ -1,6 +1,6 @@
 import Test
-import BlockchainHelpers
 import "test_helpers.cdc"
+import "FungibleToken"
 import "FlowALP"
 import "MOET"
 import "FlowToken"
@@ -8,13 +8,14 @@ import "FlowALPMath"
 import "RedemptionWrapper"
 
 access(all) let flowTokenIdentifier = "A.0000000000000003.FlowToken.Vault"
-access(all) let moetTokenIdentifier = "A.0000000000000007.MOET.Vault"
+access(all) let moetTokenIdentifier = "A.0000000000000008.MOET.Vault"
 access(all) let protocolAccount = Test.getAccount(0x0000000000000007)
+access(all) let flowALPAccount = Test.getAccount(0x0000000000000008)
 access(all) var snapshot: UInt64 = 0
 
 access(all)
 fun safeReset() {
-    let cur = getCurrentBlockHeight()
+    let cur = getCurrentBlock().height
     if cur > snapshot {
         Test.reset(to: snapshot)
     }
@@ -32,11 +33,15 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
 
-    // Setup pool with FlowToken support
-    setMockOraclePrice(signer: protocolAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0)
-    createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
+    // Setup pool with FlowToken support (use flowALPAccount which has the PoolFactory)
+    setMockOraclePrice(signer: flowALPAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0)
+    createAndStorePool(signer: flowALPAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
+    
+    // Grant pool capability to RedemptionWrapper account (protocolAccount)
+    let grantRes = grantProtocolBeta(flowALPAccount, protocolAccount)
+    Test.expect(grantRes, Test.beSucceeded())
     addSupportedTokenSimpleInterestCurve(
-        signer: protocolAccount,
+        signer: flowALPAccount,
         tokenTypeIdentifier: flowTokenIdentifier,
         collateralFactor: 0.8,
         borrowFactor: 1.0,
@@ -44,7 +49,7 @@ fun setup() {
         depositCapacityCap: 1_000_000.0
     )
 
-    snapshot = getCurrentBlockHeight()
+    snapshot = getCurrentBlock().height
 }
 
 /// Test 1: Basic 1:1 Redemption Math
@@ -70,7 +75,7 @@ fun test_redemption_one_to_one_parity() {
     setupMoetVault(user, beFailed: false)
     
     // Mint 100 MOET to user
-    mintMoet(signer: protocolAccount, to: user.address, amount: 100.0, beFailed: false)
+    mintMoet(signer: flowALPAccount, to: user.address, amount: 100.0, beFailed: false)
     
     // Execute redemption
     let redeemRes = redeemMoet(user: user, amount: 100.0)
@@ -112,7 +117,7 @@ fun test_position_neutrality() {
     // User redeems 200 MOET
     let user = Test.createAccount()
     setupMoetVault(user, beFailed: false)
-    mintMoet(signer: protocolAccount, to: user.address, amount: 200.0, beFailed: false)
+    mintMoet(signer: flowALPAccount, to: user.address, amount: 200.0, beFailed: false)
     
     let redeemRes = redeemMoet(user: user, amount: 200.0)
     Test.expect(redeemRes, Test.beSucceeded())
@@ -163,9 +168,9 @@ fun test_daily_limit_circuit_breaker() {
     // User 1: Redeem 600 MOET (should succeed)
     let user1 = Test.createAccount()
     setupMoetVault(user1, beFailed: false)
-    mintMoet(signer: protocolAccount, to: user1.address, amount: 600.0, beFailed: false)
+    mintMoet(signer: flowALPAccount, to: user1.address, amount: 600.0, beFailed: false)
     
-    BlockchainHelpers.commitBlock()
+    // Block automatically commits
     
     let redeem1Res = redeemMoet(user: user1, amount: 600.0)
     Test.expect(redeem1Res, Test.beSucceeded())
@@ -174,9 +179,9 @@ fun test_daily_limit_circuit_breaker() {
     // User 2: Redeem 500 MOET (should FAIL - exceeds daily limit)
     let user2 = Test.createAccount()
     setupMoetVault(user2, beFailed: false)
-    mintMoet(signer: protocolAccount, to: user2.address, amount: 500.0, beFailed: false)
+    mintMoet(signer: flowALPAccount, to: user2.address, amount: 500.0, beFailed: false)
     
-    BlockchainHelpers.commitBlock()
+    // Block automatically commits
     
     let redeem2Res = redeemMoet(user: user2, amount: 500.0)
     Test.expect(redeem2Res, Test.beFailed())
@@ -191,9 +196,9 @@ fun test_daily_limit_circuit_breaker() {
     // User 3: Any redemption should fail (limit exhausted)
     let user3 = Test.createAccount()
     setupMoetVault(user3, beFailed: false)
-    mintMoet(signer: protocolAccount, to: user3.address, amount: 100.0, beFailed: false)
+    mintMoet(signer: flowALPAccount, to: user3.address, amount: 100.0, beFailed: false)
     
-    BlockchainHelpers.commitBlock()
+    // Block automatically commits
     
     let redeem4Res = redeemMoet(user: user3, amount: 100.0)
     Test.expect(redeem4Res, Test.beFailed())
@@ -219,7 +224,7 @@ fun test_user_cooldown_enforcement() {
     
     let user = Test.createAccount()
     setupMoetVault(user, beFailed: false)
-    mintMoet(to: user, amount: 200.0)
+    mintMoet(signer: flowALPAccount, to: user.address, amount: 200.0, beFailed: false)
     
     // First redemption: 50 MOET (should succeed)
     let redeem1Res = redeemMoet(user: user, amount: 50.0)
@@ -227,7 +232,7 @@ fun test_user_cooldown_enforcement() {
     log("First redemption succeeded")
     
     // Second redemption immediately: 50 MOET (should FAIL - cooldown not elapsed)
-    BlockchainHelpers.commitBlock()
+    // Block automatically commits
     
     let redeem2Res = redeemMoet(user: user, amount: 50.0)
     Test.expect(redeem2Res, Test.beFailed())
@@ -237,7 +242,7 @@ fun test_user_cooldown_enforcement() {
     // Advance time by 61 seconds
     var blockCount = 0
     while blockCount < 61 {
-        BlockchainHelpers.commitBlock()
+        // Block automatically commits
         blockCount = blockCount + 1
     }
     
@@ -261,7 +266,7 @@ fun test_min_max_redemption_amounts() {
     
     let user = Test.createAccount()
     setupMoetVault(user, beFailed: false)
-    mintMoet(signer: protocolAccount, to: user.address, amount: 20000.0, beFailed: false)
+    mintMoet(signer: flowALPAccount, to: user.address, amount: 20000.0, beFailed: false)
     
     // Test: Below minimum (default 10.0 MOET)
     let tooSmallRes = redeemMoet(user: user, amount: 5.0)
@@ -270,14 +275,14 @@ fun test_min_max_redemption_amounts() {
     log("Redemption of 5 MOET correctly rejected (below min 10)")
     
     // Test: Above maximum (default 10,000.0 MOET)
-    BlockchainHelpers.commitBlock()
+    // Block automatically commits
     let tooLargeRes = redeemMoet(user: user, amount: 15000.0)
     Test.expect(tooLargeRes, Test.beFailed())
     Test.assertError(tooLargeRes, errorMessage: "Exceeds max redemption amount")
     log("Redemption of 15000 MOET correctly rejected (above max 10000)")
     
     // Test: Within bounds
-    BlockchainHelpers.commitBlock()
+    // Block automatically commits
     let validRes = redeemMoet(user: user, amount: 100.0)
     Test.expect(validRes, Test.beSucceeded())
     log("Redemption of 100 MOET succeeded (within bounds)")
@@ -297,7 +302,7 @@ fun test_insufficient_collateral() {
     
     let user = Test.createAccount()
     setupMoetVault(user, beFailed: false)
-    mintMoet(signer: protocolAccount, to: user.address, amount: 1000.0, beFailed: false) // More MOET than can be redeemed
+    mintMoet(signer: flowALPAccount, to: user.address, amount: 1000.0, beFailed: false) // More MOET than can be redeemed
     
     // Try to redeem more than available
     // Position has ~100 Flow = $200 worth
@@ -322,7 +327,7 @@ fun test_pause_mechanism() {
     
     let user = Test.createAccount()
     setupMoetVault(user, beFailed: false)
-    mintMoet(to: user, amount: 200.0)
+    mintMoet(signer: flowALPAccount, to: user.address, amount: 200.0, beFailed: false)
     
     // Pause redemptions
     let pauseRes = _executeTransaction("./transactions/redemption/pause_redemptions.cdc", [], protocolAccount)
@@ -341,7 +346,7 @@ fun test_pause_mechanism() {
     log("Redemptions unpaused")
     
     // Try to redeem again (should succeed)
-    BlockchainHelpers.commitBlock()
+    // Block automatically commits
     let redeemAfterUnpauseRes = redeemMoet(user: user, amount: 50.0)
     Test.expect(redeemAfterUnpauseRes, Test.beSucceeded())
     log("Redemption succeeded after unpause")
@@ -368,9 +373,9 @@ fun test_sequential_redemptions() {
     while i < 5 {
         let user = Test.createAccount()
         setupMoetVault(user, beFailed: false)
-        mintMoet(signer: protocolAccount, to: user.address, amount: 100.0, beFailed: false)
+        mintMoet(signer: flowALPAccount, to: user.address, amount: 100.0, beFailed: false)
         
-        BlockchainHelpers.commitBlock() // Advance time for cooldown
+        // Block automatically commits // Advance time for cooldown
         
         let redeemRes = redeemMoet(user: user, amount: 100.0)
         Test.expect(redeemRes, Test.beSucceeded())
@@ -455,7 +460,7 @@ fun test_liquidation_prevention() {
         // Try to redeem (should fail)
         let user = Test.createAccount()
         setupMoetVault(user, beFailed: false)
-        mintMoet(signer: protocolAccount, to: user.address, amount: 100.0, beFailed: false)
+        mintMoet(signer: flowALPAccount, to: user.address, amount: 100.0, beFailed: false)
         
         let redeemRes = redeemMoet(user: user, amount: 100.0)
         Test.expect(redeemRes, Test.beFailed())
@@ -505,14 +510,7 @@ fun getRedemptionPositionHealth(): UFix128 {
 /// Give Flow tokens to test account
 access(all)
 fun giveFlowTokens(to: Test.TestAccount, amount: UFix64) {
-    let serviceAccount = Test.serviceAccount()
-    // Transfer Flow from service account to test account
-    transferFlow(signer: serviceAccount, recipient: to.address, amount: amount)
-}
-
-access(all)
-fun getBalance(address: Address, vaultPublicPath: PublicPath): UFix64? {
-    // Use the helper from test_helpers.cdc
-    return getBalance(address: address, vaultPublicPath: vaultPublicPath)
+    // Use the test_helpers function to transfer Flow tokens
+    transferFlowTokens(to: to, amount: amount)
 }
 

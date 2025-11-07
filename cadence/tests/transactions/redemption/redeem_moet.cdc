@@ -8,7 +8,7 @@ import FungibleToken from "FungibleToken"
 transaction(moetAmount: UFix64) {
     prepare(signer: auth(Storage, Capabilities) &Account) {
         // Withdraw MOET to redeem
-        let moetVault <- signer.storage.borrow<auth(FungibleToken.Withdraw) &MOET.Vault>(from: /storage/moetBalance)!
+        let moetVault <- signer.storage.borrow<auth(FungibleToken.Withdraw) &MOET.Vault>(from: MOET.VaultStoragePath)!
             .withdraw(amount: moetAmount)
         
         // Get Flow receiver capability (default collateral)

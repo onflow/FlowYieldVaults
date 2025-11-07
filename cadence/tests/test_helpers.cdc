@@ -450,3 +450,15 @@ access(all) fun findBalance(
     return nil
 }
 
+access(all)
+fun transferFlowTokens(to: Test.TestAccount, amount: UFix64) {
+    let transferTx = Test.Transaction(
+        code: Test.readFile("../../lib/FlowALP/cadence/transactions/flowtoken/transfer_flowtoken.cdc"),
+        authorizers: [Test.serviceAccount().address],
+        signers: [Test.serviceAccount()],
+        arguments: [to.address, amount]
+    )
+    let txResult = Test.executeTransaction(transferTx)
+    Test.expect(txResult, Test.beSucceeded())
+}
+
