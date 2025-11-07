@@ -1,0 +1,57 @@
+name: MOET Redemption Tests
+
+on:
+  push:
+    branches:
+      - moet-redemption
+  pull_request:
+    branches:
+      - main
+      - moet-redemption
+
+jobs:
+  redemption-tests:
+    name: Redemption Wrapper Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+          submodules: recursive
+          
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.23.x"
+          
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+            
+      - name: Install Flow CLI
+        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)"
+        
+      - name: Flow CLI Version
+        run: flow version
+        
+      - name: Update PATH
+        run: echo "/root/.local/bin" >> $GITHUB_PATH
+        
+      - name: Install dependencies
+        run: flow deps install --skip-alias --skip-deployments
+        
+      - name: Run Redemption Tests
+        run: flow test --cover --covercode="contracts" --coverprofile="redemption-coverage.lcov" ./cadence/tests/redemption_wrapper_test.cdc
+        
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: ./redemption-coverage.lcov
+          flags: redemption
+          name: redemption-coverage
+
