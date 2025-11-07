@@ -1,25 +1,21 @@
 .DS_Store
 .pr-drafts/
-
-# Flow
+# flow
 *.pkey
 !local/mock-incrementfi.pkey
 !local/emulator-account.pkey
 !local/evm-gateway.pkey
 !local/test-user.pkey
-!local/tidal.pkey
+!local/emulator-tidal.pkey
 imports
 coverage.lcov
 coverage.json
-
-# Solidity
 solidity/out/
-cache/
-broadcast/
-db/
 
-# Deployment keys
 testnet-deployer.pkey
 testnet-uniswapV3-connectors-deployer.pkey
 mock-strategy-deployer.pkey
-local/deployed_addresses.env
+
+broadcast
+cache
+db

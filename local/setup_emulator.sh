@@ -1,7 +1,6 @@
 # install DeFiBlocks submodule as dependency
 git submodule update --init --recursive
 # execute emulator deployment
-flow deps install --skip-alias --skip-deployments
 flow deploy
 
 flow transactions send ./cadence/transactions/moet/setup_vault.cdc 

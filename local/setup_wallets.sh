@@ -1,3 +1,5 @@
+flow deps install --skip-alias --skip-deployments
+
 TEST_USER_PUBKEY_PATH="./local/test-user.pubkey"
 AMM_PUBKEY_PATH="./local/mock-incrementfi.pubkey"
 EVM_GATEWAY_PUBKEY_PATH="./local/evm-gateway.pubkey"
