@@ -26,6 +26,34 @@
 				"testnet": "3bda2f90274dbc9b"
 			}
 		},
+		"ERC4626PriceOracles": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
+			}
+		},
+		"ERC4626SinkConnectors": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
+			}
+		},
+		"ERC4626SwapConnectors": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
+			}
+		},
+		"ERC4626Utils": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
+			}
+		},
 		"EVMAbiHelpers": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
 			"aliases": {
@@ -625,6 +653,30 @@
 				"location": "local/evm-gateway.pkey"
 			}
 		},
+		"mainnet-admin": {
+			"address": "b1d63873c3cc9f79",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
+		"mainnet-flow-alp-deployer": {
+			"address": "6b00ff876c299c61",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
+		"mainnet-uniswapV3-connectors-deployer": {
+			"address": "a7825d405ac89518",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
 		"mock-incrementfi": {
 			"address": "f3fcd2c1a78f5eee",
 			"key": {
@@ -668,30 +720,6 @@
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
-			}
-		},
-		"mainnet-admin": {
-			"address": "b1d63873c3cc9f79",
-			"key": {
-				"type": "google-kms",
-				"hashAlgorithm": "SHA2_256",
-				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
-			}
-		},
-		"mainnet-flow-alp-deployer": {
-			"address": "6b00ff876c299c61",
-			"key": {
-				"type": "google-kms",
-				"hashAlgorithm": "SHA2_256",
-				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
-			}
-		},
-		"mainnet-uniswapV3-connectors-deployer": {
-			"address": "a7825d405ac89518",
-			"key": {
-				"type": "google-kms",
-				"hashAlgorithm": "SHA2_256",
-				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
 		"tidal": {
@@ -757,6 +785,11 @@
 				},
 				"MockSwapper",
 				"EVMAbiHelpers",
+				"EVMTokenConnectors",
+				"ERC4626Utils",
+				"ERC4626PriceOracles",
+				"ERC4626SinkConnectors",
+				"ERC4626SwapConnectors",
 				"FlowVaultsAutoBalancers",
 				"FlowVaultsClosedBeta",
 				"FlowVaults",
@@ -784,58 +817,7 @@
 				}
 			]
 		},
-		"testnet": {
-			"testnet-admin": [
-				{
-					"name": "YieldToken",
-					"args": [
-						{
-							"value": "1000000.00000000",
-							"type": "UFix64"
-						}
-					]
-				},
-				{
-					"name": "MockOracle",
-					"args": [
-						{
-							"value": "A.c16c0b1229843606.MOET.Vault",
-							"type": "String"
-						}
-					]
-				},
-				"MockSwapper",
-				"FlowVaultsAutoBalancers",
-				"FlowVaultsClosedBeta",
-				"FlowVaults",
-        {
-					"name": "FlowVaultsStrategies",
-					"args": [
-						{
-							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
-							"type": "String"
-						},
-						{
-							"value": "0x2Db6468229F6fB1a77d248Dbb1c386760C257804",
-							"type": "String"
-						},
-						{
-							"value": "0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c",
-							"type": "String"
-						},
-						{
-							"value": "0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95",
-							"type": "String"
-						}
-					]
-				}
-			],
-			"testnet-uniswapV3-connectors-deployer": [
-				"EVMAbiHelpers",
-				"UniswapV3SwapConnectors"
-			]
-		},
-    "mainnet": {
+		"mainnet": {
 			"mainnet-admin": [
 				{
 					"name": "MockOracle",
@@ -876,6 +858,57 @@
 				"EVMAbiHelpers",
 				"UniswapV3SwapConnectors"
 			]
-    }
+		},
+		"testnet": {
+			"testnet-admin": [
+				{
+					"name": "YieldToken",
+					"args": [
+						{
+							"value": "1000000.00000000",
+							"type": "UFix64"
+						}
+					]
+				},
+				{
+					"name": "MockOracle",
+					"args": [
+						{
+							"value": "A.c16c0b1229843606.MOET.Vault",
+							"type": "String"
+						}
+					]
+				},
+				"MockSwapper",
+				"FlowVaultsAutoBalancers",
+				"FlowVaultsClosedBeta",
+				"FlowVaults",
+				{
+					"name": "FlowVaultsStrategies",
+					"args": [
+						{
+							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+							"type": "String"
+						},
+						{
+							"value": "0x2Db6468229F6fB1a77d248Dbb1c386760C257804",
+							"type": "String"
+						},
+						{
+							"value": "0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c",
+							"type": "String"
+						},
+						{
+							"value": "0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95",
+							"type": "String"
+						}
+					]
+				}
+			],
+			"testnet-uniswapV3-connectors-deployer": [
+				"EVMAbiHelpers",
+				"UniswapV3SwapConnectors"
+			]
+		}
 	}
 }
