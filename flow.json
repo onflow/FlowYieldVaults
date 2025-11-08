@@ -35,6 +35,27 @@
 				"testnet": "3bda2f90274dbc9b"
 			}
 		},
+		"ERC4626PriceOracles": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
+			}
+		},
+		"ERC4626SinkConnectors": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
+			}
+		},
+		"ERC4626SwapConnectors": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
+			}
+		},
 		"EVMAbiHelpers": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
 			"aliases": {
@@ -778,6 +799,11 @@
 				"BandOracleConnectors",
 				"MockSwapper",
 				"EVMAbiHelpers",
+				"EVMTokenConnectors",
+				"ERC4626Utils",
+				"ERC4626PriceOracles",
+				"ERC4626SinkConnectors",
+				"ERC4626SwapConnectors",
 				"FlowVaultsAutoBalancers",
 				"FlowVaultsClosedBeta",
 				"FlowVaults",
