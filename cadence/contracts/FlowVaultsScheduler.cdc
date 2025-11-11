@@ -136,6 +136,8 @@ access(all) contract FlowVaultsScheduler {
                 ?? panic("Invalid target TransactionHandler capability for Tide #".concat(self.tideID.toString()))
             // delegate to the underlying handler (AutoBalancer)
             ref.executeTransaction(id: id, data: data)
+            // if recurring, schedule the next
+            FlowVaultsScheduler.scheduleNextIfRecurring(completedID: id, tideID: self.tideID)
             // record on-chain proof for strict verification without relying on events
             FlowVaultsSchedulerProofs.markExecuted(tideID: self.tideID, scheduledTransactionID: id)
             // emit wrapper-level execution signal for test observability
@@ -182,13 +184,27 @@ access(all) contract FlowVaultsScheduler {
             isRecurring: Bool,
             recurringInterval: UFix64?
         ) {
-            pre {
-                self.scheduledTransactions[tideID] == nil:
-                    "Rebalancing is already scheduled for Tide #\(tideID). Cancel the existing schedule first."
-                !isRecurring || (isRecurring && recurringInterval != nil && recurringInterval! > 0.0):
-                    "Recurring interval must be greater than 0 when isRecurring is true"
-                handlerCap.check():
-                    "Invalid handler capability provided"
+            // Cleanup any executed/removed entry for this tideID
+            let existingRef = &self.scheduledTransactions[tideID] as &FlowTransactionScheduler.ScheduledTransaction?
+            if existingRef != nil {
+                let st = FlowTransactionScheduler.getStatus(id: existingRef!.id)
+                if st == nil || st!.rawValue == 2 {
+                    let old <- self.scheduledTransactions.remove(key: tideID)
+                        ?? panic("scheduleRebalancing: cleanup remove failed")
+                    destroy old
+                }
+            }
+            // Validate inputs (explicit checks instead of `pre` since cleanup precedes)
+            if (&self.scheduledTransactions[tideID] as &FlowTransactionScheduler.ScheduledTransaction?) != nil {
+                panic("Rebalancing is already scheduled for Tide #".concat(tideID.toString()).concat(". Cancel the existing schedule first."))
+            }
+            if isRecurring {
+                if recurringInterval == nil || recurringInterval! <= 0.0 {
+                    panic("Recurring interval must be greater than 0 when isRecurring is true")
+                }
+            }
+            if !handlerCap.check() {
+                panic("Invalid handler capability provided")
             }
 
             // Schedule the transaction with force parameter in data
@@ -331,6 +347,11 @@ access(all) contract FlowVaultsScheduler {
             }
             return true
         }
+
+        /// Returns stored schedule data for a scheduled transaction ID, if present
+        access(all) fun getScheduleData(id: UInt64): RebalancingScheduleData? {
+            return self.scheduleData[id]
+        }
     }
 
     /// A supervisor handler that ensures all registered tides have a scheduled rebalancing
@@ -353,7 +374,8 @@ access(all) contract FlowVaultsScheduler {
         ///   "lookaheadSecs": UFix64,
         ///   "childRecurring": Bool,
         ///   "childInterval": UFix64,
-        ///   "force": Bool
+        ///   "force": Bool,
+        ///   "recurringInterval": UFix64
         /// }
         access(FlowTransactionScheduler.Execute) fun executeTransaction(id: UInt64, data: AnyStruct?) {
             let cfg = data as? {String: AnyStruct} ?? {}
@@ -363,6 +385,7 @@ access(all) contract FlowVaultsScheduler {
             let childRecurring = cfg["childRecurring"] as? Bool ?? true
             let childInterval = cfg["childInterval"] as? UFix64 ?? 60.0
             let forceChild = cfg["force"] as? Bool ?? false
+            let _recurringInterval = cfg["recurringInterval"] as? UFix64 ?? 60.0
 
             let priority: FlowTransactionScheduler.Priority =
                 priorityRaw == 0 ? FlowTransactionScheduler.Priority.High :
@@ -407,6 +430,60 @@ access(all) contract FlowVaultsScheduler {
                 )
             }
         }
+    }
+
+    /// Schedules next rebalancing for a tide if the completed scheduled tx was marked recurring
+    access(all) fun scheduleNextIfRecurring(completedID: UInt64, tideID: UInt64) {
+        let manager = self.account.storage
+            .borrow<&FlowVaultsScheduler.SchedulerManager>(from: self.SchedulerManagerStoragePath)
+            ?? panic("scheduleNextIfRecurring: missing SchedulerManager")
+        let data = manager.getScheduleData(id: completedID)
+        if data == nil {
+            return
+        }
+        if !data!.isRecurring {
+            return
+        }
+        let interval = data!.recurringInterval ?? 60.0
+        let priority: FlowTransactionScheduler.Priority = FlowTransactionScheduler.Priority.Medium
+        let executionEffort: UInt64 = 800
+        let ts = getCurrentBlock().timestamp + interval
+
+        // Ensure wrapper exists and issue cap
+        let wrapperPath = self.deriveRebalancingHandlerPath(tideID: tideID)
+        if self.account.storage.borrow<&FlowVaultsScheduler.RebalancingHandler>(from: wrapperPath) == nil {
+            let abPath = FlowVaultsAutoBalancers.deriveAutoBalancerPath(id: tideID, storage: true) as! StoragePath
+            let abCap = self.account.capabilities.storage
+                .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(abPath)
+            let wrapper <- self.createRebalancingHandler(target: abCap, tideID: tideID)
+            self.account.storage.save(<-wrapper, to: wrapperPath)
+        }
+        let wrapperCap = self.account.capabilities.storage
+            .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(wrapperPath)
+
+        // Estimate and pay fee
+        let est = self.estimateSchedulingCost(
+            timestamp: ts,
+            priority: priority,
+            executionEffort: executionEffort
+        )
+        let required = est.flowFee ?? 0.00005
+        let vaultRef = self.account.storage
+            .borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)
+            ?? panic("scheduleNextIfRecurring: cannot borrow FlowToken Vault")
+        let pay <- vaultRef.withdraw(amount: required) as! @FlowToken.Vault
+
+        manager.scheduleRebalancing(
+            handlerCap: wrapperCap,
+            tideID: tideID,
+            timestamp: ts,
+            priority: priority,
+            executionEffort: executionEffort,
+            fees: <-pay,
+            force: data!.force,
+            isRecurring: true,
+            recurringInterval: interval
+        )
     }
 
     /* --- PUBLIC FUNCTIONS --- */

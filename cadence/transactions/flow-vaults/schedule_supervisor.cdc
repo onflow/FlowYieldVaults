@@ -50,7 +50,8 @@ transaction(
             "lookaheadSecs": 5.0,
             "childRecurring": childRecurring,
             "childInterval": childInterval,
-            "force": forceChild
+            "force": forceChild,
+            "recurringInterval": recurringInterval
         }
 
         let _scheduled <- FlowTransactionScheduler.schedule(
