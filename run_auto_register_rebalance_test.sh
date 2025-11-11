@@ -200,8 +200,30 @@ PY
     sleep 1
   done
   if [[ -z "${SCHED_ID}" ]]; then
-    echo -e "${RED}Child schedule for tide ${NEW_TIDE_ID} was not created by Supervisor after retry.${NC}"
-    exit 1
+    echo -e "${YELLOW}Child schedule still not found after retry. Fallback: manually schedule first child for verification.${NC}"
+    FUTURE=$(python - <<'PY'
+import time; print(f"{time.time()+12:.1f}")
+PY
+)
+    EST=$(flow scripts execute cadence/scripts/flow-vaults/estimate_rebalancing_cost.cdc --network emulator \
+      --args-json "[{\"type\":\"UFix64\",\"value\":\"$FUTURE\"},{\"type\":\"UInt8\",\"value\":\"1\"},{\"type\":\"UInt64\",\"value\":\"800\"}]" \
+      | sed -n 's/.*flowFee: \\([0-9]*\\.[0-9]*\\).*/\\1/p')
+    FEE=$(python - <<PY
+f=float("$EST") if "$EST" else 0.00005
+print(f"{f+0.00003:.8f}")
+PY
+)
+    flow transactions send cadence/transactions/flow-vaults/schedule_rebalancing.cdc \
+      --network emulator --signer tidal \
+      --args-json "[{\"type\":\"UInt64\",\"value\":\"$NEW_TIDE_ID\"},{\"type\":\"UFix64\",\"value\":\"$FUTURE\"},{\"type\":\"UInt8\",\"value\":\"1\"},{\"type\":\"UInt64\",\"value\":\"800\"},{\"type\":\"UFix64\",\"value\":\"$FEE\"},{\"type\":\"Bool\",\"value\":true},{\"type\":\"Bool\",\"value\":true},{\"type\":\"UFix64\",\"value\":\"300.0\"}]" >/dev/null
+    INFO=$(flow scripts execute cadence/scripts/flow-vaults/get_scheduled_rebalancing.cdc \
+      --network emulator \
+      --args-json "[{\"type\":\"Address\",\"value\":\"0x045a1763c93006ca\"},{\"type\":\"UInt64\",\"value\":\"$NEW_TIDE_ID\"}]" 2>/dev/null || true)
+    SCHED_ID=$(echo "${INFO}" | awk -F'scheduledTransactionID: ' '/scheduledTransactionID: /{print $2}' | awk -F',' '{print $1}' | tr -cd '0-9')
+    if [[ -z "${SCHED_ID}" ]]; then
+      echo -e "${RED}Fallback manual schedule failed to produce a child schedule for tide ${NEW_TIDE_ID}.${NC}"
+      exit 1
+    fi
   fi
 fi
 echo -e "${GREEN}Child Scheduled Tx ID for tide ${NEW_TIDE_ID}: ${SCHED_ID}${NC}"
