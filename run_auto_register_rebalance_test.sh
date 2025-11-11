@@ -62,7 +62,7 @@ SUP_JSON="[\
   {\"type\":\"UInt8\",\"value\":\"1\"},\
   {\"type\":\"UInt64\",\"value\":\"800\"},\
   {\"type\":\"UFix64\",\"value\":\"$FEE\"},\
-  {\"type\":\"UFix64\",\"value\":\"60.0\"},\
+  {\"type\":\"UFix64\",\"value\":\"10.0\"},\
   {\"type\":\"Bool\",\"value\":true},\
   {\"type\":\"UFix64\",\"value\":\"300.0\"},\
   {\"type\":\"Bool\",\"value\":false}\
@@ -88,7 +88,7 @@ PY
     {\"type\":\"UInt8\",\"value\":\"1\"},\
     {\"type\":\"UInt64\",\"value\":\"800\"},\
     {\"type\":\"UFix64\",\"value\":\"$FEE\"},\
-    {\"type\":\"UFix64\",\"value\":\"60.0\"},\
+    {\"type\":\"UFix64\",\"value\":\"10.0\"},\
     {\"type\":\"Bool\",\"value\":true},\
     {\"type\":\"UFix64\",\"value\":\"300.0\"},\
     {\"type\":\"Bool\",\"value\":false}\
