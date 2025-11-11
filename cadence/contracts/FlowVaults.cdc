@@ -318,8 +318,13 @@ access(all) contract FlowVaults {
         access(all) view fun getNumberOfTides(): Int {
             return self.tides.length
         }
-        /// Creates a new Tide executing the specified Strategy with the provided funds
-        access(all) fun createTide(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, strategyType: Type, withVault: @{FungibleToken.Vault}) {
+        /// Creates a new Tide executing the specified Strategy with the provided funds.
+        /// Returns the newly created Tide ID.
+        access(all) fun createTide(
+            betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge,
+            strategyType: Type,
+            withVault: @{FungibleToken.Vault}
+        ): UInt64 {
             pre {
                 FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
@@ -327,9 +332,10 @@ access(all) contract FlowVaults {
             let balance = withVault.balance
             let type = withVault.getType()
             let tide <-create Tide(strategyType: strategyType, withVault: <-withVault)
+            let newID = tide.uniqueID.id
 
             emit CreatedTide(
-                id: tide.uniqueID.id,
+                id: newID,
                 uuid: tide.uuid,
                 strategyType: strategyType.identifier,
                 tokenType: type.identifier,
@@ -338,6 +344,7 @@ access(all) contract FlowVaults {
             )
 
             self.addTide(betaRef: betaRef, <-tide)
+            return newID
         }
         /// Adds an open Tide to this TideManager resource. This effectively transfers ownership of the newly added
         /// Tide to the owner of this TideManager
