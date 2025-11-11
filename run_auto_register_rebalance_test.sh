@@ -231,6 +231,11 @@ echo -e "${GREEN}Child Scheduled Tx ID for tide ${NEW_TIDE_ID}: ${SCHED_ID}${NC}
 # 7) Poll scheduled tx status to executed or nil, then verify on-chain proof and movement
 STATUS_NIL_OK=0
 STATUS_RAW=""
+# Nudge prices again to guarantee drift before execution
+flow transactions send cadence/transactions/mocks/oracle/set_price.cdc \
+  'A.0ae53cb6e3f42a79.FlowToken.Vault' 2.2 --signer tidal >/dev/null
+flow transactions send cadence/transactions/mocks/oracle/set_price.cdc \
+  'A.045a1763c93006ca.YieldToken.Vault' 1.2 --signer tidal >/dev/null
 for i in {1..45}; do
   STATUS_RAW=$((flow scripts execute cadence/scripts/flow-vaults/get_scheduled_tx_status.cdc \
     --network emulator \
