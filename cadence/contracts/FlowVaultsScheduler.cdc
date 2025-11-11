@@ -8,6 +8,8 @@ import "DeFiActions"
 import "FlowVaultsAutoBalancers"
 // Proof storage (separate contract)
 import "FlowVaultsSchedulerProofs"
+// Registry storage (separate contract)
+import "FlowVaultsSchedulerRegistry"
 
 /// FlowVaultsScheduler
 ///
@@ -306,11 +308,125 @@ access(all) contract FlowVaultsScheduler {
         access(all) view fun getScheduledTideIDs(): [UInt64] {
             return self.scheduledTransactions.keys
         }
+        
+        /// Returns true if a Tide currently has a scheduled rebalancing
+        access(all) fun hasScheduled(tideID: UInt64): Bool {
+            let txRef = &self.scheduledTransactions[tideID] as &FlowTransactionScheduler.ScheduledTransaction?
+            if txRef == nil {
+                return false
+            }
+            let status = FlowTransactionScheduler.getStatus(id: txRef!.id)
+            if status == nil {
+                return false
+            }
+            // If one-time and already executed, treat as not scheduled
+            if let data = self.scheduleData[txRef!.id] {
+                if !data.isRecurring && status!.rawValue == 2 {
+                    return false
+                }
+            } else {
+                if status!.rawValue == 2 {
+                    return false
+                }
+            }
+            return true
+        }
+    }
+
+    /// A supervisor handler that ensures all registered tides have a scheduled rebalancing
+    access(all) resource Supervisor: FlowTransactionScheduler.TransactionHandler {
+        access(self) let managerCap: Capability<&FlowVaultsScheduler.SchedulerManager>
+        access(self) let feesCap: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
+
+        init(
+            managerCap: Capability<&FlowVaultsScheduler.SchedulerManager>,
+            feesCap: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
+        ) {
+            self.managerCap = managerCap
+            self.feesCap = feesCap
+        }
+
+        /// data accepts optional config:
+        /// {
+        ///   "priority": UInt8 (0=High,1=Medium,2=Low),
+        ///   "executionEffort": UInt64,
+        ///   "lookaheadSecs": UFix64,
+        ///   "childRecurring": Bool,
+        ///   "childInterval": UFix64,
+        ///   "force": Bool
+        /// }
+        access(FlowTransactionScheduler.Execute) fun executeTransaction(id: UInt64, data: AnyStruct?) {
+            let cfg = data as? {String: AnyStruct} ?? {}
+            let priorityRaw = cfg["priority"] as? UInt8 ?? 1
+            let executionEffort = cfg["executionEffort"] as? UInt64 ?? 800
+            let lookaheadSecs = cfg["lookaheadSecs"] as? UFix64 ?? 5.0
+            let childRecurring = cfg["childRecurring"] as? Bool ?? true
+            let childInterval = cfg["childInterval"] as? UFix64 ?? 60.0
+            let forceChild = cfg["force"] as? Bool ?? false
+
+            let priority: FlowTransactionScheduler.Priority =
+                priorityRaw == 0 ? FlowTransactionScheduler.Priority.High :
+                (priorityRaw == 1 ? FlowTransactionScheduler.Priority.Medium : FlowTransactionScheduler.Priority.Low)
+
+            let manager = self.managerCap.borrow()
+                ?? panic("Supervisor: missing SchedulerManager")
+
+            // Iterate through registered tides
+            for tideID in FlowVaultsSchedulerRegistry.getRegisteredTideIDs() {
+                // Skip if already scheduled
+                if manager.hasScheduled(tideID: tideID) {
+                    continue
+                }
+
+                // Get pre-issued wrapper capability for this tide
+                let wrapperCap = FlowVaultsSchedulerRegistry.getWrapperCap(tideID: tideID)
+                    ?? panic("No wrapper capability for tide ".concat(tideID.toString()))
+
+                // Estimate fee and schedule child
+                let ts = getCurrentBlock().timestamp + lookaheadSecs
+                let est = FlowVaultsScheduler.estimateSchedulingCost(
+                    timestamp: ts,
+                    priority: priority,
+                    executionEffort: executionEffort
+                )
+                let required = est.flowFee ?? 0.00005
+                let vaultRef = self.feesCap.borrow()
+                    ?? panic("Supervisor: cannot borrow FlowToken Vault")
+                let pay <- vaultRef.withdraw(amount: required) as! @FlowToken.Vault
+
+                manager.scheduleRebalancing(
+                    handlerCap: wrapperCap,
+                    tideID: tideID,
+                    timestamp: ts,
+                    priority: priority,
+                    executionEffort: executionEffort,
+                    fees: <-pay,
+                    force: forceChild,
+                    isRecurring: childRecurring,
+                    recurringInterval: childRecurring ? childInterval : nil
+                )
+            }
+        }
     }
 
     /* --- PUBLIC FUNCTIONS --- */
 
     // (Intentionally left blank; public read APIs are in FlowVaultsSchedulerProofs)
+
+    /// Creates a Supervisor handler
+    access(all) fun createSupervisor(): @Supervisor {
+        let mgrCap = self.account.capabilities.storage
+            .issue<&FlowVaultsScheduler.SchedulerManager>(self.SchedulerManagerStoragePath)
+        let feesCap = self.account.capabilities.storage
+            .issue<auth(FungibleToken.Withdraw) &FlowToken.Vault>(/storage/flowTokenVault)
+        return <- create Supervisor(managerCap: mgrCap, feesCap: feesCap)
+    }
+
+    /// Derives a storage path for the global Supervisor
+    access(all) fun deriveSupervisorPath(): StoragePath {
+        let identifier = "FlowVaultsScheduler_Supervisor_".concat(self.account.address.toString())
+        return StoragePath(identifier: identifier)!
+    }
 
     /// Creates a new RebalancingHandler that wraps a target TransactionHandler (AutoBalancer)
     access(all) fun createRebalancingHandler(
@@ -329,6 +445,32 @@ access(all) contract FlowVaultsScheduler {
     /// Creates a new SchedulerManager resource
     access(all) fun createSchedulerManager(): @SchedulerManager {
         return <- create SchedulerManager()
+    }
+
+    /// Registers a tide to be managed by the Supervisor (idempotent)
+    access(all) fun registerTide(tideID: UInt64) {
+        // Ensure wrapper exists and store its capability for later scheduling in the registry
+        let wrapperPath = self.deriveRebalancingHandlerPath(tideID: tideID)
+        if self.account.storage.borrow<&FlowVaultsScheduler.RebalancingHandler>(from: wrapperPath) == nil {
+            let abPath = FlowVaultsAutoBalancers.deriveAutoBalancerPath(id: tideID, storage: true) as! StoragePath
+            let abCap = self.account.capabilities.storage
+                .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(abPath)
+            let wrapper <- self.createRebalancingHandler(target: abCap, tideID: tideID)
+            self.account.storage.save(<-wrapper, to: wrapperPath)
+        }
+        let wrapperCap = self.account.capabilities.storage
+            .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(wrapperPath)
+        FlowVaultsSchedulerRegistry.register(tideID: tideID, wrapperCap: wrapperCap)
+    }
+
+    /// Unregisters a tide (idempotent)
+    access(all) fun unregisterTide(tideID: UInt64) {
+        FlowVaultsSchedulerRegistry.unregister(tideID: tideID)
+    }
+
+    /// Lists registered tides
+    access(all) fun getRegisteredTideIDs(): [UInt64] {
+        return FlowVaultsSchedulerRegistry.getRegisteredTideIDs()
     }
 
     /// Estimates the cost of scheduling a rebalancing transaction
