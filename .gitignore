@@ -12,6 +12,8 @@ coverage.lcov
 coverage.json
 solidity/out/
 
+run_logs/*.log
+
 testnet-deployer.pkey
 testnet-uniswapV3-connectors-deployer.pkey
 mock-strategy-deployer.pkey
