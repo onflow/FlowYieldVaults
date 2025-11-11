@@ -43,7 +43,7 @@ echo -e "${BLUE}Ensuring tide exists for tidal...${NC}"
 TIDE_IDS=$(flow scripts execute cadence/scripts/flow-vaults/get_tide_ids.cdc \
   --network emulator \
   --args-json '[{"type":"Address","value":"0x045a1763c93006ca"}]')
-TIDE_ID=$(echo "$TIDE_IDS" | grep -oE '\[.*\]' | tr -d '[] ' | awk -F',' '{print $1}')
+TIDE_ID=$(echo "$TIDE_IDS" | grep -oE '\[[^]]*\]' | tr -d '[] ' | awk -F',' '{print $1}' || true)
 if [ -z "${TIDE_ID:-}" ]; then
   echo -e "${BLUE}Creating tide (100 FLOW)...${NC}"
   flow transactions send cadence/transactions/flow-vaults/create_tide.cdc \
@@ -52,7 +52,7 @@ if [ -z "${TIDE_ID:-}" ]; then
   TIDE_IDS=$(flow scripts execute cadence/scripts/flow-vaults/get_tide_ids.cdc \
     --network emulator \
     --args-json '[{"type":"Address","value":"0x045a1763c93006ca"}]')
-  TIDE_ID=$(echo "$TIDE_IDS" | grep -oE '\[.*\]' | tr -d '[] ' | awk -F',' '{print $1}')
+  TIDE_ID=$(echo "$TIDE_IDS" | grep -oE '\[[^]]*\]' | tr -d '[] ' | awk -F',' '{print $1}' || true)
 fi
 TIDE_ID=${TIDE_ID:-0}
 echo -e "${GREEN}Using Tide ID: $TIDE_ID${NC}"
