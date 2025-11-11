@@ -43,7 +43,39 @@ flow transactions send cadence/transactions/flow-vaults/setup_supervisor.cdc \
 START_HEIGHT=$(flow blocks get latest 2>/dev/null | grep -i -E 'Height|Block Height' | grep -oE '[0-9]+' | head -1)
 START_HEIGHT=${START_HEIGHT:-0}
 
-# 2) Schedule Supervisor once (soon) to seed first child jobs for newly created Tide
+# 2) Create a new tide (auto-register happens inside), then schedule Supervisor to seed its first child
+
+# 3) Record existing tide IDs, then create a new tide (auto-register happens inside the transaction)
+echo -e "${BLUE}Fetching existing tide IDs...${NC}"
+BEFORE_IDS=$(flow scripts execute cadence/scripts/flow-vaults/get_tide_ids.cdc \
+  --network emulator \
+  --args-json '[{"type":"Address","value":"0x045a1763c93006ca"}]' | grep -oE '\[[^]]*\]' | tr -d '[] ' || true)
+
+echo -e "${BLUE}Creating a new tide (100 FLOW) - auto-register will run inside...${NC}"
+flow transactions send cadence/transactions/flow-vaults/create_tide.cdc \
+  --network emulator --signer tidal \
+  --args-json '[{"type":"String","value":"A.045a1763c93006ca.FlowVaultsStrategies.TracerStrategy"},{"type":"String","value":"A.0ae53cb6e3f42a79.FlowToken.Vault"},{"type":"UFix64","value":"100.0"}]' >/dev/null
+
+AFTER_IDS=$(flow scripts execute cadence/scripts/flow-vaults/get_tide_ids.cdc \
+  --network emulator \
+  --args-json '[{"type":"Address","value":"0x045a1763c93006ca"}]' | grep -oE '\[[^]]*\]' | tr -d '[] ' || true)
+
+# Determine new tide ID
+NEW_TIDE_ID=""
+for id in $(echo "$AFTER_IDS" | tr ',' ' '); do
+  if ! echo "$BEFORE_IDS" | tr ',' ' ' | tr -s ' ' | grep -qw "$id"; then
+    NEW_TIDE_ID="$id"
+    break
+  fi
+done
+if [[ -z "${NEW_TIDE_ID}" ]]; then
+  # fallback: choose the max id
+  NEW_TIDE_ID=$(echo "$AFTER_IDS" | tr ',' ' ' | xargs -n1 | sort -n | tail -1)
+fi
+echo -e "${GREEN}New Tide ID: ${NEW_TIDE_ID}${NC}"
+[[ -n "${NEW_TIDE_ID}" ]] || { echo -e "${RED}Could not determine new Tide ID.${NC}"; exit 1; }
+
+# Schedule Supervisor once (now that the new tide exists)
 FUTURE=$(python - <<'PY'
 import time; print(f"{time.time()+10:.1f}")
 PY
@@ -96,36 +128,6 @@ PY
   flow transactions send cadence/transactions/flow-vaults/schedule_supervisor.cdc \
     --network emulator --signer tidal --args-json "$SUP_JSON" >/dev/null
 fi
-
-# 3) Record existing tide IDs, then create a new tide (auto-register happens inside the transaction)
-echo -e "${BLUE}Fetching existing tide IDs...${NC}"
-BEFORE_IDS=$(flow scripts execute cadence/scripts/flow-vaults/get_tide_ids.cdc \
-  --network emulator \
-  --args-json '[{"type":"Address","value":"0x045a1763c93006ca"}]' | grep -oE '\[[^]]*\]' | tr -d '[] ' || true)
-
-echo -e "${BLUE}Creating a new tide (100 FLOW) - auto-register will run inside...${NC}"
-flow transactions send cadence/transactions/flow-vaults/create_tide.cdc \
-  --network emulator --signer tidal \
-  --args-json '[{"type":"String","value":"A.045a1763c93006ca.FlowVaultsStrategies.TracerStrategy"},{"type":"String","value":"A.0ae53cb6e3f42a79.FlowToken.Vault"},{"type":"UFix64","value":"100.0"}]' >/dev/null
-
-AFTER_IDS=$(flow scripts execute cadence/scripts/flow-vaults/get_tide_ids.cdc \
-  --network emulator \
-  --args-json '[{"type":"Address","value":"0x045a1763c93006ca"}]' | grep -oE '\[[^]]*\]' | tr -d '[] ' || true)
-
-# Determine new tide ID
-NEW_TIDE_ID=""
-for id in $(echo "$AFTER_IDS" | tr ',' ' '); do
-  if ! echo "$BEFORE_IDS" | tr ',' ' ' | tr -s ' ' | grep -qw "$id"; then
-    NEW_TIDE_ID="$id"
-    break
-  fi
-done
-if [[ -z "${NEW_TIDE_ID}" ]]; then
-  # fallback: choose the max id
-  NEW_TIDE_ID=$(echo "$AFTER_IDS" | tr ',' ' ' | xargs -n1 | sort -n | tail -1)
-fi
-echo -e "${GREEN}New Tide ID: ${NEW_TIDE_ID}${NC}"
-[[ -n "${NEW_TIDE_ID}" ]] || { echo -e "${RED}Could not determine new Tide ID.${NC}"; exit 1; }
 
 # 4) Initial metrics for the new tide
 echo -e "${BLUE}Initial metrics for tide ${NEW_TIDE_ID}:${NC}"
