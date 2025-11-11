@@ -5,6 +5,7 @@ access(all) contract FlowVaultsSchedulerRegistry {
 
     access(self) var tideRegistry: {UInt64: Bool}
     access(self) var wrapperCaps: {UInt64: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>}
+    access(self) var supervisorCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>?
 
     /// Register a Tide and store its wrapper capability (idempotent)
     access(all) fun register(
@@ -31,9 +32,20 @@ access(all) contract FlowVaultsSchedulerRegistry {
         return self.wrapperCaps[tideID]
     }
 
+    /// Set global Supervisor capability (used for self-rescheduling)
+    access(all) fun setSupervisorCap(cap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>) {
+        self.supervisorCap = cap
+    }
+
+    /// Get global Supervisor capability, if set
+    access(all) fun getSupervisorCap(): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? {
+        return self.supervisorCap
+    }
+
     init() {
         self.tideRegistry = {}
         self.wrapperCaps = {}
+        self.supervisorCap = nil
     }
 }
 

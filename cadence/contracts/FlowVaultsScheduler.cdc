@@ -385,7 +385,7 @@ access(all) contract FlowVaultsScheduler {
             let childRecurring = cfg["childRecurring"] as? Bool ?? true
             let childInterval = cfg["childInterval"] as? UFix64 ?? 60.0
             let forceChild = cfg["force"] as? Bool ?? false
-            let _recurringInterval = cfg["recurringInterval"] as? UFix64 ?? 60.0
+            let recurringInterval = cfg["recurringInterval"] as? UFix64
 
             let priority: FlowTransactionScheduler.Priority =
                 priorityRaw == 0 ? FlowTransactionScheduler.Priority.High :
@@ -428,6 +428,33 @@ access(all) contract FlowVaultsScheduler {
                     isRecurring: childRecurring,
                     recurringInterval: childRecurring ? childInterval : nil
                 )
+            }
+
+            // Self-reschedule for perpetual operation if configured
+            if let interval = recurringInterval {
+                let nextTimestamp = getCurrentBlock().timestamp + interval
+                let est = FlowVaultsScheduler.estimateSchedulingCost(
+                    timestamp: nextTimestamp,
+                    priority: priority,
+                    executionEffort: executionEffort
+                )
+                let required = est.flowFee ?? 0.00005
+                let vaultRef = self.feesCap.borrow()
+                    ?? panic("Supervisor: cannot borrow FlowToken Vault for self-reschedule")
+                let pay <- vaultRef.withdraw(amount: required) as! @FlowToken.Vault
+
+                let supCap = FlowVaultsSchedulerRegistry.getSupervisorCap()
+                    ?? panic("Supervisor: missing supervisor capability")
+
+                let _scheduled <- FlowTransactionScheduler.schedule(
+                    handlerCap: supCap,
+                    data: cfg,
+                    timestamp: nextTimestamp,
+                    priority: priority,
+                    executionEffort: executionEffort,
+                    fees: <-pay
+                )
+                destroy _scheduled
             }
         }
     }

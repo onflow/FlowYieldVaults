@@ -1,4 +1,5 @@
 import "FlowVaultsScheduler"
+import "FlowVaultsSchedulerRegistry"
 
 /// Creates and stores the global Supervisor handler in the FlowVaults (tidal) account.
 transaction() {
@@ -8,6 +9,10 @@ transaction() {
             let sup <- FlowVaultsScheduler.createSupervisor()
             signer.storage.save(<-sup, to: path)
         }
+        // Publish supervisor capability for self-rescheduling
+        let supCap = signer.capabilities.storage
+            .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(path)
+        FlowVaultsSchedulerRegistry.setSupervisorCap(cap: supCap)
     }
 }
 
