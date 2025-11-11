@@ -130,8 +130,8 @@ echo -e "${BLUE}Scheduling Supervisor once: $CFG_JSON${NC}"
 flow transactions send cadence/transactions/flow-vaults/schedule_supervisor.cdc \
   --network emulator --signer tidal --args-json "$CFG_JSON" >/dev/null
 
-echo -e "${BLUE}Waiting ~15s for Supervisor and children to execute...${NC}"
-sleep 15
+echo -e "${BLUE}Waiting ~30s for Supervisor and children to execute...${NC}"
+sleep 30
 
 # 9) Fetch events and verify
 END_HEIGHT=$(flow blocks get latest 2>/dev/null | grep -i -E 'Height|Block Height' | grep -oE '[0-9]+' | head -1)
@@ -150,7 +150,7 @@ for TID in $TIDE_IDS; do
 
   STATUS_NIL_OK=0
   if [[ -n "${SID}" ]]; then
-    for i in {1..30}; do
+    for i in {1..45}; do
       SRAW=$((flow scripts execute cadence/scripts/flow-vaults/get_scheduled_tx_status.cdc \
         --network emulator --args-json "[{\"type\":\"UInt64\",\"value\":\"$SID\"}]" 2>/dev/null | tr -d '\\n' | grep -oE 'rawValue: [0-9]+' | awk '{print $2}') || true)
       if [[ -z "${SRAW}" ]]; then STATUS_NIL_OK=1; break; fi
