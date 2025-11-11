@@ -50,10 +50,11 @@ PY
 )
 echo -e "${BLUE}Estimating fee for supervisor schedule at ${FUTURE}...${NC}"
 EST=$(flow scripts execute cadence/scripts/flow-vaults/estimate_rebalancing_cost.cdc --network emulator \
-  --args-json "[{\"type\":\"UFix64\",\"value\":\"$FUTURE\"},{\"type\":\"UInt8\",\"value\":\"1\"},{\"type\":\"UInt64\",\"value\":\"800\"}]" | grep -oE 'flowFee: [0-9]+\\.[0-9]+' | awk '{print $2}')
+  --args-json "[{\"type\":\"UFix64\",\"value\":\"$FUTURE\"},{\"type\":\"UInt8\",\"value\":\"1\"},{\"type\":\"UInt64\",\"value\":\"800\"}]" \
+  | sed -n 's/.*flowFee: \\([0-9]*\\.[0-9]*\\).*/\\1/p')
 FEE=$(python - <<PY
 f=float("$EST") if "$EST" else 0.00005
-print(f"{f+0.00001:.8f}")
+print(f"{f+0.00003:.8f}")
 PY
 )
 SUP_JSON="[\
@@ -67,8 +68,34 @@ SUP_JSON="[\
   {\"type\":\"Bool\",\"value\":false}\
 ]"
 echo -e "${BLUE}Scheduling Supervisor once...${NC}"
-flow transactions send cadence/transactions/flow-vaults/schedule_supervisor.cdc \
-  --network emulator --signer tidal --args-json "$SUP_JSON" >/dev/null
+if ! flow transactions send cadence/transactions/flow-vaults/schedule_supervisor.cdc \
+  --network emulator --signer tidal --args-json "$SUP_JSON" >/dev/null; then
+  # Retry once with a fresh timestamp and fee in case timestamp just passed
+  FUTURE=$(python - <<'PY'
+import time; print(f"{time.time()+12:.1f}")
+PY
+)
+  EST=$(flow scripts execute cadence/scripts/flow-vaults/estimate_rebalancing_cost.cdc --network emulator \
+    --args-json "[{\"type\":\"UFix64\",\"value\":\"$FUTURE\"},{\"type\":\"UInt8\",\"value\":\"1\"},{\"type\":\"UInt64\",\"value\":\"800\"}]" \
+    | sed -n 's/.*flowFee: \\([0-9]*\\.[0-9]*\\).*/\\1/p')
+  FEE=$(python - <<PY
+f=float("$EST") if "$EST" else 0.00005
+print(f"{f+0.00003:.8f}")
+PY
+)
+  SUP_JSON="[\
+    {\"type\":\"UFix64\",\"value\":\"$FUTURE\"},\
+    {\"type\":\"UInt8\",\"value\":\"1\"},\
+    {\"type\":\"UInt64\",\"value\":\"800\"},\
+    {\"type\":\"UFix64\",\"value\":\"$FEE\"},\
+    {\"type\":\"UFix64\",\"value\":\"60.0\"},\
+    {\"type\":\"Bool\",\"value\":true},\
+    {\"type\":\"UFix64\",\"value\":\"300.0\"},\
+    {\"type\":\"Bool\",\"value\":false}\
+  ]"
+  flow transactions send cadence/transactions/flow-vaults/schedule_supervisor.cdc \
+    --network emulator --signer tidal --args-json "$SUP_JSON" >/dev/null
+fi
 
 # 3) Record existing tide IDs, then create a new tide (auto-register happens inside the transaction)
 echo -e "${BLUE}Fetching existing tide IDs...${NC}"
