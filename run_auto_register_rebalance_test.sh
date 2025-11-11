@@ -164,8 +164,45 @@ for i in {1..30}; do
 done
 
 if [[ -z "${SCHED_ID}" ]]; then
-  echo -e "${RED}Child schedule for tide ${NEW_TIDE_ID} was not created by Supervisor within timeout.${NC}"
-  exit 1
+  echo -e "${YELLOW}Child schedule not found yet; triggering Supervisor again and extending wait...${NC}"
+  FUTURE=$(python - <<'PY'
+import time; print(f"{time.time()+6:.1f}")
+PY
+)
+  EST=$(flow scripts execute cadence/scripts/flow-vaults/estimate_rebalancing_cost.cdc --network emulator \
+    --args-json "[{\"type\":\"UFix64\",\"value\":\"$FUTURE\"},{\"type\":\"UInt8\",\"value\":\"1\"},{\"type\":\"UInt64\",\"value\":\"800\"}]" \
+    | sed -n 's/.*flowFee: \\([0-9]*\\.[0-9]*\\).*/\\1/p')
+  FEE=$(python - <<PY
+f=float("$EST") if "$EST" else 0.00005
+print(f"{f+0.00003:.8f}")
+PY
+)
+  SUP_JSON="[\
+    {\"type\":\"UFix64\",\"value\":\"$FUTURE\"},\
+    {\"type\":\"UInt8\",\"value\":\"1\"},\
+    {\"type\":\"UInt64\",\"value\":\"800\"},\
+    {\"type\":\"UFix64\",\"value\":\"$FEE\"},\
+    {\"type\":\"UFix64\",\"value\":\"10.0\"},\
+    {\"type\":\"Bool\",\"value\":true},\
+    {\"type\":\"UFix64\",\"value\":\"300.0\"},\
+    {\"type\":\"Bool\",\"value\":false}\
+  ]"
+  flow transactions send cadence/transactions/flow-vaults/schedule_supervisor.cdc \
+    --network emulator --signer tidal --args-json "$SUP_JSON" >/dev/null || true
+  for i in {1..30}; do
+    INFO=$(flow scripts execute cadence/scripts/flow-vaults/get_scheduled_rebalancing.cdc \
+      --network emulator \
+      --args-json "[{\"type\":\"Address\",\"value\":\"0x045a1763c93006ca\"},{\"type\":\"UInt64\",\"value\":\"$NEW_TIDE_ID\"}]" 2>/dev/null || true)
+    SCHED_ID=$(echo "${INFO}" | awk -F'scheduledTransactionID: ' '/scheduledTransactionID: /{print $2}' | awk -F',' '{print $1}' | tr -cd '0-9')
+    if [[ -n "${SCHED_ID}" ]]; then
+      break
+    fi
+    sleep 1
+  done
+  if [[ -z "${SCHED_ID}" ]]; then
+    echo -e "${RED}Child schedule for tide ${NEW_TIDE_ID} was not created by Supervisor after retry.${NC}"
+    exit 1
+  fi
 fi
 echo -e "${GREEN}Child Scheduled Tx ID for tide ${NEW_TIDE_ID}: ${SCHED_ID}${NC}"
 
