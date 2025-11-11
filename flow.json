@@ -65,7 +65,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "3bda2f90274dbc9b"
+				"testnet": "425216a69bec3d42"
 			}
 		},
 		"FlowVaultsAutoBalancers": {
@@ -73,11 +73,27 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "3bda2f90274dbc9b"
+				"testnet": "425216a69bec3d42"
 			}
 		},
 		"FlowVaultsClosedBeta": {
 			"source": "cadence/contracts/FlowVaultsClosedBeta.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009",
+				"testnet": "425216a69bec3d42"
+			}
+		},
+		"FlowVaultsScheduler": {
+			"source": "cadence/contracts/FlowVaultsScheduler.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009",
+				"testnet": "3bda2f90274dbc9b"
+			}
+		},
+		"FlowVaultsSchedulerProofs": {
+			"source": "cadence/contracts/FlowVaultsSchedulerProofs.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
@@ -123,7 +139,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "3bda2f90274dbc9b"
+				"testnet": "425216a69bec3d42"
 			}
 		},
 		"MockStrategy": {
@@ -139,7 +155,7 @@
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
-				"testnet": "3bda2f90274dbc9b"
+				"testnet": "425216a69bec3d42"
 			}
 		},
 		"SwapConnectors": {
@@ -151,6 +167,9 @@
 				"testnet": "ad228f1c13a97ec1"
 			}
 		},
+		"TestCounter": "cadence/contracts/TestCounter.cdc",
+		"TestCounterHandler": "cadence/contracts/TestCounterHandler.cdc",
+		"TestStrategyWithAutoBalancer": "cadence/contracts/TestStrategyWithAutoBalancer.cdc",
 		"UniswapV3SwapConnectors": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
 			"aliases": {
@@ -611,6 +630,17 @@
 		"testnet": "access.devnet.nodes.onflow.org:9000"
 	},
 	"accounts": {
+		"": {
+			"address": "e03daebed8ca0615",
+			"key": "e07a8f84feb96b1f30774717efebd419a5c41044eb1d06f616e2b48511bfee75"
+		},
+		"demo2": {
+			"address": "13c7ed9c6c70b967",
+			"key": {
+				"type": "file",
+				"location": "demo2.pkey"
+			}
+		},
 		"emulator-account": {
 			"address": "f8d6e0586b0a20c7",
 			"key": {
@@ -623,6 +653,13 @@
 			"key": {
 				"type": "file",
 				"location": "local/evm-gateway.pkey"
+			}
+		},
+		"keshav-scheduled-testnet": {
+			"address": "425216a69bec3d42",
+			"key": {
+				"type": "file",
+				"location": "keshav-scheduled-testnet.pkey"
 			}
 		},
 		"mock-incrementfi": {
@@ -680,6 +717,7 @@
 	},
 	"deployments": {
 		"emulator": {
+			"emulator-account": [],
 			"mock-incrementfi": [
 				"SwapConfig",
 				"SwapInterfaces",
@@ -757,10 +795,30 @@
 							"type": "String"
 						}
 					]
-				}
+				},
+				"FlowVaultsSchedulerProofs",
+				"FlowVaultsScheduler"
 			]
 		},
 		"testnet": {
+			"keshav-scheduled-testnet": [
+				"FlowVaultsScheduler",
+				"DeFiActions",
+				{
+					"name": "MockOracle",
+					"args": [
+						{
+							"value": "A.7e60df042a9c0868.FlowToken.Vault",
+							"type": "String"
+						}
+					]
+				},
+				"MockSwapper",
+				"FlowVaultsAutoBalancers",
+				"FlowVaultsClosedBeta",
+				"FlowVaults",
+				"TestStrategyWithAutoBalancer"
+			],
 			"testnet-admin": [
 				{
 					"name": "YieldToken",
@@ -784,7 +842,7 @@
 				"FlowVaultsAutoBalancers",
 				"FlowVaultsClosedBeta",
 				"FlowVaults",
-        {
+				{
 					"name": "FlowVaultsStrategies",
 					"args": [
 						{

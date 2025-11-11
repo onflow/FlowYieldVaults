@@ -1,7 +1,7 @@
 # install DeFiBlocks submodule as dependency
 git submodule update --init --recursive
 # execute emulator deployment
-flow deploy
+flow project deploy --network emulator
 
 flow transactions send ./cadence/transactions/moet/setup_vault.cdc 
 flow transactions send ./cadence/transactions/moet/mint_moet.cdc 0x045a1763c93006ca 1000000.0 --signer tidal
@@ -44,7 +44,7 @@ flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-ma
   --payer tidal
 
 
-TIDAL_COA=0x$(flow scripts execute ./lib/flow-evm-bridge/cadence/scripts/evm/get_evm_address_string.cdc 045a1763c93006ca --format inline | sed -E 's/"([^"]+)"/\1/')
+TIDAL_COA=0x$(flow scripts execute ./lib/flow-evm-bridge/cadence/scripts/evm/get_evm_address_string.cdc 045a1763c93006ca --format inline | sed -E 's/\"([^\"]+)\"/\\1/')
 echo $TIDAL_COA
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/transfer_flow_to_cadence_or_evm.cdc $TIDAL_COA 100.0 --signer tidal --gas-limit 9999
 
