@@ -6,6 +6,11 @@ import "EVM"
 import "DeFiActionsUtils"
 import "DeFiActions"
 import "SwapConnectors"
+import "FungibleTokenConnectors"
+// amm integration
+import "UniswapV3SwapConnectors"
+import "ERC4626SwapConnectors"
+import "ERC4626Utils"
 // Lending protocol
 import "FlowALP"
 // FlowVaults platform
@@ -15,12 +20,12 @@ import "FlowVaultsAutoBalancers"
 // tokens
 import "YieldToken"
 import "MOET"
-// amm integration
-import "UniswapV3SwapConnectors"
 // vm bridge
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 import "FlowEVMBridge"
+// live oracles
+import "ERC4626PriceOracles"
 // mocks
 import "MockOracle"
 import "MockSwapper"
@@ -41,6 +46,7 @@ import "MockSwapper"
 ///
 access(all) contract FlowVaultsStrategies {
 
+    /// TODO: Add these to the StrategyComposer and/or StrategyComposerIssuer
     access(all) let univ3FactoryEVMAddress: EVM.EVMAddress
     access(all) let univ3RouterEVMAddress: EVM.EVMAddress
     access(all) let univ3QuoterEVMAddress: EVM.EVMAddress
@@ -99,7 +105,10 @@ access(all) contract FlowVaultsStrategies {
             return DeFiActions.ComponentInfo(
                 type: self.getType(),
                 id: self.id(),
-                innerComponents: []
+                innerComponents: [
+                    self.sink.getComponentInfo(),
+                    self.source.getComponentInfo()
+                ]
             )
         }
         access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
@@ -134,80 +143,148 @@ access(all) contract FlowVaultsStrategies {
             uniqueID: DeFiActions.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
         ): @{FlowVaults.Strategy} {
-            // this PriceOracle is mocked and will be shared by all components used in the TracerStrategy
-            // TODO: add ERC4626 price oracle
-            let oracle = MockOracle.PriceOracle()
-
-            // assign token types
-
+            // assign token types & associated EVM Addresses
             let moetTokenType: Type = Type<@MOET.Vault>()
-            let yieldTokenType = Type<@YieldToken.Vault>()
-            // assign collateral & flow token types
+            let moetTokenEVMAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: moetTokenType)
+                ?? panic("Token Vault type \(moetTokenType.identifier) has not yet been registered with the VMbridge")
             let collateralType = withFunds.getType()
+            let yieldTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: FlowVaultsStrategies.yieldTokenEVMAddress)
+                ?? panic("Could not retrieve the VM Bridge associated Type for the yield token address \(FlowVaultsStrategies.yieldTokenEVMAddress.toString())")
+
+            // assign underlying asset EVM address & type - assumed to be stablecoin for the tracer strategy
+            let underlying4626AssetEVMAddress = ERC4626Utils.underlyingAssetEVMAddress(
+                    vault: FlowVaultsStrategies.yieldTokenEVMAddress
+                ) ?? panic("Could not get the underlying asset's EVM address for ERC4626Vault \(FlowVaultsStrategies.yieldTokenEVMAddress.toString())")
+            let underlying4626AssetType = FlowEVMBridgeConfig.getTypeAssociated(with: underlying4626AssetEVMAddress)
+                ?? panic("Could not retrieve the VM Bridge associated Type for the ERC4626 underlying asset \(underlying4626AssetEVMAddress.toString())")
+            
+            // create the oracle for the assets to be held in the AutoBalancer retrieving the NAV of the 4626 vault
+            let yieldTokenOracle = ERC4626PriceOracles.PriceOracle(
+                    vault: FlowVaultsStrategies.yieldTokenEVMAddress,
+                    asset: underlying4626AssetType,
+                    // asset: moetTokenType, // TODO: make a composite oracle that returns the price denominated in MOET
+                    uniqueID: uniqueID
+                )
 
             // configure and AutoBalancer for this stack
             let autoBalancer = FlowVaultsAutoBalancers._initNewAutoBalancer(
-                oracle: oracle,             // used to determine value of deposits & when to rebalance
-                vaultType: yieldTokenType,  // the type of Vault held by the AutoBalancer
-                lowerThreshold: 0.95,       // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
-                upperThreshold: 1.05,       // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
-                rebalanceSink: nil,         // nil on init - will be set once a PositionSink is available
-                rebalanceSource: nil,       // nil on init - not set for TracerStrategy
-                uniqueID: uniqueID          // identifies AutoBalancer as part of this Strategy
-            )
+                    oracle: yieldTokenOracle,   // used to determine value of deposits & when to rebalance
+                    vaultType: yieldTokenType,  // the type of Vault held by the AutoBalancer
+                    lowerThreshold: 0.95,       // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
+                    upperThreshold: 1.05,       // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
+                    rebalanceSink: nil,         // nil on init - will be set once a PositionSink is available
+                    rebalanceSource: nil,       // nil on init - not set for TracerStrategy
+                    uniqueID: uniqueID          // identifies AutoBalancer as part of this Strategy
+                )
             // enables deposits of YieldToken to the AutoBalancer
             let abaSink = autoBalancer.createBalancerSink() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
             // enables withdrawals of YieldToken from the AutoBalancer
             let abaSource = autoBalancer.createBalancerSource() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
 
-            // init Stable <> YIELD swappers
+            // create MOET <-> YIELD swappers
             //
-            // Stable -> YieldToken
-            let stableToYieldSwapper = MockSwapper.Swapper(
+            // MOET -> YIELD - MOET can swap to YieldToken via two primary routes
+            // - via AMM swap pairing MOET <-> YIELD
+            // - via 4626 vault, swapping first to underlying asset then depositing to the 4626 vault
+            // MOET -> YIELD high-level Swapper then contains
+            //     - MultiSwapper aggregates across two sub-swappers
+            //         - MOET -> YIELD (UniV3 Swapper)
+            //         - SequentialSwapper
+            //             - MOET -> UNDERLYING (UniV3 Swapper)
+            //             - UNDERLYING -> YIELD (ERC4626Swapper)
+            let moetToYieldAMMSwapper = UniswapV3SwapConnectors.Swapper(
+                    factoryAddress: FlowVaultsStrategies.univ3FactoryEVMAddress,
+                    routerAddress: FlowVaultsStrategies.univ3RouterEVMAddress,
+                    quoterAddress: FlowVaultsStrategies.univ3QuoterEVMAddress,
+                    tokenPath: [moetTokenEVMAddress, FlowVaultsStrategies.yieldTokenEVMAddress],
+                    feePath: [3000],
                     inVault: moetTokenType,
                     outVault: yieldTokenType,
+                    coaCapability: FlowVaultsStrategies._getCOACapability(),
                     uniqueID: uniqueID
                 )
-            // YieldToken -> Stable
-            let yieldToStableSwapper = MockSwapper.Swapper(
+            // Swap MOET -> UNDERLYING via AMM 
+            let moetToUnderlyingAssetSwapper = UniswapV3SwapConnectors.Swapper(
+                    factoryAddress: FlowVaultsStrategies.univ3FactoryEVMAddress,
+                    routerAddress: FlowVaultsStrategies.univ3RouterEVMAddress,
+                    quoterAddress: FlowVaultsStrategies.univ3QuoterEVMAddress,
+                    tokenPath: [moetTokenEVMAddress, underlying4626AssetEVMAddress],
+                    feePath: [3000],
+                    inVault: moetTokenType,
+                    outVault: yieldTokenType,
+                    coaCapability: FlowVaultsStrategies._getCOACapability(),
+                    uniqueID: uniqueID
+                )
+            // Swap UNDERLYING -> YIELD via ERC4626 Vault
+            let underlyingTo4626Swapper = ERC4626SwapConnectors.Swapper(
+                    asset: underlying4626AssetType,
+                    vault: FlowVaultsStrategies.yieldTokenEVMAddress,
+                    coa: FlowVaultsStrategies._getCOACapability(),
+                    feeSource: FlowVaultsStrategies._createFeeSource(withID: uniqueID),
+                    uniqueID: uniqueID
+                )
+            // Compose v3 swapper & 4626 swapper into sequential swapper for MOET -> UNDERLYING -> YIELD
+            let moetToYieldSeqSwapper = SwapConnectors.SequentialSwapper(
+                    swappers: [moetToUnderlyingAssetSwapper, underlyingTo4626Swapper],
+                    uniqueID: uniqueID
+                )
+            // Finally, add the two MOET -> YIELD swappers into an aggregate MultiSwapper
+            let moetToYieldSwapper = SwapConnectors.MultiSwapper(
+                    inVault: moetTokenType,
+                    outVault: yieldTokenType,
+                    swappers: [moetToYieldAMMSwapper, moetToYieldSeqSwapper],
+                    uniqueID: uniqueID
+                )
+
+            // YIELD -> MOET
+            // - Targets the MOET <-> YIELD pool as the only route since withdraws from the ERC4626 Vault are async
+            let yieldToMOETSwapper = UniswapV3SwapConnectors.Swapper(
+                    factoryAddress: FlowVaultsStrategies.univ3FactoryEVMAddress,
+                    routerAddress: FlowVaultsStrategies.univ3RouterEVMAddress,
+                    quoterAddress: FlowVaultsStrategies.univ3QuoterEVMAddress,
+                    tokenPath: [FlowVaultsStrategies.yieldTokenEVMAddress, moetTokenEVMAddress],
+                    feePath: [3000],
                     inVault: yieldTokenType,
                     outVault: moetTokenType,
+                    coaCapability: FlowVaultsStrategies._getCOACapability(),
                     uniqueID: uniqueID
                 )
 
             // init SwapSink directing swapped funds to AutoBalancer
             //
-            // Swaps provided Stable to YieldToken & deposits to the AutoBalancer
-            let abaSwapSink = SwapConnectors.SwapSink(swapper: stableToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
-            // Swaps YieldToken & provides swapped Stable, sourcing YieldToken from the AutoBalancer
-            let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToStableSwapper, source: abaSource, uniqueID: uniqueID)
+            // Swaps provided MOET to YIELD & deposits to the AutoBalancer
+            let abaSwapSink = SwapConnectors.SwapSink(swapper: moetToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
+            // Swaps YIELD & provides swapped MOET, sourcing YIELD from the AutoBalancer
+            let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMOETSwapper, source: abaSource, uniqueID: uniqueID)
 
             // open a FlowALP position
-            let poolCap = FlowVaultsStrategies.account.storage.load<Capability<auth(FlowALP.EParticipant, FlowALP.EPosition) &FlowALP.Pool>>(
-                from: FlowALP.PoolCapStoragePath
-            ) ?? panic("Missing pool capability")
-
+            let poolCap = FlowVaultsStrategies.account.storage.copy<Capability<auth(FlowALP.EParticipant, FlowALP.EPosition) &FlowALP.Pool>>(
+                    from: FlowALP.PoolCapStoragePath
+                ) ?? panic("Missing or invalid pool capability")
             let poolRef = poolCap.borrow() ?? panic("Invalid Pool Cap")
 
             let pid = poolRef.createPosition(
-                funds: <-withFunds,
-                issuanceSink: abaSwapSink,
-                repaymentSource: abaSwapSource,
-                pushToDrawDownSink: true
-            )
+                    funds: <-withFunds,
+                    issuanceSink: abaSwapSink,
+                    repaymentSource: abaSwapSource,
+                    pushToDrawDownSink: true
+                )
             let position = FlowALP.Position(id: pid, pool: poolCap)
-            FlowVaultsStrategies.account.storage.save(poolCap, to: FlowALP.PoolCapStoragePath)
 
             // get Sink & Source connectors relating to the new Position
             let positionSink = position.createSinkWithOptions(type: collateralType, pushToDrawDownSink: true)
-            let positionSource = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true) // TODO: may need to be false
+            let positionSource = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
 
             // init YieldToken -> FLOW Swapper
+            // TODO: Update to use UniV3 swapper - the path with depend on the collateral type unless we can be sure
+            //      YIELD <> COLLATERAL pools will exist for every collateral type with deep enough liquidity
+            //      to singularly swap against them. Otherwise a MultiSwapper might be the call here targeting
+            //      the paths with the deepest liquidity sets
             let yieldToFlowSwapper = MockSwapper.Swapper(
-                inVault: yieldTokenType,
-                outVault: collateralType, 
-                uniqueID: uniqueID
-            )
+                    inVault: yieldTokenType,
+                    outVault: collateralType,
+                    uniqueID: uniqueID
+                )
             // allows for YieldToken to be deposited to the Position
             let positionSwapSink = SwapConnectors.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
 
@@ -446,6 +523,25 @@ access(all) contract FlowVaultsStrategies {
         let coaCap = self.account.capabilities.storage.issue<auth(EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
         assert(coaCap.check(), message: "Could not issue COA capability")
         return coaCap
+    }
+
+    /// Returns a FungibleTokenConnectors.VaultSinkAndSource used to subsidize cross VM token movement in contract-
+    /// defined strategies.
+    access(self)
+    fun _createFeeSource(withID: DeFiActions.UniqueIdentifier?): {DeFiActions.Sink, DeFiActions.Source} {
+        let capPath = /storage/strategiesFeeSource
+        if self.account.storage.type(at: capPath) == nil {
+            let cap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(/storage/flowTokenVault)
+            self.account.storage.save(cap, to: capPath)
+        }
+        let vaultCap = self.account.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: capPath)
+            ?? panic("Could not find fee source Capability at \(capPath)")
+        return FungibleTokenConnectors.VaultSinkAndSource(
+            min: nil,
+            max: nil,
+            vault: vaultCap,
+            uniqueID: withID
+        )
     }
 
     init(factoryAddress: String, routerAddress: String, quoterAddress: String, yieldTokenAddress: String) {
