@@ -1,5 +1,14 @@
 {
 	"contracts": {
+		"BandOracleConnectors": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/band-oracle/BandOracleConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "e36ef556b8b5d955",
+				"testing": "0000000000000007",
+				"testnet": "bb76ea2f8aad74a0"
+			}
+		},
 		"DeFiActions": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
@@ -204,6 +213,16 @@
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
 				"testing": "0000000000000007"
+			}
+		},
+		"BandOracle": {
+			"source": "mainnet://6801a6222ebf784a.BandOracle",
+			"hash": "be8c986f46eccfe55a25447e1b7fa07e95769ac4ca11918833130a4bf3297b16",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "6801a6222ebf784a",
+				"testing": "0000000000000007",
+				"testnet": "2c71de7af78d1adf"
 			}
 		},
 		"Burner": {
@@ -783,6 +802,8 @@
 						}
 					]
 				},
+				"BandOracle",
+				"BandOracleConnectors",
 				"MockSwapper",
 				"EVMAbiHelpers",
 				"EVMTokenConnectors",
@@ -848,7 +869,7 @@
 							"type": "String"
 						},
 						{
-							"value": "0xYIELDTOKEN_ERC4626",
+							"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
 							"type": "String"
 						}
 					]
