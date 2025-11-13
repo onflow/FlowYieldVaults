@@ -201,6 +201,7 @@
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+        "mainnet": "a7825d405ac89518",
 				"testing": "0000000000000007",
 				"testnet": "3ebb7d2595e97cd2"
 			}
@@ -209,6 +210,7 @@
 			"source": "cadence/contracts/mocks/YieldToken.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+        "mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000010",
 				"testnet": "3bda2f90274dbc9b"
 			}
@@ -849,6 +851,15 @@
 		},
 		"mainnet": {
 			"mainnet-admin": [
+				{
+					"name": "YieldToken",
+					"args": [
+						{
+							"value": "0.0",
+							"type": "UFix64"
+						}
+					]
+				},
 				{
 					"name": "MockOracle",
 					"args": [

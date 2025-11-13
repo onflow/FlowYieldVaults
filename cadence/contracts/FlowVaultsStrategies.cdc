@@ -508,7 +508,7 @@ access(all) contract FlowVaultsStrategies {
             // the position
             autoBalancer.setSink(positionSwapSink, updateSinkID: true)
 
-            return <-create TracerStrategy(
+            return <-create mUSDCStrategy(
                 id: DeFiActions.createUniqueIdentifier(),
                 collateralType: collateralType,
                 position: position
@@ -530,7 +530,7 @@ access(all) contract FlowVaultsStrategies {
         }
 
         access(all) view fun getSupportedComposers(): {Type: Bool} {
-            return { Type<@TracerStrategyComposer>(): true }
+            return { Type<@mUSDCStrategyComposer>(): true }
         }
         access(all) fun issueComposer(_ type: Type): @{FlowVaults.StrategyComposer} {
             pre {
@@ -540,8 +540,8 @@ access(all) contract FlowVaultsStrategies {
                 "Could not find config for StrategyComposer \(type.identifier)"
             }
             switch type {
-            case Type<@TracerStrategyComposer>():
-                return <- create TracerStrategyComposer(self.configs[type]!)
+            case Type<@mUSDCStrategyComposer>():
+                return <- create mUSDCStrategyComposer(self.configs[type]!)
             default:
                 panic("Unsupported StrategyComposer \(type.identifier) requested")
             }
@@ -566,8 +566,8 @@ access(all) contract FlowVaultsStrategies {
     /// Returns the COA capability for this account
     /// TODO: this is temporary until we have a better way to pass user's COAs to inner connectors
     access(self)
-    fun _getCOACapability(): Capability<auth(EVM.Owner) &EVM.CadenceOwnedAccount> {
-        let coaCap = self.account.capabilities.storage.issue<auth(EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
+    fun _getCOACapability(): Capability<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount> {
+        let coaCap = self.account.capabilities.storage.issue<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
         assert(coaCap.check(), message: "Could not issue COA capability")
         return coaCap
     }
@@ -617,8 +617,8 @@ access(all) contract FlowVaultsStrategies {
         }
 
         let configs: {Type: {Type: {Type: {String: AnyStruct}}}} = {
-                Type<@TracerStrategyComposer>(): {
-                    Type<@TracerStrategy>(): {
+                Type<@mUSDCStrategyComposer>(): {
+                    Type<@mUSDCStrategy>(): {
                         initialCollateralType: {
                             "univ3FactoryEVMAddress": self.univ3FactoryEVMAddress,
                             "univ3RouterEVMAddress": self.univ3RouterEVMAddress,
