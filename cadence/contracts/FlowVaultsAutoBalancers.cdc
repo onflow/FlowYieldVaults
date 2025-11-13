@@ -79,8 +79,7 @@ access(all) contract FlowVaultsAutoBalancers {
         self.account.capabilities.publish(publicCap, at: publicPath)
 
         // issue private capability & set within AutoBalancer
-        let authorizedCap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw, FlowTransactionScheduler.Execute
-) &DeFiActions.AutoBalancer>(storagePath)
+        let authorizedCap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw, FlowTransactionScheduler.Execute) &DeFiActions.AutoBalancer>(storagePath)
         autoBalancerRef.setSelfCapability(authorizedCap)
 
         // ensure proper configuration before closing
