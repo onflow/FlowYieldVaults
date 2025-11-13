@@ -46,6 +46,11 @@ import "MockSwapper"
 ///
 access(all) contract FlowVaultsStrategies {
 
+    access(all) let univ3FactoryEVMAddress: EVM.EVMAddress
+    access(all) let univ3RouterEVMAddress: EVM.EVMAddress
+    access(all) let univ3QuoterEVMAddress: EVM.EVMAddress
+    access(all) let yieldTokenEVMAddress: EVM.EVMAddress
+
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let IssuerStoragePath: StoragePath
 
@@ -462,7 +467,7 @@ access(all) contract FlowVaultsStrategies {
             //         uniqueID: uniqueID
             //     )
             // TODO: consider how we're going to pass the user's COA capability to the Swapper
-            let stableToYieldSwapper = UniswapV3SwapConnectors.Swapper(
+            let stableToYieldSwapper: UniswapV3SwapConnectors.Swapper = UniswapV3SwapConnectors.Swapper(
                 factoryAddress: FlowVaultsStrategies.univ3FactoryEVMAddress,
                 routerAddress: FlowVaultsStrategies.univ3RouterEVMAddress,
                 quoterAddress: FlowVaultsStrategies.univ3QuoterEVMAddress,
@@ -615,29 +620,44 @@ access(all) contract FlowVaultsStrategies {
         )
     }
 
-    init(univ3FactoryEVMAddress: String, univ3RouterEVMAddress: String, univ3QuoterEVMAddress: String, yieldTokenAddress: String) {
+    init(
+        univ3FactoryEVMAddress: String,
+        univ3RouterEVMAddress: String,
+        univ3QuoterEVMAddress: String,
+        yieldTokenEVMAddress: String,
+        recollateralizationUniV3AddressPath: [String],
+        recollateralizationUniV3FeePath: [UInt32],
+    ) {
+        self.univ3FactoryEVMAddress = EVM.addressFromString(univ3FactoryEVMAddress)
+        self.univ3RouterEVMAddress = EVM.addressFromString(univ3RouterEVMAddress)
+        self.univ3QuoterEVMAddress = EVM.addressFromString(univ3QuoterEVMAddress)
+        self.yieldTokenEVMAddress = EVM.addressFromString(yieldTokenEVMAddress)
         self.IssuerStoragePath = StoragePath(identifier: "FlowVaultsStrategyComposerIssuer_\(self.account.address)")!
 
         let initialCollateralType = Type<@FlowToken.Vault>()
+        let moetType = Type<@MOET.Vault>()
+        let moetEVMAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: Type<@MOET.Vault>())
+            ?? panic("Could not find EVM address for \(moetType.identifier) - ensure the asset is onboarded to the VM Bridge")
+        let yieldTokenEVMAddress = EVM.addressFromString(yieldTokenEVMAddress)
 
-        let yieldTokenEVMAddress = EVM.addressFromString(yieldTokenAddress)
+        let swapAddressPath: [EVM.EVMAddress] = []
+        for hex in recollateralizationUniV3AddressPath {
+            swapAddressPath.append(EVM.addressFromString(hex))
+        }
+
         let configs: {Type: {Type: {Type: {String: AnyStruct}}}} = {
                 Type<@TracerStrategyComposer>(): {
                     Type<@TracerStrategy>(): {
                         initialCollateralType: {
-                            "univ3FactoryEVMAddress": EVM.addressFromString(univ3FactoryEVMAddress),
-                            "univ3RouterEVMAddress": EVM.addressFromString(univ3RouterEVMAddress),
-                            "univ3QuoterEVMAddress": EVM.addressFromString(univ3QuoterEVMAddress),
-                            "yieldTokenEVMAddress": yieldTokenEVMAddress,
+                            "univ3FactoryEVMAddress": self.univ3FactoryEVMAddress,
+                            "univ3RouterEVMAddress": self.univ3RouterEVMAddress,
+                            "univ3QuoterEVMAddress": self.univ3QuoterEVMAddress,
+                            "yieldTokenEVMAddress": self.yieldTokenEVMAddress,
                             "yieldToCollateralUniV3AddressPaths": {
-                                initialCollateralType: [
-                                    yieldTokenEVMAddress,
-                                    FlowEVMBridgeConfig.getEVMAddressAssociated(with: initialCollateralType)
-                                        ?? panic("Could not find EVM address for initalCollateralType \(initialCollateralType.identifier)")
-                                ]
+                                initialCollateralType: swapAddressPath
                             },
                             "yieldToCollateralUniV3FeePaths": {
-                                initialCollateralType: [UInt32(3000)]
+                                initialCollateralType: recollateralizationUniV3FeePath
                             }
                         }
                     }
