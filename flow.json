@@ -35,6 +35,42 @@
 				"testnet": "3bda2f90274dbc9b"
 			}
 		},
+		"ERC4626PriceOracles": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "04f5ae6bef48c1fc",
+				"testing": "0000000000000009",
+				"testnet": "7014dcffa1f14186"
+			}
+		},
+		"ERC4626SinkConnectors": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "04f5ae6bef48c1fc",
+				"testing": "0000000000000009",
+				"testnet": "7014dcffa1f14186"
+			}
+		},
+		"ERC4626SwapConnectors": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "04f5ae6bef48c1fc",
+				"testing": "0000000000000009",
+				"testnet": "7014dcffa1f14186"
+			}
+		},
+		"ERC4626Utils": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "04f5ae6bef48c1fc",
+				"testing": "0000000000000009",
+				"testnet": "7014dcffa1f14186"
+			}
+		},
 		"EVMAbiHelpers": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
 			"aliases": {
@@ -47,6 +83,7 @@
 			"source": "cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "1a771b21fcceadc2",
 				"testing": "0000000000000009",
 				"testnet": "b88ba0e976146cd1"
 			}
@@ -778,6 +815,11 @@
 				"BandOracleConnectors",
 				"MockSwapper",
 				"EVMAbiHelpers",
+				"EVMTokenConnectors",
+				"ERC4626Utils",
+				"ERC4626PriceOracles",
+				"ERC4626SinkConnectors",
+				"ERC4626SwapConnectors",
 				"FlowVaultsAutoBalancers",
 				"FlowVaultsClosedBeta",
 				"FlowVaults",
@@ -838,6 +880,44 @@
 						{
 							"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
 							"type": "String"
+						},
+						{
+							"type": "Array",
+							"value": [
+								{
+									"type": "String",
+									"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c"
+								},
+								{
+									"type": "String",
+									"value": "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2"
+								},
+								{
+									"type": "String",
+									"value": "0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED"
+								},
+								{
+									"type": "String",
+									"value": "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
+								}
+							]
+						},
+						{
+							"type": "Array",
+							"value": [
+								{
+									"type": "UInt32",
+									"value": "100"
+								},
+								{
+									"type": "UInt32",
+									"value": "100"
+								},
+								{
+									"type": "UInt32",
+									"value": "3000"
+								}
+							]
 						}
 					]
 				}
