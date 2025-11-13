@@ -300,20 +300,37 @@ access(all) contract FlowVaultsStrategies {
             let positionSource = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
 
             // init YieldToken -> FLOW Swapper
-            // TODO: Update to use UniV3 swapper - the path with depend on the collateral type unless we can be sure
-            //      YIELD <> COLLATERAL pools will exist for every collateral type with deep enough liquidity
-            //      to singularly swap against them. Otherwise a MultiSwapper might be the call here targeting
-            //      the paths with the deepest liquidity sets
-            let yieldToFlowSwapper = MockSwapper.Swapper(
+            //
+            // get UniswapV3 path configs
+            let collateralUniV3AddressPathConfig = collateralConfig["yieldToCollateralUniV3AddressPaths"] as? {Type: [EVM.EVMAddress]}
+                ?? panic("Could not find UniswapV3 address paths config when creating Strategy \(type.identifier) with collateral \(collateralType.identifier)")
+            let uniV3AddressPath = collateralUniV3AddressPathConfig[collateralType]
+                ?? panic("Could not find UniswapV3 address path for collateral type \(collateralType.identifier)")
+            assert(uniV3AddressPath.length > 1, message: "Invalid Uniswap V3 swap path length of \(uniV3AddressPath.length)")
+            assert(uniV3AddressPath[0].equals(yieldTokenEVMAddress),
+                message: "UniswapV3 swap path does not match - expected path[0] to be \(yieldTokenEVMAddress.toString()) but found \(uniV3AddressPath[0].toString())") 
+            let collateralUniV3FeePathConfig = collateralConfig["yieldToCollateralUniV3FeePaths"] as? {Type: [UInt32]}
+                ?? panic("Could not find UniswapV3 fee paths config when creating Strategy \(type.identifier) with collateral \(collateralType.identifier)")
+            let uniV3FeePath = collateralUniV3FeePathConfig[collateralType]
+                ?? panic("Could not find UniswapV3 fee path for collateral type \(collateralType.identifier)")
+            assert(uniV3FeePath.length > 0, message: "Invalid Uniswap V3 fee path length of \(uniV3FeePath.length)")
+            // initialize the swapper used for recollateralization of the lending position as YIELD increases in value
+            let yieldToFlowSwapper = UniswapV3SwapConnectors.Swapper(
+                    factoryAddress: univ3FactoryEVMAddress,
+                    routerAddress: univ3RouterEVMAddress,
+                    quoterAddress: univ3QuoterEVMAddress,
+                    tokenPath: uniV3AddressPath,
+                    feePath: uniV3FeePath,
                     inVault: yieldTokenType,
                     outVault: collateralType,
+                    coaCapability: FlowVaultsStrategies._getCOACapability(),
                     uniqueID: uniqueID
                 )
-            // allows for YieldToken to be deposited to the Position
+            // allows for YIELD to be deposited to the Position as the collateral basis
             let positionSwapSink = SwapConnectors.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
 
-            // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value,
-            // recollateralizing the position
+            // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value, recollateralizing
+            // the position
             autoBalancer.setSink(positionSwapSink, updateSinkID: true)
 
             return <-create TracerStrategy(
@@ -612,12 +629,15 @@ access(all) contract FlowVaultsStrategies {
                             "univ3RouterEVMAddress": EVM.addressFromString(univ3RouterEVMAddress),
                             "univ3QuoterEVMAddress": EVM.addressFromString(univ3QuoterEVMAddress),
                             "yieldTokenEVMAddress": yieldTokenEVMAddress,
-                            "yieldToCollateralPaths": {
+                            "yieldToCollateralUniV3AddressPaths": {
                                 initialCollateralType: [
                                     yieldTokenEVMAddress,
                                     FlowEVMBridgeConfig.getEVMAddressAssociated(with: initialCollateralType)
                                         ?? panic("Could not find EVM address for initalCollateralType \(initialCollateralType.identifier)")
                                 ]
+                            },
+                            "yieldToCollateralUniV3FeePaths": {
+                                initialCollateralType: [UInt32(3000)]
                             }
                         }
                     }
