@@ -871,6 +871,44 @@
 						{
 							"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
 							"type": "String"
+						},
+						{
+							"type": "Array",
+							"value": [
+								{
+									"type": "String",
+									"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c"
+								},
+								{
+									"type": "String",
+									"value": "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2"
+								},
+								{
+									"type": "String",
+									"value": "0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED"
+								},
+								{
+									"type": "String",
+									"value": "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
+								}
+							]
+						},
+						{
+							"type": "Array",
+							"value": [
+								{
+									"type": "UInt32",
+									"value": "100"
+								},
+								{
+									"type": "UInt32",
+									"value": "100"
+								},
+								{
+									"type": "UInt32",
+									"value": "3000"
+								}
+							]
 						}
 					]
 				}
