@@ -39,28 +39,36 @@
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000009"
+				"mainnet": "04f5ae6bef48c1fc",
+				"testing": "0000000000000009",
+				"testnet": "7014dcffa1f14186"
 			}
 		},
 		"ERC4626SinkConnectors": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000009"
+				"mainnet": "04f5ae6bef48c1fc",
+				"testing": "0000000000000009",
+				"testnet": "7014dcffa1f14186"
 			}
 		},
 		"ERC4626SwapConnectors": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000009"
+				"mainnet": "04f5ae6bef48c1fc",
+				"testing": "0000000000000009",
+				"testnet": "7014dcffa1f14186"
 			}
 		},
 		"ERC4626Utils": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000009"
+				"mainnet": "04f5ae6bef48c1fc",
+				"testing": "0000000000000009",
+				"testnet": "7014dcffa1f14186"
 			}
 		},
 		"EVMAbiHelpers": {
@@ -75,6 +83,7 @@
 			"source": "cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "1a771b21fcceadc2",
 				"testing": "0000000000000009",
 				"testnet": "b88ba0e976146cd1"
 			}
