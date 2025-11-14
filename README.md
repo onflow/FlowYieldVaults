@@ -79,7 +79,7 @@ Mock FungibleToken implementations representing:
 | FlowALP | 0x6b00ff876c299c61 | FlowALP | TBD |
 | FlowVaults | 0xb1d63873c3cc9f79 | FlowVaults | TBD |
 | FlowVaultsStrategies | 0xb1d63873c3cc9f79 | FlowVaultsStrategies | TBD |
-| MOET | 0x6b00ff876c299c61 | MOET | TBD |
+| MOET | 0x6b00ff876c299c61 | MOET | 0x213979bB8A9A86966999b3AA797C1fcf3B967ae2 |
 | USDC | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_f1815bd50389c46847f0bda824ec8da914045d14 | 0xF1815bd50389c46847f0Bda824eC8da914045D14 |
 | USDF | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_2aabea2058b5ac2d339b163c6ab6f2b6d53aabed | 0x2aabea2058b5ac2d339b163c6ab6f2b6d53aabed |
 | cbBTC | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_a0197b2044d28b08be34d98b23c9312158ea9a18 | 0xA0197b2044D28b08Be34d98b23c9312158Ea9A18 |
