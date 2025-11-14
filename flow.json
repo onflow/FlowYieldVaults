@@ -81,7 +81,7 @@
 			}
 		},
 		"EVMTokenConnectors": {
-			"source": "cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "1a771b21fcceadc2",
