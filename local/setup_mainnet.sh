@@ -9,8 +9,8 @@ flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.1654
 
 # TODO 
 # figure out yield token
-#flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.dfc20aee650fcbdf.EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95.Vault' 1.0 --network mainnet --signer mainnet-admin
-
+echo "bridge YieldToken to Cadence"
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc 0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c --network mainnet --signer mainnet-admin 
 echo "bridge MOET to EVM"
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.6b00ff876c299c61.MOET.Vault" --gas-limit 9999 --network mainnet --signer mainnet-flow-alp-deployer
 
@@ -51,15 +51,13 @@ flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connec
 
 # TODO 
 # setup vault and set connector
-# flow transactions send ./lib/FlowALP/FlowActions/cadence/transactions/fungible-tokens/setup_generic_vault.cdc 'A.dfc20aee650fcbdf.EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95.Vault' --network mainnet --signer mainnet-admin
+flow transactions send ./lib/FlowALP/FlowActions/cadence/transactions/fungible-tokens/setup_generic_vault.cdc 'A.1e4aa0b87d10b141.EVMVMBridgedToken_c52e820d2d6207d18667a97e2c6ac22eb26e803c.Vault' --network mainnet --signer mainnet-admin
 # flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault --network mainnet --signer mainnet-admin
 #
-# TODO
-# deploy strategy with relevant EVM addresses
 # add TracerStrategy as supported Strategy with the ability to initialize when new Tides are created
 flow transactions send ./cadence/transactions/flow-vaults/admin/add_strategy_composer.cdc \
-    'A.b1d63873c3cc9f79.FlowVaultsStrategies.TracerStrategy' \
-    'A.b1d63873c3cc9f79.FlowVaultsStrategies.TracerStrategyComposer' \
+    'A.b1d63873c3cc9f79.FlowVaultsStrategies.mUSDCStrategy' \
+    'A.b1d63873c3cc9f79.FlowVaultsStrategies.mUSDCStrategyComposer' \
     /storage/FlowVaultsStrategyComposerIssuer_0xb1d63873c3cc9f79 \
     --network mainnet \
     --signer mainnet-admin
