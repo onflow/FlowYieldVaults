@@ -5,7 +5,7 @@ import "FlowALP"
 /// @param pid: The Position ID
 ///
 access(all)
-fun main(pid: UInt64): UFix64 {
+fun main(pid: UInt64): UFix128 {
     let protocolAddress= Type<@FlowALP.Pool>().address!
     return getAccount(protocolAddress).capabilities.borrow<&FlowALP.Pool>(FlowALP.PoolPublicPath)
         ?.positionHealth(pid: pid)
