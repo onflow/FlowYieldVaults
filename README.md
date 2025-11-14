@@ -73,10 +73,17 @@ Mock FungibleToken implementations representing:
 | mUSDC (ERC4626) | 0xdfc20aee650fcbdf | EVMVMBridgedToken_4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95 | 0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95 |
 
 #### Mainnet
-| Contract Name | Cadence | EVM |
-|---|---|---|
-|  | TBD | TBD |
-|  | TBD | TBD |
+| Asset Name | Cadence Address | Cadence Contract Name | EVM |
+|---|---|---|---|
+| FlowActions | 0x6d888f175c158410 | DeFiActions | TBD |
+| FlowALP | 0x6b00ff876c299c61 | FlowALP | TBD |
+| FlowVaults | 0xb1d63873c3cc9f79 | FlowVaults | TBD |
+| FlowVaultsStrategies | 0xb1d63873c3cc9f79 | FlowVaultsStrategies | TBD |
+| MOET | 0x6b00ff876c299c61 | MOET | TBD |
+| USDC | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_f1815bd50389c46847f0bda824ec8da914045d14 | 0xF1815bd50389c46847f0Bda824eC8da914045D14 |
+| cbBTC | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_a0197b2044d28b08be34d98b23c9312158ea9a18 | 0xA0197b2044D28b08Be34d98b23c9312158Ea9A18 |
+| wETH | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590 | 0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590 |
+| tauUSDF (ERC4626) | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_c52E820d2D6207D18667a97e2c6Ac22eB26E803c | 0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c |
 
 ## How the System Works
 
