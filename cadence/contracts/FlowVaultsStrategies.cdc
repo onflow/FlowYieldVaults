@@ -542,6 +542,8 @@ access(all) contract FlowVaultsStrategies {
             switch type {
             case Type<@mUSDCStrategyComposer>():
                 return <- create mUSDCStrategyComposer(self.configs[type]!)
+            case Type<@TracerStrategyComposer>():
+                return <- create TracerStrategyComposer()
             default:
                 panic("Unsupported StrategyComposer \(type.identifier) requested")
             }
