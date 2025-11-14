@@ -530,7 +530,10 @@ access(all) contract FlowVaultsStrategies {
         }
 
         access(all) view fun getSupportedComposers(): {Type: Bool} {
-            return { Type<@mUSDCStrategyComposer>(): true }
+            return { 
+                Type<@mUSDCStrategyComposer>(): true,
+                Type<@TracerStrategyComposer>(): true
+            }
         }
         access(all) fun issueComposer(_ type: Type): @{FlowVaults.StrategyComposer} {
             pre {
@@ -634,6 +637,9 @@ access(all) contract FlowVaultsStrategies {
                             }
                         }
                     }
+                },
+                Type<@TracerStrategyComposer>(): {
+                    Type<@TracerStrategy>(): {}
                 }
             }
         self.account.storage.save(<-create StrategyComposerIssuer(configs: configs), to: self.IssuerStoragePath)

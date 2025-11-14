@@ -9,8 +9,9 @@ flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.f8d6
 echo "bridge WBTC to Cadence"
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc 0x374BF2423c6b67694c068C3519b3eD14d3B0C5d1 --gas-limit 9999 --signer tidal
 
-echo "bridge MOET to EVM"
-flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.045a1763c93006ca.MOET.Vault" --gas-limit 9999 --signer tidal
+# this step is done earlier
+# echo "bridge MOET to EVM"
+# flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.045a1763c93006ca.MOET.Vault" --gas-limit 9999 --signer tidal
 
 #flow transactions send ../cadence/tests/transactions/create_univ3_pool.cdc
 
