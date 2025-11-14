@@ -75,6 +75,7 @@
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "a7825d405ac89518",
 				"testing": "0000000000000007",
 				"testnet": "3ebb7d2595e97cd2"
 			}
@@ -110,6 +111,7 @@
 			"source": "cadence/contracts/FlowVaults.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009",
 				"testnet": "3bda2f90274dbc9b"
 			}
@@ -118,6 +120,7 @@
 			"source": "cadence/contracts/FlowVaultsAutoBalancers.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009",
 				"testnet": "3bda2f90274dbc9b"
 			}
@@ -126,6 +129,7 @@
 			"source": "cadence/contracts/FlowVaultsClosedBeta.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009",
 				"testnet": "3bda2f90274dbc9b"
 			}
@@ -134,6 +138,7 @@
 			"source": "cadence/contracts/FlowVaultsStrategies.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009",
 				"testnet": "3bda2f90274dbc9b"
 			}
@@ -201,7 +206,7 @@
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
-        "mainnet": "a7825d405ac89518",
+				"mainnet": "a7825d405ac89518",
 				"testing": "0000000000000007",
 				"testnet": "3ebb7d2595e97cd2"
 			}
@@ -210,7 +215,7 @@
 			"source": "cadence/contracts/mocks/YieldToken.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
-        "mainnet": "b1d63873c3cc9f79",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000010",
 				"testnet": "3bda2f90274dbc9b"
 			}
@@ -855,7 +860,7 @@
 					"name": "YieldToken",
 					"args": [
 						{
-							"value": "0.0",
+							"value": "0.00000000",
 							"type": "UFix64"
 						}
 					]
@@ -893,42 +898,42 @@
 							"type": "String"
 						},
 						{
-							"type": "Array",
 							"value": [
 								{
-									"type": "String",
-									"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c"
+									"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
+									"type": "String"
 								},
 								{
-									"type": "String",
-									"value": "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2"
+									"value": "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2",
+									"type": "String"
 								},
 								{
-									"type": "String",
-									"value": "0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED"
+									"value": "0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED",
+									"type": "String"
 								},
 								{
-									"type": "String",
-									"value": "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
+									"value": "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e",
+									"type": "String"
 								}
-							]
+							],
+							"type": "Array"
 						},
 						{
-							"type": "Array",
 							"value": [
 								{
-									"type": "UInt32",
-									"value": "100"
+									"value": "100",
+									"type": "UInt32"
 								},
 								{
-									"type": "UInt32",
-									"value": "100"
+									"value": "100",
+									"type": "UInt32"
 								},
 								{
-									"type": "UInt32",
-									"value": "3000"
+									"value": "3000",
+									"type": "UInt32"
 								}
-							]
+							],
+							"type": "Array"
 						}
 					]
 				}
