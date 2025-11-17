@@ -1,7 +1,7 @@
 # install DeFiBlocks submodule as dependency
 git submodule update --init --recursive
-# execute emulator deployment
-flow project deploy --network emulator
+# execute emulator deployment (fresh or update existing)
+flow project deploy --network emulator || flow project deploy --network emulator --update
 
 flow transactions send ./cadence/transactions/moet/setup_vault.cdc 
 flow transactions send ./cadence/transactions/moet/mint_moet.cdc 0x045a1763c93006ca 1000000.0 --signer tidal

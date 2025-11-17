@@ -1,5 +1,6 @@
 import "FlowVaultsScheduler"
 import "FlowVaultsSchedulerRegistry"
+import "FlowTransactionScheduler"
 
 /// Creates and stores the global Supervisor handler in the FlowVaults (tidal) account.
 transaction() {

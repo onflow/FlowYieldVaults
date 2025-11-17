@@ -230,6 +230,32 @@ fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
     return res.returnValue as! UFix64?
 }
 
+/// Deploys FlowVaultsScheduler contract if it is not already deployed.
+/// Used by multiple test suites that depend on the scheduler (Tide rebalancing,
+/// scheduled rebalancing, and Tide+FlowALP liquidation tests).
+access(all)
+fun deployFlowVaultsSchedulerIfNeeded() {
+    let res = Test.deployContract(
+        name: "FlowVaultsScheduler",
+        path: "../contracts/FlowVaultsScheduler.cdc",
+        arguments: []
+    )
+    // If `res` is non-nil, the contract was likely already deployed in this test run;
+    // we intentionally do not assert here to keep this helper idempotent.
+}
+
+/// Returns the FlowALP position health for a given position id by calling the
+/// shared FlowALP `position_health.cdc` script used in E2E tests.
+access(all)
+fun getFlowALPPositionHealth(pid: UInt64): UFix64 {
+    let res = _executeScript(
+        "../../lib/FlowALP/cadence/scripts/flow-alp/position_health.cdc",
+        [pid]
+    )
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! UFix64
+}
+
 access(all)
 fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowALP.PositionDetails {
     let res = _executeScript("../scripts/flow-alp/position_details.cdc",

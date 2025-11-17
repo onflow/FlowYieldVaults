@@ -51,12 +51,39 @@
 				"testnet": "c16c0b1229843606"
 			}
 		},
+		"FlowALPLiquidationScheduler": {
+			"source": "./lib/FlowALP/cadence/contracts/FlowALPLiquidationScheduler.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "6b00ff876c299c61",
+				"testing": "0000000000000008",
+				"testnet": "c16c0b1229843606"
+			}
+		},
 		"FlowALPMath": {
 			"source": "./lib/FlowALP/cadence/lib/FlowALPMath.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
 				"testing": "0000000000000007",
+				"testnet": "c16c0b1229843606"
+			}
+		},
+		"FlowALPSchedulerProofs": {
+			"source": "./lib/FlowALP/cadence/contracts/FlowALPSchedulerProofs.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "6b00ff876c299c61",
+				"testing": "0000000000000008",
+				"testnet": "c16c0b1229843606"
+			}
+		},
+		"FlowALPSchedulerRegistry": {
+			"source": "./lib/FlowALP/cadence/contracts/FlowALPSchedulerRegistry.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "6b00ff876c299c61",
+				"testing": "0000000000000008",
 				"testnet": "c16c0b1229843606"
 			}
 		},
@@ -759,6 +786,9 @@
 						}
 					]
 				},
+				"FlowALPSchedulerRegistry",
+				"FlowALPSchedulerProofs",
+				"FlowALPLiquidationScheduler",
 				{
 					"name": "YieldToken",
 					"args": [

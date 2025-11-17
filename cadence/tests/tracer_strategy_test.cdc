@@ -33,6 +33,10 @@ access(all)
 fun setup() {
 	deployContracts()
 
+    // Ensure FlowVaultsScheduler is available for any transactions that
+    // auto-register tides or schedule rebalancing.
+    deployFlowVaultsSchedulerIfNeeded()
+
     // set mocked token prices
     setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: startingYieldPrice)
     setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: startingFlowPrice)
@@ -278,6 +282,149 @@ fun test_RebalanceTideSucceedsAfterYieldPriceDecrease() {
 		(flowBalanceAfter-flowBalanceBefore) > 0.1,
 		message: "Expected user's Flow balance after rebalance to be more than zero but got \(flowBalanceAfter)"
 	)
+}
+
+/// Integration-style test that verifies a FlowVaults Tide backed by a FlowALP Position
+/// can be liquidated via FlowALP's `liquidate_repay_for_seize` flow and that the
+/// underlying position health improves in the presence of the Tide wiring.
+access(all)
+fun test_TideLiquidationImprovesUnderlyingHealth() {
+    Test.reset(to: snapshot)
+
+    let fundingAmount: UFix64 = 100.0
+
+    let user = Test.createAccount()
+    mintFlow(to: user, amount: fundingAmount)
+    grantBeta(flowVaultsAccount, user)
+
+    // Create a Tide using the TracerStrategy (FlowALP-backed)
+    createTide(
+        signer: user,
+        strategyIdentifier: strategyIdentifier,
+        vaultIdentifier: flowTokenIdentifier,
+        amount: fundingAmount,
+        beFailed: false
+    )
+
+    // The TracerStrategy opens exactly one FlowALP position for this stack; grab its pid.
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALP.Opened>())) as! FlowALP.Opened).pid
+
+    var tideIDs = getTideIDs(address: user.address)
+    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+    Test.assertEqual(1, tideIDs!.length)
+    let tideID = tideIDs![0]
+
+    // Baseline health and AutoBalancer state
+    let hInitial = getFlowALPPositionHealth(pid: positionID)
+
+    // Drop FLOW price to push the FlowALP position under water.
+    setMockOraclePrice(
+        signer: flowVaultsAccount,
+        forTokenIdentifier: flowTokenIdentifier,
+        price: startingFlowPrice * 0.7
+    )
+
+    let hAfterDrop = getFlowALPPositionHealth(pid: positionID)
+    Test.assert(hAfterDrop < 1.0, message: "Expected FlowALP position health to fall below 1.0 after price drop")
+
+    // Quote a keeper liquidation for the FlowALP position (MOET debt, Flow collateral).
+    let quoteRes = _executeScript(
+        "../../lib/FlowALP/cadence/scripts/flow-alp/quote_liquidation.cdc",
+        [positionID, Type<@MOET.Vault>().identifier, flowTokenIdentifier]
+    )
+    Test.expect(quoteRes, Test.beSucceeded())
+    let quote = quoteRes.returnValue as! FlowALP.LiquidationQuote
+    Test.assert(quote.requiredRepay > 0.0, message: "Expected keeper liquidation to require a positive repay amount")
+    Test.assert(quote.seizeAmount > 0.0, message: "Expected keeper liquidation to seize some collateral")
+
+    // Keeper mints MOET and executes liquidation against the FlowALP pool.
+    let keeper = Test.createAccount()
+    setupMoetVault(keeper, beFailed: false)
+    _executeTransaction(
+        "../transactions/moet/mint_moet.cdc",
+        [keeper.address, quote.requiredRepay + 1.0],
+        flowVaultsAccount
+    )
+
+    let liqRes = _executeTransaction(
+        "../../lib/FlowALP/cadence/transactions/flow-alp/pool-management/liquidate_repay_for_seize.cdc",
+        [positionID, Type<@MOET.Vault>().identifier, flowTokenIdentifier, quote.requiredRepay + 1.0, 0.0],
+        keeper
+    )
+    Test.expect(liqRes, Test.beSucceeded())
+
+    // Position health should have improved compared to the post-drop state and move back
+    // toward the FlowALP target (~1.05 used in unit tests).
+    let hAfterLiq = getFlowALPPositionHealth(pid: positionID)
+    Test.assert(hAfterLiq > hAfterDrop, message: "Expected FlowALP position health to improve after liquidation")
+
+    // Sanity check: Tide is still live and AutoBalancer state can be queried without error.
+    let abaBalance = getAutoBalancerBalance(id: tideID) ?? 0.0
+    let abaValue = getAutoBalancerCurrentValue(id: tideID) ?? 0.0
+    Test.assert(abaBalance >= 0.0 && abaValue >= 0.0, message: "AutoBalancer state should remain non-negative after liquidation")
+}
+
+/// Regression-style test inspired by `chore/liquidation-tests-alignment`:
+/// verifies that a Tide backed by a FlowALP position behaves sensibly when the
+/// Yield token price collapses to ~0, and that the user can still close the Tide
+/// without panics while recovering some Flow.
+access(all)
+fun test_TideHandlesZeroYieldPriceOnClose() {
+    Test.reset(to: snapshot)
+
+    let fundingAmount: UFix64 = 100.0
+
+    let user = Test.createAccount()
+    let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+    mintFlow(to: user, amount: fundingAmount)
+    grantBeta(flowVaultsAccount, user)
+
+    createTide(
+        signer: user,
+        strategyIdentifier: strategyIdentifier,
+        vaultIdentifier: flowTokenIdentifier,
+        amount: fundingAmount,
+        beFailed: false
+    )
+
+    var tideIDs = getTideIDs(address: user.address)
+    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
+    Test.assertEqual(1, tideIDs!.length)
+    let tideID = tideIDs![0]
+
+    // Drastically reduce Yield token price to approximate a near-total loss.
+    setMockOraclePrice(
+        signer: flowVaultsAccount,
+        forTokenIdentifier: yieldTokenIdentifier,
+        price: 0.0
+    )
+
+    // Force a Tide-level rebalance so the AutoBalancer and connectors react to the new price.
+    rebalanceTide(signer: flowVaultsAccount, id: tideID, force: true, beFailed: false)
+
+    // Also rebalance the underlying FlowALP position to bring it back toward min health if possible.
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALP.Opened>())) as! FlowALP.Opened).pid
+    rebalancePosition(signer: protocolAccount, pid: positionID, force: true, beFailed: false)
+
+    // User should still be able to close the Tide cleanly.
+    closeTide(signer: user, id: tideID, beFailed: false)
+
+    tideIDs = getTideIDs(address: user.address)
+    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil after close")
+    Test.assertEqual(0, tideIDs!.length)
+
+    let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+
+    // In a full Yield token wipe-out, the user should not gain Flow relative to original
+    // funding, but they should still recover something (no total loss due to wiring bugs).
+    Test.assert(
+        flowBalanceAfter <= flowBalanceBefore + fundingAmount,
+        message: "Expected user's Flow balance after closing Tide under zero Yield price to be <= initial funding"
+    )
+    Test.assert(
+        flowBalanceAfter > flowBalanceBefore,
+        message: "Expected user's Flow balance after closing Tide under zero Yield price to be > starting balance"
+    )
 }
 
 access(all)

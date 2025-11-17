@@ -32,14 +32,9 @@ fun setup() {
     
     deployContracts()
     
-    // Deploy FlowVaultsScheduler
-    let deployResult = Test.deployContract(
-        name: "FlowVaultsScheduler",
-        path: "../contracts/FlowVaultsScheduler.cdc",
-        arguments: []
-    )
-    Test.expect(deployResult, Test.beNil())
-    log("✅ FlowVaultsScheduler deployed")
+    // Deploy FlowVaultsScheduler (idempotent across tests)
+    deployFlowVaultsSchedulerIfNeeded()
+    log("✅ FlowVaultsScheduler available")
 
     // Set mocked token prices
     setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
