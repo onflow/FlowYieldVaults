@@ -314,8 +314,9 @@ fun test_TideLiquidationImprovesUnderlyingHealth() {
     Test.assertEqual(1, tideIDs!.length)
     let tideID = tideIDs![0]
 
-    // Baseline health and AutoBalancer state
-    let hInitial = getFlowALPPositionHealth(pid: positionID)
+    // Baseline health and AutoBalancer state. The FlowALP helper returns UFix128
+    // for full precision, but we only need a UFix64 approximation for comparisons.
+    let hInitial = UFix64(getFlowALPPositionHealth(pid: positionID))
 
     // Drop FLOW price to push the FlowALP position under water.
     setMockOraclePrice(
@@ -324,7 +325,7 @@ fun test_TideLiquidationImprovesUnderlyingHealth() {
         price: startingFlowPrice * 0.7
     )
 
-    let hAfterDrop = getFlowALPPositionHealth(pid: positionID)
+    let hAfterDrop = UFix64(getFlowALPPositionHealth(pid: positionID))
     Test.assert(hAfterDrop < 1.0, message: "Expected FlowALP position health to fall below 1.0 after price drop")
 
     // Quote a keeper liquidation for the FlowALP position (MOET debt, Flow collateral).
@@ -340,22 +341,29 @@ fun test_TideLiquidationImprovesUnderlyingHealth() {
     // Keeper mints MOET and executes liquidation against the FlowALP pool.
     let keeper = Test.createAccount()
     setupMoetVault(keeper, beFailed: false)
-    _executeTransaction(
+    let moatBefore = getBalance(address: keeper.address, vaultPublicPath: MOET.VaultPublicPath) ?? 0.0
+    log("[LIQ][KEEPER] MOET before mint: \(moatBefore)")
+    let mintRes = _executeTransaction(
         "../transactions/moet/mint_moet.cdc",
         [keeper.address, quote.requiredRepay + 1.0],
-        flowVaultsAccount
+        protocolAccount
     )
+    Test.expect(mintRes, Test.beSucceeded())
+    let moatAfter = getBalance(address: keeper.address, vaultPublicPath: MOET.VaultPublicPath) ?? 0.0
+    log("[LIQ][KEEPER] MOET after  mint: \(moatAfter) (requiredRepay=\(quote.requiredRepay))")
 
     let liqRes = _executeTransaction(
         "../../lib/FlowALP/cadence/transactions/flow-alp/pool-management/liquidate_repay_for_seize.cdc",
-        [positionID, Type<@MOET.Vault>().identifier, flowTokenIdentifier, quote.requiredRepay + 1.0, 0.0],
+        // Use the quoted requiredRepay as maxRepayAmount while having minted a small
+        // buffer above this amount to avoid edge cases with vault balances.
+        [positionID, Type<@MOET.Vault>().identifier, flowTokenIdentifier, quote.requiredRepay, 0.0],
         keeper
     )
     Test.expect(liqRes, Test.beSucceeded())
 
     // Position health should have improved compared to the post-drop state and move back
     // toward the FlowALP target (~1.05 used in unit tests).
-    let hAfterLiq = getFlowALPPositionHealth(pid: positionID)
+    let hAfterLiq = UFix64(getFlowALPPositionHealth(pid: positionID))
     Test.assert(hAfterLiq > hAfterDrop, message: "Expected FlowALP position health to improve after liquidation")
 
     // Sanity check: Tide is still live and AutoBalancer state can be queried without error.
@@ -393,10 +401,12 @@ fun test_TideHandlesZeroYieldPriceOnClose() {
     let tideID = tideIDs![0]
 
     // Drastically reduce Yield token price to approximate a near-total loss.
+    // DeFiActions enforces a post-condition that oracle prices must be > 0.0
+    // when available, so we use a tiny positive value instead of a literal 0.0.
     setMockOraclePrice(
         signer: flowVaultsAccount,
         forTokenIdentifier: yieldTokenIdentifier,
-        price: 0.0
+        price: 0.00000001
     )
 
     // Force a Tide-level rebalance so the AutoBalancer and connectors react to the new price.
