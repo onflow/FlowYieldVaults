@@ -1,5 +1,14 @@
 {
 	"contracts": {
+		"BandOracleConnectors": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/band-oracle/BandOracleConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "e36ef556b8b5d955",
+				"testing": "0000000000000007",
+				"testnet": "bb76ea2f8aad74a0"
+			}
+		},
 		"DeFiActions": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
@@ -26,18 +35,56 @@
 				"testnet": "3bda2f90274dbc9b"
 			}
 		},
+		"ERC4626PriceOracles": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "04f5ae6bef48c1fc",
+				"testing": "0000000000000009",
+				"testnet": "7014dcffa1f14186"
+			}
+		},
+		"ERC4626SinkConnectors": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "04f5ae6bef48c1fc",
+				"testing": "0000000000000009",
+				"testnet": "7014dcffa1f14186"
+			}
+		},
+		"ERC4626SwapConnectors": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "04f5ae6bef48c1fc",
+				"testing": "0000000000000009",
+				"testnet": "7014dcffa1f14186"
+			}
+		},
+		"ERC4626Utils": {
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "04f5ae6bef48c1fc",
+				"testing": "0000000000000009",
+				"testnet": "7014dcffa1f14186"
+			}
+		},
 		"EVMAbiHelpers": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "a7825d405ac89518",
 				"testing": "0000000000000007",
 				"testnet": "3ebb7d2595e97cd2"
 			}
 		},
 		"EVMTokenConnectors": {
-			"source": "cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
+			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "1a771b21fcceadc2",
 				"testing": "0000000000000009",
 				"testnet": "b88ba0e976146cd1"
 			}
@@ -64,6 +111,7 @@
 			"source": "cadence/contracts/FlowVaults.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009",
 				"testnet": "425216a69bec3d42"
 			}
@@ -72,6 +120,7 @@
 			"source": "cadence/contracts/FlowVaultsAutoBalancers.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009",
 				"testnet": "425216a69bec3d42"
 			}
@@ -80,6 +129,7 @@
 			"source": "cadence/contracts/FlowVaultsClosedBeta.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009",
 				"testnet": "425216a69bec3d42"
 			}
@@ -112,6 +162,7 @@
 			"source": "cadence/contracts/FlowVaultsStrategies.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009",
 				"testnet": "3bda2f90274dbc9b"
 			}
@@ -182,6 +233,7 @@
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "a7825d405ac89518",
 				"testing": "0000000000000007",
 				"testnet": "3ebb7d2595e97cd2"
 			}
@@ -190,6 +242,7 @@
 			"source": "cadence/contracts/mocks/YieldToken.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000010",
 				"testnet": "3bda2f90274dbc9b"
 			}
@@ -203,6 +256,16 @@
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
 				"testing": "0000000000000007"
+			}
+		},
+		"BandOracle": {
+			"source": "mainnet://6801a6222ebf784a.BandOracle",
+			"hash": "be8c986f46eccfe55a25447e1b7fa07e95769ac4ca11918833130a4bf3297b16",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "6801a6222ebf784a",
+				"testing": "0000000000000007",
+				"testnet": "2c71de7af78d1adf"
 			}
 		},
 		"Burner": {
@@ -670,6 +733,30 @@
 				"location": "keshav-scheduled-testnet.pkey"
 			}
 		},
+		"mainnet-admin": {
+			"address": "b1d63873c3cc9f79",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
+		"mainnet-flow-alp-deployer": {
+			"address": "6b00ff876c299c61",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
+		"mainnet-uniswapV3-connectors-deployer": {
+			"address": "a7825d405ac89518",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
 		"mock-incrementfi": {
 			"address": "f3fcd2c1a78f5eee",
 			"key": {
@@ -777,8 +864,15 @@
 						}
 					]
 				},
+				"BandOracle",
+				"BandOracleConnectors",
 				"MockSwapper",
 				"EVMAbiHelpers",
+				"EVMTokenConnectors",
+				"ERC4626Utils",
+				"ERC4626PriceOracles",
+				"ERC4626SinkConnectors",
+				"ERC4626SwapConnectors",
 				"FlowVaultsAutoBalancers",
 				"FlowVaultsClosedBeta",
 				"FlowVaults",
@@ -801,12 +895,109 @@
 						{
 							"value": "0xaCCF0c4EeD4438Ad31Cd340548f4211a465B6528",
 							"type": "String"
+						},
+						{
+							"value": [],
+							"type": "Array"
+						},
+						{
+							"value": [],
+							"type": "Array"
 						}
 					]
 				},
 				"FlowVaultsSchedulerRegistry",
 				"FlowVaultsSchedulerProofs",
 				"FlowVaultsScheduler"
+			]
+		},
+		"mainnet": {
+			"mainnet-admin": [
+				{
+					"name": "YieldToken",
+					"args": [
+						{
+							"value": "0.00000000",
+							"type": "UFix64"
+						}
+					]
+				},
+				{
+					"name": "MockOracle",
+					"args": [
+						{
+							"value": "A.6b00ff876c299c61.MOET.Vault",
+							"type": "String"
+						}
+					]
+				},
+				"MockSwapper",
+				"FlowVaultsAutoBalancers",
+				"FlowVaultsClosedBeta",
+				"FlowVaults",
+				{
+					"name": "FlowVaultsStrategies",
+					"args": [
+						{
+							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+							"type": "String"
+						},
+						{
+							"value": "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+							"type": "String"
+						},
+						{
+							"value": "0x370A8DF17742867a44e56223EC20D82092242C85",
+							"type": "String"
+						},
+						{
+							"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
+							"type": "String"
+						},
+						{
+							"value": [
+								{
+									"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
+									"type": "String"
+								},
+								{
+									"value": "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2",
+									"type": "String"
+								},
+								{
+									"value": "0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED",
+									"type": "String"
+								},
+								{
+									"value": "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e",
+									"type": "String"
+								}
+							],
+							"type": "Array"
+						},
+						{
+							"value": [
+								{
+									"value": "100",
+									"type": "UInt32"
+								},
+								{
+									"value": "100",
+									"type": "UInt32"
+								},
+								{
+									"value": "3000",
+									"type": "UInt32"
+								}
+							],
+							"type": "Array"
+						}
+					]
+				}
+			],
+			"mainnet-uniswapV3-connectors-deployer": [
+				"EVMAbiHelpers",
+				"UniswapV3SwapConnectors"
 			]
 		},
 		"testnet": {
@@ -869,6 +1060,14 @@
 						{
 							"value": "0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95",
 							"type": "String"
+						},
+						{
+							"value": [],
+							"type": "Array"
+						},
+						{
+							"value": [],
+							"type": "Array"
 						}
 					]
 				}

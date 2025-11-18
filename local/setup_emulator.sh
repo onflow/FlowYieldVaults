@@ -3,6 +3,11 @@ git submodule update --init --recursive
 # execute emulator deployment
 flow project deploy --network emulator
 
+echo "bridge MOET to EVM"
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.045a1763c93006ca.MOET.Vault" --gas-limit 9999 --signer tidal
+
+flow deploy
+
 flow transactions send ./cadence/transactions/moet/setup_vault.cdc 
 flow transactions send ./cadence/transactions/moet/mint_moet.cdc 0x045a1763c93006ca 1000000.0 --signer tidal
 
