@@ -628,7 +628,7 @@ fun getEVMAddressHexFromEvents(_ evts: [AnyStruct], idx: Int): String {
     Test.assert(evts.length > idx, message: "Event index out of bounds")
 
     let evt = evts[idx] as? EVM.TransactionExecuted
-    ?? panic("Event at index ".concat(idx.toString()).concat(" is not a TransactionExecuted event"))
+        ?? panic("Event at index ".concat(idx.toString()).concat(" is not a TransactionExecuted event"))
     let emittedAddress = evt.contractAddress
     Test.assert(emittedAddress.length != 0, message: "Emitted .contractAddress value is empty")
 
@@ -953,9 +953,9 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
     let setBridgedNFTDisplayViewResult = _executeTransaction(
         "../../lib/flow-evm-bridge/cadence/transactions/bridge/admin/metadata/set_bridged_nft_display_view.cdc",
         [
-        "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg", // thumbnailURI
-        Type<MetadataViews.HTTPFile>().identifier, // thumbnailFileTypeIdentifier
-        nil // ipfsFilePath
+            "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg", // thumbnailURI
+            Type<MetadataViews.HTTPFile>().identifier, // thumbnailFileTypeIdentifier
+            nil // ipfsFilePath
         ],
         bridgeAccount
     )
@@ -965,16 +965,16 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
     let setBridgedNFTCollectionDisplayResult = _executeTransaction(
         "../../lib/flow-evm-bridge/cadence/transactions/bridge/admin/metadata/set_bridged_nft_collection_display_view.cdc",
         [
-        "https://port.flow.com", // externalURL
-        "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg", // squareImageURI
-        Type<MetadataViews.HTTPFile>().identifier, // squareImageFileTypeIdentifier
-        nil, // squareImageIPFSFilePath
-        "image/svg+xml", // squareImageMediaType
-        "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg", // bannerImageURI
-        Type<MetadataViews.HTTPFile>().identifier, // bannerImageFileTypeIdentifier
-        nil, // bannerImageIPFSFilePath
-        "image/svg+xml", // bannerImageMediaType
-        socialsDict // socialsDict
+            "https://port.flow.com", // externalURL
+            "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg", // squareImageURI
+            Type<MetadataViews.HTTPFile>().identifier, // squareImageFileTypeIdentifier
+            nil, // squareImageIPFSFilePath
+            "image/svg+xml", // squareImageMediaType
+            "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg", // bannerImageURI
+            Type<MetadataViews.HTTPFile>().identifier, // bannerImageFileTypeIdentifier
+            nil, // bannerImageIPFSFilePath
+            "image/svg+xml", // bannerImageMediaType
+            socialsDict // socialsDict
         ],
         bridgeAccount
     )
@@ -983,12 +983,12 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
     let setFTDisplayResult = _executeTransaction(
         "../../lib/flow-evm-bridge/cadence/transactions/bridge/admin/metadata/set_bridged_ft_display_view.cdc",
         [
-        "https://port.flow.com", // externalURL
-        "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg", // logoURI
-        Type<MetadataViews.HTTPFile>().identifier, // logoFileTypeIdentifier
-        nil, // logoIPFSFilePath
-        "image/svg+xml", // logoMediaType
-        socialsDict // socialsDict
+            "https://port.flow.com", // externalURL
+            "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg", // logoURI
+            Type<MetadataViews.HTTPFile>().identifier, // logoFileTypeIdentifier
+            nil, // logoIPFSFilePath
+            "image/svg+xml", // logoMediaType
+            socialsDict // socialsDict
         ],
         bridgeAccount
     )
