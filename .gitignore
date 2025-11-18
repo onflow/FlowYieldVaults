@@ -1,26 +1,32 @@
+# local
 .DS_Store
 .pr-drafts/
+.vscode/
+
 # flow
 *.pkey
+*.pem
 !local/mock-incrementfi.pkey
 !local/emulator-account.pkey
 !local/evm-gateway.pkey
 !local/test-user.pkey
 !local/emulator-tidal.pkey
-imports
+imports/
 coverage.lcov
 coverage.json
+
+# solidity
 solidity/out/
-
-run_logs/*.log
-
-testnet-deployer.pkey
-testnet-uniswapV3-connectors-deployer.pkey
-mock-strategy-deployer.pkey
-
 broadcast
 cache
 db
 
+# logs
+run_logs/*.log
+
+# local key files
+testnet-deployer.pkey
+testnet-uniswapV3-connectors-deployer.pkey
+mock-strategy-deployer.pkey
 keshav-scheduled-testnet.pkey
 demo2.pkey
