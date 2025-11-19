@@ -19,3 +19,9 @@
 [submodule "lib/flow-vaults-evm-integration"]
 	path = lib/flow-vaults-evm-integration
 	url = git@github.com:onflow/flow-vaults-evm-integration.git
+[submodule "solidity/lib/v2-core"]
+	path = solidity/lib/v2-core
+	url = https://github.com/uniswap/v2-core
+[submodule "solidity/lib/v2-periphery"]
+	path = solidity/lib/v2-periphery
+	url = https://github.com/uniswap/v2-periphery
