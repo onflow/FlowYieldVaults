@@ -4,6 +4,7 @@ import "ViewResolver"
 
 import "FlowVaultsClosedBeta"
 import "FlowVaults"
+import "FlowVaultsScheduler"
 
 /// Opens a new Tide in the FlowVaults platform, funding the Tide with the specified Vault and amount
 ///
@@ -61,6 +62,8 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
     }
 
     execute {
-        self.manager.createTide(betaRef: self.betaRef, strategyType: self.strategy, withVault: <-self.depositVault)
+        let newID = self.manager.createTide(betaRef: self.betaRef, strategyType: self.strategy, withVault: <-self.depositVault)
+        // Auto-register the new Tide with the scheduler so the first rebalance can be seeded without extra steps
+        FlowVaultsScheduler.registerTide(tideID: newID)
     }
 }

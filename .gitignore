@@ -20,3 +20,13 @@ solidity/out/
 broadcast
 cache
 db
+
+# logs
+run_logs/*.log
+
+# local key files
+testnet-deployer.pkey
+testnet-uniswapV3-connectors-deployer.pkey
+mock-strategy-deployer.pkey
+keshav-scheduled-testnet.pkey
+demo2.pkey

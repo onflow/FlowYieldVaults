@@ -227,6 +227,11 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
 
+    // Deploy scheduler stack used by any Tide / rebalancing tests. This is
+    // kept idempotent so callers that also invoke deployFlowVaultsSchedulerIfNeeded()
+    // (e.g. scheduled rebalancing tests) remain safe.
+    deployFlowVaultsSchedulerIfNeeded()
+
     setupBetaAccess()
     setupPunchswap()
 }
@@ -274,6 +279,56 @@ fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
     let res = _executeScript("../scripts/flow-vaults/get_auto_balancer_current_value_by_id.cdc", [id])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
+}
+
+/// Deploys FlowVaultsScheduler contract if it is not already deployed.
+/// Used by multiple test suites that depend on the scheduler (Tide rebalancing,
+/// scheduled rebalancing, and Tide+FlowALP liquidation tests).
+access(all)
+fun deployFlowVaultsSchedulerIfNeeded() {
+    //
+    // The FlowVaultsScheduler contract now depends on two storage-only helper
+    // contracts: FlowVaultsSchedulerProofs and FlowVaultsSchedulerRegistry.
+    // When running Cadence unit tests, the `Test` framework does not consult
+    // flow.json deployments, so we need to deploy these contracts explicitly
+    // before attempting to deploy FlowVaultsScheduler itself.
+    //
+    // Each deploy call is intentionally fire-and-forget: if the contract was
+    // already deployed in this test session, `Test.deployContract` will return
+    // a non-nil error which we safely ignore to keep the helper idempotent.
+
+    let _proofsErr = Test.deployContract(
+        name: "FlowVaultsSchedulerProofs",
+        path: "../contracts/FlowVaultsSchedulerProofs.cdc",
+        arguments: []
+    )
+
+    let _registryErr = Test.deployContract(
+        name: "FlowVaultsSchedulerRegistry",
+        path: "../contracts/FlowVaultsSchedulerRegistry.cdc",
+        arguments: []
+    )
+
+    let _schedulerErr = Test.deployContract(
+        name: "FlowVaultsScheduler",
+        path: "../contracts/FlowVaultsScheduler.cdc",
+        arguments: []
+    )
+    // If `_schedulerErr` is non-nil, the contract was likely already deployed
+    // in this test run; we intentionally do not assert here.
+}
+
+/// Returns the FlowALP position health for a given position id by calling the
+/// shared FlowALP `position_health.cdc` script used in E2E tests.
+access(all)
+fun getFlowALPPositionHealth(pid: UInt64): UFix128 {
+    let res = _executeScript(
+        "../../lib/FlowALP/cadence/scripts/flow-alp/position_health.cdc",
+        [pid]
+    )
+    Test.expect(res, Test.beSucceeded())
+    // The script returns UFix128 to preserve the precision used in FlowALP.
+    return res.returnValue as! UFix128
 }
 
 access(all)

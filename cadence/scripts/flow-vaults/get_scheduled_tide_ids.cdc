@@ -1,0 +1,21 @@
+import "FlowVaultsScheduler"
+
+/// Returns the IDs of all Tides that have scheduled rebalancing transactions.
+///
+/// @param account: The address of the account to query
+/// @return An array of Tide IDs with scheduled rebalancing
+///
+access(all) fun main(account: Address): [UInt64] {
+    // Borrow the public capability for the SchedulerManager
+    let schedulerManager = getAccount(account)
+        .capabilities.borrow<&FlowVaultsScheduler.SchedulerManager>(
+            FlowVaultsScheduler.SchedulerManagerPublicPath
+        )
+    
+    if schedulerManager == nil {
+        return []
+    }
+
+    return schedulerManager!.getScheduledTideIDs()
+}
+
