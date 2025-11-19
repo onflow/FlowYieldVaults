@@ -16,3 +16,6 @@
 [submodule "lib/FlowALP"]
 	path = lib/FlowALP
 	url = git@github.com:onflow/FlowALP.git
+[submodule "lib/flow-vaults-evm-integration"]
+	path = lib/flow-vaults-evm-integration
+	url = git@github.com:onflow/flow-vaults-evm-integration.git
