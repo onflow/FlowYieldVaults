@@ -757,6 +757,30 @@
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
+		"mainnet-admin": {
+			"address": "b1d63873c3cc9f79",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
+		"mainnet-flow-alp-deployer": {
+			"address": "6b00ff876c299c61",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
+		"mainnet-uniswapV3-connectors-deployer": {
+			"address": "a7825d405ac89518",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
 		"tidal": {
 			"address": "045a1763c93006ca",
 			"key": {
@@ -1009,6 +1033,48 @@
 				"EVMAbiHelpers",
 				"UniswapV3SwapConnectors"
 			]
-		}
+		},
+    "mainnet": {
+			"mainnet-admin": [
+				{
+					"name": "MockOracle",
+					"args": [
+						{
+							"value": "A.6b00ff876c299c61.MOET.Vault",
+							"type": "String"
+						}
+					]
+				},
+				"MockSwapper",
+				"FlowVaultsAutoBalancers",
+				"FlowVaultsClosedBeta",
+				"FlowVaults",
+				{
+					"name": "FlowVaultsStrategies",
+					"args": [
+						{
+							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+							"type": "String"
+						},
+						{
+							"value": "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+							"type": "String"
+						},
+						{
+							"value": "0x370A8DF17742867a44e56223EC20D82092242C85",
+							"type": "String"
+						},
+						{
+							"value": "0xYIELDTOKEN_ERC4626",
+							"type": "String"
+						}
+					]
+				}
+			],
+			"mainnet-uniswapV3-connectors-deployer": [
+				"EVMAbiHelpers",
+				"UniswapV3SwapConnectors"
+			]
+    }
 	}
 }
