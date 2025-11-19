@@ -625,6 +625,14 @@ fun createCOA(_ signer: Test.TestAccount, fundingAmount: UFix64) {
 }
 
 access(all)
+fun getCOA(_ address: Address): String? {
+    let coaResult = _executeScript("../../lib/flow-evm-bridge/cadence/scripts/evm/get_evm_address_string.cdc", [address])
+    Test.expect(coaResult, Test.beSucceeded())
+
+    return coaResult.returnValue as! String?
+}
+
+access(all)
 fun getEVMAddressHexFromEvents(_ evts: [AnyStruct], idx: Int): String {
     Test.assert(evts.length > idx, message: "Event index out of bounds")
 
@@ -1061,7 +1069,7 @@ fun setupUniswapV2(_ signer: Test.TestAccount, feeToSetter: String, wflowAddress
 }
 
 access(all)
-fun setupPunchswap() {
+fun setupPunchswap(): {String: String} {
     // log("bridge MOET")
     // let bridgeMoetResult = _executeTransaction(
     //     "../../lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
@@ -1100,12 +1108,10 @@ fun setupPunchswap() {
     log("NFTPositionDescriptor address \(nftPositionDescriptorAddress)")
 
     log("deploy UniswapV2Factory")
-    // >cast wallet pk "test test test test test test test test test test test junk" 0\
-    // >cast wallet address 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-    // 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+    let bridgeCOA = getCOA(bridgeAccount.address)!
     let univ2FactoryAddress = evmDeploy(
         uniV2FactoryBytecode,
-        ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"]
+        [bridgeCOA]
     )
     log("UniswapV2Factory address \(univ2FactoryAddress)")
 
@@ -1129,4 +1135,10 @@ fun setupPunchswap() {
         [punchswapV3FactoryAddress, wflowAddress]
     )
     log("QuoterV2 address \(quoterV2Address)")
+
+    return {
+        quoterV2Address: quoterV2Address,
+        swapRouter02Address: swapRouter02Address,
+        punchswapV3FactoryAddress: punchswapV3FactoryAddress
+    }
 }
