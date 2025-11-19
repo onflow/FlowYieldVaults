@@ -8,7 +8,7 @@ transaction(cooldown: UFix64, dailyLimit: UFix64, maxPriceAge: UFix64, minHealth
         ) ?? panic("No admin resource")
         
         adminRef.setProtectionParams(
-            redemptionCooldown: cooldown,
+            redemptionCooldownSeconds: cooldown,
             dailyRedemptionLimit: dailyLimit,
             maxPriceAge: maxPriceAge,
             minPostRedemptionHealth: FlowALPMath.toUFix128(minHealth)

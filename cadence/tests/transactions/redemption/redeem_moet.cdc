@@ -20,11 +20,19 @@ transaction(moetAmount: UFix64) {
             ?? panic("No redeemer capability")
         
         // Execute redemption (uses default collateral type)
-        redeemer.redeem(
+        let change <- redeemer.redeem(
             moet: <-moetVault,
             preferredCollateralType: nil,
             receiver: flowReceiver
         )
+
+        if change != nil {
+             // Deposit change back to user's MOET vault
+             signer.storage.borrow<&MOET.Vault>(from: MOET.VaultStoragePath)!
+                .deposit(from: <-change!)
+        } else {
+            destroy change
+        }
     }
 }
 

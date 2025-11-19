@@ -22,8 +22,14 @@ transaction(flowAmount: UFix64) {
             uniqueID: nil
         )
         
+        // Borrow Admin resource
+        let adminRef = signer.storage.borrow<&RedemptionWrapper.Admin>(
+            from: RedemptionWrapper.AdminStoragePath
+        ) ?? panic("No admin resource - setup requires Admin authorization")
+
         // Setup redemption position (no repayment source for testing simplicity)
         RedemptionWrapper.setup(
+            admin: adminRef,
             initialCollateral: <-flowVault,
             issuanceSink: issuanceSink,
             repaymentSource: nil

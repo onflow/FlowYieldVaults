@@ -216,7 +216,9 @@ fun test_user_cooldown_enforcement() {
     
     // NOTE: Cannot test cooldown expiration without BlockchainHelpers.commitBlock()
     // The cooldown enforcement is validated above - the expiration would require
-    // time advancement which isn't available in the current test framework
+    // time advancement which isn't available in the current test framework.
+    // Attempted to use empty transactions to advance blocks, but Test.executeTransaction
+    // does not advance block height or timestamp in this environment.
 }
 
 /// Test 5: Min/Max Redemption Amounts
@@ -353,7 +355,7 @@ fun test_sequential_redemptions() {
         log("User ".concat(i.toString()).concat(" redeemed. Position health: ").concat(health.toString()))
         
         // Health should remain above minimum (1.15 = 115%)
-        Test.assert(health >= 1.15 as UFix128, message: "Position health below minimum after redemption")
+        Test.assert(health >= 1.15, message: "Position health below minimum after redemption")
         
         i = i + 1
     }
@@ -399,6 +401,69 @@ fun test_liquidation_prevention() {
     } else {
         log("Position not liquidatable - test scenario setup issue")
     }
+}
+
+/// Test 11: Excess MOET Handling
+/// Verifies that if user sends more MOET than debt, the system handles it (accepts surplus)
+access(all)
+fun test_excess_moet_return() {
+    safeReset()
+    
+    // Ensure price is 2.0
+    // Use protocolAccount as signer to match other tests, just in case
+    setMockOraclePrice(signer: protocolAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0)
+    
+    // Verify price
+    let price = _executeScript("../scripts/mocks/oracle/get_price.cdc", [flowTokenIdentifier]).returnValue! as! UFix64
+    log("Oracle Price: ".concat(price.toString()))
+    Test.assertEqual(2.0, price)
+
+    // Setup redemption wrapper with initial collateral
+    setupMoetVault(protocolAccount, beFailed: false)
+    giveFlowTokens(to: protocolAccount, amount: 1000.0)
+    
+    // Setup redemption position
+    let setupRes = setupRedemptionPosition(signer: protocolAccount, flowAmount: 500.0)
+    Test.expect(setupRes, Test.beSucceeded())
+    
+    // Get initial debt
+    let initialRes = _executeScript("./scripts/redemption/get_position_details.cdc", [])
+    Test.expect(initialRes, Test.beSucceeded())
+    let initialState = initialRes.returnValue! as! {String: UFix64}
+    let initialDebt = initialState["moetDebt"]!
+    log("Initial Debt: ".concat(initialDebt.toString()))
+    
+    // Ensure we have some debt
+    if initialDebt == 0.0 {
+        Test.assert(initialDebt > 0.0, message: "Initial debt must be > 0 for this test")
+    }
+    
+    let user = Test.createAccount()
+    setupMoetVault(user, beFailed: false)
+    
+    // Mint MORE than debt
+    let mintAmount = initialDebt + 50.0
+    mintMoet(signer: flowALPAccount, to: user.address, amount: mintAmount, beFailed: false)
+    
+    // Execute redemption with ALL minted MOET
+    let redeemRes = redeemMoet(user: user, amount: mintAmount)
+    Test.expect(redeemRes, Test.beSucceeded())
+    
+    // Verify user received correct Flow for FULL amount (since sink accepts surplus)
+    // Price is 2.0
+    let userFlowBalance = getBalance(address: user.address, vaultPublicPath: /public/flowTokenBalance) ?? 0.0
+    let expectedFlow = mintAmount / 2.0
+    
+    log("User Flow Balance: ".concat(userFlowBalance.toString()))
+    log("Expected Flow: ".concat(expectedFlow.toString()))
+
+    Test.assert(equalAmounts(a: expectedFlow, b: userFlowBalance, tolerance: 0.00000001), message: "User flow balance mismatch")
+    
+    // Verify user used all MOET (none returned as sink accepted all)
+    let userMoetBalance = getBalance(address: user.address, vaultPublicPath: MOET.VaultPublicPath) ?? 0.0
+    Test.assertEqual(0.0, userMoetBalance)
+    
+    log("User MOET balance: ".concat(userMoetBalance.toString()))
 }
 
 /* --- Helper Functions --- */
@@ -449,4 +514,3 @@ fun giveFlowTokens(to: Test.TestAccount, amount: UFix64) {
     // Use the test_helpers function to transfer Flow tokens
     transferFlowTokens(to: to, amount: amount)
 }
-

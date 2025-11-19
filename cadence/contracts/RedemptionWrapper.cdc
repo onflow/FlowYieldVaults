@@ -23,7 +23,7 @@ access(all) contract RedemptionWrapper {
         moetBurned: UFix64,
         collateralType: String,
         collateralReceived: UFix64,
-        oraclePrice: UFix64,
+        collateralOraclePrice: UFix64,
         preRedemptionHealth: UFix128,
         postRedemptionHealth: UFix128
     )
@@ -42,7 +42,7 @@ access(all) contract RedemptionWrapper {
     access(all) var minRedemptionAmount: UFix64
     
     // Rate limiting
-    access(all) var redemptionCooldown: UFix64
+    access(all) var redemptionCooldownSeconds: UFix64
     access(all) var dailyRedemptionLimit: UFix64
     access(all) var dailyRedemptionUsed: UFix64
     access(all) var lastRedemptionResetDay: UFix64
@@ -51,6 +51,7 @@ access(all) contract RedemptionWrapper {
     // Oracle and health protections
     access(all) var maxPriceAge: UFix64
     access(all) var minPostRedemptionHealth: UFix128
+    access(all) var oracle: {DeFiActions.PriceOracle}
     
     // Position tracking
     access(all) var positionID: UInt64?
@@ -77,21 +78,25 @@ access(all) contract RedemptionWrapper {
         }
 
         access(all) fun setProtectionParams(
-            redemptionCooldown: UFix64,
+            redemptionCooldownSeconds: UFix64,
             dailyRedemptionLimit: UFix64,
             maxPriceAge: UFix64,
             minPostRedemptionHealth: UFix128
         ) {
             pre {
-                redemptionCooldown <= 3600.0: "Cooldown too long (max 1 hour)"
+                redemptionCooldownSeconds <= 3600.0: "Cooldown too long (max 1 hour)"
                 dailyRedemptionLimit > 0.0: "Daily limit must be positive"
                 maxPriceAge <= 7200.0: "Max price age too long (max 2 hours)"
                 minPostRedemptionHealth >= FlowALPMath.toUFix128(1.0): "Min post-redemption health must be >= 1.0"
             }
-            RedemptionWrapper.redemptionCooldown = redemptionCooldown
+            RedemptionWrapper.redemptionCooldownSeconds = redemptionCooldownSeconds
             RedemptionWrapper.dailyRedemptionLimit = dailyRedemptionLimit
             RedemptionWrapper.maxPriceAge = maxPriceAge
             RedemptionWrapper.minPostRedemptionHealth = minPostRedemptionHealth
+        }
+        
+        access(all) fun setOracle(_ newOracle: {DeFiActions.PriceOracle}) {
+            RedemptionWrapper.oracle = newOracle
         }
 
         access(all) fun pause() {
@@ -123,7 +128,7 @@ access(all) contract RedemptionWrapper {
             moet: @MOET.Vault,
             preferredCollateralType: Type?,
             receiver: Capability<&{FungibleToken.Receiver}>
-        ) {
+        ): @MOET.Vault? {
             pre {
                 !RedemptionWrapper.reentrancyGuard: "Reentrancy detected"
                 !RedemptionWrapper.paused: "Redemptions are paused"
@@ -146,7 +151,7 @@ access(all) contract RedemptionWrapper {
             let userAddr = receiver.address
             if let lastTime = RedemptionWrapper.userLastRedemption[userAddr] {
                 assert(
-                    getCurrentBlock().timestamp - lastTime >= RedemptionWrapper.redemptionCooldown,
+                    getCurrentBlock().timestamp - lastTime >= RedemptionWrapper.redemptionCooldownSeconds,
                     message: "Redemption cooldown not elapsed"
                 )
             }
@@ -179,23 +184,20 @@ access(all) contract RedemptionWrapper {
             let sink = position.createSink(type: Type<@MOET.Vault>())
             sink.depositCapacity(from: &moet as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
             let repaid = moetAmount - moet.balance
-            destroy moet
-
-            // Validate MOET was burned
-            assert(repaid > 0.0, message: "No MOET was repaid/burned")
+            
+            // Validate MOET was repaid
+            assert(repaid > 0.0, message: "No MOET was repaid")
 
             // Determine collateral type (default to FlowToken if not specified)
             let collateralType = preferredCollateralType ?? Type<@FlowToken.Vault>()
             
             // Get oracle price for the collateral
-            // Create a PriceOracle struct instance to access prices
-            let oracle = MockOracle.PriceOracle()
-            let collateralPrice = oracle.price(ofToken: collateralType) 
+            let collateralPriceUSD = RedemptionWrapper.oracle.price(ofToken: collateralType) 
                 ?? panic("Oracle price unavailable for collateral type")
             
             // Calculate exact collateral amount for 1:1 USD parity
-            // MOET is pegged to $1, so: collateralAmount = moetAmount / collateralPriceUSD
-            let collateralAmount = repaid / collateralPrice
+            // MOET is pegged to $1, so: collateralAmount = repaid / collateralPriceUSD
+            let collateralAmount = repaid / collateralPriceUSD
             
             // Validate sufficient collateral is available
             let available = position.availableBalance(type: collateralType, pullFromTopUpSource: false)
@@ -236,10 +238,16 @@ access(all) contract RedemptionWrapper {
                 moetBurned: repaid,
                 collateralType: collateralType.identifier,
                 collateralReceived: actualWithdrawn,
-                oraclePrice: collateralPrice,
+                collateralOraclePrice: collateralPriceUSD,
                 preRedemptionHealth: preHealth,
                 postRedemptionHealth: postHealth
             )
+
+            if moet.balance > 0.0 {
+                return <-moet
+            }
+            destroy moet
+            return nil
         }
     }
 
@@ -247,6 +255,7 @@ access(all) contract RedemptionWrapper {
     /// This must be called once before any redemptions can occur
     /// If called multiple times (e.g., in tests), it will overwrite the previous position
     access(all) fun setup(
+        admin: &Admin,
         initialCollateral: @{FungibleToken.Vault},
         issuanceSink: {DeFiActions.Sink},
         repaymentSource: {DeFiActions.Source}?
@@ -254,9 +263,9 @@ access(all) contract RedemptionWrapper {
         // Allow re-setup for testing - clean up previous position if exists
         if self.positionID != nil {
             // Remove old position (structs don't need destroying)
-            self.account.storage.load<FlowALP.Position>(from: self.RedemptionPositionStoragePath)
+            let _ = self.account.storage.load<FlowALP.Position>(from: self.RedemptionPositionStoragePath)
             // Remove old pool cap (capabilities don't need destroying)
-            self.account.storage.load<Capability<auth(FlowALP.EParticipant, FlowALP.EPosition) &FlowALP.Pool>>(from: self.PoolCapStoragePath)
+            let unusedCap = self.account.storage.load<Capability<auth(FlowALP.EParticipant, FlowALP.EPosition) &FlowALP.Pool>>(from: self.PoolCapStoragePath)
         }
         
         let poolCap = self.account.storage.load<Capability<auth(FlowALP.EParticipant, FlowALP.EPosition) &FlowALP.Pool>>(
@@ -318,7 +327,7 @@ access(all) contract RedemptionWrapper {
         self.minRedemptionAmount = 10.0     // Prevent spam
         
         // Rate limiting for MEV protection
-        self.redemptionCooldown = 60.0         // 1 minute cooldown per user
+        self.redemptionCooldownSeconds = 60.0  // 1 minute cooldown per user
         self.dailyRedemptionLimit = 100000.0   // 100k MOET per day circuit breaker
         self.dailyRedemptionUsed = 0.0
         self.lastRedemptionResetDay = UFix64(getCurrentBlock().timestamp) / 86400.0
@@ -327,6 +336,7 @@ access(all) contract RedemptionWrapper {
         // Oracle and health protections
         self.maxPriceAge = 3600.0              // 1 hour max price age
         self.minPostRedemptionHealth = FlowALPMath.toUFix128(1.15)  // Require 115% health after redemption
+        self.oracle = MockOracle.PriceOracle() // Default to MockOracle
         
         // Position tracking
         self.positionID = nil
