@@ -162,6 +162,49 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "ERC4626Utils",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "EVMTokenConnectors",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "ERC4626SinkConnectors",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "ERC4626SwapConnectors",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "ERC4626PriceOracles",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    let onboardMoet = _executeTransaction(
+        "../../lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type.cdc",
+        [Type<@MOET.Vault>()],
+        bridgeAccount
+    )
+    Test.expect(onboardMoet, Test.beSucceeded())
+
     err = Test.deployContract(
         name: "FlowVaultsStrategies",
         path: "../contracts/FlowVaultsStrategies.cdc",
@@ -169,7 +212,9 @@ access(all) fun deployContracts() {
             "0x986Cb42b0557159431d48fE0A40073296414d410",
             "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
             "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C",
-            "0xaCCF0c4EeD4438Ad31Cd340548f4211a465B6528"
+            "0xaCCF0c4EeD4438Ad31Cd340548f4211a465B6528",
+            [] as [String],
+            [] as [UInt32]
         ]
     )
     Test.expect(err, Test.beNil())
