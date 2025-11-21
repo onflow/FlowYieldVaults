@@ -3,17 +3,17 @@ source ./local/punchswap/punchswap.env
 USDC_ADDR_LOWER=$(echo ${USDC_ADDR#0x} | tr '[:upper:]' '[:lower:]')
 
 echo "bridge USDC to Cadence"
-flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc $USDC_ADDR --gas-limit 9999 --signer tidal
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc $USDC_ADDR --gas-limit 9999 --signer emulator-flow-vaults
 
 echo "set USDC token price"
-flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc "A.f8d6e0586b0a20c7.EVMVMBridgedToken_${USDC_ADDR_LOWER}.Vault" 1.0 --signer tidal
+flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc "A.f8d6e0586b0a20c7.EVMVMBridgedToken_${USDC_ADDR_LOWER}.Vault" 1.0 --signer emulator-flow-vaults
 
 echo "bridge WBTC to Cadence"
-flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc $WBTC_ADDR --gas-limit 9999 --signer tidal
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc $WBTC_ADDR --gas-limit 9999 --signer emulator-flow-vaults
 
 # this step is done earlier
 # echo "bridge MOET to EVM"
-# flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.045a1763c93006ca.MOET.Vault" --gas-limit 9999 --signer tidal
+# flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.045a1763c93006ca.MOET.Vault" --gas-limit 9999 --signer emulator-flow-vaults
 
 #flow transactions send ../cadence/tests/transactions/create_univ3_pool.cdc
 
@@ -39,7 +39,7 @@ cast send $USDC_ADDR "approve(address,uint256)" $POSITION_MANAGER $MAX_UINT \
 
 echo "transfer MOET"
 
-flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/tokens/bridge_tokens_to_any_evm_address.cdc "A.045a1763c93006ca.MOET.Vault" 100000.0 $OWNER --gas-limit 9999 --signer tidal
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/tokens/bridge_tokens_to_any_evm_address.cdc "A.045a1763c93006ca.MOET.Vault" 100000.0 $OWNER --gas-limit 9999 --signer emulator-flow-vaults
 
 # create position / add liquidity
 
@@ -64,6 +64,6 @@ cast send $POSITION_MANAGER \
   --rpc-url $RPC_URL \
   --gas-limit 1200000
 
-flow transactions send ./lib/flow-evm-bridge/cadence/transactions/example-assets/setup/setup_generic_vault.cdc "A.f8d6e0586b0a20c7.EVMVMBridgedToken_${USDC_ADDR_LOWER}.Vault" --signer tidal
-flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_${USDC_ADDR_LOWER}Vault --signer tidal
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/example-assets/setup/setup_generic_vault.cdc "A.f8d6e0586b0a20c7.EVMVMBridgedToken_${USDC_ADDR_LOWER}.Vault" --signer emulator-flow-vaults
+flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_${USDC_ADDR_LOWER}Vault --signer emulator-flow-vaults
 
