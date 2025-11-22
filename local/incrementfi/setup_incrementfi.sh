@@ -13,7 +13,8 @@ echo_info() {
 # echo_info "Creating new Flow account for test user..."
 # flow accounts create --network "$FLOW_NETWORK" --key "$(cat $TEST_USER_PUBKEY_PATH)"
 
-flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0xf3fcd2c1a78f5eee 1000.0  --signer emulator-flow-vaults
+flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0xf3fcd2c1a78f5eee 1000.0
+flow transactions send "./cadence/transactions/flow-token/transfer_flow.cdc" 0x045a1763c93006ca 1000.0
 
 # 2. Setup MOET and YIELD vault, and create swap pairs
 #

@@ -4,11 +4,12 @@ git submodule update --init --recursive
 # install flow.json dependencies
 flow deps install --skip-alias --skip-deployments
 
+echo "deploy MOET & bridge MOET to EVM"
+flow accounts add-contract ./lib/FlowALP/cadence/contracts/MOET.cdc 1000000.00000000 --signer emulator-flow-vaults
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.045a1763c93006ca.MOET.Vault" --gas-limit 9999 --signer emulator-flow-vaults
+
 # execute emulator deployment
 flow deploy
-
-echo "bridge MOET to EVM"
-flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.045a1763c93006ca.MOET.Vault" --gas-limit 9999 --signer emulator-flow-vaults
 
 flow transactions send ./cadence/transactions/moet/setup_vault.cdc 
 flow transactions send ./cadence/transactions/moet/mint_moet.cdc 0x045a1763c93006ca 1000000.0 --signer emulator-flow-vaults
@@ -44,11 +45,11 @@ flow transactions send ./cadence/transactions/flow-vaults/admin/add_strategy_com
     --signer emulator-flow-vaults
 
 # grant PoolBeta cap
-echo "Grant Protocol Beta access to TidalVaults"
+echo "Grant Protocol Beta access to FlowVaults"
 flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc \
-  --authorizer tidal,tidal \
-  --proposer tidal \
-  --payer tidal
+  --authorizer emulator-flow-vaults,emulator-flow-vaults \
+  --proposer emulator-flow-vaults \
+  --payer emulator-flow-vaults
 
 
 TIDAL_COA=0x$(flow scripts execute ./lib/flow-evm-bridge/cadence/scripts/evm/get_evm_address_string.cdc 045a1763c93006ca --format inline | sed -E 's/"([^"]+)"/\1/')
