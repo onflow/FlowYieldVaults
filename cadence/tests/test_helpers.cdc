@@ -355,15 +355,15 @@ fun getBalance(address: Address, vaultPublicPath: PublicPath): UFix64? {
 }
 
 access(all)
-fun getTideIDs(address: Address): [UInt64]? {
-    let res = _executeScript("../scripts/flow-vaults/get_tide_ids.cdc", [address])
+fun getYieldVaultIDs(address: Address): [UInt64]? {
+    let res = _executeScript("../scripts/flow-vaults/get_yield_vault_ids.cdc", [address])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! [UInt64]?
 }
 
 access(all)
-fun getTideBalance(address: Address, tideID: UInt64): UFix64? {
-    let res = _executeScript("../scripts/flow-vaults/get_tide_balance.cdc", [address, tideID])
+fun getYieldVaultBalance(address: Address, yieldVaultID: UInt64): UFix64? {
+    let res = _executeScript("../scripts/flow-vaults/get_yield_vault_balance.cdc", [address, yieldVaultID])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
 }
@@ -492,14 +492,14 @@ fun addStrategyComposer(signer: Test.TestAccount, strategyIdentifier: String, co
 }
 
 access(all)
-fun createTide(
+fun createYieldVault(
     signer: Test.TestAccount,
     strategyIdentifier: String,
     vaultIdentifier: String,
     amount: UFix64,
     beFailed: Bool
 ) {
-    let res = _executeTransaction("../transactions/flow-vaults/create_tide.cdc",
+    let res = _executeTransaction("../transactions/flow-vaults/create_yield_vault.cdc",
         [ strategyIdentifier, vaultIdentifier, amount ],
         signer
     )
@@ -507,8 +507,8 @@ fun createTide(
 }
 
 access(all)
-fun closeTide(signer: Test.TestAccount, id: UInt64, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/flow-vaults/close_tide.cdc", [id], signer)
+fun closeYieldVault(signer: Test.TestAccount, id: UInt64, beFailed: Bool) {
+    let res = _executeTransaction("../transactions/flow-vaults/close_yield_vault.cdc", [id], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
@@ -525,7 +525,7 @@ fun withdrawFromTide(signer: Test.TestAccount, id: UInt64, amount: UFix64, beFai
 }
 
 access(all)
-fun rebalanceTide(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
+fun rebalanceYieldVault(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
     let res = _executeTransaction("../transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }

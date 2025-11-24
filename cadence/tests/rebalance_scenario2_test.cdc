@@ -42,7 +42,7 @@ access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
 
 // Enhanced diagnostic precision tracking function with full call stack tracing
 access(all) fun performDiagnosticPrecisionTrace(
-    tideID: UInt64,
+    yieldVaultID: UInt64,
     pid: UInt64,
     yieldPrice: UFix64,
     expectedValue: UFix64,
@@ -62,7 +62,7 @@ access(all) fun performDiagnosticPrecisionTrace(
     
     // Values at different layers
     let positionValue = flowAmount * 1.0  // Flow price = 1.0 in Scenario 2
-    let tideValue = getTideBalance(address: userAddress, tideID: tideID) ?? 0.0
+    let tideValue = getYieldVaultBalance(address: userAddress, yieldVaultID: yieldVaultID) ?? 0.0
     
     // Calculate drifts with proper sign handling
     let tideDriftAbs = tideValue > expectedValue ? tideValue - expectedValue : expectedValue - tideValue
@@ -79,10 +79,10 @@ access(all) fun performDiagnosticPrecisionTrace(
     log("| Layer          | Value          | Drift         | % Drift      |")
     log("|----------------|----------------|---------------|--------------|")
     log("| Position       | \(formatValue(positionValue)) | \(positionDriftSign)\(formatValue(positionDriftAbs)) | \(positionDriftSign)\(formatPercent(positionDriftAbs / expectedValue))% |")
-    log("| Tide Balance   | \(formatValue(tideValue)) | \(tideDriftSign)\(formatValue(tideDriftAbs)) | \(tideDriftSign)\(formatPercent(tideDriftAbs / expectedValue))% |")
+    log("| YieldVault Balance   | \(formatValue(tideValue)) | \(tideDriftSign)\(formatValue(tideDriftAbs)) | \(tideDriftSign)\(formatPercent(tideDriftAbs / expectedValue))% |")
     log("| Expected       | \(formatValue(expectedValue)) | ------------- | ------------ |")
     log("|----------------|----------------|---------------|--------------|")
-    log("| Tide vs Position: \(tideVsPositionSign)\(formatValue(tideVsPositionAbs))                                   |")
+    log("| YieldVault vs Position: \(tideVsPositionSign)\(formatValue(tideVsPositionAbs))                                   |")
     log("+----------------------------------------------------------------+")
     
     // Log intermediate calculation values
@@ -99,8 +99,8 @@ access(all) fun performDiagnosticPrecisionTrace(
     // Log precision loss summary without complex calculations
     log("- Precision Loss Summary:")
     log("  * Position vs Expected: \(positionDriftSign)\(formatValue(positionDriftAbs)) (\(positionDriftSign)\(formatPercent(positionDriftAbs / expectedValue))%)")
-    log("  * Tide vs Expected: \(tideDriftSign)\(formatValue(tideDriftAbs)) (\(tideDriftSign)\(formatPercent(tideDriftAbs / expectedValue))%)")
-    log("  * Additional Tide Loss: \(tideVsPositionSign)\(formatValue(tideVsPositionAbs))")
+    log("  * YieldVault vs Expected: \(tideDriftSign)\(formatValue(tideDriftAbs)) (\(tideDriftSign)\(formatPercent(tideDriftAbs / expectedValue))%)")
+    log("  * Additional YieldVault Loss: \(tideVsPositionSign)\(formatValue(tideVsPositionAbs))")
     
     // Warning if significant drift
     if tideDriftAbs > 0.00000100 {
@@ -164,7 +164,7 @@ fun setup() {
 }
 
 access(all)
-fun test_RebalanceTideScenario2() {
+fun test_RebalanceYieldVaultScenario2() {
 	// Test.reset(to: snapshot)
 
 	let fundingAmount = 1000.0
@@ -186,7 +186,7 @@ fun test_RebalanceTideScenario2() {
 	mintFlow(to: user, amount: fundingAmount)
     grantBeta(flowVaultsAccount, user)
 
-	createTide(
+	createYieldVault(
 		signer: user,
 		strategyIdentifier: strategyIdentifier,
 		vaultIdentifier: flowTokenIdentifier,
@@ -194,40 +194,40 @@ fun test_RebalanceTideScenario2() {
 		beFailed: false
 	)
 
-	var tideIDs = getTideIDs(address: user.address)
+	var yieldVaultIDs = getYieldVaultIDs(address: user.address)
 	var pid  = 1 as UInt64
-	log("[TEST] Tide ID: \(tideIDs![0])")
-	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
-	Test.assertEqual(1, tideIDs!.length)
+	log("[TEST] YieldVault ID: \(yieldVaultIDs![0])")
+	Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
+	Test.assertEqual(1, yieldVaultIDs!.length)
 
-	var tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+	var yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-	log("[TEST] Initial tide balance: \(tideBalance ?? 0.0)")
+	log("[TEST] Initial tide balance: \(yieldVaultBalance ?? 0.0)")
 
-	rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
 	for index, yieldTokenPrice in yieldPriceIncreases {
-		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-		log("[TEST] Tide balance before yield price \(yieldTokenPrice): \(tideBalance ?? 0.0)")
+		log("[TEST] YieldVault balance before yield price \(yieldTokenPrice): \(yieldVaultBalance ?? 0.0)")
 
 		setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldTokenPrice)
 
-		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-		log("[TEST] Tide balance before yield price \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+		log("[TEST] YieldVault balance before yield price \(yieldTokenPrice) rebalance: \(yieldVaultBalance ?? 0.0)")
 
-		rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: false, beFailed: false)
+		rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultIDs![0], force: false, beFailed: false)
 		rebalancePosition(signer: protocolAccount, pid: pid, force: false, beFailed: false)
 
-		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-		log("[TEST] Tide balance after yield price \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+		log("[TEST] YieldVault balance after yield price \(yieldTokenPrice) rebalance: \(yieldVaultBalance ?? 0.0)")
 
 		// Perform comprehensive diagnostic precision trace
 		performDiagnosticPrecisionTrace(
-			tideID: tideIDs![0],
+			yieldVaultID: yieldVaultIDs![0],
 			pid: pid,
 			yieldPrice: yieldTokenPrice,
 			expectedValue: expectedFlowBalance[index],
@@ -239,45 +239,45 @@ fun test_RebalanceTideScenario2() {
 		let flowCollateralValue = flowCollateralAmount * 1.0  // Flow price remains at 1.0
 		
 		// Detailed precision comparison
-		let actualTideBalance = tideBalance ?? 0.0
+		let actualYieldVaultBalance = yieldVaultBalance ?? 0.0
 		let expectedBalance = expectedFlowBalance[index]
 		
 		// Calculate differences
-		let tideDiff = actualTideBalance > expectedBalance ? actualTideBalance - expectedBalance : expectedBalance - actualTideBalance
-		let tideSign = actualTideBalance > expectedBalance ? "+" : "-"
+		let tideDiff = actualYieldVaultBalance > expectedBalance ? actualYieldVaultBalance - expectedBalance : expectedBalance - actualYieldVaultBalance
+		let tideSign = actualYieldVaultBalance > expectedBalance ? "+" : "-"
 		let tidePercentDiff = (tideDiff / expectedBalance) * 100.0
 		
 		let positionDiff = flowCollateralValue > expectedBalance ? flowCollateralValue - expectedBalance : expectedBalance - flowCollateralValue
 		let positionSign = flowCollateralValue > expectedBalance ? "+" : "-"
 		let positionPercentDiff = (positionDiff / expectedBalance) * 100.0
 		
-		let tideVsPositionDiff = actualTideBalance > flowCollateralValue ? actualTideBalance - flowCollateralValue : flowCollateralValue - actualTideBalance
-		let tideVsPositionSign = actualTideBalance > flowCollateralValue ? "+" : "-"
+		let tideVsPositionDiff = actualYieldVaultBalance > flowCollateralValue ? actualYieldVaultBalance - flowCollateralValue : flowCollateralValue - actualYieldVaultBalance
+		let tideVsPositionSign = actualYieldVaultBalance > flowCollateralValue ? "+" : "-"
 		
 		log("\n=== PRECISION COMPARISON for Yield Price \(yieldTokenPrice) ===")
 		log("Expected Value:         \(expectedBalance)")
-		log("Actual Tide Balance:    \(actualTideBalance)")
+		log("Actual YieldVault Balance:    \(actualYieldVaultBalance)")
 		log("Flow Position Value:    \(flowCollateralValue)")
 		log("Flow Position Amount:   \(flowCollateralAmount) tokens")
 		log("")
-		log("Tide vs Expected:       \(tideSign)\(tideDiff) (\(tideSign)\(tidePercentDiff)%)")
+		log("YieldVault vs Expected:       \(tideSign)\(tideDiff) (\(tideSign)\(tidePercentDiff)%)")
 		log("Position vs Expected:   \(positionSign)\(positionDiff) (\(positionSign)\(positionPercentDiff)%)")
-		log("Tide vs Position:       \(tideVsPositionSign)\(tideVsPositionDiff)")
+		log("YieldVault vs Position:       \(tideVsPositionSign)\(tideVsPositionDiff)")
 		log("===============================================\n")
 
 		// Temporarily commented to see all precision differences
 		// Test.assert(
-		// 	tideBalance == expectedFlowBalance[index],
-		// 	message: "Tide balance of \(tideBalance ?? 0.0) doesn't match an expected value \(expectedFlowBalance[index])"
+		// 	yieldVaultBalance == expectedFlowBalance[index],
+		// 	message: "YieldVault balance of \(yieldVaultBalance ?? 0.0) doesn't match an expected value \(expectedFlowBalance[index])"
 		// )
 		
 		Test.assert(
-			equalAmounts(a: actualTideBalance, b: expectedBalance, tolerance: 0.01),
-			message: "Expected balance \(expectedBalance) but got \(actualTideBalance) for yield price \(yieldTokenPrice)"
+			equalAmounts(a: actualYieldVaultBalance, b: expectedBalance, tolerance: 0.01),
+			message: "Expected balance \(expectedBalance) but got \(actualYieldVaultBalance) for yield price \(yieldTokenPrice)"
 		)
 	}
 
-	closeTide(signer: user, id: tideIDs![0], beFailed: false)
+	closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
 
 	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	log("[TEST] flow balance after \(flowBalanceAfter)")
