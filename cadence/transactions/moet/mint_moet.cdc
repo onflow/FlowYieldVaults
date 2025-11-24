@@ -17,7 +17,7 @@ transaction(to: Address, amount: UFix64) {
     prepare(signer: auth(BorrowValue) &Account) {
         self.minter = signer.storage.borrow<&MOET.Minter>(from: MOET.AdminStoragePath)
             ?? panic("Could not borrow reference to MOET Minter from signer's account at path \(MOET.AdminStoragePath)")
-        self.receiver = getAccount(to).capabilities.borrow<&{FungibleToken.Vault}>(MOET.VaultPublicPath)
+        self.receiver = getAccount(to).capabilities.borrow<&{FungibleToken.Vault}>(/public/moetTokenReceiver_0xd27920b6384e2a78)
             ?? panic("Could not borrow reference to MOET Vault from recipient's account at path \(MOET.VaultPublicPath)")
     }
 
