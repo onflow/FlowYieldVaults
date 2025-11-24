@@ -348,10 +348,12 @@ fun testRecurringRebalancingThreeRuns() {
     // 5. Count wrapper-level executions for this Tide and require at least one.
     let execEvents = Test.eventsOfType(Type<FlowVaultsScheduler.RebalancingExecuted>())
     var count = 0
+    var lastExecutedID: UInt64 = 0
     for e in execEvents {
         let evt = e as! FlowVaultsScheduler.RebalancingExecuted
         if evt.tideID == tideID {
             count = count + 1
+            lastExecutedID = evt.scheduledTransactionID
         }
     }
 
@@ -360,6 +362,35 @@ fun testRecurringRebalancingThreeRuns() {
         message: "Expected at least 1 RebalancingExecuted event for Tide ".concat(tideID.toString()).concat(" but found ").concat(count.toString())
     )
     log("🎉 Recurring rebalancing executed \(count) time(s) for Tide ".concat(tideID.toString()))
+
+    // 6. After the latest observed execution, ensure that a *new* recurring
+    //    schedule exists for this Tide (i.e. scheduleNextIfRecurring has
+    //    chained the next job).
+    let schedulesRes = executeScript(
+        "../scripts/flow-vaults/get_all_scheduled_rebalancing.cdc",
+        [flowVaultsAccount.address]
+    )
+    Test.expect(schedulesRes, Test.beSucceeded())
+    let schedules = schedulesRes.returnValue! as! [FlowVaultsScheduler.RebalancingScheduleInfo]
+
+    var nextFound = false
+    for s in schedules {
+        if s.tideID == tideID && s.isRecurring && s.recurringInterval != nil && s.recurringInterval! > 0.0 {
+            // The current scheduled tx for this tide should be a *different*
+            // ID than the one we just saw execute.
+            Test.assert(
+                s.scheduledTransactionID != lastExecutedID,
+                message: "Expected new scheduledTransactionID for recurring Tide but found same ID as executed"
+            )
+            nextFound = true
+        }
+    }
+
+    Test.assert(
+        nextFound,
+        message: "Expected a recurring scheduled rebalancing entry for Tide ".concat(tideID.toString()).concat(" after execution")
+    )
+    log("✅ Verified that next recurring rebalancing is scheduled for Tide ".concat(tideID.toString()))
 }
 
 access(all)
