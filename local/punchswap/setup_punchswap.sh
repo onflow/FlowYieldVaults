@@ -5,6 +5,18 @@ cp ./local/punchswap/flow-emulator.json ./solidity/lib/punch-swap-v3-contracts/s
 
 cp ./local/punchswap/punchswap.env ./solidity/lib/punch-swap-v3-contracts/.env
 
+# Append a local lint config to the PunchSwap submodule without modifying it in git
+if ! grep -q "^\[lint\]" solidity/lib/punch-swap-v3-contracts/foundry.toml; then
+  cat << 'EOF' >> solidity/lib/punch-swap-v3-contracts/foundry.toml
+
+[lint]
+severity = []
+exclude_lints = []
+ignore = []
+lint_on_build = false
+EOF
+fi
+
 echo "fund PunchSwap deployer"
 flow transactions send ./cadence/transactions/mocks/transfer_to_evm.cdc 0xC31A5268a1d311d992D637E8cE925bfdcCEB4310 1000.0
 
