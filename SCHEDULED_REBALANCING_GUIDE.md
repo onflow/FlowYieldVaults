@@ -42,12 +42,14 @@ Use with understanding that while the infrastructure is solid and the pattern is
 3. **SchedulerManager**: Resource that tracks and manages schedules for an account
 4. **FlowTransactionScheduler**: Flow's system contract for autonomous transactions
 
+**Note**: Tides are automatically registered with the Scheduler system upon creation.
+
 ### How It Works
 
 ```
 User schedules rebalancing
          ↓
-FlowVaultsScheduler creates RebalancingHandler
+FlowVaultsScheduler creates RebalancingHandler (automatically on Tide creation)
          ↓
 FlowTransactionScheduler schedules execution
          ↓

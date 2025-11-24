@@ -2,8 +2,7 @@ import "FungibleToken"
 import "FlowToken"
 import "FlowTransactionScheduler"
 import "FlowVaultsScheduler"
-import "FlowVaultsAutoBalancers"
-import "DeFiActions"
+import "FlowVaultsSchedulerRegistry"
 
 /// Schedules an autonomous rebalancing transaction for a specific Tide.
 ///
@@ -11,8 +10,8 @@ import "DeFiActions"
 /// for their Tides using Flow's native transaction scheduler. The scheduled transaction
 /// will automatically rebalance the Tide's AutoBalancer at the specified time(s).
 ///
-/// Note: This transaction must be authorized by the account that owns the AutoBalancer
-/// (typically the FlowVaults contract account).
+/// Note: This transaction uses the Registry to fetch the wrapper capability, allowing any user
+/// to schedule rebalancing for a Tide if they pay the fees.
 ///
 /// @param tideID: The ID of the Tide to schedule rebalancing for
 /// @param timestamp: The Unix timestamp when the first rebalancing should occur (must be in the future)
@@ -22,11 +21,6 @@ import "DeFiActions"
 /// @param force: If true, rebalance regardless of thresholds; if false, only rebalance when needed
 /// @param isRecurring: If true, schedule recurring rebalancing at regular intervals
 /// @param recurringInterval: If recurring, the number of seconds between rebalancing operations (e.g., 86400 for daily)
-///
-/// Example usage:
-/// - One-time rebalancing tomorrow: timestamp = now + 86400, isRecurring = false
-/// - Daily rebalancing: timestamp = now + 86400, isRecurring = true, recurringInterval = 86400
-/// - Hourly rebalancing: timestamp = now + 3600, isRecurring = true, recurringInterval = 3600
 ///
 transaction(
     tideID: UInt64,
@@ -40,8 +34,6 @@ transaction(
 ) {
     let schedulerManager: &FlowVaultsScheduler.SchedulerManager
     let paymentVault: @FlowToken.Vault
-    let handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
-    let wrapperPath: StoragePath
     let wrapperCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
 
     prepare(signer: auth(BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
@@ -64,31 +56,9 @@ transaction(
             .borrow<&FlowVaultsScheduler.SchedulerManager>(from: FlowVaultsScheduler.SchedulerManagerStoragePath)
             ?? panic("Could not borrow SchedulerManager from storage")
 
-        // Get the AutoBalancer storage path
-        let autoBalancerPath = FlowVaultsAutoBalancers.deriveAutoBalancerPath(id: tideID, storage: true) as! StoragePath
-        
-        // Issue a capability to the AutoBalancer (which implements TransactionHandler)
-        // The signer must be the account that owns the AutoBalancer (FlowVaults contract account)
-        self.handlerCap = signer.capabilities.storage
-            .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(autoBalancerPath)
-        
-        // Create or reuse a wrapper handler that will emit a FlowVaultsScheduler.RebalancingExecuted event
-        self.wrapperPath = FlowVaultsScheduler.deriveRebalancingHandlerPath(tideID: tideID)
-        if signer.storage.borrow<&FlowVaultsScheduler.RebalancingHandler>(from: self.wrapperPath) == nil {
-            let wrapper <- FlowVaultsScheduler.createRebalancingHandler(
-                target: self.handlerCap,
-                tideID: tideID
-            )
-            signer.storage.save(<-wrapper, to: self.wrapperPath)
-        }
-        self.wrapperCap = signer.capabilities.storage
-            .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(self.wrapperPath)
-
-        // Verify the AutoBalancer exists
-        assert(
-            signer.storage.type(at: autoBalancerPath) == Type<@DeFiActions.AutoBalancer>(),
-            message: "No AutoBalancer found at \(autoBalancerPath)"
-        )
+        // Get the wrapper capability from the Registry
+        self.wrapperCap = FlowVaultsSchedulerRegistry.getWrapperCap(tideID: tideID)
+            ?? panic("No wrapper capability found for Tide #".concat(tideID.toString()).concat(". Is it registered?"))
 
         // Withdraw payment from the signer's FlowToken vault
         let vaultRef = signer.storage
@@ -120,4 +90,3 @@ transaction(
         )
     }
 }
-

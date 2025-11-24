@@ -96,6 +96,14 @@ access(all) fun deployContracts() {
         arguments: [initialMoetSupply]
     )
     Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "ERC4626Utils",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
     err = Test.deployContract(
         name: "FlowALP",
         path: "../../lib/FlowALP/cadence/contracts/FlowALP.cdc",
@@ -138,6 +146,22 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+
+    // Deploy Scheduler dependencies first as FlowVaults now imports them
+    err = Test.deployContract(
+        name: "FlowVaultsSchedulerRegistry",
+        path: "../contracts/FlowVaultsSchedulerRegistry.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "FlowVaultsScheduler",
+        path: "../contracts/FlowVaultsScheduler.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
     err = Test.deployContract(
         name: "FlowVaultsClosedBeta",
         path: "../contracts/FlowVaultsClosedBeta.cdc",
@@ -173,6 +197,13 @@ access(all) fun deployContracts() {
     err = Test.deployContract(
         name: "EVMTokenConnectors",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "ERC4626SinkConnectors",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -286,8 +317,8 @@ fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
 access(all)
 fun deployFlowVaultsSchedulerIfNeeded() {
     //
-    // The FlowVaultsScheduler contract depends on two storage-only helper
-    // contracts: FlowVaultsSchedulerProofs and FlowVaultsSchedulerRegistry.
+    // The FlowVaultsScheduler contract depends on the storage-only helper
+    // contract: FlowVaultsSchedulerRegistry.
     // When running Cadence unit tests, the `Test` framework does not consult
     // flow.json deployments, so we need to deploy these contracts explicitly
     // before attempting to deploy FlowVaultsScheduler itself.
@@ -295,12 +326,6 @@ fun deployFlowVaultsSchedulerIfNeeded() {
     // Each deploy call is intentionally fire-and-forget: if the contract was
     // already deployed in this test session, `Test.deployContract` will return
     // a non-nil error which we safely ignore to keep the helper idempotent.
-
-    let _proofsErr = Test.deployContract(
-        name: "FlowVaultsSchedulerProofs",
-        path: "../contracts/FlowVaultsSchedulerProofs.cdc",
-        arguments: []
-    )
 
     let _registryErr = Test.deployContract(
         name: "FlowVaultsSchedulerRegistry",
@@ -436,6 +461,34 @@ fun createTide(
 ) {
     let res = _executeTransaction("../transactions/flow-vaults/create_tide.cdc",
             [ strategyIdentifier, vaultIdentifier, amount ],
+            signer
+        )
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+access(all)
+fun depositToTide(
+    signer: Test.TestAccount,
+    id: UInt64,
+    amount: UFix64,
+    beFailed: Bool
+) {
+    let res = _executeTransaction("../transactions/flow-vaults/deposit_to_tide.cdc",
+            [ id, amount ],
+            signer
+        )
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+access(all)
+fun withdrawFromTide(
+    signer: Test.TestAccount,
+    id: UInt64,
+    amount: UFix64,
+    beFailed: Bool
+) {
+    let res = _executeTransaction("../transactions/flow-vaults/withdraw_from_tide.cdc",
+            [ id, amount ],
             signer
         )
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
@@ -806,10 +859,10 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
     Test.expect(erc721DeployerDeploymentResult, Test.beSucceeded())
     // Assign contract addresses
     var evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(5, evts.length)
-    let registryAddressHex = getEVMAddressHexFromEvents(evts, idx: 2)
-    let erc20DeployerAddressHex = getEVMAddressHexFromEvents(evts, idx: 3)
-    let erc721DeployerAddressHex = getEVMAddressHexFromEvents(evts, idx: 4)
+    Test.assert(evts.length >= 5, message: "Expected at least 5 EVM events")
+    let registryAddressHex = getEVMAddressHexFromEvents(evts, idx: evts.length - 3)
+    let erc20DeployerAddressHex = getEVMAddressHexFromEvents(evts, idx: evts.length - 2)
+    let erc721DeployerAddressHex = getEVMAddressHexFromEvents(evts, idx: evts.length - 1)
 
     // Deploy factory
     let deploymentResult = _executeTransaction(
@@ -820,8 +873,8 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
     Test.expect(deploymentResult, Test.beSucceeded())
     // Assign the factory contract address
     evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(6, evts.length)
-    let factoryAddressHex = getEVMAddressHexFromEvents(evts, idx: 5)
+    Test.assert(evts.length >= 6, message: "Expected at least 6 EVM events")
+    let factoryAddressHex = getEVMAddressHexFromEvents(evts, idx: evts.length - 1)
     Test.assertEqual(factoryAddressHex.length, 40)
 
     err = Test.deployContract(

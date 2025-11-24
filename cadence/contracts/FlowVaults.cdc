@@ -5,6 +5,7 @@ import "ViewResolver"
 // DeFiActions
 import "DeFiActions"
 import "FlowVaultsClosedBeta"
+import "FlowVaultsScheduler"
 
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -344,6 +345,10 @@ access(all) contract FlowVaults {
             )
 
             self.addTide(betaRef: betaRef, <-tide)
+
+            // Atomic registration with the Scheduler
+            FlowVaultsScheduler.registerTide(tideID: newID)
+
             return newID
         }
         /// Adds an open Tide to this TideManager resource. This effectively transfers ownership of the newly added
@@ -407,6 +412,9 @@ access(all) contract FlowVaults {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
             }
+            // Unregister from Scheduler
+            FlowVaultsScheduler.unregisterTide(tideID: id)
+
             let tide <- self._withdrawTide(id: id)
             let res <- tide.withdraw(amount: tide.getTideBalance())
             Burner.burn(<-tide)

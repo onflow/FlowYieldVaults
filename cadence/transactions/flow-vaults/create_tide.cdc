@@ -62,8 +62,13 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
     }
 
     execute {
-        let newID = self.manager.createTide(betaRef: self.betaRef, strategyType: self.strategy, withVault: <-self.depositVault)
-        // Auto-register the new Tide with the scheduler so the first rebalance can be seeded without extra steps
-        FlowVaultsScheduler.registerTide(tideID: newID)
+        // FlowVaults.TideManager.createTide is responsible for registering the new
+        // Tide with the scheduler from within the contract account, keeping
+        // scheduler access restricted to that account.
+        self.manager.createTide(
+            betaRef: self.betaRef,
+            strategyType: self.strategy,
+            withVault: <-self.depositVault
+        )
     }
 }

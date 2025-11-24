@@ -1,5 +1,6 @@
 import "FlowTransactionScheduler"
 
+
 /// Stores registry of Tide IDs and their wrapper capabilities for scheduling.
 access(all) contract FlowVaultsSchedulerRegistry {
 
@@ -8,7 +9,7 @@ access(all) contract FlowVaultsSchedulerRegistry {
     access(self) var supervisorCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>?
 
     /// Register a Tide and store its wrapper capability (idempotent)
-    access(all) fun register(
+    access(account) fun register(
         tideID: UInt64,
         wrapperCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
     ) {
@@ -17,7 +18,7 @@ access(all) contract FlowVaultsSchedulerRegistry {
     }
 
     /// Unregister a Tide (idempotent)
-    access(all) fun unregister(tideID: UInt64) {
+    access(account) fun unregister(tideID: UInt64) {
         let _removedReg = self.tideRegistry.remove(key: tideID)
         let _removedCap = self.wrapperCaps.remove(key: tideID)
     }
@@ -33,7 +34,7 @@ access(all) contract FlowVaultsSchedulerRegistry {
     }
 
     /// Set global Supervisor capability (used for self-rescheduling)
-    access(all) fun setSupervisorCap(cap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>) {
+    access(account) fun setSupervisorCap(cap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>) {
         self.supervisorCap = cap
     }
 

@@ -1,18 +1,13 @@
 import "FlowVaultsScheduler"
-import "FlowVaultsSchedulerRegistry"
 
-/// Creates and stores the global Supervisor handler in the FlowVaults (tidal) account.
+/// Ensures the global Supervisor handler is configured for the FlowVaults
+/// (tidal) account by delegating to the FlowVaultsScheduler contract.
 transaction() {
     prepare(signer: auth(BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
-        let path = FlowVaultsScheduler.deriveSupervisorPath()
-        if signer.storage.borrow<&FlowVaultsScheduler.Supervisor>(from: path) == nil {
-            let sup <- FlowVaultsScheduler.createSupervisor()
-            signer.storage.save(<-sup, to: path)
-        }
-        // Publish supervisor capability for self-rescheduling
-        let supCap = signer.capabilities.storage
-            .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(path)
-        FlowVaultsSchedulerRegistry.setSupervisorCap(cap: supCap)
+        // The actual Supervisor resource and its capability are owned and
+        // managed by the FlowVaultsScheduler contract account. This call is
+        // idempotent and safe to invoke multiple times.
+        FlowVaultsScheduler.ensureSupervisorConfigured()
     }
 }
 

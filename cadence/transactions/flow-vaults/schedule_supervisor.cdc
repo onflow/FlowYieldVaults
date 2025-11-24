@@ -1,4 +1,5 @@
 import "FlowVaultsScheduler"
+import "FlowVaultsSchedulerRegistry"
 import "FlowTransactionScheduler"
 import "FlowToken"
 import "FungibleToken"
@@ -28,10 +29,11 @@ transaction(
     let handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
 
     prepare(signer: auth(BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
-        let supPath = FlowVaultsScheduler.deriveSupervisorPath()
-        assert(signer.storage.borrow<&FlowVaultsScheduler.Supervisor>(from: supPath) != nil, message: "Supervisor not set up")
-        self.handlerCap = signer.capabilities.storage
-            .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(supPath)
+        // Obtain the global Supervisor capability from the registry. This is
+        // configured by calling FlowVaultsScheduler.ensureSupervisorConfigured()
+        // (typically via the setup_supervisor.cdc transaction).
+        self.handlerCap = FlowVaultsSchedulerRegistry.getSupervisorCap()
+            ?? panic("Supervisor not configured")
 
         let vaultRef = signer.storage
             .borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)
