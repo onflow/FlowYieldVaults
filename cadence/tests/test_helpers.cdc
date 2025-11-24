@@ -812,12 +812,14 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
         erc20DeployerBytecode,
 		[]
     )
+	log(erc20DeployerAddressHex)
     // Deploy ERC721Deployer
     let erc721DeployerAddressHex = evmDeploy(
         bridgeAccount,
         erc721DeployerBytecode,
 		[]
     )
+	log(erc721DeployerAddressHex)
     // Assign contract addresses
     var evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
     Test.assertEqual(25, evts.length)
@@ -828,6 +830,7 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
         compiledFactoryBytecode,
 		[]
     )
+	log(factoryAddressHex)
     // Assign the factory contract address
     evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
     Test.assertEqual(26, evts.length)
@@ -856,6 +859,8 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
 
     /* Integrate EVM bridge contract */
 
+	log("registryAddressHex")
+	log(registryAddressHex)
     // Set factory as registrar in registry
     let setRegistrarResult = _executeTransaction(
         "../../lib/flow-evm-bridge/cadence/transactions/bridge/admin/evm/set_registrar.cdc",
