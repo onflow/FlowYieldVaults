@@ -32,6 +32,7 @@ fun test_Univ3Connector() {
     log("deploy USDC6")
     let bridgeCOA = getCOA(bridgeAccount.address)!
     let usdc6Address = evmDeploy(
+		deployerAccount,
         usdc6Bytecode,
         [bridgeCOA]
     )

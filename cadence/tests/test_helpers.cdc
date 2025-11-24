@@ -800,44 +800,37 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
     Test.expect(err, Test.beNil())
 
     // Deploy registry
-    let registryDeploymentResult = _executeTransaction(
-        "../../lib/flow-evm-bridge/cadence/transactions/evm/deploy.cdc",
-        [registryBytecode, UInt64(15_000_000), 0.0],
-        bridgeAccount
+    let registryAddressHex = evmDeploy(
+		bridgeAccount,
+        registryBytecode,
+		[]
     )
-    Test.expect(registryDeploymentResult, Test.beSucceeded())
+	log(registryAddressHex)
     // Deploy ERC20Deployer
-    let erc20DeployerDeploymentResult = _executeTransaction(
-        "../../lib/flow-evm-bridge/cadence/transactions/evm/deploy.cdc",
-        [erc20DeployerBytecode, UInt64(15_000_000), 0.0],
-        bridgeAccount
+    let erc20DeployerAddressHex = evmDeploy(
+        bridgeAccount,
+        erc20DeployerBytecode,
+		[]
     )
-    Test.expect(erc20DeployerDeploymentResult, Test.beSucceeded())
     // Deploy ERC721Deployer
-    let erc721DeployerDeploymentResult = _executeTransaction(
-        "../../lib/flow-evm-bridge/cadence/transactions/evm/deploy.cdc",
-        [erc721DeployerBytecode, UInt64(15_000_000), 0.0],
-        bridgeAccount
+    let erc721DeployerAddressHex = evmDeploy(
+        bridgeAccount,
+        erc721DeployerBytecode,
+		[]
     )
-    Test.expect(erc721DeployerDeploymentResult, Test.beSucceeded())
     // Assign contract addresses
     var evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(7, evts.length)
-    let registryAddressHex = getEVMAddressHexFromEvents(evts, idx: 4)
-    let erc20DeployerAddressHex = getEVMAddressHexFromEvents(evts, idx: 5)
-    let erc721DeployerAddressHex = getEVMAddressHexFromEvents(evts, idx: 6)
+    Test.assertEqual(25, evts.length)
 
     // Deploy factory
-    let deploymentResult = _executeTransaction(
-        "../../lib/flow-evm-bridge/cadence/transactions/evm/deploy.cdc",
-        [compiledFactoryBytecode, UInt64(15_000_000), 0.0],
-        bridgeAccount
+    let factoryAddressHex = evmDeploy(
+        bridgeAccount,
+        compiledFactoryBytecode,
+		[]
     )
-    Test.expect(deploymentResult, Test.beSucceeded())
     // Assign the factory contract address
     evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(8, evts.length)
-    let factoryAddressHex = getEVMAddressHexFromEvents(evts, idx: 7)
+    Test.assertEqual(26, evts.length)
     Test.assertEqual(factoryAddressHex.length, 40)
 
     err = Test.deployContract(
@@ -1055,7 +1048,7 @@ fun evmDeployRaw(_ signer: Test.TestAccount, bytecode: String, gasLimit: UInt64,
 }
 
 access(all)
-fun evmDeploy(_ bytecode: String, _ args: [String]): String {
+fun evmDeploy(_ signer: Test.TestAccount, _ bytecode: String, _ args: [String]): String {
     let argsBytecode = EVM.encodeABI(args)
     let bytecodeWithArgs = String.encodeHex(bytecode.decodeHex().concat(argsBytecode))
 
@@ -1064,7 +1057,7 @@ fun evmDeploy(_ bytecode: String, _ args: [String]): String {
 
 access(all)
 fun deployWFLOW(_ signer: Test.TestAccount): String {
-    return evmDeployRaw(signer, bytecode: wflowBytecode, gasLimit: UInt64(15_000_000), value: 0.0)
+    return evmDeploy(signer, wflowBytecode, [])
 }
 
 access(all)
@@ -1089,21 +1082,18 @@ access(all)
 fun setupUniswapV2(_ signer: Test.TestAccount, feeToSetter: String, wflowAddress: String): String {
     // deserialize the feeToSetter & WFLOW addresses
     let feeToSetterAddr = EVM.addressFromString(feeToSetter)
-    let wflowAddr = EVM.addressFromString(wflowAddress)
     // deploy uniV2Factory, concatenating feeToSetter as constructor arg
-    let factoryArgsBytecode = EVM.encodeABI([feeToSetter])
-    let univ2FactoryAddress = evmDeployRaw(signer,
-        bytecode: String.encodeHex(uniV2FactoryBytecode.decodeHex().concat(factoryArgsBytecode)),
-        gasLimit: UInt64(15_000_000),
-        value: 0.0
+    let univ2FactoryAddress = evmDeploy(
+		signer,
+        uniV2FactoryBytecode,
+		[feeToSetter]
     )
     // deploy uniV2Router, concatenating the factory and WFLOW addresses as constructor args
-    let routerArgsBytecode = EVM.encodeABI([univ2FactoryAddress, wflowAddr])
-    let univ2RouterAddress = evmDeployRaw(signer,
-        bytecode: String.encodeHex(uniV2RouterBytecode.decodeHex().concat(routerArgsBytecode)),
-        gasLimit: UInt64(15_000_000),
-        value: 0.0
-    )
+    let univ2RouterAddress = evmDeploy(
+		signer,
+		uniV2RouterBytecode,
+		[univ2FactoryAddress, wflowAddress]
+	)
 
     return univ2RouterAddress
     // get the router EVM address from the deployedContract value in the previously emitted event & return
@@ -1127,6 +1117,7 @@ fun setupPunchswap(): {String: String} {
 
     log("deploy PunchswapV3Factory")
     let punchswapV3FactoryAddress = evmDeploy(
+		deployerAccount,
         punchswapV3FactoryBytecode,
         []
     )
@@ -1134,6 +1125,7 @@ fun setupPunchswap(): {String: String} {
 
     log("deploy NFTDescriptor")
     let nftDescriptorAddress = evmDeploy(
+		deployerAccount,
         nftDescriptorBytecode,
         []
     )
@@ -1141,9 +1133,10 @@ fun setupPunchswap(): {String: String} {
 
     log("deploy NFTPositionDescriptor")
     let nftPositionDescriptorAddress = evmDeploy(
+		deployerAccount,
         nftPositionDescriptorBytecodeChunks[0]
-        .concat(nftDescriptorAddress)
-        .concat(nftPositionDescriptorBytecodeChunks[2]),
+			.concat(nftDescriptorAddress)
+			.concat(nftPositionDescriptorBytecodeChunks[2]),
         [wflowAddress,"WFLOW"]
     )
     log("NFTPositionDescriptor address \(nftPositionDescriptorAddress)")
@@ -1151,6 +1144,7 @@ fun setupPunchswap(): {String: String} {
     log("deploy UniswapV2Factory")
     let ownerCOA = getCOA(deployerAccount.address)!
     let univ2FactoryAddress = evmDeploy(
+		deployerAccount,
         uniV2FactoryBytecode,
         [ownerCOA]
     )
@@ -1158,6 +1152,7 @@ fun setupPunchswap(): {String: String} {
 
     log("deploy NonfungiblePositionManager")
     let npmAddress = evmDeploy(
+		deployerAccount,
         npmBytecode,
         [punchswapV3FactoryAddress, wflowAddress, nftPositionDescriptorAddress]
     )
@@ -1165,6 +1160,7 @@ fun setupPunchswap(): {String: String} {
 
     log("deploy SwapRouter02")
     let swapRouter02Address = evmDeploy(
+		deployerAccount,
         swapRouter02Bytecode,
         [univ2FactoryAddress, punchswapV3FactoryAddress, npmAddress, wflowAddress]
     )
@@ -1172,6 +1168,7 @@ fun setupPunchswap(): {String: String} {
 
     log("deploy QuoterV2")
     let quoterV2Address = evmDeploy(
+		deployerAccount,
         quoterV2Bytecode,
         [punchswapV3FactoryAddress, wflowAddress]
     )
