@@ -1,0 +1,48 @@
+name: Scheduled Rebalance Tests
+
+on:
+  push:
+    branches:
+      - main
+      - scheduled-rebalancing
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  scheduled-rebalance-tests:
+    name: FlowVaults Scheduled Rebalancing Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+          submodules: recursive
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.23.x"
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Install Flow CLI
+        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)"
+      - name: Flow CLI Version
+        run: flow version
+      - name: Update PATH
+        run: echo "/root/.local/bin" >> $GITHUB_PATH
+      - name: Install dependencies
+        run: flow deps install --skip-alias --skip-deployments
+      - name: Run scheduled rebalancing tests
+        run: |
+          flow test \
+            cadence/tests/scheduled_rebalance_integration_test.cdc \
+            cadence/tests/scheduled_rebalance_scenario_test.cdc \
+            cadence/tests/tide_lifecycle_test.cdc \
+            cadence/tests/atomic_registration_gc_test.cdc \
+            cadence/tests/scheduled_supervisor_test.cdc
+
+
