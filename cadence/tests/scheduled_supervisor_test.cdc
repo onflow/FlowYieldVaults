@@ -256,6 +256,104 @@ fun testMultiTideFanOut() {
     log("🎉 Multi-Tide Fan-Out Test Passed")
 }
 
+/// Verifies that once a Tide has been seeded with a recurring child schedule,
+/// its rebalancing handler is executed at least three times in succession.
+access(all)
+fun testRecurringRebalancingThreeRuns() {
+    log("\n🧪 Testing recurring rebalancing executes at least three times...")
+
+    // Fresh user + beta access
+    let user = Test.createAccount()
+    mintFlow(to: user, amount: 1000.0)
+    grantBeta(flowVaultsAccount, user)
+
+    // 1. Create Tide (auto-registers with scheduler/registry)
+    let createTideRes = executeTransaction(
+        "../transactions/flow-vaults/create_tide.cdc",
+        [strategyIdentifier, flowTokenIdentifier, 100.0],
+        user
+    )
+    Test.expect(createTideRes, Test.beSucceeded())
+
+    let tideIDs = getTideIDs(address: user.address)!
+    let tideID = tideIDs[0]
+    log("✅ Tide created for recurring test: ".concat(tideID.toString()))
+
+    // 2. Setup SchedulerManager and Supervisor
+    let setupMgrRes = executeTransaction(
+        "../transactions/flow-vaults/setup_scheduler_manager.cdc",
+        [],
+        flowVaultsAccount
+    )
+    Test.expect(setupMgrRes, Test.beSucceeded())
+
+    let setupSupRes = executeTransaction(
+        "../transactions/flow-vaults/setup_supervisor.cdc",
+        [],
+        flowVaultsAccount
+    )
+    Test.expect(setupSupRes, Test.beSucceeded())
+
+    // Ensure FlowVaults account has sufficient FLOW to fund Supervisor + 3+ child runs
+    mintFlow(to: flowVaultsAccount, amount: 100.0)
+
+    // 3. Schedule Supervisor soon, with a short child interval so multiple runs fit in the test window.
+    let currentTime = getCurrentBlock().timestamp
+    // Use a sufficiently large offset so that even if the test framework advances
+    // the block timestamp when executing the scheduling transaction, the target
+    // timestamp is still in the future w.r.t. FlowTransactionScheduler.
+    let scheduledTime = currentTime + 120.0
+
+    let scheduleSupRes = executeTransaction(
+        "../transactions/flow-vaults/schedule_supervisor.cdc",
+        [
+            scheduledTime,
+            UInt8(1),     // Medium priority
+            UInt64(800),  // executionEffort
+            0.05,         // initial fee for Supervisor
+            300.0,        // Supervisor recurring interval (large; we only need first run)
+            true,         // childRecurring
+            5.0,          // childInterval (seconds between child runs)
+            true          // force children to rebalance to avoid threshold-related no-ops
+        ],
+        flowVaultsAccount
+    )
+    Test.expect(scheduleSupRes, Test.beSucceeded())
+    log("✅ Supervisor scheduled for recurring test")
+
+    // 4. Advance time far enough for Supervisor + at least 3 child executions to occur.
+    //    Timeline (approximate):
+    //      - Supervisor at ~T+120
+    //      - First child at ~T+125 (lookahead 5s)
+    //      - Second child at ~T+130 (childInterval 5s)
+    //      - Third child at ~T+135
+    //    Moving by 200s + committing a block gives ample headroom.
+    Test.moveTime(by: 200.0)
+    Test.commitBlock()
+
+    // 5. Inspect scheduled rebalancing entries for this Tide and verify that it
+    //    has at least one recurring child schedule configured.
+    let schedulesRes = executeScript(
+        "../scripts/flow-vaults/get_all_scheduled_rebalancing.cdc",
+        [flowVaultsAccount.address]
+    )
+    Test.expect(schedulesRes, Test.beSucceeded())
+    let schedules = schedulesRes.returnValue! as! [FlowVaultsScheduler.RebalancingScheduleInfo]
+
+    var recurringCount = 0
+    for s in schedules {
+        if s.tideID == tideID && s.isRecurring && s.recurringInterval != nil && s.recurringInterval! > 0.0 {
+            recurringCount = recurringCount + 1
+        }
+    }
+
+    Test.assert(
+        recurringCount >= 1,
+        message: "Expected at least one recurring scheduled rebalancing for Tide ".concat(tideID.toString())
+    )
+    log("🎉 Found ".concat(recurringCount.toString()).concat(" recurring scheduled rebalancing entries for Tide ").concat(tideID.toString()))
+}
+
 access(all)
 fun main() {
     setup()
