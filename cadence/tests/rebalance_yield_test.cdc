@@ -75,7 +75,7 @@ fun setup() {
 }
 
 access(all)
-fun test_RebalanceTideScenario2() {
+fun test_RebalanceYieldVaultScenario2() {
     // Test.reset(to: snapshot)
 
     let fundingAmount = 1625.0
@@ -92,7 +92,7 @@ fun test_RebalanceTideScenario2() {
     mintFlow(to: user, amount: fundingAmount)
     grantBeta(flowVaultsAccount, user)
 
-    createTide(
+    createYieldVault(
         signer: user,
         strategyIdentifier: strategyIdentifier,
         vaultIdentifier: flowTokenIdentifier,
@@ -100,44 +100,44 @@ fun test_RebalanceTideScenario2() {
         beFailed: false
     )
 
-    var tideIDs = getTideIDs(address: user.address)
+    var yieldVaultIDs = getYieldVaultIDs(address: user.address)
     var pid  = 1 as UInt64
-    log("[TEST] Tide ID: \(tideIDs![0])")
-    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
-    Test.assertEqual(1, tideIDs!.length)
+    log("[TEST] YieldVault ID: \(yieldVaultIDs![0])")
+    Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
+    Test.assertEqual(1, yieldVaultIDs!.length)
 
-    var tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+    var yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-    log("[TEST] Initial tide balance: \(tideBalance ?? 0.0)")
+    log("[TEST] Initial tide balance: \(yieldVaultBalance ?? 0.0)")
 
-    rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: true, beFailed: false)
+    rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
     rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
     for index, yieldTokenPrice in yieldPriceIncreases {
-        tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+        yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-        log("[TEST] Tide balance before yield price \(yieldTokenPrice): \(tideBalance ?? 0.0)")
+        log("[TEST] YieldVault balance before yield price \(yieldTokenPrice): \(yieldVaultBalance ?? 0.0)")
 
         setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldTokenPrice)
 
-        tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+        yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-        log("[TEST] Tide balance before yield price \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+        log("[TEST] YieldVault balance before yield price \(yieldTokenPrice) rebalance: \(yieldVaultBalance ?? 0.0)")
 
-        rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: false, beFailed: false)
+        rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultIDs![0], force: false, beFailed: false)
         rebalancePosition(signer: protocolAccount, pid: pid, force: false, beFailed: false)
 
-        tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+        yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-        log("[TEST] Tide balance after yield before \(yieldTokenPrice) rebalance: \(tideBalance ?? 0.0)")
+        log("[TEST] YieldVault balance after yield before \(yieldTokenPrice) rebalance: \(yieldVaultBalance ?? 0.0)")
 
         Test.assert(
-            tideBalance == expectedFlowBalance[index],
-            message: "Tide balance of \(tideBalance ?? 0.0) doesn't match an expected value \(expectedFlowBalance[index])"
+            yieldVaultBalance == expectedFlowBalance[index],
+            message: "YieldVault balance of \(yieldVaultBalance ?? 0.0) doesn't match an expected value \(expectedFlowBalance[index])"
         )
     }
 
-    closeTide(signer: user, id: tideIDs![0], beFailed: false)
+    closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
 
     let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
     log("[TEST] flow balance after \(flowBalanceAfter)")

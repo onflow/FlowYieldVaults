@@ -13,10 +13,10 @@ access(all) contract FlowVaults {
 
     /* --- FIELDS --- */
 
-    /// Canonical StoragePath for where TideManager should be stored
-    access(all) let TideManagerStoragePath: StoragePath
-    /// Canonical PublicPath for where TideManager Capability should be published
-    access(all) let TideManagerPublicPath: PublicPath
+    /// Canonical StoragePath for where YieldVaultManager should be stored
+    access(all) let YieldVaultManagerStoragePath: StoragePath
+    /// Canonical PublicPath for where YieldVaultManager Capability should be published
+    access(all) let YieldVaultManagerPublicPath: PublicPath
     /// Canonical StoragePath for where StrategyFactory should be stored
     access(all) let FactoryStoragePath: StoragePath
     /// Canonical PublicPath for where StrategyFactory Capability should be published
@@ -24,11 +24,11 @@ access(all) contract FlowVaults {
 
     /* --- EVENTS --- */
 
-    access(all) event CreatedTide(id: UInt64, uuid: UInt64, strategyType: String, tokenType: String, initialAmount: UFix64, creator: Address?)
-    access(all) event DepositedToTide(id: UInt64, tokenType: String, amount: UFix64, owner: Address?, fromUUID: UInt64)
-    access(all) event WithdrawnFromTide(id: UInt64, tokenType: String, amount: UFix64, owner: Address?, toUUID: UInt64)
+    access(all) event CreatedYieldVault(id: UInt64, uuid: UInt64, strategyType: String, tokenType: String, initialAmount: UFix64, creator: Address?)
+    access(all) event DepositedToYieldVault(id: UInt64, tokenType: String, amount: UFix64, owner: Address?, fromUUID: UInt64)
+    access(all) event WithdrawnFromYieldVault(id: UInt64, tokenType: String, amount: UFix64, owner: Address?, toUUID: UInt64)
     access(all) event AddedToManager(id: UInt64, owner: Address?, managerUUID: UInt64, tokenType: String)
-    access(all) event BurnedTide(id: UInt64, strategyType: String, tokenType: String, remainingBalance: UFix64)
+    access(all) event BurnedYieldVault(id: UInt64, strategyType: String, tokenType: String, remainingBalance: UFix64)
 
     /* --- CONSTRUCTS --- */
 
@@ -189,14 +189,14 @@ access(all) contract FlowVaults {
         }
     }
 
-    /// Tide
+    /// YieldVault
     ///
-    /// A Tide is a resource enabling the management of a composed Strategy
+    /// A YieldVault is a resource enabling the management of a composed Strategy
     ///
-    access(all) resource Tide : Burner.Burnable, FungibleToken.Receiver, ViewResolver.Resolver {
+    access(all) resource YieldVault : Burner.Burnable, FungibleToken.Receiver, ViewResolver.Resolver {
         /// The UniqueIdentifier that identifies all related DeFiActions connectors used in the encapsulated Strategy
         access(contract) let uniqueID: DeFiActions.UniqueIdentifier
-        /// The type of Vault this Tide can receive as a deposit and provides as a withdrawal
+        /// The type of Vault this YieldVault can receive as a deposit and provides as a withdrawal
         access(self) let vaultType: Type
         /// The Strategy granting top-level access to the yield-bearing DeFiActions stack
         access(self) var strategy: @{Strategy}?
@@ -214,21 +214,21 @@ access(all) contract FlowVaults {
             self.strategy <-_strategy
         }
 
-        /// Returns the Tide's ID as defined by it's DeFiActions.UniqueIdentifier.id
+        /// Returns the YieldVault's ID as defined by it's DeFiActions.UniqueIdentifier.id
         access(all) view fun id(): UInt64 {
             return self.uniqueID.id
         }
-        /// Returns the balance of the Tide's vaultType available via the encapsulated Strategy
-        access(all) fun getTideBalance(): UFix64 {
+        /// Returns the balance of the YieldVault's vaultType available via the encapsulated Strategy
+        access(all) fun getYieldVaultBalance(): UFix64 {
             return self._borrowStrategy().availableBalance(ofToken: self.vaultType)
         }
-        /// Burner.Burnable conformance - emits the BurnedTide event when burned
+        /// Burner.Burnable conformance - emits the BurnedYieldVault event when burned
         access(contract) fun burnCallback() {
-            emit BurnedTide(
+            emit BurnedYieldVault(
                 id: self.uniqueID.id,
                 strategyType: self.strategy.getType().identifier,
                 tokenType: self.getType().identifier,
-                remainingBalance: self.getTideBalance()
+                remainingBalance: self.getYieldVaultBalance()
             )
             let _strategy <- self.strategy <- nil
             Burner.burn(<-_strategy)
@@ -245,22 +245,22 @@ access(all) contract FlowVaults {
         access(all) fun deposit(from: @{FungibleToken.Vault}) {
             pre {
                 self.isSupportedVaultType(type: from.getType()):
-                "Deposited vault of type \(from.getType().identifier) is not supported by this Tide"
+                "Deposited vault of type \(from.getType().identifier) is not supported by this YieldVault"
             }
             let amount = from.balance
-            emit DepositedToTide(id: self.uniqueID.id, tokenType: from.getType().identifier, amount: from.balance, owner: self.owner?.address, fromUUID: from.uuid)
+            emit DepositedToYieldVault(id: self.uniqueID.id, tokenType: from.getType().identifier, amount: from.balance, owner: self.owner?.address, fromUUID: from.uuid)
             self._borrowStrategy().deposit(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
             assert(
                 from.balance == 0.0,
-                message: "Deposit amount \(amount) of \(self.vaultType.identifier) could not be deposited to Tide \(self.id())"
+                message: "Deposit amount \(amount) of \(self.vaultType.identifier) could not be deposited to YieldVault \(self.id())"
             )
             Burner.burn(<-from)
         }
-        /// Returns the Vaults types supported by this Tide as a mapping associated with their current support status
+        /// Returns the Vaults types supported by this YieldVault as a mapping associated with their current support status
         access(all) view fun getSupportedVaultTypes(): {Type: Bool} {
             return self._borrowStrategy().getSupportedCollateralTypes()
         }
-        /// Returns whether the given Vault type is supported by this Tide
+        /// Returns whether the given Vault type is supported by this YieldVault
         access(all) view fun isSupportedVaultType(type: Type): Bool {
             return self.getSupportedVaultTypes()[type] ?? false
         }
@@ -278,138 +278,138 @@ access(all) contract FlowVaults {
 
             let res <- self._borrowStrategy().withdraw(maxAmount: amount, ofToken: self.vaultType)
 
-            emit WithdrawnFromTide(id: self.uniqueID.id, tokenType: res.getType().identifier, amount: amount, owner: self.owner?.address, toUUID: res.uuid)
+            emit WithdrawnFromYieldVault(id: self.uniqueID.id, tokenType: res.getType().identifier, amount: amount, owner: self.owner?.address, toUUID: res.uuid)
 
             return <- res
         }
         /// Returns an authorized reference to the encapsulated Strategy
         access(self) view fun _borrowStrategy(): auth(FungibleToken.Withdraw) &{Strategy} {
             return &self.strategy as auth(FungibleToken.Withdraw) &{Strategy}?
-                ?? panic("Unknown error - could not borrow Strategy for Tide #\(self.id())")
+                ?? panic("Unknown error - could not borrow Strategy for YieldVault #\(self.id())")
         }
     }
 
-    /// TideManager
+    /// YieldVaultManager
     ///
-    /// A TideManager encapsulates nested Tide resources. Through a TideManager, one can create, manage, and close
-    /// out inner Tide resources.
+    /// A YieldVaultManager encapsulates nested YieldVault resources. Through a YieldVaultManager, one can create, manage, and close
+    /// out inner YieldVault resources.
     ///
-    access(all) resource TideManager : ViewResolver.ResolverCollection {
-        /// The open Tides managed by this TideManager
-        access(self) let tides: @{UInt64: Tide}
+    access(all) resource YieldVaultManager : ViewResolver.ResolverCollection {
+        /// The open YieldVaults managed by this YieldVaultManager
+        access(self) let yieldVaults: @{UInt64: YieldVault}
 
         init() {
-            self.tides <- {}
+            self.yieldVaults <- {}
         }
 
-        /// Borrows the unauthorized Tide with the given id, returning `nil` if none exists
-        access(all) view fun borrowTide(id: UInt64): &Tide? {
-            return &self.tides[id]
+        /// Borrows the unauthorized YieldVault with the given id, returning `nil` if none exists
+        access(all) view fun borrowYieldVault(id: UInt64): &YieldVault? {
+            return &self.yieldVaults[id]
         }
-        /// Borrows the Tide with the given ID as a ViewResolver.Resolver, returning `nil` if none exists
+        /// Borrows the YieldVault with the given ID as a ViewResolver.Resolver, returning `nil` if none exists
         access(all) view fun borrowViewResolver(id: UInt64): &{ViewResolver.Resolver}? {
-            return &self.tides[id]
+            return &self.yieldVaults[id]
         }
-        /// Returns the Tide IDs managed by this TideManager
+        /// Returns the YieldVault IDs managed by this YieldVaultManager
         access(all) view fun getIDs(): [UInt64] {
-            return self.tides.keys
+            return self.yieldVaults.keys
         }
-        /// Returns the number of open Tides currently managed by this TideManager
-        access(all) view fun getNumberOfTides(): Int {
-            return self.tides.length
+        /// Returns the number of open YieldVaults currently managed by this YieldVaultManager
+        access(all) view fun getNumberOfYieldVaults(): Int {
+            return self.yieldVaults.length
         }
-        /// Creates a new Tide executing the specified Strategy with the provided funds
-        access(all) fun createTide(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, strategyType: Type, withVault: @{FungibleToken.Vault}) {
+        /// Creates a new YieldVault executing the specified Strategy with the provided funds
+        access(all) fun createYieldVault(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, strategyType: Type, withVault: @{FungibleToken.Vault}) {
             pre {
                 FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
             }
             let balance = withVault.balance
             let type = withVault.getType()
-            let tide <-create Tide(strategyType: strategyType, withVault: <-withVault)
+            let yieldVault <-create YieldVault(strategyType: strategyType, withVault: <-withVault)
 
-            emit CreatedTide(
-                id: tide.uniqueID.id,
-                uuid: tide.uuid,
+            emit CreatedYieldVault(
+                id: yieldVault.uniqueID.id,
+                uuid: yieldVault.uuid,
                 strategyType: strategyType.identifier,
                 tokenType: type.identifier,
                 initialAmount: balance,
                 creator: self.owner?.address
             )
 
-            self.addTide(betaRef: betaRef, <-tide)
+            self.addYieldVault(betaRef: betaRef, <-yieldVault)
         }
-        /// Adds an open Tide to this TideManager resource. This effectively transfers ownership of the newly added
-        /// Tide to the owner of this TideManager
-        access(all) fun addTide(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, _ tide: @Tide) {
+        /// Adds an open YieldVault to this YieldVaultManager resource. This effectively transfers ownership of the newly added
+        /// YieldVault to the owner of this YieldVaultManager
+        access(all) fun addYieldVault(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, _ yieldVault: @YieldVault) {
             pre {
-                self.tides[tide.uniqueID.id] == nil:
-                "Collision with Tide ID \(tide.uniqueID.id) - a Tide with this ID already exists"
+                self.yieldVaults[yieldVault.uniqueID.id] == nil:
+                "Collision with YieldVault ID \(yieldVault.uniqueID.id) - a YieldVault with this ID already exists"
 
                 FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
             }
-            emit AddedToManager(id: tide.uniqueID.id, owner: self.owner?.address, managerUUID: self.uuid, tokenType: tide.getType().identifier)
-            self.tides[tide.uniqueID.id] <-! tide
+            emit AddedToManager(id: yieldVault.uniqueID.id, owner: self.owner?.address, managerUUID: self.uuid, tokenType: yieldVault.getType().identifier)
+            self.yieldVaults[yieldVault.uniqueID.id] <-! yieldVault
         }
-        /// Deposits additional funds to the specified Tide, reverting if none exists with the provided ID
-        access(all) fun depositToTide(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, _ id: UInt64, from: @{FungibleToken.Vault}) {
+        /// Deposits additional funds to the specified YieldVault, reverting if none exists with the provided ID
+        access(all) fun depositToYieldVault(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, _ id: UInt64, from: @{FungibleToken.Vault}) {
             pre {
-                self.tides[id] != nil:
-                "No Tide with ID \(id) found"
+                self.yieldVaults[id] != nil:
+                "No YieldVault with ID \(id) found"
 
                 FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
             }
-            let tide = (&self.tides[id] as &Tide?)!
-            tide.deposit(from: <-from)
+            let yieldVault = (&self.yieldVaults[id] as &YieldVault?)!
+            yieldVault.deposit(from: <-from)
         }
-        access(self) fun _withdrawTide(id: UInt64): @Tide {
+        access(self) fun _withdrawYieldVault(id: UInt64): @YieldVault {
             pre {
-                self.tides[id] != nil:
-                "No Tide with ID \(id) found"
+                self.yieldVaults[id] != nil:
+                "No YieldVault with ID \(id) found"
             }
-            return <- self.tides.remove(key: id)!
+            return <- self.yieldVaults.remove(key: id)!
         }
-        /// Withdraws the specified Tide, reverting if none exists with the provided ID
-        access(FungibleToken.Withdraw) fun withdrawTide(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, id: UInt64): @Tide {
+        /// Withdraws the specified YieldVault, reverting if none exists with the provided ID
+        access(FungibleToken.Withdraw) fun withdrawYieldVault(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, id: UInt64): @YieldVault {
             pre {
-                self.tides[id] != nil:
-                "No Tide with ID \(id) found"
+                self.yieldVaults[id] != nil:
+                "No YieldVault with ID \(id) found"
 
                 FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
             }
-            return <- self._withdrawTide(id: id)!
+            return <- self._withdrawYieldVault(id: id)!
         }
-        /// Withdraws funds from the specified Tide in the given amount. The resulting Vault Type will be whatever
-        /// denomination is supported by the Tide, so callers should examine the Tide to know the resulting Vault to
+        /// Withdraws funds from the specified YieldVault in the given amount. The resulting Vault Type will be whatever
+        /// denomination is supported by the YieldVault, so callers should examine the YieldVault to know the resulting Vault to
         /// expect
-        access(FungibleToken.Withdraw) fun withdrawFromTide(_ id: UInt64, amount: UFix64): @{FungibleToken.Vault} {
+        access(FungibleToken.Withdraw) fun withdrawFromYieldVault(_ id: UInt64, amount: UFix64): @{FungibleToken.Vault} {
             pre {
-                self.tides[id] != nil:
-                "No Tide with ID \(id) found"
+                self.yieldVaults[id] != nil:
+                "No YieldVault with ID \(id) found"
             }
-            let tide = (&self.tides[id] as auth(FungibleToken.Withdraw) &Tide?)!
-            return <- tide.withdraw(amount: amount)
+            let yieldVault = (&self.yieldVaults[id] as auth(FungibleToken.Withdraw) &YieldVault?)!
+            return <- yieldVault.withdraw(amount: amount)
         }
-        /// Withdraws and returns all available funds from the specified Tide, destroying the Tide and access to any
+        /// Withdraws and returns all available funds from the specified YieldVault, destroying the YieldVault and access to any
         /// Strategy-related wiring with it
-        access(FungibleToken.Withdraw) fun closeTide(_ id: UInt64): @{FungibleToken.Vault} {
+        access(FungibleToken.Withdraw) fun closeYieldVault(_ id: UInt64): @{FungibleToken.Vault} {
             pre {
-                self.tides[id] != nil:
-                "No Tide with ID \(id) found"
+                self.yieldVaults[id] != nil:
+                "No YieldVault with ID \(id) found"
             }
-            let tide <- self._withdrawTide(id: id)
-            let res <- tide.withdraw(amount: tide.getTideBalance())
-            Burner.burn(<-tide)
+            let yieldVault <- self._withdrawYieldVault(id: id)
+            let res <- yieldVault.withdraw(amount: yieldVault.getYieldVaultBalance())
+            Burner.burn(<-yieldVault)
             return <-res
         }
     }
 
     /* --- PUBLIC METHODS --- */
 
-    /// Returns the Types of Strategies that can be used in Tides
+    /// Returns the Types of Strategies that can be used in YieldVaults
     access(all) view fun getSupportedStrategies(): [Type] {
         return self._borrowFactory().getSupportedStrategies()
     }
@@ -426,9 +426,9 @@ access(all) contract FlowVaults {
     access(all) fun createStrategy(type: Type, uniqueID: DeFiActions.UniqueIdentifier, withFunds: @{FungibleToken.Vault}): @{Strategy} {
         return <- self._borrowFactory().createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds)
     }
-    /// Creates a TideManager used to create and manage Tides
-    access(all) fun createTideManager(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge): @TideManager {
-        return <-create TideManager()
+    /// Creates a YieldVaultManager used to create and manage YieldVaults
+    access(all) fun createYieldVaultManager(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge): @YieldVaultManager {
+        return <-create YieldVaultManager()
     }
     /// Creates a StrategyFactory resource
     access(all) fun createStrategyFactory(): @StrategyFactory {
@@ -444,9 +444,9 @@ access(all) contract FlowVaults {
     }
 
     init() {
-        var pathIdentifier = "FlowVaultsTideManager_\(self.account.address)"
-        self.TideManagerStoragePath = StoragePath(identifier: pathIdentifier)!
-        self.TideManagerPublicPath = PublicPath(identifier: pathIdentifier)!
+        var pathIdentifier = "FlowVaultsYieldVaultManager_\(self.account.address)"
+        self.YieldVaultManagerStoragePath = StoragePath(identifier: pathIdentifier)!
+        self.YieldVaultManagerPublicPath = PublicPath(identifier: pathIdentifier)!
 
         pathIdentifier = "FlowVaultsStrategyFactory_\(self.account.address)"
         self.FactoryStoragePath = StoragePath(identifier: pathIdentifier)!
