@@ -1,3 +1,5 @@
+set -euo pipefail
+
 cp ./local/punchswap/contracts_local.sh ./solidity/lib/punch-swap-v3-contracts/
 cp ./local/punchswap/flow-emulator.json ./solidity/lib/punch-swap-v3-contracts/script/deployParameters/
 
