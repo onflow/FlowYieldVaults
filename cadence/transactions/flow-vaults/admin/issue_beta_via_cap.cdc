@@ -5,7 +5,7 @@ import "FlowVaultsClosedBeta"
 transaction(grantee: Address) {
 
     prepare(
-        admin: auth(Storage, BorrowValue, PublishInboxCapability) &Account,
+        admin: auth(CopyValue, PublishInboxCapability) &Account
     ) {
         let adminHandleCap = admin.storage.copy<Capability<auth(FlowVaultsClosedBeta.Admin) &FlowVaultsClosedBeta.AdminHandle>>(
             from: /storage/flowVaultsAdminHandleCap

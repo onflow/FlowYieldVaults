@@ -6,7 +6,7 @@ transaction(provider: Address) {
 
     // Needs Inbox to claim, Capabilities if you want to re-publish the cap
     prepare(
-        acct: auth(Inbox, Storage) &Account
+        acct: auth(ClaimInboxCapability, SaveValue) &Account
     ) {
         // Claim the capability from the provider's inbox
         let claimedCap = acct.inbox.claim<
@@ -16,6 +16,7 @@ transaction(provider: Address) {
             provider: provider
         ) ?? panic("No AdminHandle capability available in inbox")
 
+        assert(claimedCap.check(), message: "Invalid AdminHandle claimed from \(provider)")
         acct.storage.save(
             claimedCap,
             to: /storage/flowVaultsAdminHandleCap
