@@ -10,7 +10,7 @@ on:
 
 jobs:
   e2e-tests:
-    name: Tidal Yield E2E Test
+    name: Flow Yield Vaults E2E Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
