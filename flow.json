@@ -26,6 +26,34 @@
 				"testnet": "3bda2f90274dbc9b"
 			}
 		},
+		"ERC4626PriceOracles": {
+			"source": "lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
+			}
+		},
+		"ERC4626SinkConnectors": {
+			"source": "lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
+			}
+		},
+		"ERC4626SwapConnectors": {
+			"source": "lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
+			}
+		},
+		"ERC4626Utils": {
+			"source": "lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
+			}
+		},
 		"EVMAbiHelpers": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
 			"aliases": {
@@ -40,13 +68,6 @@
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
 				"testnet": "b88ba0e976146cd1"
-			}
-		},
-		"ERC4626SinkConnectors": {
-			"source": "lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
-			"aliases": {
-				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000009"
 			}
 		},
 		"FlowALP": {
@@ -75,22 +96,6 @@
 				"testnet": "3bda2f90274dbc9b"
 			}
 		},
-		"FlowVaultsScheduler": {
-			"source": "cadence/contracts/FlowVaultsScheduler.cdc",
-			"aliases": {
-				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000009",
-				"testnet": "3bda2f90274dbc9b"
-			}
-		},
-		"FlowVaultsSchedulerRegistry": {
-			"source": "cadence/contracts/FlowVaultsSchedulerRegistry.cdc",
-			"aliases": {
-				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000009",
-				"testnet": "3bda2f90274dbc9b"
-			}
-		},
 		"FlowVaultsAutoBalancers": {
 			"source": "cadence/contracts/FlowVaultsAutoBalancers.cdc",
 			"aliases": {
@@ -101,6 +106,22 @@
 		},
 		"FlowVaultsClosedBeta": {
 			"source": "cadence/contracts/FlowVaultsClosedBeta.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009",
+				"testnet": "3bda2f90274dbc9b"
+			}
+		},
+		"FlowVaultsScheduler": {
+			"source": "cadence/contracts/FlowVaultsScheduler.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009",
+				"testnet": "3bda2f90274dbc9b"
+			}
+		},
+		"FlowVaultsSchedulerRegistry": {
+			"source": "cadence/contracts/FlowVaultsSchedulerRegistry.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
@@ -163,27 +184,6 @@
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
 				"testnet": "3bda2f90274dbc9b"
-			}
-		},
-		"ERC4626Utils": {
-			"source": "lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
-			"aliases": {
-				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000009"
-			}
-		},
-		"ERC4626SwapConnectors": {
-			"source": "lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
-			"aliases": {
-				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000009"
-			}
-		},
-		"ERC4626PriceOracles": {
-			"source": "lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
-			"aliases": {
-				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000009"
 			}
 		},
 		"SwapConnectors": {
@@ -677,6 +677,30 @@
 			"key": {
 				"type": "file",
 				"location": "local/evm-gateway.pkey"
+			}
+		},
+		"mainnet-admin": {
+			"address": "b1d63873c3cc9f79",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
+		"mainnet-flow-alp-deployer": {
+			"address": "6b00ff876c299c61",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
+		"mainnet-uniswapV3-connectors-deployer": {
+			"address": "a7825d405ac89518",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
 		"mock-incrementfi": {
