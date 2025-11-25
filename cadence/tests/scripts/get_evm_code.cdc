@@ -39,7 +39,7 @@ access(all) fun main(evmAddressHex: String): {String: String} {
 
     return {
         "address": evmAddressHex,
-        "hasCode": runtime.length > 0 ? "true" : "false",
-        "runtimeCodeHex": toHex(runtime)
+        "hasCode": runtime.length > 0 ? "true" : "false"
+        // "runtimeCodeHex": toHex(runtime)
     }
 }

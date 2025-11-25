@@ -7,13 +7,12 @@ import "test_helpers.cdc"
 
 access(all) fun setup() {
     deployContracts()
-    let punchswapConfig = setupPunchswap()
-    log(punchswapConfig)
 }
 
 access(self)
 fun mint(_ target: String, _ recepient: String, _ amount: UInt256) {
     evmCall(
+        serviceAccount,
         target,
         String.encodeHex(EVM.encodeABIWithSignature("mint(address,uint256)", [recepient, amount])),
     )
@@ -22,6 +21,7 @@ fun mint(_ target: String, _ recepient: String, _ amount: UInt256) {
 access(self)
 fun approve(_ target: EVM.EVMAddress, _ approvee: EVM.EVMAddress, _ amount: UInt256) {
     evmCall(
+        serviceAccount,
         target.toString(),
         String.encodeHex(EVM.encodeABIWithSignature("approve(address,uint256)", [approvee.toString(), amount])),
     )
@@ -30,18 +30,34 @@ fun approve(_ target: EVM.EVMAddress, _ approvee: EVM.EVMAddress, _ amount: UInt
 access(all)
 fun test_Univ3Connector() {
     log("deploy USDC6")
-    let bridgeCOA = getCOA(bridgeAccount.address)!
+    let bridgeCOA = getCOA(serviceAccount.address)!
     let usdc6Address = evmDeploy(
-		deployerAccount,
+		serviceAccount,
         usdc6Bytecode,
         [bridgeCOA]
     )
     log("USDC6 address \(usdc6Address)")
 
+    let args = String.encodeHex(EVM.encodeABIWithSignature("owner()(address)",[]))
+    let checkOwner = evmScriptCall(
+        EVM.addressFromString(usdc6Address),
+        args,
+        [Type<EVM.EVMAddress>().identifier]
+    )
+    log("checkOwner")
+    log(checkOwner)
+
+    log("checkCode")
+    let checkCode = _executeScript(
+        "./scripts/get_evm_code.cdc",
+        [usdc6Address]
+    )
+    log(checkCode)
+
     let onboardUSDC6 = _executeTransaction(
         "../../lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc",
         [usdc6Address],
-        bridgeAccount
+        serviceAccount
     )
     Test.expect(onboardUSDC6, Test.beSucceeded())
     log("USDC6 onboarded")
