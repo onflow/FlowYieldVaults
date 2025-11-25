@@ -43,6 +43,7 @@ jobs:
             cadence/tests/scheduled_rebalance_scenario_test.cdc \
             cadence/tests/tide_lifecycle_test.cdc \
             cadence/tests/atomic_registration_gc_test.cdc \
-            cadence/tests/scheduled_supervisor_test.cdc
+            cadence/tests/scheduled_supervisor_test.cdc \
+            cadence/tests/scheduler_edge_cases_test.cdc
 
 

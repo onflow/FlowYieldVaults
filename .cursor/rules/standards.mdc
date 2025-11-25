@@ -3,4 +3,6 @@ description:
 globs: 
 alwaysApply: true
 ---
-Do not use emojis
+- Do not use emojis
+- All documentation markdown files (.md) should be placed in the `docs/` folder, not in the repository root
+- Keep README.md in the root as the only exception
