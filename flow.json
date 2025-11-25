@@ -265,7 +265,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007"
+				"testing": "0000000000000001"
 			}
 		},
 		"CrossVMToken": {
@@ -274,7 +274,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -293,7 +293,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -303,7 +303,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -313,7 +313,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -323,7 +323,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -333,7 +333,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -343,7 +343,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -353,7 +353,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -363,7 +363,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -373,7 +373,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -383,7 +383,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -393,7 +393,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -403,7 +403,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -485,7 +485,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -495,7 +495,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -505,7 +505,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -515,7 +515,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -525,7 +525,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -535,7 +535,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -563,7 +563,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007",
+				"testing": "0000000000000001",
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
@@ -573,7 +573,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007"
+				"testing": "0000000000000001"
 			}
 		},
 		"SerializeMetadata": {
@@ -600,7 +600,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1e4aa0b87d10b141",
-				"testing": "0000000000000007"
+				"testing": "0000000000000001"
 			}
 		},
 		"SwapConfig": {
@@ -681,6 +681,13 @@
 				"location": "local/emulator-account.pkey"
 			}
 		},
+		"emulator-flow-vaults": {
+			"address": "045a1763c93006ca",
+			"key": {
+				"type": "file",
+				"location": "local/emulator-flow-vaults.pkey"
+			}
+		},
 		"evm-gateway": {
 			"address": "e03daebed8ca0615",
 			"key": {
@@ -756,41 +763,11 @@
 				"hashAlgorithm": "SHA2_256",
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
-		},
-		"tidal": {
-			"address": "045a1763c93006ca",
-			"key": {
-				"type": "file",
-				"location": "local/emulator-tidal.pkey"
-			}
 		}
 	},
 	"deployments": {
 		"emulator": {
-			"mock-incrementfi": [
-				"SwapConfig",
-				"SwapInterfaces",
-				"SwapError",
-				{
-					"name": "SwapFactory",
-					"args": [
-						{
-							"value": "0xf3fcd2c1a78f5eee",
-							"type": "Address"
-						}
-					]
-				},
-				"StableSwapFactory",
-				"SwapRouter"
-			],
-			"tidal": [
-				"DeFiActionsUtils",
-				"DeFiActions",
-				"FlowALPMath",
-				"FungibleTokenConnectors",
-				"SwapConnectors",
-				"DummyConnectors",
-				"FlowALP",
+			"emulator-flow-vaults": [
 				{
 					"name": "MOET",
 					"args": [
@@ -800,6 +777,13 @@
 						}
 					]
 				},
+				"DeFiActionsUtils",
+				"DeFiActions",
+				"FlowALPMath",
+				"FungibleTokenConnectors",
+				"SwapConnectors",
+				"DummyConnectors",
+				"FlowALP",
 				{
 					"name": "YieldToken",
 					"args": [
@@ -860,6 +844,22 @@
 						}
 					]
 				}
+			],
+			"mock-incrementfi": [
+				"SwapConfig",
+				"SwapInterfaces",
+				"SwapError",
+				{
+					"name": "SwapFactory",
+					"args": [
+						{
+							"value": "0xf3fcd2c1a78f5eee",
+							"type": "Address"
+						}
+					]
+				},
+				"StableSwapFactory",
+				"SwapRouter"
 			]
 		},
 		"mainnet": {

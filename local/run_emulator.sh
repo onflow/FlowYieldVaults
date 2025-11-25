@@ -1,4 +1,4 @@
-flow emulator --contracts &
+flow emulator --contracts --transaction-expiry 1000 &
 
 # Port to check
 PORT=8080
