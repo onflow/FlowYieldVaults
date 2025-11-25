@@ -1,6 +1,7 @@
 import Test
 import BlockchainHelpers
 import "EVM"
+import "FlowToken"
 
 import "test_helpers.cdc"
 
@@ -19,16 +20,21 @@ fun mint(_ target: String, _ recepient: String, _ amount: UInt256) {
 }
 
 access(self)
-fun approve(_ target: EVM.EVMAddress, _ approvee: EVM.EVMAddress, _ amount: UInt256) {
+fun approve(_ target: String, _ approvee: String, _ amount: UInt256) {
     evmCall(
         serviceAccount,
-        target.toString(),
-        String.encodeHex(EVM.encodeABIWithSignature("approve(address,uint256)", [approvee.toString(), amount])),
+        target,
+        String.encodeHex(EVM.encodeABIWithSignature("approve(address,uint256)", [approvee, amount])),
     )
 }
 
 access(all)
 fun test_Univ3Connector() {
+    let wflowAddress = getEVMAddressAssociated(withType: Type<@FlowToken.Vault>().identifier)
+        ?? panic("Failed to get WFLOW address via VM Bridge association with FlowToken.Vault")
+
+    let punchswapResult = setupPunchswap(deployer: serviceAccount, wflowAddress: wflowAddress)
+    log(punchswapResult)
     log("deploy USDC6")
     let bridgeCOA = getCOA(serviceAccount.address)!
     let usdc6Address = evmDeploy(
@@ -38,7 +44,7 @@ fun test_Univ3Connector() {
     )
     log("USDC6 address \(usdc6Address)")
 
-    let args = String.encodeHex(EVM.encodeABIWithSignature("owner()(address)",[]))
+    let args = String.encodeHex(EVM.encodeABIWithSignature("owner()",[]))
     let checkOwner = evmScriptCall(
         EVM.addressFromString(usdc6Address),
         args,
@@ -68,6 +74,8 @@ fun test_Univ3Connector() {
     )
     log(usdc6Type)
 
-    mint(usdc6Address, "0x".concat(bridgeCOA), 1_000_000_000_000) 
+    mint(usdc6Address, "0x".concat(bridgeCOA), 1_000_000_000_000)
+
+    approve(usdc6Address, punchswapResult["swapRouter02Address"]!, 1_000_000_000_000)
 
 }

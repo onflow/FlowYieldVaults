@@ -2,7 +2,6 @@ import Test
 
 import "EVM"
 import "MetadataViews"
-import "FlowEVMBridgeTemplates"
 import "FlowToken"
 import "MOET"
 import "FlowALP"
@@ -317,11 +316,7 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
 
-    let wflowAddress = getEVMAddressAssociated(withType: Type<@FlowToken.Vault>().identifier)
-        ?? panic("Failed to get WFLOW address via VM Bridge association with FlowToken.Vault")
-
     setupBetaAccess()
-    setupPunchswap(deployer: serviceAccount, wflowAddress: wflowAddress)
 }
 
 access(all)
@@ -719,21 +714,6 @@ fun updateBridgePauseStatus(_ signer: Test.TestAccount, pause: Bool) {
         signer
     )
     Test.expect(pauseResult, Test.beSucceeded())
-}
-
-access(all) struct BridgeSetupResult {
-    access(all) let registryAddressHex: String
-    access(all) let erc20DeployerAddressHex: String
-    access(all) let erc721DeployerAddressHex: String
-    init(
-        registryAddressHex: String,
-        erc20DeployerAddressHex: String,
-        erc721DeployerAddressHex: String
-    ) {
-        self.registryAddressHex = registryAddressHex
-        self.erc20DeployerAddressHex = erc20DeployerAddressHex
-        self.erc721DeployerAddressHex = erc721DeployerAddressHex
-    }
 }
 
 access(all)
