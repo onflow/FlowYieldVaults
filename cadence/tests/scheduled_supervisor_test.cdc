@@ -135,9 +135,9 @@ fun testAutoRegisterAndSupervisor() {
             UInt8(1),
             UInt64(800),
             0.01, // fee
-            5.0, // lookahead
+            5.0, // recurringInterval (Supervisor interval)
             true, // childRecurring
-            5.0, // recurringInterval
+            5.0, // childInterval (per-tide interval)
             false // force
         ],
         flowVaultsAccount
@@ -226,7 +226,7 @@ fun testMultiTideFanOut() {
     
     executeTransaction(
         "../transactions/flow-vaults/schedule_supervisor.cdc",
-        [scheduledTime, UInt8(1), UInt64(800), 0.01, 5.0, true, 300.0, false],
+        [scheduledTime, UInt8(1), UInt64(800), 0.01, 5.0, true, 5.0, false],
         flowVaultsAccount
     )
     
