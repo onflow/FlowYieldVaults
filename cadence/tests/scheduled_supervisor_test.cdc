@@ -300,11 +300,11 @@ fun testRecurringRebalancingThreeRuns() {
     mintFlow(to: flowVaultsAccount, amount: 100.0)
 
     // 3. Schedule Supervisor soon, with a short child interval so multiple runs fit in the test window.
+    // IMPORTANT: Use a large offset (300s) to handle CI timing variability. The test framework
+    // may advance block timestamps unpredictably between getCurrentBlock() and the actual
+    // schedule transaction execution, especially in slower CI environments.
     let currentTime = getCurrentBlock().timestamp
-    // Use a sufficiently large offset so that even if the test framework advances
-    // the block timestamp when executing the scheduling transaction, the target
-    // timestamp is still in the future w.r.t. FlowTransactionScheduler.
-    let scheduledTime = currentTime + 120.0
+    let scheduledTime = currentTime + 300.0
 
     let scheduleSupRes = executeTransaction(
         "../transactions/flow-vaults/schedule_supervisor.cdc",
@@ -331,8 +331,8 @@ fun testRecurringRebalancingThreeRuns() {
     //    we can advance in conservative increments that are comfortably larger
     //    than the configured lookahead / childInterval.
 
-    // 4a. Ensure Supervisor executes (scheduled at ~currentTime+120 above).
-    Test.moveTime(by: 130.0)
+    // 4a. Ensure Supervisor executes (scheduled at ~currentTime+300 above).
+    Test.moveTime(by: 310.0)
     Test.commitBlock()
 
     // 4b. Now advance time in several separate steps that are each longer than
