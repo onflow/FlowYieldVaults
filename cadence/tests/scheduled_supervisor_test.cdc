@@ -137,7 +137,7 @@ fun testAutoRegisterAndSupervisor() {
             0.01, // fee
             5.0, // lookahead
             true, // childRecurring
-            300.0, // recurringInterval
+            5.0, // recurringInterval
             false // force
         ],
         flowVaultsAccount
@@ -339,27 +339,28 @@ fun testRecurringRebalancingThreeRuns() {
     //     childInterval (5.0), allowing the recurring child job to execute
     //     at least once, and giving the scheduler room to schedule follow-ups.
     var i = 0
-    while i < 5 {
+    var count = 0
+    var lastExecutedID: UInt64 = 0
+    while i < 10 && count < 3 {
         Test.moveTime(by: 10.0)
         Test.commitBlock()
         i = i + 1
-    }
 
-    // 5. Count wrapper-level executions for this Tide and require at least one.
-    let execEvents = Test.eventsOfType(Type<FlowVaultsScheduler.RebalancingExecuted>())
-    var count = 0
-    var lastExecutedID: UInt64 = 0
-    for e in execEvents {
-        let evt = e as! FlowVaultsScheduler.RebalancingExecuted
-        if evt.tideID == tideID {
-            count = count + 1
-            lastExecutedID = evt.scheduledTransactionID
+        // 5. Count wrapper-level executions for this Tide and require at least one.
+        let execEvents = Test.eventsOfType(Type<FlowVaultsScheduler.RebalancingExecuted>())
+        count = 0
+        for e in execEvents {
+            let evt = e as! FlowVaultsScheduler.RebalancingExecuted
+            if evt.tideID == tideID {
+                count = count + 1
+                lastExecutedID = evt.scheduledTransactionID
+            }
         }
     }
 
     Test.assert(
-        count >= 1,
-        message: "Expected at least 1 RebalancingExecuted event for Tide ".concat(tideID.toString()).concat(" but found ").concat(count.toString())
+        count >= 3,
+        message: "Expected at least 3 RebalancingExecuted events for Tide ".concat(tideID.toString()).concat(" but found ").concat(count.toString())
     )
     log("🎉 Recurring rebalancing executed \(count) time(s) for Tide ".concat(tideID.toString()))
 
