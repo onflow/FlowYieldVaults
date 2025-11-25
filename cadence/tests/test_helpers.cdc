@@ -1040,6 +1040,19 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
     )
 }
 
+// Redemption test helper functions
+access(all)
+fun transferFlowTokens(to: Test.TestAccount, amount: UFix64) {
+    let transferTx = Test.Transaction(
+        code: Test.readFile("../../lib/FlowALP/cadence/transactions/flowtoken/transfer_flowtoken.cdc"),
+        authorizers: [Test.serviceAccount().address],
+        signers: [Test.serviceAccount()],
+        arguments: [to.address, amount]
+    )
+    let txResult = Test.executeTransaction(transferTx)
+    Test.expect(txResult, Test.beSucceeded())
+}
+
 access(all)
 fun evmDeployRaw(_ signer: Test.TestAccount, bytecode: String, gasLimit: UInt64, value: UFix64): String {
     let res = _executeTransaction(

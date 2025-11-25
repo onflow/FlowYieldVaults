@@ -9,6 +9,13 @@
 				"testnet": "bb76ea2f8aad74a0"
 			}
 		},
+		"RedemptionWrapper": {
+			"source": "cadence/contracts/RedemptionWrapper.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000007"
+			}
+		},
 		"DeFiActions": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
