@@ -35,6 +35,9 @@ fun setup() {
     // Deploy FlowVaultsScheduler (idempotent across tests)
     deployFlowVaultsSchedulerIfNeeded()
     log("✅ FlowVaultsScheduler available")
+    
+    // Fund FlowVaults account for scheduling fees (registerTide requires FLOW)
+    mintFlow(to: flowVaultsAccount, amount: 1000.0)
 
     // Set mocked token prices
     setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
@@ -128,8 +131,16 @@ fun testScheduledRebalancingWithPriceChange() {
     Test.expect(setupRes, Test.beSucceeded())
     log("✅ SchedulerManager created")
     
-    // Test scheduling infrastructure
-    log("\n📝 Step 3: Testing Schedule Creation...")
+    // Cancel auto-scheduled rebalancing first (registerTide now atomically schedules)
+    log("\n📝 Step 3: Cancel auto-schedule and create manual schedule...")
+    let cancelAutoRes = executeTransaction(
+        "../transactions/flow-vaults/cancel_scheduled_rebalancing.cdc",
+        [tideID],
+        flowVaultsAccount
+    )
+    Test.expect(cancelAutoRes, Test.beSucceeded())
+    log("✅ Cancelled auto-scheduled rebalancing")
+    
     let currentTime = getCurrentBlock().timestamp
     let requestedTime = currentTime + 60.0
     
@@ -182,10 +193,8 @@ fun testScheduledRebalancingWithPriceChange() {
     setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5)
     log("✅ FLOW price changed from 1.0 to 1.5")
     
-    // Wait for automatic execution (with --scheduled-transactions flag)
+    // Wait for automatic execution
     log("\n📝 Step 7: Waiting for Automatic Execution...")
-    log("ℹ️  With emulator started using: flow emulator --scheduled-transactions")
-    log("ℹ️  The FVM should automatically execute the scheduled transaction")
     log("ℹ️  Advancing time past scheduled time...")
     
     // Advance time past the scheduled execution time
@@ -199,10 +208,10 @@ fun testScheduledRebalancingWithPriceChange() {
     
     // Check for automatic execution events
     log("\n📝 Step 8: Checking for Automatic Execution Events...")
-    let rebalancingEvents = Test.eventsOfType(Type<FlowVaultsScheduler.RebalancingExecuted>())
+    let rebalancingEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
     let schedulerExecutedEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     
-    log("📊 RebalancingExecuted events: \(rebalancingEvents.length)")
+    log("📊 DeFiActions.Rebalanced events: \(rebalancingEvents.length)")
     log("📊 Scheduler.Executed events: \(schedulerExecutedEvents.length)")
     
     // Verify rebalancing occurred
@@ -213,13 +222,12 @@ fun testScheduledRebalancingWithPriceChange() {
     log("📊 Change:          \(finalBalance - initialBalance)")
     
     if rebalancingEvents.length > 0 {
-        log("✅ SUCCESS: RebalancingExecuted event found!")
+        log("✅ SUCCESS: DeFiActions.Rebalanced event found!")
         log("   Automatic execution happened!")
     } else if finalBalance != initialBalance {
         log("✅ Balance changed - rebalancing occurred")
     } else {
         log("⚠️  No automatic execution detected")
-        log("   (Timestamp may not have advanced enough in test framework)")
     }
     
     // Test cancellation

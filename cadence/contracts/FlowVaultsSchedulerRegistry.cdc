@@ -1,36 +1,100 @@
 import "FlowTransactionScheduler"
 
 
-/// Stores registry of Tide IDs and their wrapper capabilities for scheduling.
+/// FlowVaultsSchedulerRegistry
+///
+/// Stores registry of Tide IDs and their handler capabilities for scheduling.
+/// This contract maintains:
+/// - A registry of all tide IDs that participate in scheduled rebalancing
+/// - Handler capabilities (AutoBalancer capabilities) for each tide
+/// - A pending queue for tides that need initial seeding or re-seeding
+/// - The global Supervisor capability for recovery operations
+///
 access(all) contract FlowVaultsSchedulerRegistry {
 
+    /* --- EVENTS --- */
+
+    /// Emitted when a tide is registered with its handler capability
+    access(all) event TideRegistered(
+        tideID: UInt64,
+        handlerCapValid: Bool
+    )
+
+    /// Emitted when a tide is unregistered (cleanup on tide close)
+    access(all) event TideUnregistered(
+        tideID: UInt64,
+        wasInPendingQueue: Bool
+    )
+
+    /// Emitted when a tide is added to the pending queue for seeding/re-seeding
+    access(all) event TideEnqueuedPending(
+        tideID: UInt64,
+        pendingQueueSize: Int
+    )
+
+    /// Emitted when a tide is removed from the pending queue (after successful scheduling)
+    access(all) event TideDequeuedPending(
+        tideID: UInt64,
+        pendingQueueSize: Int
+    )
+
+    /* --- CONSTANTS --- */
+
+    /// Maximum number of tides to process in a single Supervisor batch
+    access(all) let MAX_BATCH_SIZE: Int
+
+    /* --- STATE --- */
+
+    /// Registry of all tide IDs that participate in scheduling
     access(self) var tideRegistry: {UInt64: Bool}
-    access(self) var wrapperCaps: {UInt64: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>}
+
+    /// Handler capabilities (AutoBalancer) for each tide - keyed by tide ID
+    access(self) var handlerCaps: {UInt64: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>}
+
+    /// Queue of tide IDs that need initial seeding or re-seeding by the Supervisor
+    /// Stored as a dictionary for O(1) add/remove; iteration gives the pending set
+    access(self) var pendingQueue: {UInt64: Bool}
+
+    /// Global Supervisor capability (used for self-rescheduling)
     access(self) var supervisorCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>?
 
-    /// Register a Tide and store its wrapper capability (idempotent)
+    /* --- ACCOUNT-LEVEL FUNCTIONS --- */
+
+    /// Register a Tide and store its handler capability (idempotent)
+    /// Also adds the tide to the pending queue for initial seeding
     access(account) fun register(
         tideID: UInt64,
-        wrapperCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
+        handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
     ) {
         self.tideRegistry[tideID] = true
-        self.wrapperCaps[tideID] = wrapperCap
+        self.handlerCaps[tideID] = handlerCap
+        emit TideRegistered(tideID: tideID, handlerCapValid: handlerCap.check())
     }
 
-    /// Unregister a Tide (idempotent)
+    /// Adds a tide to the pending queue for seeding by the Supervisor
+    access(account) fun enqueuePending(tideID: UInt64) {
+        if self.tideRegistry[tideID] == true {
+            self.pendingQueue[tideID] = true
+            emit TideEnqueuedPending(tideID: tideID, pendingQueueSize: self.pendingQueue.length)
+        }
+    }
+
+    /// Removes a tide from the pending queue (called after successful scheduling)
+    access(account) fun dequeuePending(tideID: UInt64) {
+        let wasInQueue = self.pendingQueue[tideID] != nil
+        self.pendingQueue.remove(key: tideID)
+        if wasInQueue {
+            emit TideDequeuedPending(tideID: tideID, pendingQueueSize: self.pendingQueue.length)
+        }
+    }
+
+    /// Unregister a Tide (idempotent) - removes from registry, capabilities, and pending queue
     access(account) fun unregister(tideID: UInt64) {
-        let _removedReg = self.tideRegistry.remove(key: tideID)
-        let _removedCap = self.wrapperCaps.remove(key: tideID)
-    }
-
-    /// Get all registered Tide IDs
-    access(all) fun getRegisteredTideIDs(): [UInt64] {
-        return self.tideRegistry.keys
-    }
-
-    /// Get wrapper capability for Tide
-    access(all) fun getWrapperCap(tideID: UInt64): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? {
-        return self.wrapperCaps[tideID]
+        let wasInPendingQueue = self.pendingQueue[tideID] != nil
+        self.tideRegistry.remove(key: tideID)
+        self.handlerCaps.remove(key: tideID)
+        self.pendingQueue.remove(key: tideID)
+        emit TideUnregistered(tideID: tideID, wasInPendingQueue: wasInPendingQueue)
     }
 
     /// Set global Supervisor capability (used for self-rescheduling)
@@ -38,14 +102,51 @@ access(all) contract FlowVaultsSchedulerRegistry {
         self.supervisorCap = cap
     }
 
+    /* --- VIEW FUNCTIONS --- */
+
+    /// Get all registered Tide IDs
+    /// WARNING: This can be expensive for large registries - prefer getPendingTideIDs for Supervisor operations
+    access(all) view fun getRegisteredTideIDs(): [UInt64] {
+        return self.tideRegistry.keys
+    }
+
+    /// Get handler capability for a Tide (AutoBalancer capability)
+    access(all) view fun getHandlerCap(tideID: UInt64): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? {
+        return self.handlerCaps[tideID]
+    }
+
+    /// Returns true if the tide is registered
+    access(all) view fun isRegistered(tideID: UInt64): Bool {
+        return self.tideRegistry[tideID] ?? false
+    }
+
+    /// Get tide IDs in the pending queue (bounded by MAX_BATCH_SIZE)
+    /// Returns up to MAX_BATCH_SIZE tide IDs that need seeding
+    access(all) fun getPendingTideIDs(): [UInt64] {
+        let allPending = self.pendingQueue.keys
+        if allPending.length <= self.MAX_BATCH_SIZE {
+            return allPending
+        }
+        // Return only MAX_BATCH_SIZE elements
+        return allPending.slice(from: 0, upTo: self.MAX_BATCH_SIZE)
+    }
+
+    /// Returns the total number of tides in the pending queue
+    access(all) view fun getPendingCount(): Int {
+        return self.pendingQueue.length
+    }
+
     /// Get global Supervisor capability, if set
-    access(all) fun getSupervisorCap(): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? {
+    /// NOTE: Access restricted - only used internally by the scheduler
+    access(account) view fun getSupervisorCap(): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? {
         return self.supervisorCap
     }
 
     init() {
+        self.MAX_BATCH_SIZE = 50  // Process up to 50 tides per Supervisor run
         self.tideRegistry = {}
-        self.wrapperCaps = {}
+        self.handlerCaps = {}
+        self.pendingQueue = {}
         self.supervisorCap = nil
     }
 }

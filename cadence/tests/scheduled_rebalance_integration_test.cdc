@@ -35,6 +35,9 @@ fun setup() {
     // Deploy FlowVaultsScheduler (idempotent across tests)
     deployFlowVaultsSchedulerIfNeeded()
     log("✅ FlowVaultsScheduler available")
+    
+    // Fund FlowVaults account for scheduling fees (registerTide requires FLOW)
+    mintFlow(to: flowVaultsAccount, amount: 1000.0)
 
     // Set mocked token prices
     setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
@@ -130,8 +133,19 @@ fun testScheduledRebalancing() {
     Test.expect(setupRes, Test.beSucceeded())
     log("✅ SchedulerManager created")
     
-    // Step 4: Schedule rebalancing for 10 seconds in the future
-    log("\n📝 Step 3: Scheduling rebalancing transaction...")
+    // Step 4: Cancel auto-scheduled rebalancing (registerTide now atomically schedules)
+    // Then manually schedule with specific parameters
+    log("\n📝 Step 3: Cancel auto-schedule and reschedule with test parameters...")
+    
+    // Cancel the auto-scheduled rebalancing first
+    let cancelAutoRes = executeTransaction(
+        "../transactions/flow-vaults/cancel_scheduled_rebalancing.cdc",
+        [tideID],
+        flowVaultsAccount
+    )
+    Test.expect(cancelAutoRes, Test.beSucceeded())
+    log("✅ Cancelled auto-scheduled rebalancing")
+    
     let currentTime = getCurrentBlock().timestamp
     let requestedTime = currentTime + 60.0
     
@@ -205,12 +219,12 @@ fun testScheduledRebalancing() {
     // Step 8: Check for execution events
     log("\n📝 Step 7: Checking for execution events...")
     
-    let executionEvents = Test.eventsOfType(Type<FlowVaultsScheduler.RebalancingExecuted>())
+    let executionEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
     let schedulerExecutedEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     let pendingEvents = Test.eventsOfType(Type<FlowTransactionScheduler.PendingExecution>())
     
     log("📊 Events found:")
-    log("   RebalancingExecuted: \(executionEvents.length)")
+    log("   DeFiActions.Rebalanced: \(executionEvents.length)")
     log("   Scheduler.Executed: \(schedulerExecutedEvents.length)")
     log("   Scheduler.PendingExecution: \(pendingEvents.length)")
     
@@ -246,21 +260,20 @@ fun testScheduledRebalancing() {
     
     if executionEvents.length > 0 {
         log("🎉 SUCCESS: AUTOMATIC EXECUTION WORKED!")
-        log("   ✅ RebalancingExecuted event found")
+        log("   ✅ DeFiActions.Rebalanced event found")
         log("   ✅ FlowTransactionScheduler executed the transaction")
         log("   ✅ AutoBalancer.executeTransaction() was called by FVM")
         log("   ✅ Balance changed: \(finalBalance - initialBal)")
     } else if schedulerExecutedEvents.length > 0 {
         log("🎉 PARTIAL SUCCESS: Scheduler executed something")
         log("   ✅ FlowTransactionScheduler.Executed event found")
-        log("   ⚠️  But no RebalancingExecuted event")
+        log("   ⚠️  But no DeFiActions.Rebalanced event")
         log("   → Check emulator logs for details")
     } else {
         log("⚠️  AUTOMATIC EXECUTION NOT DETECTED")
         log("   Possible reasons:")
         log("   1. Not enough time passed (need more blocks)")
-        log("   2. Emulator version doesn't support scheduled transactions")
-        log("   3. Check emulator console for [system.execute_transaction] logs")
+        log("   2. Check emulator console for execution logs")
         log("")
         log("   What WAS verified:")
         log("   ✅ Schedule created successfully")
@@ -302,35 +315,8 @@ fun testCancelScheduledRebalancing() {
     let myTideID = tideIDs[0]
     log("✅ Created new Tide for cancel test: \(myTideID)")
     
-    // Schedule it
-    let currentTime = getCurrentBlock().timestamp
-    let scheduledTime = currentTime + 100.0 // Far in future so it doesn't execute
-    
-    // Estimate
-    let estimateRes = executeScript(
-        "../scripts/flow-vaults/estimate_rebalancing_cost.cdc",
-        [scheduledTime, UInt8(1), UInt64(500)]
-    )
-    let estimate = estimateRes.returnValue! as! FlowTransactionScheduler.EstimatedScheduledTransaction
-    
-    mintFlow(to: flowVaultsAccount, amount: estimate.flowFee! * 2.0)
-    
-    let scheduleRes = executeTransaction(
-        "../transactions/flow-vaults/schedule_rebalancing.cdc",
-        [
-            myTideID,
-            scheduledTime,
-            UInt8(1),
-            UInt64(500),
-            estimate.flowFee! * 1.2,
-            false,
-            false,
-            nil as UFix64?
-        ],
-        flowVaultsAccount
-    )
-    Test.expect(scheduleRes, Test.beSucceeded())
-    log("✅ Scheduled rebalancing for new Tide")
+    // Tide is already auto-scheduled by registerTide, verify it exists
+    log("✅ Tide is auto-scheduled by registerTide")
     
     // Verify it exists
     let schedulesRes = executeScript(

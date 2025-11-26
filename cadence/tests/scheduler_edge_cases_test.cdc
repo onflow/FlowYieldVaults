@@ -26,6 +26,9 @@ fun setup() {
     
     deployContracts()
     deployFlowVaultsSchedulerIfNeeded()
+    
+    // Fund FlowVaults account for scheduling fees (registerTide requires FLOW)
+    mintFlow(to: flowVaultsAccount, amount: 1000.0)
 
     // Set mocked token prices
     setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
@@ -100,19 +103,12 @@ fun testDoubleSchedulingSameTideFails() {
     // Fund FlowVaults account for fees
     mintFlow(to: flowVaultsAccount, amount: 1.0)
     
-    // First schedule - should succeed
+    // Tide is already auto-scheduled by registerTide
+    log("Tide is auto-scheduled (registerTide schedules atomically)")
+    
+    // Second schedule for same Tide - should FAIL (already scheduled)
     let currentTime = getCurrentBlock().timestamp
     let scheduledTime = currentTime + 100.0
-    
-    let firstSchedule = executeTransaction(
-        "../transactions/flow-vaults/schedule_rebalancing.cdc",
-        [tideID, scheduledTime, UInt8(1), UInt64(500), 0.001, false, false, nil as UFix64?],
-        flowVaultsAccount
-    )
-    Test.expect(firstSchedule, Test.beSucceeded())
-    log("First schedule succeeded")
-    
-    // Second schedule for same Tide - should FAIL
     let secondSchedule = executeTransaction(
         "../transactions/flow-vaults/schedule_rebalancing.cdc",
         [tideID, scheduledTime + 50.0, UInt8(1), UInt64(500), 0.001, false, false, nil as UFix64?],
@@ -171,13 +167,22 @@ fun testCancelNonExistentScheduleFails() {
     // Setup scheduler manager
     executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
     
-    // Try to cancel without having scheduled - should fail
+    // Tide is auto-scheduled, so first cancel succeeds
     let cancelRes = executeTransaction(
         "../transactions/flow-vaults/cancel_scheduled_rebalancing.cdc",
         [tideID],
         flowVaultsAccount
     )
-    Test.expect(cancelRes, Test.beFailed())
+    Test.expect(cancelRes, Test.beSucceeded())
+    log("First cancel succeeded (tide was auto-scheduled)")
+    
+    // Try to cancel again without having scheduled - should fail
+    let cancelRes2 = executeTransaction(
+        "../transactions/flow-vaults/cancel_scheduled_rebalancing.cdc",
+        [tideID],
+        flowVaultsAccount
+    )
+    Test.expect(cancelRes2, Test.beFailed())
     log("Canceling non-existent schedule correctly failed")
 }
 
@@ -205,6 +210,13 @@ fun testRecurringWithZeroIntervalFails() {
     executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
     
     mintFlow(to: flowVaultsAccount, amount: 1.0)
+    
+    // Cancel auto-scheduled rebalancing first
+    executeTransaction(
+        "../transactions/flow-vaults/cancel_scheduled_rebalancing.cdc",
+        [tideID],
+        flowVaultsAccount
+    )
     
     let currentTime = getCurrentBlock().timestamp
     let scheduledTime = currentTime + 100.0
@@ -243,6 +255,13 @@ fun testScheduleDataCleanedAfterCancel() {
     executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
     
     mintFlow(to: flowVaultsAccount, amount: 1.0)
+    
+    // Cancel auto-scheduled rebalancing first
+    executeTransaction(
+        "../transactions/flow-vaults/cancel_scheduled_rebalancing.cdc",
+        [tideID],
+        flowVaultsAccount
+    )
     
     let currentTime = getCurrentBlock().timestamp
     let scheduledTime = currentTime + 100.0
@@ -342,6 +361,13 @@ fun testCloseTideWithPendingSchedule() {
     executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
     
     mintFlow(to: flowVaultsAccount, amount: 1.0)
+    
+    // Cancel auto-scheduled rebalancing first
+    executeTransaction(
+        "../transactions/flow-vaults/cancel_scheduled_rebalancing.cdc",
+        [tideID],
+        flowVaultsAccount
+    )
     
     let currentTime = getCurrentBlock().timestamp
     let scheduledTime = currentTime + 1000.0 // Far in future

@@ -5,7 +5,7 @@ import "ViewResolver"
 // DeFiActions
 import "DeFiActions"
 import "FlowVaultsClosedBeta"
-import "FlowVaultsScheduler"
+// Note: FlowVaultsScheduler registration moved to FlowVaultsAutoBalancers
 
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -232,7 +232,8 @@ access(all) contract FlowVaults {
                 remainingBalance: self.getTideBalance()
             )
             let _strategy <- self.strategy <- nil
-            Burner.burn(<-_strategy)
+            // Force unwrap to ensure burnCallback is called on the Strategy
+            Burner.burn(<-_strategy!)
         }
         /// TODO: FlowVaults specific views
         access(all) view fun getViews(): [Type] {
@@ -346,8 +347,9 @@ access(all) contract FlowVaults {
 
             self.addTide(betaRef: betaRef, <-tide)
 
-            // Atomic registration with the Scheduler
-            FlowVaultsScheduler.registerTide(tideID: newID)
+            // Note: Scheduler registration happens in FlowVaultsAutoBalancers._initNewAutoBalancer
+            // which is called during Strategy creation. This keeps registration atomic with
+            // AutoBalancer creation and decouples Tide lifecycle from scheduling.
 
             return newID
         }
@@ -412,8 +414,9 @@ access(all) contract FlowVaults {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
             }
-            // Unregister from Scheduler
-            FlowVaultsScheduler.unregisterTide(tideID: id)
+            // Note: Scheduler unregistration happens in FlowVaultsAutoBalancers._cleanupAutoBalancer
+            // which is called when the Strategy is burned. This keeps unregistration atomic with
+            // AutoBalancer cleanup and decouples Tide lifecycle from scheduling.
 
             let tide <- self._withdrawTide(id: id)
             let res <- tide.withdraw(amount: tide.getTideBalance())

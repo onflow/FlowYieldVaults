@@ -146,6 +146,7 @@ access(all) contract FlowVaultsStrategies {
             let collateralType = withFunds.getType()
 
             // configure and AutoBalancer for this stack
+            // Note: recurringConfig is nil here - scheduling is handled atomically at tide registration
             let autoBalancer = FlowVaultsAutoBalancers._initNewAutoBalancer(
                 oracle: oracle,             // used to determine value of deposits & when to rebalance
                 vaultType: yieldTokenType,  // the type of Vault held by the AutoBalancer
@@ -153,6 +154,7 @@ access(all) contract FlowVaultsStrategies {
                 upperThreshold: 1.05,       // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
                 rebalanceSink: nil,         // nil on init - will be set once a PositionSink is available
                 rebalanceSource: nil,       // nil on init - not set for TracerStrategy
+                recurringConfig: nil,       // scheduling handled by FlowVaultsScheduler at registration
                 uniqueID: uniqueID          // identifies AutoBalancer as part of this Strategy
             )
             // enables deposits of YieldToken to the AutoBalancer
@@ -215,8 +217,10 @@ access(all) contract FlowVaultsStrategies {
             // recollateralizing the position
             autoBalancer.setSink(positionSwapSink, updateSinkID: true)
 
+            // Use the same uniqueID passed to createStrategy so Strategy.burnCallback
+            // calls _cleanupAutoBalancer with the correct ID
             return <-create TracerStrategy(
-                id: DeFiActions.createUniqueIdentifier(),
+                id: uniqueID,
                 collateralType: collateralType,
                 position: position
             )
@@ -320,6 +324,7 @@ access(all) contract FlowVaultsStrategies {
             let collateralType = withFunds.getType()
 
             // configure and AutoBalancer for this stack
+            // Note: recurringConfig is nil here - scheduling is handled atomically at tide registration
             let autoBalancer = FlowVaultsAutoBalancers._initNewAutoBalancer(
                 oracle: oracle,             // used to determine value of deposits & when to rebalance
                 vaultType: yieldTokenType,  // the type of Vault held by the AutoBalancer
@@ -327,6 +332,7 @@ access(all) contract FlowVaultsStrategies {
                 upperThreshold: 1.05,       // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
                 rebalanceSink: nil,         // nil on init - will be set once a PositionSink is available
                 rebalanceSource: nil,       // nil on init - not set for TracerStrategy
+                recurringConfig: nil,       // scheduling handled by FlowVaultsScheduler at registration
                 uniqueID: uniqueID          // identifies AutoBalancer as part of this Strategy
             )
             // enables deposits of YieldToken to the AutoBalancer
@@ -414,8 +420,10 @@ access(all) contract FlowVaultsStrategies {
             // recollateralizing the position
             autoBalancer.setSink(positionSwapSink, updateSinkID: true)
 
+            // Use the same uniqueID passed to createStrategy so Strategy.burnCallback
+            // calls _cleanupAutoBalancer with the correct ID
             return <-create TracerStrategy(
-                id: DeFiActions.createUniqueIdentifier(),
+                id: uniqueID,
                 collateralType: collateralType,
                 position: position
             )

@@ -216,6 +216,10 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
 
+    // Deploy scheduler stack BEFORE FlowVaultsAutoBalancers, since AutoBalancers
+    // now imports FlowVaultsScheduler for atomic registration.
+    deployFlowVaultsSchedulerIfNeeded()
+
     // FlowVaults contracts
     err = Test.deployContract(
         name: "FlowVaultsAutoBalancers",
@@ -223,10 +227,6 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-
-    // Deploy scheduler stack before FlowVaults, since FlowVaults now imports
-    // FlowVaultsScheduler.
-    deployFlowVaultsSchedulerIfNeeded()
 
     err = Test.deployContract(
         name: "FlowVaultsClosedBeta",

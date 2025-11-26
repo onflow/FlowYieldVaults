@@ -10,8 +10,8 @@ import "FlowVaultsSchedulerRegistry"
 /// for their Tides using Flow's native transaction scheduler. The scheduled transaction
 /// will automatically rebalance the Tide's AutoBalancer at the specified time(s).
 ///
-/// Note: This transaction uses the Registry to fetch the wrapper capability, allowing any user
-/// to schedule rebalancing for a Tide if they pay the fees.
+/// Note: This transaction uses the Registry to fetch the handler capability (AutoBalancer),
+/// allowing any user to schedule rebalancing for a Tide if they pay the fees.
 ///
 /// @param tideID: The ID of the Tide to schedule rebalancing for
 /// @param timestamp: The Unix timestamp when the first rebalancing should occur (must be in the future)
@@ -34,7 +34,7 @@ transaction(
 ) {
     let schedulerManager: &FlowVaultsScheduler.SchedulerManager
     let paymentVault: @FlowToken.Vault
-    let wrapperCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
+    let handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
 
     prepare(signer: auth(BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
         // Get or create the SchedulerManager
@@ -56,9 +56,9 @@ transaction(
             .borrow<&FlowVaultsScheduler.SchedulerManager>(from: FlowVaultsScheduler.SchedulerManagerStoragePath)
             ?? panic("Could not borrow SchedulerManager from storage")
 
-        // Get the wrapper capability from the Registry
-        self.wrapperCap = FlowVaultsSchedulerRegistry.getWrapperCap(tideID: tideID)
-            ?? panic("No wrapper capability found for Tide #".concat(tideID.toString()).concat(". Is it registered?"))
+        // Get the handler capability (AutoBalancer) from the Registry
+        self.handlerCap = FlowVaultsSchedulerRegistry.getHandlerCap(tideID: tideID)
+            ?? panic("No handler capability found for Tide #".concat(tideID.toString()).concat(". Is it registered?"))
 
         // Withdraw payment from the signer's FlowToken vault
         let vaultRef = signer.storage
@@ -69,16 +69,13 @@ transaction(
     }
 
     execute {
-        // Convert the raw priority value to the enum
-        let priority: FlowTransactionScheduler.Priority = priorityRaw == 0 
-            ? FlowTransactionScheduler.Priority.High
-            : (priorityRaw == 1 
-                ? FlowTransactionScheduler.Priority.Medium 
-                : FlowTransactionScheduler.Priority.Low)
+        // Convert the raw priority value to the enum using built-in initializer
+        let priority = FlowTransactionScheduler.Priority(rawValue: priorityRaw)
+            ?? FlowTransactionScheduler.Priority.Medium
 
         // Schedule the rebalancing
         self.schedulerManager.scheduleRebalancing(
-            handlerCap: self.wrapperCap,
+            handlerCap: self.handlerCap,
             tideID: tideID,
             timestamp: timestamp,
             priority: priority,

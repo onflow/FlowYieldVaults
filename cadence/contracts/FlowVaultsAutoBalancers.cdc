@@ -4,6 +4,8 @@ import "FungibleToken"
 // DeFiActions
 import "DeFiActions"
 import "FlowTransactionScheduler"
+// Scheduler
+import "FlowVaultsScheduler"
 
 /// FlowVaultsAutoBalancers
 ///
@@ -14,7 +16,12 @@ import "FlowTransactionScheduler"
 /// which identifies all DeFiActions components in the stack related to their composite Strategy.
 ///
 /// When a Tide and necessarily the related Strategy is closed & burned, the related AutoBalancer and its Capabilities
-/// are destroyed and deleted
+/// are destroyed and deleted.
+///
+/// Registration with FlowVaultsScheduler happens here (not in FlowVaults) because:
+/// - Only strategies with AutoBalancers need scheduled rebalancing
+/// - Registration is atomic with AutoBalancer creation
+/// - Unregistration happens at AutoBalancer cleanup
 ///
 access(all) contract FlowVaultsAutoBalancers {
 
@@ -40,6 +47,16 @@ access(all) contract FlowVaultsAutoBalancers {
 
     /// Configures a new AutoBalancer in storage, configures its public Capability, and sets its inner authorized
     /// Capability. If an AutoBalancer is stored with an associated UniqueID value, the operation reverts.
+    ///
+    /// @param oracle: The oracle used to query deposited & withdrawn value and to determine if a rebalance should execute
+    /// @param vaultType: The type of Vault wrapped by the AutoBalancer
+    /// @param lowerThreshold: The percentage below base value at which a rebalance pulls from rebalanceSource
+    /// @param upperThreshold: The percentage above base value at which a rebalance pushes to rebalanceSink
+    /// @param rebalanceSink: An optional DeFiActions Sink to which excess value is directed when rebalancing
+    /// @param rebalanceSource: An optional DeFiActions Source from which value is withdrawn when rebalancing
+    /// @param recurringConfig: Optional configuration for automatic recurring rebalancing via FlowTransactionScheduler
+    /// @param uniqueID: The DeFiActions UniqueIdentifier used for identifying this AutoBalancer
+    ///
     access(account) fun _initNewAutoBalancer(
         oracle: {DeFiActions.PriceOracle},
         vaultType: Type,
@@ -47,6 +64,7 @@ access(all) contract FlowVaultsAutoBalancers {
         upperThreshold: UFix64,
         rebalanceSink: {DeFiActions.Sink}?,
         rebalanceSource: {DeFiActions.Source}?,
+        recurringConfig: DeFiActions.AutoBalancerRecurringConfig?,
         uniqueID: DeFiActions.UniqueIdentifier
     ): auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, FungibleToken.Withdraw) &DeFiActions.AutoBalancer {
 
@@ -60,7 +78,7 @@ access(all) contract FlowVaultsAutoBalancers {
         assert(!publishedCap,
             message: "Published Capability collision found when publishing AutoBalancer for UniqueIdentifier.id \(uniqueID.id) at path \(publicPath)")
 
-        // create & save AutoBalancer
+        // create & save AutoBalancer with optional recurring config
         let autoBalancer <- DeFiActions.createAutoBalancer(
                 oracle: oracle,
                 vaultType: vaultType,
@@ -68,7 +86,7 @@ access(all) contract FlowVaultsAutoBalancers {
                 upperThreshold: upperThreshold,
                 rebalanceSink: rebalanceSink,
                 rebalanceSource: rebalanceSource,
-                recurringConfig: nil,
+                recurringConfig: recurringConfig,
                 uniqueID: uniqueID
             )
         self.account.storage.save(<-autoBalancer, to: storagePath)
@@ -89,6 +107,11 @@ access(all) contract FlowVaultsAutoBalancers {
             message: "Error when configuring AutoBalancer for UniqueIdentifier.id \(uniqueID.id) at path \(storagePath)")
         assert(publishedCap,
             message: "Error when publishing AutoBalancer Capability for UniqueIdentifier.id \(uniqueID.id) at path \(publicPath)")
+
+        // Register with scheduler and schedule first execution atomically
+        // This panics if scheduling fails, reverting AutoBalancer creation
+        FlowVaultsScheduler.registerTide(tideID: uniqueID.id)
+
         return autoBalancerRef
     }
 
@@ -105,15 +128,25 @@ access(all) contract FlowVaultsAutoBalancers {
     /// Called by strategies defined in the FlowVaults account which leverage account-hosted AutoBalancers when a
     /// Strategy is burned
     access(account) fun _cleanupAutoBalancer(id: UInt64) {
+        // Unregister from scheduler first (cancels pending schedules, returns fees)
+        FlowVaultsScheduler.unregisterTide(tideID: id)
+
         let storagePath = self.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
         let publicPath = self.deriveAutoBalancerPath(id: id, storage: false) as! PublicPath
         // unpublish the public AutoBalancer Capability
-        self.account.capabilities.unpublish(publicPath)
-        // delete any CapabilityControllers targetting the AutoBalancer
+        let _ = self.account.capabilities.unpublish(publicPath)
+        
+        // Collect controller IDs first (can't modify during iteration)
+        var controllersToDelete: [UInt64] = []
         self.account.capabilities.storage.forEachController(forPath: storagePath, fun(_ controller: &StorageCapabilityController): Bool {
-            controller.delete()
+            controllersToDelete.append(controller.capabilityID)
             return true
         })
+        // Delete controllers after iteration
+        for controllerID in controllersToDelete {
+            self.account.capabilities.storage.getController(byCapabilityID: controllerID)?.delete()
+        }
+        
         // load & burn the AutoBalancer
         let autoBalancer <-self.account.storage.load<@DeFiActions.AutoBalancer>(from: storagePath)
         Burner.burn(<-autoBalancer)
