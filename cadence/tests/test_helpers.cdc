@@ -217,9 +217,7 @@ access(all) fun deployContracts() {
             "0x986Cb42b0557159431d48fE0A40073296414d410",
             "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
             "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C",
-            "0xaCCF0c4EeD4438Ad31Cd340548f4211a465B6528",
-            [] as [String],     // recollateralizationUniV3AddressPath
-            [] as [UInt32]      // recollateralizationUniV3FeePath
+            "0xaCCF0c4EeD4438Ad31Cd340548f4211a465B6528"
         ]
     )
     Test.expect(err, Test.beNil())

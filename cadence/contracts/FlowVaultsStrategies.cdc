@@ -604,52 +604,22 @@ access(all) contract FlowVaultsStrategies {
         )
     }
 
-    init(
-        univ3FactoryEVMAddress: String,
-        univ3RouterEVMAddress: String,
-        univ3QuoterEVMAddress: String,
-        yieldTokenEVMAddress: String,
-        recollateralizationUniV3AddressPath: [String],
-        recollateralizationUniV3FeePath: [UInt32],
-    ) {
-        self.univ3FactoryEVMAddress = EVM.addressFromString(univ3FactoryEVMAddress)
-        self.univ3RouterEVMAddress = EVM.addressFromString(univ3RouterEVMAddress)
-        self.univ3QuoterEVMAddress = EVM.addressFromString(univ3QuoterEVMAddress)
-        self.yieldTokenEVMAddress = EVM.addressFromString(yieldTokenEVMAddress)
+    init(factoryAddress: String, routerAddress: String, quoterAddress: String, yieldTokenAddress: String) {
+        self.univ3FactoryEVMAddress = EVM.addressFromString(factoryAddress)
+        self.univ3RouterEVMAddress = EVM.addressFromString(routerAddress)
+        self.univ3QuoterEVMAddress = EVM.addressFromString(quoterAddress)
+        self.yieldTokenEVMAddress = EVM.addressFromString(yieldTokenAddress)
         self.IssuerStoragePath = StoragePath(identifier: "FlowVaultsStrategyComposerIssuer_\(self.account.address)")!
 
-        let initialCollateralType = Type<@FlowToken.Vault>()
-        let moetType = Type<@MOET.Vault>()
-        let moetEVMAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: Type<@MOET.Vault>())
-            ?? panic("Could not find EVM address for \(moetType.identifier) - ensure the asset is onboarded to the VM Bridge")
-        let yieldTokenEVMAddress = EVM.addressFromString(yieldTokenEVMAddress)
-
-        let swapAddressPath: [EVM.EVMAddress] = []
-        for hex in recollateralizationUniV3AddressPath {
-            swapAddressPath.append(EVM.addressFromString(hex))
-        }
-
+        // Initialize with empty configs - configs can be added later via upsertConfigFor
         let configs: {Type: {Type: {Type: {String: AnyStruct}}}} = {
-                Type<@mUSDCStrategyComposer>(): {
-                    Type<@mUSDCStrategy>(): {
-                        initialCollateralType: {
-                            "univ3FactoryEVMAddress": self.univ3FactoryEVMAddress,
-                            "univ3RouterEVMAddress": self.univ3RouterEVMAddress,
-                            "univ3QuoterEVMAddress": self.univ3QuoterEVMAddress,
-                            "yieldTokenEVMAddress": self.yieldTokenEVMAddress,
-                            "yieldToCollateralUniV3AddressPaths": {
-                                initialCollateralType: swapAddressPath
-                            },
-                            "yieldToCollateralUniV3FeePaths": {
-                                initialCollateralType: recollateralizationUniV3FeePath
-                            }
-                        }
-                    }
-                },
-                Type<@TracerStrategyComposer>(): {
-                    Type<@TracerStrategy>(): {}
-                }
+            Type<@mUSDCStrategyComposer>(): {
+                Type<@mUSDCStrategy>(): {}
+            },
+            Type<@TracerStrategyComposer>(): {
+                Type<@TracerStrategy>(): {}
             }
+        }
         self.account.storage.save(<-create StrategyComposerIssuer(configs: configs), to: self.IssuerStoragePath)
 
         // TODO: this is temporary until we have a better way to pass user's COAs to inner connectors
