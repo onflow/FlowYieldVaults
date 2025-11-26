@@ -798,15 +798,23 @@
 							"value": "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C",
 							"type": "String"
 						},
-						{
-							"value": "0xaCCF0c4EeD4438Ad31Cd340548f4211a465B6528",
-							"type": "String"
-						}
-					]
-				}
-			]
-		},
-		"testnet": {
+					{
+						"value": "0xaCCF0c4EeD4438Ad31Cd340548f4211a465B6528",
+						"type": "String"
+					},
+					{
+						"value": [],
+						"type": "[String]"
+					},
+					{
+						"value": [],
+						"type": "[UInt32]"
+					}
+				]
+			}
+		]
+	},
+	"testnet": {
 			"testnet-admin": [
 				{
 					"name": "YieldToken",
@@ -850,6 +858,14 @@
 						{
 							"value": "0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95",
 							"type": "String"
+						},
+						{
+							"value": [],
+							"type": "[String]"
+						},
+						{
+							"value": [],
+							"type": "[UInt32]"
 						}
 					]
 				}
