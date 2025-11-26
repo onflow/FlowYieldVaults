@@ -1,5 +1,13 @@
-# install DeFiBlocks submodule as dependency
+# install submodule dependencies
 git submodule update --init --recursive
+
+# install flow.json dependencies
+flow deps install --skip-alias --skip-deployments
+
+echo "deploy MOET & bridge MOET to EVM"
+flow accounts add-contract ./lib/FlowALP/cadence/contracts/MOET.cdc 1000000.00000000 --signer tidal
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.045a1763c93006ca.MOET.Vault" --gas-limit 9999 --signer tidal
+
 # execute emulator deployment
 flow deploy
 
@@ -37,7 +45,7 @@ flow transactions send ./cadence/transactions/flow-vaults/admin/add_strategy_com
     --signer tidal
 
 # grant PoolBeta cap
-echo "Grant Protocol Beta access to TidalVaults"
+echo "Grant Protocol Beta access to FlowVaults"
 flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc \
   --authorizer tidal,tidal \
   --proposer tidal \
