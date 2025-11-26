@@ -261,6 +261,22 @@ access(all) contract FlowVaultsScheduler {
 
             let txID = scheduledTx.id
 
+            // Check if the transaction is still active/cancellable
+            // Status nil = no longer exists, rawValue 2 = already executed
+            let status = FlowTransactionScheduler.getStatus(id: txID)
+            if status == nil || status!.rawValue == 2 {
+                // Transaction already executed or no longer exists - clean up locally
+                destroy scheduledTx
+                let _removed = self.scheduleData.remove(key: txID)
+                emit RebalancingCanceled(
+                    tideID: tideID,
+                    scheduledTransactionID: txID,
+                    feesReturned: 0.0
+                )
+                // Return an empty vault since there's nothing to refund
+                return <- FlowToken.createEmptyVault(vaultType: Type<@FlowToken.Vault>())
+            }
+
             // Cancel the scheduled transaction and get the refund
             let refund <- FlowTransactionScheduler.cancel(scheduledTx: <-scheduledTx)
 

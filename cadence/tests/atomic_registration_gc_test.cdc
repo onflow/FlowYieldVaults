@@ -69,6 +69,9 @@ access(all) fun setup() {
 
     // Ensure the scheduler stack (manager + registry + scheduler) is deployed.
     deployFlowVaultsSchedulerIfNeeded()
+    
+    // Fund FlowVaults account for scheduling fees (atomic initial scheduling)
+    mintFlow(to: flowVaultsAccount, amount: 100.0)
 }
 
 access(all) fun testAtomicRegistrationAndGC() {
