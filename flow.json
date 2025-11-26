@@ -791,15 +791,6 @@
 	"deployments": {
 		"emulator": {
 			"emulator-flow-vaults": [
-				{
-					"name": "MOET",
-					"args": [
-						{
-							"value": "1000000.00000000",
-							"type": "UFix64"
-						}
-					]
-				},
 				"DeFiActionsUtils",
 				"DeFiActions",
 				"FlowALPMath",
