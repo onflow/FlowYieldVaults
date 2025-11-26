@@ -701,14 +701,7 @@
 			"address": "045a1763c93006ca",
 			"key": {
 				"type": "file",
-				"location": "local/emulator-tidal.pkey"
-			}
-		},
-		"tidal": {
-			"address": "045a1763c93006ca",
-			"key": {
-				"type": "file",
-				"location": "local/emulator-tidal.pkey"
+				"location": "local/emulator-flow-vaults.pkey"
 			}
 		},
 		"evm-gateway": {
