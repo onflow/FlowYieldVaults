@@ -21,9 +21,9 @@ run_txn() {
 
 run_txn "Grant Tide Beta access to test user" \
   ./cadence/transactions/flow-vaults/admin/grant_beta.cdc \
-  --authorizer emulator-flow-vaults,test-user \
+  --authorizer tidal,test-user \
   --proposer test-user \
-  --payer emulator-flow-vaults
+  --payer tidal
 
 run_txn "Transfer Flow tokens" \
   ./cadence/transactions/flow-token/transfer_flow.cdc \
