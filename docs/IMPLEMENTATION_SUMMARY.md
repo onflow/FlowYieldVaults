@@ -2,354 +2,174 @@
 
 ## Overview
 
-Successfully implemented autonomous scheduled rebalancing for FlowVaults Tides using Flow's native transaction scheduler (FLIP 330).
+Autonomous scheduled rebalancing for FlowVaults Tides using Flow's native transaction scheduler (FLIP 330).
 
 ## Branch Information
 
 **Branch**: `scheduled-rebalancing`  
-**Created from**: `main`  
-**Date**: November 10, 2025
-
-## Files Created
-
-### 1. Core Contract
-- **`cadence/contracts/FlowVaultsScheduler.cdc`** (305 lines)
-  - Main contract managing scheduled rebalancing
-  - `SchedulerManager` resource for tracking schedules
-  - Integration with Flow's TransactionScheduler
-  - Direct use of AutoBalancer as transaction handler
-
-### 2. Transactions
-- **`cadence/transactions/flow-vaults/schedule_rebalancing.cdc`** (110 lines)
-  - Schedule one-time or recurring rebalancing
-  - Parameters: tide ID, timestamp, priority, fees, force, recurring settings
-  - Issues capability to AutoBalancer for execution
-
-- **`cadence/transactions/flow-vaults/cancel_scheduled_rebalancing.cdc`** (31 lines)
-  - Cancel existing schedules
-  - Returns partial fee refund
-
-- **`cadence/transactions/flow-vaults/setup_scheduler_manager.cdc`** (23 lines)
-  - Initialize SchedulerManager (optional, auto-setup available)
-
-### 3. Scripts
-- **`cadence/scripts/flow-vaults/get_scheduled_rebalancing.cdc`** (15 lines)
-  - Query specific tide's schedule
-
-- **`cadence/scripts/flow-vaults/get_all_scheduled_rebalancing.cdc`** (14 lines)
-  - List all scheduled rebalancing for an account
-
-- **`cadence/scripts/flow-vaults/get_scheduled_tide_ids.cdc`** (14 lines)
-  - Get tide IDs with active schedules
-
-- **`cadence/scripts/flow-vaults/estimate_rebalancing_cost.cdc`** (31 lines)
-  - Estimate fees before scheduling
-
-- **`cadence/scripts/flow-vaults/get_scheduler_config.cdc`** (14 lines)
-  - Query scheduler configuration
-
-### 4. Tests
-- **`cadence/tests/scheduled_rebalancing_test.cdc`** (109 lines)
-  - Comprehensive test suite
-  - Tests for setup, estimation, scheduling, querying
-
-### 5. Documentation
-- **`SCHEDULED_REBALANCING_GUIDE.md`** (554 lines)
-  - Complete user guide
-  - Examples for daily, hourly, one-time scheduling
-  - Troubleshooting section
-  - Best practices
-
-- **`IMPLEMENTATION_SUMMARY.md`** (this file)
-  - Technical overview
-  - Architecture details
-
-### 6. Configuration
-- **`flow.json`** (modified)
-  - Added FlowVaultsScheduler contract deployment configuration
+**Last Updated**: November 26, 2025
 
 ## Architecture
+
+### Key Design Principles
+
+1. **Atomic Initial Scheduling**: Tide creation atomically registers and schedules first execution
+2. **No Wrapper**: Direct capability to AutoBalancer (RebalancingHandler removed)
+3. **Self-Scheduling AutoBalancers**: AutoBalancers chain their own subsequent executions
+4. **Recovery-Only Supervisor**: Processes bounded pending queue, not all tides
 
 ### Component Design
 
 ```
-User Account
-    ├── SchedulerManager (resource)
-    │   ├── scheduledTransactions (map)
-    │   └── scheduleData (map)
-    └── FlowToken.Vault (for fees)
-
-FlowVaults Contract Account  
-    └── AutoBalancer (per Tide)
-        └── implements TransactionHandler
-
-Flow System
-    └── FlowTransactionScheduler
-        └── Executes at scheduled time
+FlowVaults Contract Account
+    |
+    +-- FlowVaultsScheduler
+    |       +-- SchedulerManager (tracks scheduled transactions)
+    |       +-- Supervisor (recovery handler for failed schedules)
+    |
+    +-- FlowVaultsSchedulerRegistry
+    |       +-- tideRegistry: {UInt64: Bool}
+    |       +-- handlerCaps: {UInt64: Capability<AutoBalancer>}
+    |       +-- pendingQueue: {UInt64: Bool}  (bounded by MAX_BATCH_SIZE=50)
+    |       +-- supervisorCap
+    |
+    +-- FlowVaultsAutoBalancers
+            +-- AutoBalancer (per Tide) implements TransactionHandler
 ```
 
 ### Execution Flow
 
-1. **Scheduling**:
-   - User calls `schedule_rebalancing.cdc`
-   - Transaction issues capability to AutoBalancer
-   - FlowTransactionScheduler stores schedule
-   - Fees are escrowed
+1. **Tide Creation** (atomic):
+   - User creates Tide via `create_tide.cdc`
+   - Strategy creates AutoBalancer in `_initNewAutoBalancer()`
+   - `registerTide()` atomically:
+     - Issues capability directly to AutoBalancer
+     - Registers in FlowVaultsSchedulerRegistry
+     - Schedules first execution
+   - If any step fails, entire transaction reverts
 
-2. **Execution** (autonomous):
+2. **Scheduled Execution**:
    - FlowTransactionScheduler triggers at scheduled time
    - Calls `AutoBalancer.executeTransaction()`
-   - AutoBalancer.rebalance() executes with "force" parameter
-   - Event emitted
+   - AutoBalancer.rebalance() executes
+   - AutoBalancer self-schedules next execution (if configured with recurringConfig)
 
-3. **Management**:
-   - User can query schedules via scripts
-   - User can cancel schedules (partial refund)
-   - System tracks status
+3. **Recovery** (Supervisor):
+   - Processes `getPendingTideIDs()` (MAX 50 per run)
+   - Schedules tides that failed to self-schedule
+   - Self-reschedules if pending work remains
+
+## Files
+
+### Core Contracts
+- **`FlowVaultsScheduler.cdc`** (~730 lines)
+  - SchedulerManager resource
+  - Supervisor resource (recovery handler)
+  - Atomic registration with initial scheduling
+  
+- **`FlowVaultsSchedulerRegistry.cdc`** (~155 lines)
+  - Registry storage (separate contract)
+  - Pending queue with MAX_BATCH_SIZE pagination
+  - Events: TideRegistered, TideUnregistered, TideEnqueuedPending, TideDequeuedPending
+
+### Transactions
+- `schedule_rebalancing.cdc` - Manual schedule (after canceling auto-schedule)
+- `cancel_scheduled_rebalancing.cdc` - Cancel and get refund
+- `setup_scheduler_manager.cdc` - Initialize SchedulerManager
+- `setup_supervisor.cdc` - Initialize Supervisor
+- `schedule_supervisor.cdc` - Schedule Supervisor for recovery
+- `enqueue_pending_tide.cdc` - Manually enqueue for recovery
+
+### Scripts
+- `get_scheduled_rebalancing.cdc` - Query specific tide's schedule
+- `get_all_scheduled_rebalancing.cdc` - List all scheduled rebalancing
+- `get_registered_tide_ids.cdc` - Get registered tide IDs
+- `get_pending_count.cdc` - Check pending queue size
+- `estimate_rebalancing_cost.cdc` - Estimate fees
+- `has_wrapper_cap_for_tide.cdc` - Check if handler cap exists (renamed from wrapper)
+
+### Tests
+- `scheduled_supervisor_test.cdc` - Supervisor and multi-tide tests
+- `scheduled_rebalance_integration_test.cdc` - Integration tests
+- `scheduled_rebalance_scenario_test.cdc` - Scenario-based tests
+- `scheduler_edge_cases_test.cdc` - Edge case tests
 
 ## Key Features
 
-### Priority Levels
-- **High**: Guaranteed first-block execution (10x fee)
-- **Medium**: Best-effort scheduling (5x fee)
-- **Low**: Opportunistic execution (2x fee)
+### Automatic Scheduling at Tide Creation
+- No manual setup required
+- First rebalancing scheduled atomically with tide creation
+- Fails safely - reverts entire transaction if scheduling fails
 
-### Scheduling Modes
-- **One-time**: Single execution at specified time
-- **Recurring**: Automatic re-execution at intervals
-  - Hourly (3600s)
-  - Daily (86400s)
-  - Weekly (604800s)
-  - Custom intervals
+### Self-Scheduling AutoBalancers
+- AutoBalancers with `recurringConfig` chain their own executions
+- No central coordinator needed for normal operation
+- Each AutoBalancer manages its own schedule independently
 
-### Force Parameter
-- **force=true**: Always rebalance (ignore thresholds)
-- **force=false**: Only rebalance if thresholds exceeded (recommended)
+### Paginated Recovery (Supervisor)
+- MAX_BATCH_SIZE = 50 tides per Supervisor run
+- Only processes pending queue (not all registered tides)
+- Self-reschedules if more work remains
 
-## Integration Points
-
-### With Existing Systems
-
-1. **AutoBalancer**: 
-   - Already implements `TransactionHandler`
-   - Has `executeTransaction()` method
-   - Accepts "force" parameter in data
-
-2. **FlowVaultsAutoBalancers**:
-   - Provides path derivation
-   - Public borrowing of AutoBalancers
-   - Used for validation
-
-3. **FlowTransactionScheduler**:
-   - Flow system contract
-   - Handles autonomous execution
-   - Manages fees and refunds
-
-## Security Considerations
-
-1. **Authorization**:
-   - Signer must own AutoBalancer (FlowVaults account)
-   - Capability-based access control
-   - User controls own SchedulerManager
-
-2. **Fees**:
-   - Escrowed upfront
-   - Partial refunds on cancellation
-   - No refunds after execution
-
-3. **Validation**:
-   - AutoBalancer existence checked
-   - Capability validity verified
-   - Timestamp must be in future
-
-## Usage Patterns
-
-### For Users
-
+### Events
 ```cadence
-// 1. Estimate cost
-let estimate = execute estimate_rebalancing_cost(timestamp, priority, effort)
+// FlowVaultsScheduler
+event RebalancingScheduled(tideID, scheduledTransactionID, timestamp, priority, isRecurring, ...)
+event RebalancingCanceled(tideID, scheduledTransactionID, feesReturned)
+event SupervisorSeededTide(tideID, scheduledTransactionID, timestamp)
 
-// 2. Schedule
-send schedule_rebalancing(
-    tideID: 1,
-    timestamp: tomorrow,
-    priority: Medium,
-    effort: 500,
-    fee: estimate.flowFee * 1.2,
-    force: false,
-    recurring: true,
-    interval: 86400.0  // daily
-)
-
-// 3. Monitor
-let schedules = execute get_all_scheduled_rebalancing(myAddress)
-
-// 4. Cancel if needed
-send cancel_scheduled_rebalancing(tideID: 1)
+// FlowVaultsSchedulerRegistry
+event TideRegistered(tideID, handlerCapValid)
+event TideUnregistered(tideID, wasInPendingQueue)
+event TideEnqueuedPending(tideID, pendingQueueSize)
+event TideDequeuedPending(tideID, pendingQueueSize)
 ```
 
-### For Developers
+## Test Coverage
 
-The system is extensible for:
-- Custom rebalancing strategies
-- Different scheduling patterns
-- Integration with monitoring systems
-- Event-based automation
+| Test | Description |
+|------|-------------|
+| `testAutoRegisterAndSupervisor` | Tide creation auto-registers and schedules |
+| `testMultiTideFanOut` | 3 tides all scheduled by Supervisor |
+| `testRecurringRebalancingThreeRuns` | Single tide executes 3+ times |
+| `testMultiTideIndependentExecution` | 3 tides execute independently |
+| `testPaginationStress` | 60 tides (>MAX_BATCH_SIZE) all scheduled atomically |
+| `testSupervisorRecoveryOfFailedReschedule` | Recovery flow works |
+| `testDoubleSchedulingSameTideFails` | Duplicate scheduling prevented |
+| `testCloseTideWithPendingSchedule` | Cleanup on tide close |
 
-## Technical Decisions
+## Security
 
-### Why Direct AutoBalancer Usage?
+1. **Access Control**:
+   - `getSupervisorCap()` - `access(account)`
+   - `getHandlerCap()` - `access(account)`
+   - `enqueuePending()` - `access(account)`
+   - Registration/unregistration only from FlowVaultsAutoBalancers
 
-Initially considered creating a wrapper handler, but simplified to use AutoBalancer directly because:
-1. AutoBalancer already implements TransactionHandler
-2. Reduces storage overhead
-3. Simplifies capability management
-4. Maintains single source of truth
+2. **Atomic Operations**:
+   - Tide creation + registration + scheduling is atomic
+   - Failure at any step reverts the entire transaction
 
-### Why Capability-Based Approach?
-
-Using capabilities instead of direct execution:
-1. More secure (capability model)
-2. Works with FlowTransactionScheduler design
-3. Allows delegation if needed
-4. Standard Flow pattern
-
-### Why Separate SchedulerManager?
-
-Having a dedicated manager resource:
-1. Organizes multiple schedules
-2. Tracks metadata
-3. Provides user-facing interface
-4. Separates concerns
-
-## Known Limitations
-
-1. **One Schedule Per Tide**: 
-   - Can't have multiple concurrent schedules for same tide
-   - Must cancel before rescheduling
-
-2. **Signer Requirements**:
-   - Transaction must be signed by AutoBalancer owner
-   - Typically the FlowVaults contract account
-
-3. **No Mid-Schedule Updates**:
-   - Can't change interval without cancel/reschedule
-   - Force parameter fixed at scheduling
-
-4. **Recurring Limitations**:
-   - Not true native recurring (scheduled per execution)
-   - Each execution is independent transaction
-
-## Future Enhancements
-
-### Potential Improvements
-
-1. **Multi-Schedule Support**:
-   - Allow multiple schedules per tide
-   - Different strategies (aggressive vs. conservative)
-
-2. **Dynamic Parameters**:
-   - Adjust force based on conditions
-   - Variable intervals based on volatility
-
-3. **Batch Scheduling**:
-   - Schedule multiple tides at once
-   - Shared fee pool
-
-4. **Advanced Monitoring**:
-   - Health checks
-   - Performance analytics
-   - Failure notifications
-
-5. **Integration APIs**:
-   - REST endpoints
-   - WebSocket updates
-   - Discord/Telegram bots
-
-## Testing Strategy
-
-### Test Coverage
-
-1. **Unit Tests**:
-   - SchedulerManager creation
-   - Schedule creation and cancellation
-   - Query operations
-
-2. **Integration Tests**:
-   - End-to-end scheduling flow
-   - Execution verification
-   - Fee handling
-
-3. **Manual Testing**:
-   - Real transaction execution
-   - Time-based testing
-   - Network conditions
-
-### Test Scenarios
-
-- Daily rebalancing
-- Hourly rebalancing  
-- One-time emergency rebalancing
-- Cancellation and refunds
-- Error conditions
-
-## Deployment Checklist
-
-- [x] Contract code complete
-- [x] Transactions implemented
-- [x] Scripts implemented
-- [x] Tests written
-- [x] Documentation complete
-- [x] flow.json updated
-- [x] FlowVaultsScheduler deployed to testnet (0x425216a69bec3d42)
-- [ ] **End-to-end scheduled rebalancing test on testnet with actual tide**
-- [ ] Verify automatic rebalancing execution with price changes
-- [ ] User acceptance testing
-- [ ] Mainnet deployment
-
-## Maintenance
-
-### Monitoring Points
-
-- Schedule creation rate
-- Execution success rate
-- Cancellation rate
-- Fee consumption
-- Error frequencies
-
-### Key Metrics
-
-- Average time to execution
-- Cost per execution
-- User adoption rate
-- Position health improvements
-
-## Support
-
-For issues or questions:
-1. Check `SCHEDULED_REBALANCING_GUIDE.md`
-2. Review test cases
-3. Check contract events
-4. Contact development team
+3. **Bounded Operations**:
+   - Supervisor processes MAX 50 tides per execution
+   - Prevents compute limit exhaustion
 
 ## Changelog
 
+### Version 2.0.0 (November 26, 2025)
+- Removed RebalancingHandler wrapper
+- Atomic initial scheduling at tide registration
+- Paginated Supervisor with pending queue
+- Self-scheduling AutoBalancers
+- Moved registration to FlowVaultsAutoBalancers
+- Added comprehensive events
+
 ### Version 1.0.0 (November 10, 2025)
 - Initial implementation
-- Core scheduling functionality
-- Documentation and tests
-- Integration with existing system
-
-## Contributors
-
-- Implementation: AI Assistant
-- Architecture: Tidal Team
-- Testing: QA Team
-- Documentation: Tech Writing Team
+- Central Supervisor scanning all tides
+- RebalancingHandler wrapper
 
 ---
 
-**Status**: Ready for testnet deployment  
-**Last Updated**: November 10, 2025
-
+**Status**: Implementation complete, tests passing  
+**Last Updated**: November 26, 2025
