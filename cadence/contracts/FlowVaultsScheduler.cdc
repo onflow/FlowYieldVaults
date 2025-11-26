@@ -45,6 +45,9 @@ access(all) contract FlowVaultsScheduler {
     /// Minimum fee fallback when estimation returns nil
     access(all) let MIN_FEE_FALLBACK: UFix64
 
+    /// Fee margin multiplier to add buffer to estimated fees (1.2 = 20% buffer)
+    access(all) let FEE_MARGIN_MULTIPLIER: UFix64
+
     /// Default lookahead seconds for scheduling first execution
     access(all) let DEFAULT_LOOKAHEAD_SECS: UFix64
 
@@ -457,14 +460,15 @@ access(all) contract FlowVaultsScheduler {
                     continue
                 }
 
-                // Estimate fee and schedule
+                // Estimate fee with margin buffer and schedule
                 let ts = getCurrentBlock().timestamp + lookaheadSecs
                 let est = FlowVaultsScheduler.estimateSchedulingCost(
                     timestamp: ts,
                     priority: priority,
                     executionEffort: executionEffort
                 )
-                let required = est.flowFee ?? FlowVaultsScheduler.MIN_FEE_FALLBACK
+                let baseFee = est.flowFee ?? FlowVaultsScheduler.MIN_FEE_FALLBACK
+                let required = baseFee * FlowVaultsScheduler.FEE_MARGIN_MULTIPLIER
                 let vaultRef = self.feesCap.borrow()
                     ?? panic("Supervisor: cannot borrow FlowToken Vault")
                 let pay <- vaultRef.withdraw(amount: required) as! @FlowToken.Vault
@@ -501,7 +505,8 @@ access(all) contract FlowVaultsScheduler {
                         priority: priority,
                         executionEffort: executionEffort
                     )
-                    let required = est.flowFee ?? FlowVaultsScheduler.MIN_FEE_FALLBACK
+                    let baseFee = est.flowFee ?? FlowVaultsScheduler.MIN_FEE_FALLBACK
+                    let required = baseFee * FlowVaultsScheduler.FEE_MARGIN_MULTIPLIER
                     let vaultRef = self.feesCap.borrow()
                         ?? panic("Supervisor: cannot borrow FlowToken Vault for self-reschedule")
                     let pay <- vaultRef.withdraw(amount: required) as! @FlowToken.Vault
@@ -623,13 +628,14 @@ access(all) contract FlowVaultsScheduler {
         let priority = FlowTransactionScheduler.Priority.Medium
         let executionEffort = self.DEFAULT_EXECUTION_EFFORT
         
-        // Estimate fee
+        // Estimate fee with margin buffer
         let est = self.estimateSchedulingCost(
             timestamp: ts,
             priority: priority,
             executionEffort: executionEffort
         )
-        let required = est.flowFee ?? self.MIN_FEE_FALLBACK
+        let baseFee = est.flowFee ?? self.MIN_FEE_FALLBACK
+        let required = baseFee * self.FEE_MARGIN_MULTIPLIER
         
         // Borrow FlowToken vault - must have sufficient balance
         let vaultRef = self.account.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)
@@ -720,6 +726,7 @@ access(all) contract FlowVaultsScheduler {
         self.DEFAULT_PRIORITY = 1                     // Medium priority
         self.DEFAULT_EXECUTION_EFFORT = 800           // Standard effort
         self.MIN_FEE_FALLBACK = 0.00005              // Minimum fee if estimation fails
+        self.FEE_MARGIN_MULTIPLIER = 1.2             // 20% buffer on estimated fees
         self.DEFAULT_LOOKAHEAD_SECS = 5.0            // Schedule first execution 5 seconds from now
 
         // Initialize paths
