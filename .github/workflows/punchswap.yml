@@ -32,7 +32,7 @@ jobs:
       - name: Run emulator
         run: ./local/run_emulator.sh
       - name: Install Flow deps
-        run: flow deps install --skip-alias --skip-deployments
+        run: flow deps install --skip-deployments
       - name: Create wallets
         run: ./local/setup_wallets.sh
       - name: Run EVM gateway

@@ -35,7 +35,7 @@ jobs:
       - name: Update PATH
         run: echo "/root/.local/bin" >> $GITHUB_PATH
       - name: Install dependencies
-        run: flow deps install --skip-alias --skip-deployments
+        run: flow deps install --skip-deployments
       - name: Run scheduled rebalancing tests
         run: |
           flow test \

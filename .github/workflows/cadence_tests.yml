@@ -34,7 +34,7 @@ jobs:
       - name: Update PATH
         run: echo "/root/.local/bin" >> $GITHUB_PATH
       - name: Install dependencies
-        run: flow deps install --skip-alias --skip-deployments
+        run: flow deps install --skip-deployments
       - name: Run tests
         run: flow test --cover --covercode="contracts" --coverprofile="coverage.lcov" ./cadence/tests/*_test.cdc
       - name: Upload coverage reports to Codecov
