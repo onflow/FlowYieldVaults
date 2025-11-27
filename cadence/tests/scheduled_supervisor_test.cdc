@@ -316,7 +316,7 @@ fun testPaginationStress() {
     let partialBatch = 3  // Less than MAX_BATCH_SIZE
     let numTides = fullBatches * maxBatchSize + partialBatch  // 18 tides
     let minExecutionsPerTide = 3
-    let minTotalExecutions = numTides * minExecutionsPerTide  // 519 minimum
+    let minTotalExecutions = numTides * minExecutionsPerTide  // 54 minimum (18 x 3)
     
     log("\n Testing pagination with ".concat(numTides.toString()).concat(" tides (").concat(fullBatches.toString()).concat("x MAX_BATCH_SIZE + ").concat(partialBatch.toString()).concat(")..."))
     log("Expecting at least ".concat(minTotalExecutions.toString()).concat(" total executions (").concat(minExecutionsPerTide.toString()).concat(" per tide)"))
