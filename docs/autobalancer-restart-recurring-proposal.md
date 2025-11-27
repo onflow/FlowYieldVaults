@@ -30,12 +30,14 @@ if self._recurringConfig != nil && isInternallyManaged {
 In the FlowVaults Scheduler architecture, the **Supervisor** is responsible for recovering stuck tides (AutoBalancers that failed to self-reschedule, e.g., due to insufficient funds).
 
 When the Supervisor seeds a stuck tide:
-1. It schedules via `SchedulerManager.scheduleRebalancing()`, which calls `FlowTransactionScheduler.schedule()` directly
-2. The scheduled transaction ID is stored in `SchedulerManager.scheduledTransactions`, NOT `AutoBalancer._scheduledTransactions`
+1. It schedules directly via `FlowTransactionScheduler.schedule()` 
+2. The scheduled transaction ID is stored in `Supervisor.scheduledTransactions`, NOT `AutoBalancer._scheduledTransactions`
 3. When executed, `isInternallyManaged` returns `false`
 4. `scheduleNextRebalance()` is NOT called
 5. The tide executes ONCE but does NOT resume self-scheduling
 6. The tide becomes stuck again immediately
+
+**Note:** The original SchedulerManager resource has been merged into Supervisor for simplicity.
 
 **Reference Commit:** The issue was discovered during testing in the `scheduled-rebalancing` branch of [FlowVaults-sc](https://github.com/onflow/FlowVaults-sc).
 
@@ -121,9 +123,11 @@ This was implemented temporarily in commit `1fedc9e` but changes behavior for AL
   - Commit: [`8b33ace`](https://github.com/onflow/FlowActions/commit/8b33ace) - "Add restartRecurring flag to AutoBalancer.executeTransaction()"
   - Commit: [`66c8b49`](https://github.com/onflow/FlowActions/commit/66c8b49) - "Fix fee margin: add 5% buffer to scheduling fee estimation"
 - [x] Update FlowVaultsScheduler to pass `restartRecurring: true` when seeding
-- [x] Update tests to verify behavior (all 23 tests pass)
+- [x] Update tests to verify behavior (all tests pass)
 - [x] Open PR in FlowActions for review
   - **PR: [onflow/FlowActions#68](https://github.com/onflow/FlowActions/pull/68)**
+- [x] Merge SchedulerManager into Supervisor for simplified architecture
+  - Commit: [`6134b43`](https://github.com/onflow/FlowVaults-sc/commit/6134b43) - "refactor: Merge SchedulerManager into Supervisor"
 
 ## Test Scenario
 
