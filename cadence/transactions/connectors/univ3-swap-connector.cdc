@@ -11,14 +11,14 @@ transaction() {
     let coaCap: Capability<auth(EVM.Owner) &EVM.CadenceOwnedAccount> =
       acct.capabilities.storage.issue<auth(EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
 
-    let factory = EVM.addressFromString("0x986Cb42b0557159431d48fE0A40073296414d410")
+    let factory = EVM.addressFromString("0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39")
     let router = EVM.addressFromString("0x2Db6468229F6fB1a77d248Dbb1c386760C257804")
     let quoter = EVM.addressFromString("0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c")
 
     // let usdc  = EVM.addressFromString("0x5e65b6B04fbA51D95409712978Cb91E99d93aE73") // Testnet USDC
     // let wflow = EVM.addressFromString("0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e") // Testnet WFLOW
 
-    let tokenIn = EVM.addressFromString("0x51f5cc5f50afb81e8f23c926080fa38c3024b238") // MOET
+    let tokenIn = EVM.addressFromString("0x02d3575e2516a515e9b91a52b294edc80dc7987c") // MOET
     let tokenOut = EVM.addressFromString("0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95") // More Vaults mUSDC
 
     // Vault types for in/out
