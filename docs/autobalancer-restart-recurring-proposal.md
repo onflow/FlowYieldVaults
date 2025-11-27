@@ -119,9 +119,11 @@ This was implemented temporarily in commit `1fedc9e` but changes behavior for AL
 - [x] Create branch in FlowActions with proposed fix
   - Branch: `fix/restart-recurring-flag`
   - Commit: [`8b33ace`](https://github.com/onflow/FlowActions/commit/8b33ace) - "Add restartRecurring flag to AutoBalancer.executeTransaction()"
+  - Commit: [`66c8b49`](https://github.com/onflow/FlowActions/commit/66c8b49) - "Fix fee margin: add 5% buffer to scheduling fee estimation"
 - [x] Update FlowVaultsScheduler to pass `restartRecurring: true` when seeding
-- [x] Update tests to verify behavior (all 13 tests pass)
-- [ ] Open PR in FlowActions for review by @sisyphusSmiling
+- [x] Update tests to verify behavior (all 23 tests pass)
+- [x] Open PR in FlowActions for review
+  - **PR: [onflow/FlowActions#68](https://github.com/onflow/FlowActions/pull/68)**
 
 ## Test Scenario
 
