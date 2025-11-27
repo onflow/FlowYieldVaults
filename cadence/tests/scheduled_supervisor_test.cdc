@@ -217,16 +217,32 @@ fun testRecurringRebalancingThreeRuns() {
     let tideID = tideIDs[0]
     log("Tide created: ".concat(tideID.toString()))
 
-    // Wait for 3 native executions
+    // Get initial balance
+    var prevBalance = getAutoBalancerBalance(id: tideID) ?? 0.0
+    log("Initial balance: ".concat(prevBalance.toString()))
+
+    // Wait for 3 native executions with balance verification
     var count = 0
-    var round = 0
-    while round < 10 && count < 3 {
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.1))
+    var round = 1
+    while round <= 10 && count < 3 {
+        // Use VERY LARGE price changes to ensure rebalancing triggers
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 3.0 * UFix64(round))
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 2.5 * UFix64(round))
         Test.moveTime(by: 70.0)
         Test.commitBlock()
         
         let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-        count = execEvents.length
+        let newCount = execEvents.length
+        
+        // If we got a new execution, verify balance changed
+        if newCount > count {
+            let newBalance = getAutoBalancerBalance(id: tideID) ?? 0.0
+            log("Round ".concat(round.toString()).concat(": Balance ").concat(prevBalance.toString()).concat(" -> ").concat(newBalance.toString()))
+            Test.assert(newBalance != prevBalance, message: "Balance should change after execution (was: ".concat(prevBalance.toString()).concat(", now: ").concat(newBalance.toString()).concat(")"))
+            prevBalance = newBalance
+        }
+        
+        count = newCount
         round = round + 1
     }
 
@@ -234,7 +250,7 @@ fun testRecurringRebalancingThreeRuns() {
         count >= 3,
         message: "Expected at least 3 executions but found ".concat(count.toString())
     )
-    log("PASS: Native recurring executed ".concat(count.toString()).concat(" times")
+    log("PASS: Native recurring executed ".concat(count.toString()).concat(" times with verified balance changes")
     )
 }
 
@@ -246,6 +262,7 @@ fun testRecurringRebalancingThreeRuns() {
 ///
 access(all)
 fun testMultiTideIndependentExecution() {
+    Test.reset(to: snapshot)
     log("\n Testing multiple tides execute independently...")
 
     let user = Test.createAccount()
@@ -267,12 +284,25 @@ fun testMultiTideIndependentExecution() {
     let tideIDs = getTideIDs(address: user.address)!
     log("Created ".concat(tideIDs.length.toString()).concat(" tides"))
 
-    // Drive 3 rounds of execution
-    var round = 0
-    while round < 3 {
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.2))
+    // Track balance for first tide to verify rebalancing works
+    let trackedTideID = tideIDs[0]
+    var prevBalance = getAutoBalancerBalance(id: trackedTideID) ?? 0.0
+    log("Initial balance (tide ".concat(trackedTideID.toString()).concat("): ").concat(prevBalance.toString()))
+
+    // Drive 3 rounds of execution with balance verification
+    var round = 1
+    while round <= 3 {
+        // Use VERY LARGE price changes to ensure rebalancing triggers regardless of previous state
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 3.0 * UFix64(round))
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 2.5 * UFix64(round))
         Test.moveTime(by: 70.0)
         Test.commitBlock()
+        
+        let newBalance = getAutoBalancerBalance(id: trackedTideID) ?? 0.0
+        log("Round ".concat(round.toString()).concat(": Balance ").concat(prevBalance.toString()).concat(" -> ").concat(newBalance.toString()))
+        Test.assert(newBalance != prevBalance, message: "Balance should change after round ".concat(round.toString()).concat(" (was: ").concat(prevBalance.toString()).concat(", now: ").concat(newBalance.toString()).concat(")"))
+        prevBalance = newBalance
+        
         round = round + 1
     }
 
@@ -286,7 +316,7 @@ fun testMultiTideIndependentExecution() {
         message: "Expected at least 9 executions but found ".concat(execEvents.length.toString())
     )
     
-    log("PASS: Multiple tides executed independently")
+    log("PASS: Multiple tides executed independently with verified balance changes")
 }
 
 /// Stress test: tests pagination with many tides exceeding MAX_BATCH_SIZE (5)
@@ -309,6 +339,7 @@ fun testMultiTideIndependentExecution() {
 ///
 access(all)
 fun testPaginationStress() {
+    Test.reset(to: snapshot)
     // Calculate number of tides: 3 * MAX_BATCH_SIZE + partial batch
     // MAX_BATCH_SIZE is 5 in FlowVaultsSchedulerRegistry
     let maxBatchSize = 5
@@ -368,18 +399,37 @@ fun testPaginationStress() {
         page = page + 1
     }
     
-    // Execute 3 rounds - verify each tide executes at least 3 times
+    // Track balance for first 3 tides (sample) to verify rebalancing
+    var sampleBalances: [UFix64] = []
+    var sampleIdx = 0
+    while sampleIdx < 3 {
+        sampleBalances.append(getAutoBalancerBalance(id: tideIDs[sampleIdx]) ?? 0.0)
+        sampleIdx = sampleIdx + 1
+    }
+    log("Initial sample balances (first 3 tides): T0=".concat(sampleBalances[0].toString()).concat(", T1=").concat(sampleBalances[1].toString()).concat(", T2=").concat(sampleBalances[2].toString()))
+    
+    // Execute 3 rounds - verify each tide executes at least 3 times with balance verification
     log("\n--- Executing 3 rounds ---")
     var round = 1
     while round <= minExecutionsPerTide {
-        // Change price to trigger rebalancing
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.2))
+        // Use LARGE price changes to ensure rebalancing triggers regardless of previous state
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0 * UFix64(round))
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5 * UFix64(round))
         Test.moveTime(by: 70.0)
         Test.commitBlock()
         
+        // Verify sample balances changed
+        sampleIdx = 0
+        while sampleIdx < 3 {
+            let newBal = getAutoBalancerBalance(id: tideIDs[sampleIdx]) ?? 0.0
+            Test.assert(newBal != sampleBalances[sampleIdx], message: "Sample tide ".concat(sampleIdx.toString()).concat(" balance should change after round ").concat(round.toString()))
+            sampleBalances[sampleIdx] = newBal
+            sampleIdx = sampleIdx + 1
+        }
+        
         let roundEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
         let expectedMinEvents = numTides * round
-        log("Round ".concat(round.toString()).concat(": ").concat(roundEvents.length.toString()).concat(" total executions (expected >= ").concat(expectedMinEvents.toString()).concat(")"))
+        log("Round ".concat(round.toString()).concat(": ").concat(roundEvents.length.toString()).concat(" total executions (expected >= ").concat(expectedMinEvents.toString()).concat("), sample balances verified"))
         
         Test.assert(
             roundEvents.length >= expectedMinEvents,
@@ -656,15 +706,36 @@ fun testInsufficientFundsAndRecovery() {
     log("Supervisor ready (will schedule after drain/refund)")
 
     // ========================================
-    // STEP 3: Let tides execute 3 rounds (and Supervisor run)
+    // STEP 3: Let tides execute 3 rounds (and Supervisor run) with balance verification
     // ========================================
     log("\n--- STEP 3: Running 3 rounds (5 tides x 3 = 15 expected executions) ---")
-    var round = 0
-    while round < 3 {
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.1))
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0 + (UFix64(round) * 0.05))
+    
+    // Track initial balances for all 5 tides
+    var prevBalances: [UFix64] = []
+    var idx = 0
+    while idx < 5 {
+        prevBalances.append(getAutoBalancerBalance(id: tideIDs[idx]) ?? 0.0)
+        idx = idx + 1
+    }
+    log("Initial balances tracked for 5 tides")
+    
+    var round = 1
+    while round <= 3 {
+        // Use LARGE price changes to ensure rebalancing triggers regardless of previous state
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5 * UFix64(round))
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2 * UFix64(round))
         Test.moveTime(by: 70.0)
         Test.commitBlock()
+        
+        // Verify all 5 tides changed balance
+        idx = 0
+        while idx < 5 {
+            let newBal = getAutoBalancerBalance(id: tideIDs[idx]) ?? 0.0
+            Test.assert(newBal != prevBalances[idx], message: "Tide ".concat(idx.toString()).concat(" balance should change after round ").concat(round.toString()))
+            prevBalances[idx] = newBal
+            idx = idx + 1
+        }
+        log("Round ".concat(round.toString()).concat(" balances verified for all 5 tides"))
         round = round + 1
     }
 
@@ -813,18 +884,30 @@ fun testInsufficientFundsAndRecovery() {
     log("Supervisor successfully ran and recovered tides")
 
     // ========================================
-    // STEP 10: Verify tides execute 3+ times each after recovery
+    // STEP 10: Verify tides execute 3+ times each after recovery with balance changes
     // ========================================
     log("\n--- STEP 10: Running 3+ rounds to verify tides resumed self-scheduling ---")
     // After Supervisor seeds, tides should resume self-scheduling and continue perpetually.
     // We run 4 rounds to ensure each tide executes at least 3 times after recovery.
     
-    round = 0
-    while round < 4 {
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5 + (UFix64(round) * 0.1))
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5 + (UFix64(round) * 0.05))
+    // Track balance for first tide to verify rebalancing actually happens
+    let trackedTideID = tideIDs[0]
+    var prevBalance = getAutoBalancerBalance(id: trackedTideID) ?? 0.0
+    log("Balance before recovery rounds (tide ".concat(trackedTideID.toString()).concat("): ").concat(prevBalance.toString()))
+    
+    round = 1
+    while round <= 4 {
+        // Use LARGE price changes to ensure rebalancing triggers
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 5.0 * UFix64(round))
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 4.0 * UFix64(round))
         Test.moveTime(by: 70.0)
         Test.commitBlock()
+        
+        let newBalance = getAutoBalancerBalance(id: trackedTideID) ?? 0.0
+        log("Recovery round ".concat(round.toString()).concat(": Balance ").concat(prevBalance.toString()).concat(" -> ").concat(newBalance.toString()))
+        Test.assert(newBalance != prevBalance, message: "Balance should change after recovery round ".concat(round.toString()))
+        prevBalance = newBalance
+        
         round = round + 1
     }
 

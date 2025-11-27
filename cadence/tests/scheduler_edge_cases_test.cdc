@@ -19,6 +19,7 @@ access(all) var strategyIdentifier = Type<@FlowVaultsStrategies.TracerStrategy>(
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
+access(all) var snapshot: UInt64 = 0
 
 access(all)
 fun setup() {
@@ -74,6 +75,9 @@ fun setup() {
     )
 
     log("Setup complete")
+    
+    // Capture snapshot for test isolation
+    snapshot = getCurrentBlockHeight()
 }
 
 /// Test: Supervisor prevents double-scheduling same Tide for recovery
@@ -255,6 +259,7 @@ fun testMultipleUsersMultipleTides() {
 /// Test: Healthy tides continue executing without Supervisor intervention
 access(all)
 fun testHealthyTidesSelfSchedule() {
+    Test.reset(to: snapshot)
     log("\n[TEST] Healthy tides continue executing without Supervisor...")
     
     let user = Test.createAccount()
@@ -273,12 +278,24 @@ fun testHealthyTidesSelfSchedule() {
     let tideID = tideIDs[0]
     log("Tide created: ".concat(tideID.toString()))
     
-    // Execute 3 rounds
+    // Track initial balance
+    var prevBalance = getAutoBalancerBalance(id: tideID) ?? 0.0
+    log("Initial balance: ".concat(prevBalance.toString()))
+    
+    // Execute 3 rounds with balance verification using LARGE price changes
     var round = 1
     while round <= 3 {
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.1))
+        // Use LARGE price changes to ensure rebalancing triggers
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5 * UFix64(round))
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2 * UFix64(round))
         Test.moveTime(by: 70.0)
         Test.commitBlock()
+        
+        let newBalance = getAutoBalancerBalance(id: tideID) ?? 0.0
+        log("Round ".concat(round.toString()).concat(": Balance ").concat(prevBalance.toString()).concat(" -> ").concat(newBalance.toString()))
+        Test.assert(newBalance != prevBalance, message: "Balance should change after round ".concat(round.toString()))
+        prevBalance = newBalance
+        
         round = round + 1
     }
     
@@ -293,5 +310,5 @@ fun testHealthyTidesSelfSchedule() {
     ).returnValue! as! Bool)
     Test.assert(!isStuck, message: "Healthy tide should not be stuck")
     
-    log("PASS: Healthy tide continues self-scheduling without Supervisor")
+    log("PASS: Healthy tide continues self-scheduling without Supervisor with verified balance changes")
 }

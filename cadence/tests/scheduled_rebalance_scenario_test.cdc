@@ -279,6 +279,12 @@ fun testThreeTidesNineExecutions() {
     Test.assertEqual(3, regIDs.length)
     log("All 3 tides registered")
     
+    // Track initial balances for all 3 tides
+    var balance0_prev = getAutoBalancerBalance(id: tideIDs[0]) ?? 0.0
+    var balance1_prev = getAutoBalancerBalance(id: tideIDs[1]) ?? 0.0
+    var balance2_prev = getAutoBalancerBalance(id: tideIDs[2]) ?? 0.0
+    log("Initial balances: T0=".concat(balance0_prev.toString()).concat(", T1=").concat(balance1_prev.toString()).concat(", T2=").concat(balance2_prev.toString()))
+    
     // ROUND 1: 3 executions (1 per tide)
     log("\n--- ROUND 1 ---")
     setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.3)
@@ -289,6 +295,15 @@ fun testThreeTidesNineExecutions() {
     let events1 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("Executions after round 1: ".concat(events1.length.toString()))
     Test.assertEqual(3, events1.length)
+    
+    // Verify balance changes for round 1
+    var balance0_r1 = getAutoBalancerBalance(id: tideIDs[0]) ?? 0.0
+    var balance1_r1 = getAutoBalancerBalance(id: tideIDs[1]) ?? 0.0
+    var balance2_r1 = getAutoBalancerBalance(id: tideIDs[2]) ?? 0.0
+    log("Round 1 balances: T0=".concat(balance0_r1.toString()).concat(", T1=").concat(balance1_r1.toString()).concat(", T2=").concat(balance2_r1.toString()))
+    Test.assert(balance0_r1 != balance0_prev, message: "Tide 0 balance should change after round 1")
+    Test.assert(balance1_r1 != balance1_prev, message: "Tide 1 balance should change after round 1")
+    Test.assert(balance2_r1 != balance2_prev, message: "Tide 2 balance should change after round 1")
     
     // ROUND 2: 6 total executions
     log("\n--- ROUND 2 ---")
@@ -301,6 +316,15 @@ fun testThreeTidesNineExecutions() {
     log("Executions after round 2: ".concat(events2.length.toString()))
     Test.assertEqual(6, events2.length)
     
+    // Verify balance changes for round 2
+    var balance0_r2 = getAutoBalancerBalance(id: tideIDs[0]) ?? 0.0
+    var balance1_r2 = getAutoBalancerBalance(id: tideIDs[1]) ?? 0.0
+    var balance2_r2 = getAutoBalancerBalance(id: tideIDs[2]) ?? 0.0
+    log("Round 2 balances: T0=".concat(balance0_r2.toString()).concat(", T1=").concat(balance1_r2.toString()).concat(", T2=").concat(balance2_r2.toString()))
+    Test.assert(balance0_r2 != balance0_r1, message: "Tide 0 balance should change after round 2")
+    Test.assert(balance1_r2 != balance1_r1, message: "Tide 1 balance should change after round 2")
+    Test.assert(balance2_r2 != balance2_r1, message: "Tide 2 balance should change after round 2")
+    
     // ROUND 3: 9 total executions
     log("\n--- ROUND 3 ---")
     setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0)
@@ -311,6 +335,15 @@ fun testThreeTidesNineExecutions() {
     let events3 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("Executions after round 3: ".concat(events3.length.toString()))
     Test.assertEqual(9, events3.length)
+    
+    // Verify balance changes for round 3
+    var balance0_r3 = getAutoBalancerBalance(id: tideIDs[0]) ?? 0.0
+    var balance1_r3 = getAutoBalancerBalance(id: tideIDs[1]) ?? 0.0
+    var balance2_r3 = getAutoBalancerBalance(id: tideIDs[2]) ?? 0.0
+    log("Round 3 balances: T0=".concat(balance0_r3.toString()).concat(", T1=").concat(balance1_r3.toString()).concat(", T2=").concat(balance2_r3.toString()))
+    Test.assert(balance0_r3 != balance0_r2, message: "Tide 0 balance should change after round 3")
+    Test.assert(balance1_r3 != balance1_r2, message: "Tide 1 balance should change after round 3")
+    Test.assert(balance2_r3 != balance2_r2, message: "Tide 2 balance should change after round 3")
     
     // Verify rebalancing events
     let rebalanceEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
@@ -360,13 +393,34 @@ fun testFiveTidesContinueWithoutSupervisor() {
     Test.assertEqual(5, tideIDs.length)
     log("Created 5 tides")
     
-    // 3 rounds of execution
+    // Track balances for all 5 tides - use arrays for tracking
+    var prevBalances: [UFix64] = []
+    var idx = 0
+    while idx < 5 {
+        prevBalances.append(getAutoBalancerBalance(id: tideIDs[idx]) ?? 0.0)
+        idx = idx + 1
+    }
+    log("Initial balances: T0=".concat(prevBalances[0].toString()).concat(", T1=").concat(prevBalances[1].toString()).concat(", T2=").concat(prevBalances[2].toString()).concat(", T3=").concat(prevBalances[3].toString()).concat(", T4=").concat(prevBalances[4].toString()))
+    
+    // 3 rounds of execution with balance verification
     log("\nExecuting 3 rounds...")
     var round = 1
     while round <= 3 {
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.2))
+        // Use significant price changes to ensure rebalancing triggers
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.3))
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0 + (UFix64(round) * 0.2))
         Test.moveTime(by: 70.0)
         Test.commitBlock()
+        
+        // Verify all 5 tides changed balance
+        idx = 0
+        while idx < 5 {
+            let newBal = getAutoBalancerBalance(id: tideIDs[idx]) ?? 0.0
+            Test.assert(newBal != prevBalances[idx], message: "Tide ".concat(idx.toString()).concat(" balance should change after round ").concat(round.toString()))
+            prevBalances[idx] = newBal
+            idx = idx + 1
+        }
+        log("Round ".concat(round.toString()).concat(" balances verified for all 5 tides"))
         round = round + 1
     }
     
@@ -377,13 +431,25 @@ fun testFiveTidesContinueWithoutSupervisor() {
     // NOTE: Supervisor is NOT running
     log("\nSupervisor is NOT running (simulating failure)")
     
-    // 3 more rounds - tides should continue
+    // 3 more rounds - tides should continue with balance verification
     log("\nExecuting 3 more rounds without Supervisor...")
     round = 1
     while round <= 3 {
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0 + (UFix64(round) * 0.2))
+        // Use significantly different prices for second set of rounds
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0 + (UFix64(round) * 0.3))
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5 + (UFix64(round) * 0.2))
         Test.moveTime(by: 70.0)
         Test.commitBlock()
+        
+        // Verify all 5 tides changed balance
+        idx = 0
+        while idx < 5 {
+            let newBal = getAutoBalancerBalance(id: tideIDs[idx]) ?? 0.0
+            Test.assert(newBal != prevBalances[idx], message: "Tide ".concat(idx.toString()).concat(" balance should change after round ").concat((round + 3).toString()))
+            prevBalances[idx] = newBal
+            idx = idx + 1
+        }
+        log("Round ".concat((round + 3).toString()).concat(" balances verified for all 5 tides"))
         round = round + 1
     }
     
@@ -391,7 +457,7 @@ fun testFiveTidesContinueWithoutSupervisor() {
     log("Executions after 6 rounds: ".concat(events6.length.toString()))
     Test.assertEqual(30, events6.length)
     
-    log("PASS: Tides continue executing perpetually without Supervisor")
+    log("PASS: Tides continue executing perpetually without Supervisor with verified balance changes")
 }
 
 /// TEST 6: Healthy tides never become stuck
@@ -440,13 +506,34 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
     Test.assertEqual(3, tideIDs.length)
     log("Created 3 tides")
     
-    // Step 2: Let them execute 2 rounds (healthy)
+    // Track balances for all 3 tides
+    var prevBalances: [UFix64] = []
+    var idx = 0
+    while idx < 3 {
+        prevBalances.append(getAutoBalancerBalance(id: tideIDs[idx]) ?? 0.0)
+        idx = idx + 1
+    }
+    log("Initial balances: T0=".concat(prevBalances[0].toString()).concat(", T1=").concat(prevBalances[1].toString()).concat(", T2=").concat(prevBalances[2].toString()))
+    
+    // Step 2: Let them execute 2 rounds (healthy) with balance verification
     log("\nStep 2: Executing 2 rounds (healthy)...")
-    var round = 0
-    while round < 2 {
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.1))
+    var round = 1
+    while round <= 2 {
+        // Use significant price changes to ensure rebalancing triggers
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.3))
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0 + (UFix64(round) * 0.2))
         Test.moveTime(by: 70.0)
         Test.commitBlock()
+        
+        // Verify all 3 tides changed balance
+        idx = 0
+        while idx < 3 {
+            let newBal = getAutoBalancerBalance(id: tideIDs[idx]) ?? 0.0
+            Test.assert(newBal != prevBalances[idx], message: "Tide ".concat(idx.toString()).concat(" balance should change after round ").concat(round.toString()))
+            prevBalances[idx] = newBal
+            idx = idx + 1
+        }
+        log("Round ".concat(round.toString()).concat(" balances verified for all 3 tides"))
         round = round + 1
     }
     
