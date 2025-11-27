@@ -391,20 +391,31 @@ fun testFiveTidesContinueWithoutSupervisor() {
     log("PASS: Tides continue executing perpetually without Supervisor")
 }
 
-/// TEST 6: Failed tide cannot recover without Supervisor
+/// TEST 6: Pending queue behavior without Supervisor
+///
+/// This test verifies that:
+/// 1. Tides can be added to the pending queue (simulating monitoring detection of a failed reschedule)
+/// 2. The pending queue persists without Supervisor intervention
+/// 3. All tides continue to execute via native scheduling (enqueuePending does NOT cancel schedules)
+///
+/// IMPORTANT: enqueuePending() only adds a tide ID to the pending queue for Supervisor recovery.
+/// It does NOT cancel the tide's native schedule in FlowTransactionScheduler.
+/// In production, a tide would be added to pending AFTER it fails to self-reschedule,
+/// meaning it would have no active schedule. This test simulates the pending queue state only.
 ///
 /// EXPECTATIONS:
 /// - 5 tides created, 3 rounds = 15 executions
-/// - 1 tide enqueued to pending (simulating failure)
+/// - 1 tide enqueued to pending (queue state only, schedule NOT canceled)
 /// - Supervisor NOT running
-/// - 3 more rounds - only 4 tides execute = 12 more = 27 total
-/// - Failed tide stays in pending
+/// - 3 more rounds - ALL 5 tides still execute = 15 more = 30 total
+///   (because enqueuePending doesn't cancel the native schedule)
+/// - Pending queue still has 1 tide (Supervisor would have picked it up)
 ///
 access(all)
 fun testFailedTideCannotRecoverWithoutSupervisor() {
     Test.reset(to: snapshot)
     log("\n========================================")
-    log("TEST: Failed tide cannot recover without Supervisor")
+    log("TEST: Pending queue persists without Supervisor")
     log("========================================")
     
     let user = Test.createAccount()
@@ -426,8 +437,8 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
     
     let tideIDs = getTideIDs(address: user.address)!
     Test.assertEqual(5, tideIDs.length)
-    let failedTideID = tideIDs[2] // Pick the middle tide
-    log("Created 5 tides. Will simulate failure of tide: ".concat(failedTideID.toString()))
+    let pendingTideID = tideIDs[2] // Pick the middle tide
+    log("Created 5 tides. Will add tide ".concat(pendingTideID.toString()).concat(" to pending queue"))
     
     // 3 rounds of execution
     log("\nExecuting 3 rounds...")
@@ -443,11 +454,13 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
     log("Executions after 3 rounds: ".concat(events3.length.toString()))
     Test.assertEqual(15, events3.length)
     
-    // Enqueue one tide to pending
-    log("\nEnqueuing tide ".concat(failedTideID.toString()).concat(" to pending..."))
+    // Add tide to pending queue (simulates: monitoring detected this tide failed to reschedule)
+    // NOTE: This does NOT cancel the native schedule - the tide will continue executing
+    log("\nAdding tide ".concat(pendingTideID.toString()).concat(" to pending queue..."))
+    log("(In production, this would happen AFTER the tide fails to reschedule)")
     let enqueueRes = executeTransaction(
         "../transactions/flow-vaults/enqueue_pending_tide.cdc",
-        [failedTideID],
+        [pendingTideID],
         flowVaultsAccount
     )
     Test.expect(enqueueRes, Test.beSucceeded())
@@ -458,9 +471,9 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
     Test.assertEqual(1, pendingCount1)
     
     // NOTE: Supervisor is NOT running
-    log("\nSupervisor is NOT running - failed tide cannot be recovered")
+    log("\nSupervisor is NOT running - pending tide would be recovered if it was")
     
-    // 3 more rounds - only 4 working tides execute
+    // 3 more rounds - ALL 5 tides execute (enqueuePending doesn't stop execution)
     log("\nExecuting 3 more rounds...")
     round = 1
     while round <= 3 {
@@ -470,20 +483,19 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
         round = round + 1
     }
     
-    // Verify pending queue still has the failed tide
+    // Verify pending queue still has the tide (Supervisor would have dequeued it)
     let pendingRes2 = executeScript("../scripts/flow-vaults/get_pending_count.cdc", [])
     let pendingCount2 = pendingRes2.returnValue! as! Int
     log("Pending queue size after additional rounds: ".concat(pendingCount2.toString()))
     Test.assertEqual(1, pendingCount2)
     
-    // Total executions: 15 (first 3 rounds) + 12 (4 working tides x 3 rounds) = 27
-    // Note: The failed tide continues to execute via its existing schedule until it fails to reschedule
-    // So we might still see 30 executions if the failed tide's schedule wasn't actually canceled
+    // Total executions: 15 + 15 = 30 (all 5 tides execute, enqueuePending doesn't cancel schedules)
     let events6 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("Total executions: ".concat(events6.length.toString()))
+    Test.assertEqual(30, events6.length)
     
-    // The key verification: failed tide is still in pending
-    log("PASS: Failed tide stays in pending without Supervisor (queue size: ".concat(pendingCount2.toString()).concat(")"))
+    log("PASS: Pending queue persists without Supervisor (queue size: ".concat(pendingCount2.toString()).concat(")")
+    )
 }
 
 // Main test runner
