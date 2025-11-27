@@ -356,7 +356,10 @@ fun testPaginationStress() {
     log("PASS: 150 tides (3x MAX_BATCH_SIZE) all registered and executed")
 }
 
-/// Tests Supervisor's idle behavior when all tides are healthy
+/// Tests that Supervisor does not disrupt healthy tides
+///
+/// This test verifies that when Supervisor runs, it does NOT interfere with
+/// healthy tides that are self-scheduling correctly.
 ///
 /// NEW ARCHITECTURE:
 /// - AutoBalancers self-schedule via native FlowTransactionScheduler
@@ -372,7 +375,7 @@ fun testPaginationStress() {
 /// 5. Verify tide continues executing (not disrupted by Supervisor)
 ///
 access(all)
-fun testSupervisorRecoveryOfFailedReschedule() {
+fun testSupervisorDoesNotDisruptHealthyTides() {
     log("\n Testing Supervisor with healthy tides (nothing to recover)...")
 
     let user = Test.createAccount()
@@ -468,6 +471,214 @@ fun testSupervisorRecoveryOfFailedReschedule() {
     Test.assertEqual(0, finalPending)
     
     log("PASS: Supervisor runs without disrupting healthy tides")
+}
+
+/// Tests that isStuckTide() correctly identifies healthy tides as NOT stuck
+///
+/// This test verifies the detection logic:
+/// - A healthy, executing tide should NOT be detected as stuck
+/// - isStuckTide() returns false for tides with active schedules
+///
+/// LIMITATION: We cannot easily simulate an ACTUALLY stuck tide in tests because:
+/// - Stuck tides occur when AutoBalancer fails to reschedule (e.g., insufficient funds)
+/// - The txnFunder is set up with ample funds during strategy creation
+/// - To fully test recovery, we'd need to drain the txnFunder mid-execution
+///
+/// TEST SCENARIO:
+/// 1. Create healthy tide
+/// 2. Let it execute
+/// 3. Verify isStuckTide() returns false
+/// 4. Verify hasActiveSchedule() returns true
+///
+access(all)
+fun testStuckTideDetectionLogic() {
+    log("\n Testing stuck tide detection logic...")
+
+    let user = Test.createAccount()
+    mintFlow(to: user, amount: 1000.0)
+    grantBeta(flowVaultsAccount, user)
+
+    // 1. Create a healthy tide
+    log("Step 1: Creating healthy tide...")
+    let createRes = executeTransaction(
+        "../transactions/flow-vaults/create_tide.cdc",
+        [strategyIdentifier, flowTokenIdentifier, 100.0],
+        user
+    )
+    Test.expect(createRes, Test.beSucceeded())
+    
+    let tideIDs = getTideIDs(address: user.address)!
+    let tideID = tideIDs[0]
+    log("Tide created: ".concat(tideID.toString()))
+
+    // 2. Let it execute
+    log("Step 2: Waiting for execution...")
+    Test.moveTime(by: 70.0)
+    Test.commitBlock()
+    
+    let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
+    log("Executions: ".concat(execEvents.length.toString()))
+    Test.assert(execEvents.length >= 1, message: "Tide should have executed")
+
+    // 3. Check hasActiveSchedule() - should be true for healthy tide
+    log("Step 3: Checking hasActiveSchedule()...")
+    let hasActiveRes = executeScript(
+        "../scripts/flow-vaults/has_active_schedule.cdc",
+        [tideID]
+    )
+    Test.expect(hasActiveRes, Test.beSucceeded())
+    let hasActive = hasActiveRes.returnValue! as! Bool
+    log("hasActiveSchedule: ".concat(hasActive ? "true" : "false"))
+    Test.assertEqual(true, hasActive)
+
+    // 4. Check isStuckTide() - should be false for healthy tide
+    log("Step 4: Checking isStuckTide()...")
+    let isStuckRes = executeScript(
+        "../scripts/flow-vaults/is_stuck_tide.cdc",
+        [tideID]
+    )
+    Test.expect(isStuckRes, Test.beSucceeded())
+    let isStuck = isStuckRes.returnValue! as! Bool
+    log("isStuckTide: ".concat(isStuck ? "true" : "false"))
+    Test.assertEqual(false, isStuck)
+
+    log("PASS: Stuck tide detection correctly identifies healthy tides")
+}
+
+/// Tests that tides continue executing in a long-running scenario
+/// with Supervisor available for recovery if needed.
+///
+/// LIMITATION: Simulating actual insufficient funds is difficult in tests because:
+/// - The test framework provides ample FLOW to accounts
+/// - Scheduling fees are tiny (~0.001 FLOW per schedule)
+/// - Draining the entire vault would require many executions or special setup
+///
+/// This test verifies the ARCHITECTURE works by:
+/// 1. Running many tides over many execution cycles
+/// 2. Having Supervisor available for any that might fail
+/// 3. Verifying all tides continue executing
+///
+/// For ACTUAL insufficient funds testing:
+/// - Would require modifying strategy to use a separate, limited-balance vault
+/// - Or running thousands of executions to naturally drain funds
+///
+access(all)
+fun testLongRunningWithSupervisorRecovery() {
+    log("\n========================================")
+    log("TEST: Long-Running Scenario with Supervisor")
+    log("========================================")
+
+    let user = Test.createAccount()
+    mintFlow(to: user, amount: 2000.0)
+    grantBeta(flowVaultsAccount, user)
+
+    // 1. Create 3 tides
+    log("\nStep 1: Creating 3 tides...")
+    var i = 0
+    while i < 3 {
+        let res = executeTransaction(
+            "../transactions/flow-vaults/create_tide.cdc",
+            [strategyIdentifier, flowTokenIdentifier, 100.0],
+            user
+        )
+        Test.expect(res, Test.beSucceeded())
+        i = i + 1
+    }
+    
+    let tideIDs = getTideIDs(address: user.address)!
+    log("Created ".concat(tideIDs.length.toString()).concat(" tides"))
+
+    // 2. Setup Supervisor for recovery (even though we expect no failures)
+    log("\nStep 2: Setting up Supervisor for recovery...")
+    executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
+    executeTransaction("../transactions/flow-vaults/setup_supervisor.cdc", [], flowVaultsAccount)
+    mintFlow(to: flowVaultsAccount, amount: 100.0)
+    
+    Test.commitBlock()
+    
+    // Use large offset to handle cumulative time from all tests
+    let scheduledTime = getCurrentBlock().timestamp + 3000.0
+    let schedSupRes = executeTransaction(
+        "../transactions/flow-vaults/schedule_supervisor.cdc",
+        [scheduledTime, UInt8(1), UInt64(800), 0.05, 300.0, true, 60.0, true],  // scanForStuck=true
+        flowVaultsAccount
+    )
+    Test.expect(schedSupRes, Test.beSucceeded())
+    log("Supervisor scheduled for recovery mode")
+
+    // 3. Run many execution cycles
+    log("\nStep 3: Running 5 execution cycles...")
+    var cycle = 0
+    while cycle < 5 {
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(cycle) * 0.1))
+        Test.moveTime(by: 70.0)
+        Test.commitBlock()
+        cycle = cycle + 1
+    }
+
+    let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
+    log("Total executions after 5 cycles: ".concat(execEvents.length.toString()))
+
+    // 4. Check for any FailedRecurringSchedule events
+    let failedEvents = Test.eventsOfType(Type<DeFiActions.FailedRecurringSchedule>())
+    log("FailedRecurringSchedule events: ".concat(failedEvents.length.toString()))
+
+    // 5. Verify stuck tide detection
+    log("\nStep 4: Checking stuck tide detection...")
+    var stuckCount = 0
+    for tideID in tideIDs {
+        let isStuckRes = executeScript(
+            "../scripts/flow-vaults/is_stuck_tide.cdc",
+            [tideID]
+        )
+        if isStuckRes.returnValue != nil {
+            let isStuck = isStuckRes.returnValue! as! Bool
+            if isStuck {
+                stuckCount = stuckCount + 1
+            }
+        }
+    }
+    log("Stuck tides: ".concat(stuckCount.toString()))
+    
+    // With sufficient funds, no tides should be stuck
+    Test.assertEqual(0, stuckCount)
+
+    // 6. Let Supervisor run
+    log("\nStep 5: Letting Supervisor run...")
+    Test.moveTime(by: 3100.0)
+    Test.commitBlock()
+
+    let stuckDetectedEvents = Test.eventsOfType(Type<FlowVaultsScheduler.StuckTideDetected>())
+    log("StuckTideDetected events: ".concat(stuckDetectedEvents.length.toString()))
+    
+    // With healthy tides, no StuckTideDetected events expected
+    Test.assertEqual(0, stuckDetectedEvents.length)
+
+    // 7. Verify pending queue is empty
+    let pendingRes = executeScript("../scripts/flow-vaults/get_pending_count.cdc", [])
+    let pendingCount = pendingRes.returnValue! as! Int
+    log("Pending queue size: ".concat(pendingCount.toString()))
+    Test.assertEqual(0, pendingCount)
+
+    // 8. Verify all tides have active schedules
+    log("\nStep 6: Verifying all tides have active schedules...")
+    var activeCount = 0
+    for tideID in tideIDs {
+        let hasActiveRes = executeScript(
+            "../scripts/flow-vaults/has_active_schedule.cdc",
+            [tideID]
+        )
+        if hasActiveRes.returnValue != nil {
+            let hasActive = hasActiveRes.returnValue! as! Bool
+            if hasActive {
+                activeCount = activeCount + 1
+            }
+        }
+    }
+    log("Tides with active schedules: ".concat(activeCount.toString()).concat("/").concat(tideIDs.length.toString()))
+    Test.assertEqual(tideIDs.length, activeCount)
+
+    log("PASS: Long-running scenario with Supervisor available")
 }
 
 access(all)
