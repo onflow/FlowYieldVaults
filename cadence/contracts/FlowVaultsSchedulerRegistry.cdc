@@ -160,7 +160,7 @@ access(all) contract FlowVaultsSchedulerRegistry {
     }
 
     init() {
-        self.MAX_BATCH_SIZE = 50  // Process up to 50 tides per Supervisor run
+        self.MAX_BATCH_SIZE = 5  // Process up to 5 tides per Supervisor run
         self.tideRegistry = {}
         self.handlerCaps = {}
         self.pendingQueue = {}

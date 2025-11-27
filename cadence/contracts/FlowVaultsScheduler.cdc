@@ -251,11 +251,12 @@ access(all) contract FlowVaultsScheduler {
         }
 
         /// Cancels a scheduled recovery transaction for a specific Tide
+        /// RESTRICTED: Only callable by the contract account to prevent external interference
         ///
         /// @param tideID: The ID of the Tide whose scheduled rebalancing should be canceled
         /// @return The refunded fees
         ///
-        access(all) fun cancelRecovery(tideID: UInt64): @FlowToken.Vault {
+        access(account) fun cancelRecovery(tideID: UInt64): @FlowToken.Vault {
             pre {
                 self.scheduledTransactions[tideID] != nil:
                     "No recovery scheduled for Tide #\(tideID)"
@@ -490,8 +491,9 @@ access(all) contract FlowVaultsScheduler {
         return FlowVaultsSchedulerRegistry.getSupervisorCap()
     }
 
-    /// Borrows a reference to the Supervisor for queries
-    access(all) fun borrowSupervisor(): &Supervisor? {
+    /// Borrows a reference to the Supervisor for internal operations
+    /// RESTRICTED: Only callable by the contract account to prevent external access
+    access(account) fun borrowSupervisor(): &Supervisor? {
         return self.account.storage.borrow<&Supervisor>(from: self.SupervisorStoragePath)
     }
 

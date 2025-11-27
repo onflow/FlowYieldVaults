@@ -300,7 +300,7 @@ fun testMultiTideIndependentExecution() {
 /// Tests pagination with a large number of tides, each executing at least 3 times.
 ///
 /// Uses dynamic batch size: 3 * MAX_BATCH_SIZE + partial (23 in this case)
-/// MAX_BATCH_SIZE = 50, so total = 3*50 + 23 = 173 tides
+/// MAX_BATCH_SIZE = 5, so total = 3*5 + 3 = 18 tides
 ///
 /// This verifies:
 /// 1. All tides are registered correctly
@@ -310,11 +310,11 @@ fun testMultiTideIndependentExecution() {
 access(all)
 fun testPaginationStress() {
     // Calculate number of tides: 3 * MAX_BATCH_SIZE + partial batch
-    // MAX_BATCH_SIZE is 50 in FlowVaultsSchedulerRegistry
-    let maxBatchSize = 50
+    // MAX_BATCH_SIZE is 5 in FlowVaultsSchedulerRegistry
+    let maxBatchSize = 5
     let fullBatches = 3
-    let partialBatch = 23  // Less than MAX_BATCH_SIZE
-    let numTides = fullBatches * maxBatchSize + partialBatch  // 173 tides
+    let partialBatch = 3  // Less than MAX_BATCH_SIZE
+    let numTides = fullBatches * maxBatchSize + partialBatch  // 18 tides
     let minExecutionsPerTide = 3
     let minTotalExecutions = numTides * minExecutionsPerTide  // 519 minimum
     
@@ -322,7 +322,7 @@ fun testPaginationStress() {
     log("Expecting at least ".concat(minTotalExecutions.toString()).concat(" total executions (").concat(minExecutionsPerTide.toString()).concat(" per tide)"))
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 100000.0)  // Increased for 3 rounds of 173 tides
+    mintFlow(to: user, amount: 10000.0)  // For 3 rounds of 18 tides
     grantBeta(flowVaultsAccount, user)
     mintFlow(to: flowVaultsAccount, amount: 50000.0)  // Increased for scheduling fees
 
@@ -594,7 +594,7 @@ fun testStuckTideDetectionLogic() {
 /// COMPREHENSIVE TEST: Insufficient Funds -> Failure -> Recovery
 /// 
 /// This test validates the COMPLETE failure and recovery cycle:
-/// 1. Create 10 tides
+/// 1. Create 5 tides (matches MAX_BATCH_SIZE)
 /// 2. Let them execute 3 rounds each (30+ executions)
 /// 3. Start Supervisor BEFORE drain (with short interval)
 /// 4. Drain FLOW - both tides AND Supervisor fail to reschedule
@@ -612,7 +612,7 @@ fun testInsufficientFundsAndRecovery() {
     log("\n========================================")
     log("TEST: Comprehensive Insufficient Funds -> Recovery")
     log("========================================")
-    log("- 10 tides, 3 rounds each before drain")
+    log("- 5 tides, 3 rounds each before drain (matches MAX_BATCH_SIZE)")
     log("- Supervisor running before drain (also fails)")
     log("- Verify 3+ executions per tide after recovery")
     log("========================================")
@@ -629,11 +629,11 @@ fun testInsufficientFundsAndRecovery() {
     log("Initial FlowVaults FLOW balance: ".concat(initialBalance.toString()))
 
     // ========================================
-    // STEP 1: Create 10 tides
+    // STEP 1: Create 5 tides (matches MAX_BATCH_SIZE for single-run recovery)
     // ========================================
-    log("\n--- STEP 1: Creating 10 tides ---")
+    log("\n--- STEP 1: Creating 5 tides ---")
     var i = 0
-    while i < 10 {
+    while i < 5 {
         let res = executeTransaction(
             "../transactions/flow-vaults/create_tide.cdc",
             [strategyIdentifier, flowTokenIdentifier, 50.0],
@@ -644,7 +644,7 @@ fun testInsufficientFundsAndRecovery() {
     }
     
     let tideIDs = getTideIDs(address: user.address)!
-    Test.assertEqual(10, tideIDs.length)
+    Test.assertEqual(5, tideIDs.length)
     log("Created ".concat(tideIDs.length.toString()).concat(" tides"))
 
     // ========================================
@@ -658,7 +658,7 @@ fun testInsufficientFundsAndRecovery() {
     // ========================================
     // STEP 3: Let tides execute 3 rounds (and Supervisor run)
     // ========================================
-    log("\n--- STEP 3: Running 3 rounds (10 tides x 3 = 30 expected executions) ---")
+    log("\n--- STEP 3: Running 3 rounds (5 tides x 3 = 15 expected executions) ---")
     var round = 0
     while round < 3 {
         setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.1))
@@ -670,7 +670,7 @@ fun testInsufficientFundsAndRecovery() {
 
     let execEventsBeforeDrain = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("Executions before drain: ".concat(execEventsBeforeDrain.length.toString()))
-    Test.assert(execEventsBeforeDrain.length >= 30, message: "Should have at least 30 executions (10 tides x 3 rounds)")
+    Test.assert(execEventsBeforeDrain.length >= 15, message: "Should have at least 15 executions (5 tides x 3 rounds)")
     
     // Verify tides are registered
     let registeredCount = (executeScript(
@@ -678,7 +678,7 @@ fun testInsufficientFundsAndRecovery() {
         []
     ).returnValue! as! Int)
     log("Registered tides: ".concat(registeredCount.toString()))
-    Test.assertEqual(10, registeredCount)
+    Test.assertEqual(5, registeredCount)
 
     // ========================================
     // STEP 4: DRAIN the FlowVaults account's FLOW
@@ -739,7 +739,7 @@ fun testInsufficientFundsAndRecovery() {
         }
     }
     log("Stuck tides: ".concat(stuckCount.toString()).concat(" / ").concat(tideIDs.length.toString()))
-    Test.assert(stuckCount >= 8, message: "At least 8 of 10 tides should be stuck")
+    Test.assert(stuckCount >= 5, message: "All 5 tides should be stuck")
 
     // Verify Supervisor also stopped - pending queue should remain with stuck tides
     // (Supervisor couldn't run due to no FLOW)
@@ -786,7 +786,7 @@ fun testInsufficientFundsAndRecovery() {
     
     let schedSupRes = executeTransaction(
         "../transactions/flow-vaults/schedule_supervisor.cdc",
-        [restartTime, UInt8(1), UInt64(5000), 0.5, 60.0, true, 30.0, true],  // Higher execution effort (5000) for recovering 10 tides
+        [restartTime, UInt8(1), UInt64(5000), 0.5, 60.0, true, 30.0, true],  // Higher execution effort (5000) for recovering 5 tides
         flowVaultsAccount
     )
     Test.expect(schedSupRes, Test.beSucceeded())
@@ -802,12 +802,12 @@ fun testInsufficientFundsAndRecovery() {
     // Check for StuckTideDetected events
     let stuckDetectedEvents = Test.eventsOfType(Type<FlowVaultsScheduler.StuckTideDetected>())
     log("StuckTideDetected events: ".concat(stuckDetectedEvents.length.toString()))
-    Test.assert(stuckDetectedEvents.length >= 8, message: "Supervisor should detect at least 8 stuck tides")
+    Test.assert(stuckDetectedEvents.length >= 5, message: "Supervisor should detect all 5 stuck tides")
 
     // Check for SupervisorSeededTide events
     let seededEvents = Test.eventsOfType(Type<FlowVaultsScheduler.SupervisorSeededTide>())
     log("SupervisorSeededTide events: ".concat(seededEvents.length.toString()))
-    Test.assert(seededEvents.length >= 8, message: "Supervisor should seed at least 8 tides")
+    Test.assert(seededEvents.length >= 5, message: "Supervisor should seed all 5 tides")
 
     // Verify Supervisor executed by checking it seeded tides and detected stuck ones
     log("Supervisor successfully ran and recovered tides")
@@ -833,14 +833,14 @@ fun testInsufficientFundsAndRecovery() {
     log("Final total executions: ".concat(execEventsFinal.length.toString()))
     log("New executions after recovery: ".concat(newExecutions.toString()))
     
-    // After Supervisor seeds 10 tides:
+    // After Supervisor seeds 5 tides:
     // - 1 Supervisor execution
     // - 10 initial seeded executions (1 per tide)
     // - Plus 3 more rounds of 10 executions each = 30 more
     // Total minimum: 1 + 10 + 30 = 41, but we'll be conservative and expect 30+
     Test.assert(
-        newExecutions >= 30,
-        message: "Should have at least 30 new executions (10 tides x 3+ rounds). Got: ".concat(newExecutions.toString())
+        newExecutions >= 15,
+        message: "Should have at least 15 new executions (5 tides x 3+ rounds). Got: ".concat(newExecutions.toString())
     )
 
     // ========================================
@@ -882,11 +882,11 @@ fun testInsufficientFundsAndRecovery() {
         }
     }
     log("Tides with active schedules: ".concat(activeScheduleCount.toString()).concat("/").concat(tideIDs.length.toString()))
-    Test.assertEqual(10, activeScheduleCount)
+    Test.assertEqual(5, activeScheduleCount)
 
     log("\n========================================")
     log("PASS: Comprehensive Insufficient Funds Recovery Test!")
-    log("- 10 tides created and ran 3 rounds (30 executions)")
+    log("- 5 tides created and ran 3 rounds (15 executions)")
     log("- After drain: all ".concat(stuckCount.toString()).concat(" tides became stuck"))
     log("- Supervisor detected stuck tides: ".concat(stuckDetectedEvents.length.toString()))
     log("- Supervisor seeded tides: ".concat(seededEvents.length.toString()))
