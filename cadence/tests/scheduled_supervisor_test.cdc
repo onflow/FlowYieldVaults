@@ -453,10 +453,7 @@ fun testSupervisorDoesNotDisruptHealthyTides() {
     log("Pending queue size: ".concat(pendingCount.toString()))
     Test.assertEqual(0, pendingCount)
 
-    // 5. Setup Supervisor (scheduling functionality is now built into Supervisor)
-    log("Step 5: Setting up Supervisor...")
-    executeTransaction("../transactions/flow-vaults/setup_supervisor.cdc", [], flowVaultsAccount)
-    
+    // Supervisor is automatically configured when FlowVaultsScheduler is deployed (in init)
     Test.commitBlock()
     
     // Schedule Supervisor
@@ -638,11 +635,8 @@ fun testInsufficientFundsAndRecovery() {
 
     // ========================================
     // STEP 2: Setup Supervisor (scheduling functionality is built into Supervisor)
-    // ========================================
-    log("\n--- STEP 2: Setup Supervisor ---")
-    executeTransaction("../transactions/flow-vaults/setup_supervisor.cdc", [], flowVaultsAccount)
-    Test.commitBlock()
-    log("Supervisor ready (will schedule after drain/refund)")
+    // Supervisor is automatically configured when FlowVaultsScheduler is deployed (in init)
+    log("\n--- Supervisor already configured at deploy time ---")
 
     // ========================================
     // STEP 3: Let tides execute 3 rounds (and Supervisor run) with balance verification
