@@ -15,10 +15,7 @@ access(all) contract FlowVaultsSchedulerRegistry {
     /* --- EVENTS --- */
 
     /// Emitted when a tide is registered with its handler capability
-    access(all) event TideRegistered(
-        tideID: UInt64,
-        handlerCapValid: Bool
-    )
+    access(all) event TideRegistered(tideID: UInt64)
 
     /// Emitted when a tide is unregistered (cleanup on tide close)
     access(all) event TideUnregistered(
@@ -61,14 +58,16 @@ access(all) contract FlowVaultsSchedulerRegistry {
     /* --- ACCOUNT-LEVEL FUNCTIONS --- */
 
     /// Register a Tide and store its handler capability (idempotent)
-    /// Also adds the tide to the pending queue for initial seeding
     access(account) fun register(
         tideID: UInt64,
         handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
     ) {
+        pre {
+            handlerCap.check(): "Invalid handler capability provided for tideID \(tideID)"
+        }
         self.tideRegistry[tideID] = true
         self.handlerCaps[tideID] = handlerCap
-        emit TideRegistered(tideID: tideID, handlerCapValid: handlerCap.check())
+        emit TideRegistered(tideID: tideID)
     }
 
     /// Adds a tide to the pending queue for seeding by the Supervisor
@@ -81,20 +80,18 @@ access(all) contract FlowVaultsSchedulerRegistry {
 
     /// Removes a tide from the pending queue (called after successful scheduling)
     access(account) fun dequeuePending(tideID: UInt64) {
-        let wasInQueue = self.pendingQueue[tideID] != nil
-        self.pendingQueue.remove(key: tideID)
-        if wasInQueue {
+        let removed = self.pendingQueue.remove(key: tideID)
+        if removed != nil {
             emit TideDequeuedPending(tideID: tideID, pendingQueueSize: self.pendingQueue.length)
         }
     }
 
     /// Unregister a Tide (idempotent) - removes from registry, capabilities, and pending queue
     access(account) fun unregister(tideID: UInt64) {
-        let wasInPendingQueue = self.pendingQueue[tideID] != nil
         self.tideRegistry.remove(key: tideID)
         self.handlerCaps.remove(key: tideID)
-        self.pendingQueue.remove(key: tideID)
-        emit TideUnregistered(tideID: tideID, wasInPendingQueue: wasInPendingQueue)
+        let pending = self.pendingQueue.remove(key: tideID)
+        emit TideUnregistered(tideID: tideID, wasInPendingQueue: pending != nil)
     }
 
     /// Set global Supervisor capability (used for self-rescheduling)
@@ -111,7 +108,8 @@ access(all) contract FlowVaultsSchedulerRegistry {
     }
 
     /// Get handler capability for a Tide (AutoBalancer capability)
-    access(all) view fun getHandlerCap(tideID: UInt64): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? {
+    /// Restricted to account level to prevent unauthorized access to execution capabilities
+    access(account) view fun getHandlerCap(tideID: UInt64): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? {
         return self.handlerCaps[tideID]
     }
 
@@ -120,15 +118,28 @@ access(all) contract FlowVaultsSchedulerRegistry {
         return self.tideRegistry[tideID] ?? false
     }
 
-    /// Get tide IDs in the pending queue (bounded by MAX_BATCH_SIZE)
-    /// Returns up to MAX_BATCH_SIZE tide IDs that need seeding
-    access(all) fun getPendingTideIDs(): [UInt64] {
+    /// Get all tide IDs in the pending queue
+    access(all) view fun getPendingTideIDs(): [UInt64] {
+        return self.pendingQueue.keys
+    }
+
+    /// Get paginated pending tide IDs
+    /// @param page: The page number (0-indexed)
+    /// @param size: The page size (defaults to MAX_BATCH_SIZE if nil)
+    access(all) view fun getPendingTideIDsPaginated(page: Int, size: Int?): [UInt64] {
+        let pageSize = size ?? self.MAX_BATCH_SIZE
         let allPending = self.pendingQueue.keys
-        if allPending.length <= self.MAX_BATCH_SIZE {
-            return allPending
+        let startIndex = page * pageSize
+        
+        if startIndex >= allPending.length {
+            return []
         }
-        // Return only MAX_BATCH_SIZE elements
-        return allPending.slice(from: 0, upTo: self.MAX_BATCH_SIZE)
+        
+        let endIndex = startIndex + pageSize > allPending.length 
+            ? allPending.length 
+            : startIndex + pageSize
+            
+        return allPending.slice(from: startIndex, upTo: endIndex)
     }
 
     /// Returns the total number of tides in the pending queue

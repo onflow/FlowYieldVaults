@@ -5,7 +5,6 @@ import "ViewResolver"
 // DeFiActions
 import "DeFiActions"
 import "FlowVaultsClosedBeta"
-// Note: FlowVaultsScheduler registration moved to FlowVaultsAutoBalancers
 
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -347,10 +346,6 @@ access(all) contract FlowVaults {
 
             self.addTide(betaRef: betaRef, <-tide)
 
-            // Note: Scheduler registration happens in FlowVaultsAutoBalancers._initNewAutoBalancer
-            // which is called during Strategy creation. This keeps registration atomic with
-            // AutoBalancer creation and decouples Tide lifecycle from scheduling.
-
             return newID
         }
         /// Adds an open Tide to this TideManager resource. This effectively transfers ownership of the newly added
@@ -394,7 +389,7 @@ access(all) contract FlowVaults {
                 FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
             }
-            return <- self._withdrawTide(id: id)!
+            return <- self._withdrawTide(id: id)
         }
         /// Withdraws funds from the specified Tide in the given amount. The resulting Vault Type will be whatever
         /// denomination is supported by the Tide, so callers should examine the Tide to know the resulting Vault to
@@ -414,9 +409,6 @@ access(all) contract FlowVaults {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
             }
-            // Note: Scheduler unregistration happens in FlowVaultsAutoBalancers._cleanupAutoBalancer
-            // which is called when the Strategy is burned. This keeps unregistration atomic with
-            // AutoBalancer cleanup and decouples Tide lifecycle from scheduling.
 
             let tide <- self._withdrawTide(id: id)
             let res <- tide.withdraw(amount: tide.getTideBalance())

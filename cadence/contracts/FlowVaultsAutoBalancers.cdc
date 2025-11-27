@@ -4,8 +4,8 @@ import "FungibleToken"
 // DeFiActions
 import "DeFiActions"
 import "FlowTransactionScheduler"
-// Scheduler
-import "FlowVaultsScheduler"
+// Registry for global tide mapping
+import "FlowVaultsSchedulerRegistry"
 
 /// FlowVaultsAutoBalancers
 ///
@@ -18,10 +18,11 @@ import "FlowVaultsScheduler"
 /// When a Tide and necessarily the related Strategy is closed & burned, the related AutoBalancer and its Capabilities
 /// are destroyed and deleted.
 ///
-/// Registration with FlowVaultsScheduler happens here (not in FlowVaults) because:
-/// - Only strategies with AutoBalancers need scheduled rebalancing
-/// - Registration is atomic with AutoBalancer creation
-/// - Unregistration happens at AutoBalancer cleanup
+/// Scheduling approach:
+/// - AutoBalancers are configured with a recurringConfig at creation
+/// - After creation, scheduleNextRebalance(nil) starts the self-scheduling chain
+/// - The registry tracks all live tide IDs for global mapping
+/// - Cleanup unregisters from the registry
 ///
 access(all) contract FlowVaultsAutoBalancers {
 
@@ -66,7 +67,7 @@ access(all) contract FlowVaultsAutoBalancers {
         rebalanceSource: {DeFiActions.Source}?,
         recurringConfig: DeFiActions.AutoBalancerRecurringConfig?,
         uniqueID: DeFiActions.UniqueIdentifier
-    ): auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, FungibleToken.Withdraw) &DeFiActions.AutoBalancer {
+    ): auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw) &DeFiActions.AutoBalancer {
 
         // derive paths & prevent collision
         let storagePath = self.deriveAutoBalancerPath(id: uniqueID.id, storage: true) as! StoragePath
@@ -108,9 +109,20 @@ access(all) contract FlowVaultsAutoBalancers {
         assert(publishedCap,
             message: "Error when publishing AutoBalancer Capability for UniqueIdentifier.id \(uniqueID.id) at path \(publicPath)")
 
-        // Register with scheduler and schedule first execution atomically
-        // This panics if scheduling fails, reverting AutoBalancer creation
-        FlowVaultsScheduler.registerTide(tideID: uniqueID.id)
+        // Issue handler capability for the AutoBalancer
+        let handlerCap = self.account.capabilities.storage
+            .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(storagePath)
+
+        // Register tide in registry for global mapping of live tide IDs
+        FlowVaultsSchedulerRegistry.register(tideID: uniqueID.id, handlerCap: handlerCap)
+
+        // Start the native AutoBalancer self-scheduling chain
+        // This schedules the first rebalance; subsequent ones are scheduled automatically
+        // by the AutoBalancer after each execution (via recurringConfig)
+        let scheduleError = autoBalancerRef.scheduleNextRebalance(whileExecuting: nil)
+        if scheduleError != nil {
+            panic("Failed to schedule first rebalance for AutoBalancer \(uniqueID.id): ".concat(scheduleError!))
+        }
 
         return autoBalancerRef
     }
@@ -118,9 +130,9 @@ access(all) contract FlowVaultsAutoBalancers {
     /// Returns an authorized reference on the AutoBalancer with the associated UniqueIdentifier.id. If none is found,
     /// the operation reverts.
     access(account)
-    fun _borrowAutoBalancer(_ id: UInt64): auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, FungibleToken.Withdraw) &DeFiActions.AutoBalancer {
+    fun _borrowAutoBalancer(_ id: UInt64): auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw) &DeFiActions.AutoBalancer {
         let storagePath = self.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
-        return self.account.storage.borrow<auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, FungibleToken.Withdraw) &DeFiActions.AutoBalancer>(
+        return self.account.storage.borrow<auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw) &DeFiActions.AutoBalancer>(
                 from: storagePath
             ) ?? panic("Could not borrow reference to AutoBalancer with UniqueIdentifier.id \(id) from StoragePath \(storagePath)")
     }
@@ -128,8 +140,8 @@ access(all) contract FlowVaultsAutoBalancers {
     /// Called by strategies defined in the FlowVaults account which leverage account-hosted AutoBalancers when a
     /// Strategy is burned
     access(account) fun _cleanupAutoBalancer(id: UInt64) {
-        // Unregister from scheduler first (cancels pending schedules, returns fees)
-        FlowVaultsScheduler.unregisterTide(tideID: id)
+        // Unregister from registry (removes from global tide mapping)
+        FlowVaultsSchedulerRegistry.unregister(tideID: id)
 
         let storagePath = self.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
         let publicPath = self.deriveAutoBalancerPath(id: id, storage: false) as! PublicPath
@@ -144,10 +156,12 @@ access(all) contract FlowVaultsAutoBalancers {
         })
         // Delete controllers after iteration
         for controllerID in controllersToDelete {
-            self.account.capabilities.storage.getController(byCapabilityID: controllerID)?.delete()
+            if let controller = self.account.capabilities.storage.getController(byCapabilityID: controllerID) {
+                controller.delete()
+            }
         }
         
-        // load & burn the AutoBalancer
+        // load & burn the AutoBalancer (this also handles any pending scheduled transactions via burnCallback)
         let autoBalancer <-self.account.storage.load<@DeFiActions.AutoBalancer>(from: storagePath)
         Burner.burn(<-autoBalancer)
     }
