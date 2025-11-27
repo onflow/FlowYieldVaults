@@ -499,7 +499,8 @@ access(all) contract FlowVaultsScheduler {
 
     /// Ensures that the global Supervisor exists and is registered.
     /// Idempotent - safe to call multiple times.
-    access(all) fun ensureSupervisorConfigured() {
+    /// RESTRICTED: Only callable by the contract account to prevent external interference
+    access(account) fun ensureSupervisorConfigured() {
         if self.account.storage.borrow<&Supervisor>(from: self.SupervisorStoragePath) == nil {
             let sup <- self.createSupervisor()
             self.account.storage.save(<-sup, to: self.SupervisorStoragePath)
