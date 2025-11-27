@@ -777,16 +777,14 @@ fun testInsufficientFundsAndRecovery() {
     log("Supervisor successfully ran and recovered tides")
 
     // ========================================
-    // STEP 10: Verify tides execute after recovery
+    // STEP 10: Verify tides execute 3+ times each after recovery
     // ========================================
-    log("\n--- STEP 10: Verify seeded tides executed ---")
-    // NOTE: Externally scheduled transactions (Supervisor seeds) do NOT automatically
-    // reschedule via the AutoBalancer. This is by design - external schedules are "fire once".
-    // The Supervisor continues to monitor and re-seed stuck tides on subsequent runs.
+    log("\n--- STEP 10: Running 3+ rounds to verify tides resumed self-scheduling ---")
+    // After Supervisor seeds, tides should resume self-scheduling and continue perpetually.
+    // We run 4 rounds to ensure each tide executes at least 3 times after recovery.
     
-    // Run a few more rounds to trigger any additional Supervisor runs
     round = 0
-    while round < 3 {
+    while round < 4 {
         setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5 + (UFix64(round) * 0.1))
         setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5 + (UFix64(round) * 0.05))
         Test.moveTime(by: 70.0)
@@ -799,22 +797,21 @@ fun testInsufficientFundsAndRecovery() {
     log("Final total executions: ".concat(execEventsFinal.length.toString()))
     log("New executions after recovery: ".concat(newExecutions.toString()))
     
-    // After Supervisor seeds 10 tides, they each execute once = 10 new executions
-    // Plus 1 Supervisor execution = 11 minimum
-    // (Supervisor may run again and seed more as it detects stuck tides repeatedly)
+    // After Supervisor seeds 10 tides:
+    // - 1 Supervisor execution
+    // - 10 initial seeded executions (1 per tide)
+    // - Plus 3 more rounds of 10 executions each = 30 more
+    // Total minimum: 1 + 10 + 30 = 41, but we'll be conservative and expect 30+
     Test.assert(
-        newExecutions >= 10,
-        message: "Should have at least 10 new executions (10 seeded tides). Got: ".concat(newExecutions.toString())
+        newExecutions >= 30,
+        message: "Should have at least 30 new executions (10 tides x 3+ rounds). Got: ".concat(newExecutions.toString())
     )
 
     // ========================================
-    // STEP 11: Check tide status after recovery
+    // STEP 11: Verify tides are no longer stuck
     // ========================================
-    log("\n--- STEP 11: Checking tide status after Supervisor recovery ---")
-    // NOTE: Externally scheduled transactions (Supervisor seeds) execute once but don't
-    // restart the AutoBalancer's self-scheduling cycle. Tides will become stuck again
-    // after their seeded execution. The Supervisor must continue running to monitor
-    // and re-seed them perpetually.
+    log("\n--- STEP 11: Verifying tides are no longer stuck ---")
+    // After recovery, tides should have resumed self-scheduling and be healthy
     var stillStuckCount = 0
     for tideID in tideIDs {
         let isStuckRes = executeScript(
@@ -828,9 +825,28 @@ fun testInsufficientFundsAndRecovery() {
             }
         }
     }
-    log("Tides that became stuck again (expected - external schedules don't restart self-scheduling): ".concat(stillStuckCount.toString()))
-    // We expect tides to be stuck again since external schedules are fire-once
-    // The Supervisor would need to keep running to continuously recover them
+    log("Tides still stuck: ".concat(stillStuckCount.toString()))
+    Test.assertEqual(0, stillStuckCount)
+
+    // ========================================
+    // STEP 12: Verify all tides have active schedules
+    // ========================================
+    log("\n--- STEP 12: Verifying all tides have active schedules ---")
+    var activeScheduleCount = 0
+    for tideID in tideIDs {
+        let hasActiveRes = executeScript(
+            "../scripts/flow-vaults/has_active_schedule.cdc",
+            [tideID]
+        )
+        if hasActiveRes.returnValue != nil {
+            let hasActive = hasActiveRes.returnValue! as! Bool
+            if hasActive {
+                activeScheduleCount = activeScheduleCount + 1
+            }
+        }
+    }
+    log("Tides with active schedules: ".concat(activeScheduleCount.toString()).concat("/").concat(tideIDs.length.toString()))
+    Test.assertEqual(10, activeScheduleCount)
 
     log("\n========================================")
     log("PASS: Comprehensive Insufficient Funds Recovery Test!")
@@ -839,8 +855,8 @@ fun testInsufficientFundsAndRecovery() {
     log("- Supervisor detected stuck tides: ".concat(stuckDetectedEvents.length.toString()))
     log("- Supervisor seeded tides: ".concat(seededEvents.length.toString()))
     log("- ".concat(newExecutions.toString()).concat(" new executions after recovery"))
-    log("- Note: Externally seeded tides don't restart self-scheduling")
-    log("- Supervisor must keep running to continuously monitor and recover")
+    log("- All tides resumed self-scheduling and are healthy")
+    log("- All ".concat(activeScheduleCount.toString()).concat(" tides have active schedules"))
     log("========================================")
 }
 
