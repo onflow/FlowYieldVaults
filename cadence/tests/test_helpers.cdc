@@ -217,9 +217,25 @@ access(all) fun deployContracts() {
     Test.expect(err, Test.beNil())
 
     // FlowVaults contracts
+    // Deployment order matters due to imports:
+    // 1. FlowVaultsSchedulerRegistry (no FlowVaults dependencies)
+    // 2. FlowVaultsAutoBalancers (imports FlowVaultsSchedulerRegistry)
+    // 3. FlowVaultsScheduler (imports FlowVaultsSchedulerRegistry AND FlowVaultsAutoBalancers)
+    err = Test.deployContract(
+        name: "FlowVaultsSchedulerRegistry",
+        path: "../contracts/FlowVaultsSchedulerRegistry.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "FlowVaultsAutoBalancers",
         path: "../contracts/FlowVaultsAutoBalancers.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "FlowVaultsScheduler",
+        path: "../contracts/FlowVaultsScheduler.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -493,6 +509,18 @@ fun createTide(
 access(all)
 fun closeTide(signer: Test.TestAccount, id: UInt64, beFailed: Bool) {
     let res = _executeTransaction("../transactions/flow-vaults/close_tide.cdc", [id], signer)
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+access(all)
+fun depositToTide(signer: Test.TestAccount, id: UInt64, amount: UFix64, beFailed: Bool) {
+    let res = _executeTransaction("../transactions/flow-vaults/deposit_to_tide.cdc", [id, amount], signer)
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+access(all)
+fun withdrawFromTide(signer: Test.TestAccount, id: UInt64, amount: UFix64, beFailed: Bool) {
+    let res = _executeTransaction("../transactions/flow-vaults/withdraw_from_tide.cdc", [id, amount], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 

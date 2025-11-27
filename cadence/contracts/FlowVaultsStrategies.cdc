@@ -17,6 +17,9 @@ import "FlowALP"
 import "FlowVaultsClosedBeta"
 import "FlowVaults"
 import "FlowVaultsAutoBalancers"
+// scheduler
+import "FlowTransactionScheduler"
+import "FlowVaultsSchedulerRegistry"
 // tokens
 import "YieldToken"
 import "MOET"
@@ -149,15 +152,19 @@ access(all) contract FlowVaultsStrategies {
             // assign collateral & flow token types
             let collateralType = withFunds.getType()
 
-            // configure and AutoBalancer for this stack
+            // Create recurring config for automatic rebalancing
+            let recurringConfig = FlowVaultsStrategies._createRecurringConfig(withID: uniqueID)
+
+            // configure and AutoBalancer for this stack with native recurring scheduling
             let autoBalancer = FlowVaultsAutoBalancers._initNewAutoBalancer(
-                oracle: oracle,             // used to determine value of deposits & when to rebalance
-                vaultType: yieldTokenType,  // the type of Vault held by the AutoBalancer
-                lowerThreshold: 0.95,       // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
-                upperThreshold: 1.05,       // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
-                rebalanceSink: nil,         // nil on init - will be set once a PositionSink is available
-                rebalanceSource: nil,       // nil on init - not set for TracerStrategy
-                uniqueID: uniqueID          // identifies AutoBalancer as part of this Strategy
+                oracle: oracle,                 // used to determine value of deposits & when to rebalance
+                vaultType: yieldTokenType,      // the type of Vault held by the AutoBalancer
+                lowerThreshold: 0.95,           // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
+                upperThreshold: 1.05,           // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
+                rebalanceSink: nil,             // nil on init - will be set once a PositionSink is available
+                rebalanceSource: nil,           // nil on init - not set for TracerStrategy
+                recurringConfig: recurringConfig, // enables native AutoBalancer self-scheduling
+                uniqueID: uniqueID              // identifies AutoBalancer as part of this Strategy
             )
             // enables deposits of YieldToken to the AutoBalancer
             let abaSink = autoBalancer.createBalancerSink() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
@@ -219,8 +226,10 @@ access(all) contract FlowVaultsStrategies {
             // recollateralizing the position
             autoBalancer.setSink(positionSwapSink, updateSinkID: true)
 
+            // Use the same uniqueID passed to createStrategy so Strategy.burnCallback
+            // calls _cleanupAutoBalancer with the correct ID
             return <-create TracerStrategy(
-                id: DeFiActions.createUniqueIdentifier(),
+                id: uniqueID,
                 collateralType: collateralType,
                 position: position
             )
@@ -361,15 +370,19 @@ access(all) contract FlowVaultsStrategies {
                     uniqueID: uniqueID
                 )
 
-            // configure and AutoBalancer for this stack
+            // Create recurring config for automatic rebalancing
+            let recurringConfig = FlowVaultsStrategies._createRecurringConfig(withID: uniqueID)
+
+            // configure and AutoBalancer for this stack with native recurring scheduling
             let autoBalancer = FlowVaultsAutoBalancers._initNewAutoBalancer(
-                    oracle: yieldTokenOracle,   // used to determine value of deposits & when to rebalance
-                    vaultType: yieldTokenType,  // the type of Vault held by the AutoBalancer
-                    lowerThreshold: 0.95,       // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
-                    upperThreshold: 1.05,       // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
-                    rebalanceSink: nil,         // nil on init - will be set once a PositionSink is available
-                    rebalanceSource: nil,       // nil on init - not set for TracerStrategy
-                    uniqueID: uniqueID          // identifies AutoBalancer as part of this Strategy
+                    oracle: yieldTokenOracle,       // used to determine value of deposits & when to rebalance
+                    vaultType: yieldTokenType,      // the type of Vault held by the AutoBalancer
+                    lowerThreshold: 0.95,           // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
+                    upperThreshold: 1.05,           // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
+                    rebalanceSink: nil,             // nil on init - will be set once a PositionSink is available
+                    rebalanceSource: nil,           // nil on init - not set for TracerStrategy
+                    recurringConfig: recurringConfig, // enables native AutoBalancer self-scheduling
+                    uniqueID: uniqueID              // identifies AutoBalancer as part of this Strategy
                 )
             // enables deposits of YieldToken to the AutoBalancer
             let abaSink = autoBalancer.createBalancerSink() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
@@ -508,8 +521,10 @@ access(all) contract FlowVaultsStrategies {
             // the position
             autoBalancer.setSink(positionSwapSink, updateSinkID: true)
 
+            // Use the same uniqueID passed to createStrategy so Strategy.burnCallback
+            // calls _cleanupAutoBalancer with the correct ID
             return <-create mUSDCStrategy(
-                id: DeFiActions.createUniqueIdentifier(),
+                id: uniqueID,
                 collateralType: collateralType,
                 position: position
             )
@@ -588,6 +603,40 @@ access(all) contract FlowVaultsStrategies {
         }
         let vaultCap = self.account.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: capPath)
             ?? panic("Could not find fee source Capability at \(capPath)")
+        return FungibleTokenConnectors.VaultSinkAndSource(
+            min: nil,
+            max: nil,
+            vault: vaultCap,
+            uniqueID: withID
+        )
+    }
+
+    /// Creates an AutoBalancerRecurringConfig for scheduled rebalancing.
+    /// The txnFunder uses the contract's FlowToken vault to pay for scheduling fees.
+    access(self)
+    fun _createRecurringConfig(withID: DeFiActions.UniqueIdentifier?): DeFiActions.AutoBalancerRecurringConfig {
+        // Create txnFunder that can provide/accept FLOW for scheduling fees
+        let txnFunder = self._createTxnFunder(withID: withID)
+        
+        return DeFiActions.AutoBalancerRecurringConfig(
+            interval: 60,  // Rebalance every 60 seconds
+            priority: FlowTransactionScheduler.Priority.Medium,
+            executionEffort: 800,
+            forceRebalance: false,
+            txnFunder: txnFunder
+        )
+    }
+
+    /// Creates a Sink+Source for the AutoBalancer to use for scheduling fees
+    access(self)
+    fun _createTxnFunder(withID: DeFiActions.UniqueIdentifier?): {DeFiActions.Sink, DeFiActions.Source} {
+        let capPath = /storage/autoBalancerTxnFunder
+        if self.account.storage.type(at: capPath) == nil {
+            let cap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(/storage/flowTokenVault)
+            self.account.storage.save(cap, to: capPath)
+        }
+        let vaultCap = self.account.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: capPath)
+            ?? panic("Could not find txnFunder Capability at \(capPath)")
         return FungibleTokenConnectors.VaultSinkAndSource(
             min: nil,
             max: nil,

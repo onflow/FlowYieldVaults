@@ -157,6 +157,8 @@ fun setup() {
 		beFailed: false
 	)
 
+	// Fund FlowVaults account for scheduling fees (atomic initial scheduling)
+	mintFlow(to: flowVaultsAccount, amount: 100.0)
 
 	snapshot = getCurrentBlockHeight()
 }

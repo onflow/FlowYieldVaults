@@ -231,7 +231,8 @@ access(all) contract FlowVaults {
                 remainingBalance: self.getTideBalance()
             )
             let _strategy <- self.strategy <- nil
-            Burner.burn(<-_strategy)
+            // Force unwrap to ensure burnCallback is called on the Strategy
+            Burner.burn(<-_strategy!)
         }
         /// TODO: FlowVaults specific views
         access(all) view fun getViews(): [Type] {
@@ -318,8 +319,13 @@ access(all) contract FlowVaults {
         access(all) view fun getNumberOfTides(): Int {
             return self.tides.length
         }
-        /// Creates a new Tide executing the specified Strategy with the provided funds
-        access(all) fun createTide(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, strategyType: Type, withVault: @{FungibleToken.Vault}) {
+        /// Creates a new Tide executing the specified Strategy with the provided funds.
+        /// Returns the newly created Tide ID.
+        access(all) fun createTide(
+            betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge,
+            strategyType: Type,
+            withVault: @{FungibleToken.Vault}
+        ): UInt64 {
             pre {
                 FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
@@ -327,9 +333,10 @@ access(all) contract FlowVaults {
             let balance = withVault.balance
             let type = withVault.getType()
             let tide <-create Tide(strategyType: strategyType, withVault: <-withVault)
+            let newID = tide.uniqueID.id
 
             emit CreatedTide(
-                id: tide.uniqueID.id,
+                id: newID,
                 uuid: tide.uuid,
                 strategyType: strategyType.identifier,
                 tokenType: type.identifier,
@@ -338,6 +345,8 @@ access(all) contract FlowVaults {
             )
 
             self.addTide(betaRef: betaRef, <-tide)
+
+            return newID
         }
         /// Adds an open Tide to this TideManager resource. This effectively transfers ownership of the newly added
         /// Tide to the owner of this TideManager
@@ -380,7 +389,7 @@ access(all) contract FlowVaults {
                 FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
             }
-            return <- self._withdrawTide(id: id)!
+            return <- self._withdrawTide(id: id)
         }
         /// Withdraws funds from the specified Tide in the given amount. The resulting Vault Type will be whatever
         /// denomination is supported by the Tide, so callers should examine the Tide to know the resulting Vault to
@@ -400,6 +409,7 @@ access(all) contract FlowVaults {
                 self.tides[id] != nil:
                 "No Tide with ID \(id) found"
             }
+
             let tide <- self._withdrawTide(id: id)
             let res <- tide.withdraw(amount: tide.getTideBalance())
             Burner.burn(<-tide)

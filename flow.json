@@ -125,6 +125,22 @@
 				"testnet": "3bda2f90274dbc9b"
 			}
 		},
+		"FlowVaultsScheduler": {
+			"source": "cadence/contracts/FlowVaultsScheduler.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009",
+				"testnet": "3bda2f90274dbc9b"
+			}
+		},
+		"FlowVaultsSchedulerRegistry": {
+			"source": "cadence/contracts/FlowVaultsSchedulerRegistry.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009",
+				"testnet": "3bda2f90274dbc9b"
+			}
+		},
 		"FlowVaultsClosedBeta": {
 			"source": "cadence/contracts/FlowVaultsClosedBeta.cdc",
 			"aliases": {
@@ -811,7 +827,9 @@
 				"ERC4626PriceOracles",
 				"ERC4626SinkConnectors",
 				"ERC4626SwapConnectors",
+				"FlowVaultsSchedulerRegistry",
 				"FlowVaultsAutoBalancers",
+				"FlowVaultsScheduler",
 				"FlowVaultsClosedBeta",
 				"FlowVaults",
 				"UniswapV3SwapConnectors",
@@ -874,7 +892,9 @@
 					]
 				},
 				"MockSwapper",
+				"FlowVaultsSchedulerRegistry",
 				"FlowVaultsAutoBalancers",
+				"FlowVaultsScheduler",
 				"FlowVaultsClosedBeta",
 				"FlowVaults",
 				{
@@ -925,7 +945,9 @@
 					]
 				},
 				"MockSwapper",
+				"FlowVaultsSchedulerRegistry",
 				"FlowVaultsAutoBalancers",
+				"FlowVaultsScheduler",
 				"FlowVaultsClosedBeta",
 				"FlowVaults",
 				{

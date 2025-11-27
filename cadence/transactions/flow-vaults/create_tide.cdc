@@ -4,6 +4,7 @@ import "ViewResolver"
 
 import "FlowVaultsClosedBeta"
 import "FlowVaults"
+import "FlowVaultsScheduler"
 
 /// Opens a new Tide in the FlowVaults platform, funding the Tide with the specified Vault and amount
 ///
@@ -61,6 +62,13 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
     }
 
     execute {
-        self.manager.createTide(betaRef: self.betaRef, strategyType: self.strategy, withVault: <-self.depositVault)
+        // FlowVaults.TideManager.createTide is responsible for registering the new
+        // Tide with the scheduler from within the contract account, keeping
+        // scheduler access restricted to that account.
+        self.manager.createTide(
+            betaRef: self.betaRef,
+            strategyType: self.strategy,
+            withVault: <-self.depositVault
+        )
     }
 }

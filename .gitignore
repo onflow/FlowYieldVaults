@@ -1,5 +1,6 @@
 # local
 .DS_Store
+**/.DS_Store
 .pr-drafts/
 .vscode/
 
@@ -20,3 +21,6 @@ solidity/out/
 broadcast
 cache
 db
+
+# logs
+run_logs/*.log
