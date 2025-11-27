@@ -1,4 +1,5 @@
 import "FlowTransactionScheduler"
+import "DeFiActions"
 
 
 /// FlowVaultsSchedulerRegistry
@@ -46,7 +47,12 @@ access(all) contract FlowVaultsSchedulerRegistry {
     access(self) var tideRegistry: {UInt64: Bool}
 
     /// Handler capabilities (AutoBalancer) for each tide - keyed by tide ID
+    /// Used for scheduling via FlowTransactionScheduler
     access(self) var handlerCaps: {UInt64: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>}
+
+    /// Schedule capabilities for each tide - keyed by tide ID
+    /// Used by Supervisor to directly call scheduleNextRebalance() for recovery
+    access(self) var scheduleCaps: {UInt64: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>}
 
     /// Queue of tide IDs that need initial seeding or re-seeding by the Supervisor
     /// Stored as a dictionary for O(1) add/remove; iteration gives the pending set
@@ -57,16 +63,19 @@ access(all) contract FlowVaultsSchedulerRegistry {
 
     /* --- ACCOUNT-LEVEL FUNCTIONS --- */
 
-    /// Register a Tide and store its handler capability (idempotent)
+    /// Register a Tide and store its handler and schedule capabilities (idempotent)
     access(account) fun register(
         tideID: UInt64,
-        handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
+        handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>,
+        scheduleCap: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>
     ) {
         pre {
             handlerCap.check(): "Invalid handler capability provided for tideID \(tideID)"
+            scheduleCap.check(): "Invalid schedule capability provided for tideID \(tideID)"
         }
         self.tideRegistry[tideID] = true
         self.handlerCaps[tideID] = handlerCap
+        self.scheduleCaps[tideID] = scheduleCap
         emit TideRegistered(tideID: tideID)
     }
 
@@ -90,6 +99,7 @@ access(all) contract FlowVaultsSchedulerRegistry {
     access(account) fun unregister(tideID: UInt64) {
         self.tideRegistry.remove(key: tideID)
         self.handlerCaps.remove(key: tideID)
+        self.scheduleCaps.remove(key: tideID)
         let pending = self.pendingQueue.remove(key: tideID)
         emit TideUnregistered(tideID: tideID, wasInPendingQueue: pending != nil)
     }
@@ -117,6 +127,12 @@ access(all) contract FlowVaultsSchedulerRegistry {
     /// so having it only allows scheduling (which requires paying fees), not direct execution.
     access(all) view fun getHandlerCapability(tideID: UInt64): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? {
         return self.handlerCaps[tideID]
+    }
+
+    /// Get schedule capability for a Tide - account restricted for Supervisor use
+    /// This allows calling scheduleNextRebalance() directly on the AutoBalancer
+    access(account) view fun getScheduleCap(tideID: UInt64): Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>? {
+        return self.scheduleCaps[tideID]
     }
 
     /// Returns true if the tide is registered
@@ -163,6 +179,7 @@ access(all) contract FlowVaultsSchedulerRegistry {
         self.MAX_BATCH_SIZE = 5  // Process up to 5 tides per Supervisor run
         self.tideRegistry = {}
         self.handlerCaps = {}
+        self.scheduleCaps = {}
         self.pendingQueue = {}
         self.supervisorCap = nil
     }

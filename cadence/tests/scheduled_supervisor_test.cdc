@@ -485,12 +485,12 @@ fun testSupervisorDoesNotDisruptHealthyTides() {
     Test.moveTime(by: 2100.0)
     Test.commitBlock()
 
-    // 7. Verify Supervisor ran but found nothing to seed (healthy tide)
-    let seededEvents = Test.eventsOfType(Type<FlowVaultsScheduler.SupervisorSeededTide>())
-    log("SupervisorSeededTide events: ".concat(seededEvents.length.toString()))
+    // 7. Verify Supervisor ran but found nothing to recover (healthy tide)
+    let recoveredEvents = Test.eventsOfType(Type<FlowVaultsScheduler.TideRecovered>())
+    log("TideRecovered events: ".concat(recoveredEvents.length.toString()))
     
-    // Healthy tides don't need seeding
-    // Note: seededEvents might be > 0 if there were stuck tides from previous tests
+    // Healthy tides don't need recovery
+    // Note: recoveredEvents might be > 0 if there were stuck tides from previous tests
     // The key verification is that our tide continues to execute
 
     // 8. Verify tide continues executing
@@ -804,10 +804,10 @@ fun testInsufficientFundsAndRecovery() {
     log("StuckTideDetected events: ".concat(stuckDetectedEvents.length.toString()))
     Test.assert(stuckDetectedEvents.length >= 5, message: "Supervisor should detect all 5 stuck tides")
 
-    // Check for SupervisorSeededTide events
-    let seededEvents = Test.eventsOfType(Type<FlowVaultsScheduler.SupervisorSeededTide>())
-    log("SupervisorSeededTide events: ".concat(seededEvents.length.toString()))
-    Test.assert(seededEvents.length >= 5, message: "Supervisor should seed all 5 tides")
+    // Check for TideRecovered events (Supervisor uses Schedule capability to recover)
+    let recoveredEvents = Test.eventsOfType(Type<FlowVaultsScheduler.TideRecovered>())
+    log("TideRecovered events: ".concat(recoveredEvents.length.toString()))
+    Test.assert(recoveredEvents.length >= 5, message: "Supervisor should recover all 5 tides")
 
     // Verify Supervisor executed by checking it seeded tides and detected stuck ones
     log("Supervisor successfully ran and recovered tides")
@@ -889,7 +889,7 @@ fun testInsufficientFundsAndRecovery() {
     log("- 5 tides created and ran 3 rounds (15 executions)")
     log("- After drain: all ".concat(stuckCount.toString()).concat(" tides became stuck"))
     log("- Supervisor detected stuck tides: ".concat(stuckDetectedEvents.length.toString()))
-    log("- Supervisor seeded tides: ".concat(seededEvents.length.toString()))
+    log("- Supervisor recovered tides: ".concat(recoveredEvents.length.toString()))
     log("- ".concat(newExecutions.toString()).concat(" new executions after recovery"))
     log("- All tides resumed self-scheduling and are healthy")
     log("- All ".concat(activeScheduleCount.toString()).concat(" tides have active schedules"))

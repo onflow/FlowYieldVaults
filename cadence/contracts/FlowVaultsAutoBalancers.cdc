@@ -168,12 +168,16 @@ access(all) contract FlowVaultsAutoBalancers {
         assert(publishedCap,
             message: "Error when publishing AutoBalancer Capability for UniqueIdentifier.id \(uniqueID.id) at path \(publicPath)")
 
-        // Issue handler capability for the AutoBalancer
+        // Issue handler capability for the AutoBalancer (for FlowTransactionScheduler execution)
         let handlerCap = self.account.capabilities.storage
             .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(storagePath)
 
+        // Issue schedule capability for the AutoBalancer (for Supervisor to call scheduleNextRebalance directly)
+        let scheduleCap = self.account.capabilities.storage
+            .issue<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>(storagePath)
+
         // Register tide in registry for global mapping of live tide IDs
-        FlowVaultsSchedulerRegistry.register(tideID: uniqueID.id, handlerCap: handlerCap)
+        FlowVaultsSchedulerRegistry.register(tideID: uniqueID.id, handlerCap: handlerCap, scheduleCap: scheduleCap)
 
         // Start the native AutoBalancer self-scheduling chain
         // This schedules the first rebalance; subsequent ones are scheduled automatically
