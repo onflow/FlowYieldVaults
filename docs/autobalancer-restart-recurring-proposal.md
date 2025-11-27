@@ -180,6 +180,35 @@ The original design (PR #45) intentionally treats external schedules as "fire on
 
 The `restartRecurring` flag preserves this design while enabling the specific recovery use case.
 
+### Why Can't We Just "Set `isInternallyManaged` to True"?
+
+A natural question arises: instead of adding a new `restartRecurring` flag, why can't the Supervisor just set `isInternallyManaged` to `true` when it seeds a stuck tide?
+
+**The answer: `isInternallyManaged` is NOT a settable flag - it's a runtime lookup.**
+
+```cadence
+let isInternallyManaged = self.borrowScheduledTransaction(id: id) != nil
+```
+
+This line checks: "Does this transaction ID exist in MY `_scheduledTransactions` map?"
+
+The AutoBalancer's `_scheduledTransactions` is a **private resource dictionary** that only the AutoBalancer itself can write to:
+
+```cadence
+access(self) let _scheduledTransactions: @{UInt64: FlowTransactionScheduler.ScheduledTransaction}
+```
+
+When the Supervisor schedules a transaction:
+1. It calls `FlowTransactionScheduler.schedule()` which returns a `@ScheduledTransaction` resource
+2. The Supervisor stores this resource in **its own** `scheduledTransactions` map
+3. The Supervisor **cannot** store it in the AutoBalancer's `_scheduledTransactions` because:
+   - It's `access(self)` (private to AutoBalancer)
+   - The Supervisor only has an `Execute` entitlement capability, not storage access
+
+**Even if we wanted to, there's no way to make the AutoBalancer "think" a Supervisor-created schedule is internally managed** - the transaction resource physically exists in Supervisor's storage, not AutoBalancer's storage.
+
+This is why `restartRecurring` is the correct solution: it's an explicit signal passed in the transaction data that tells the AutoBalancer "I know I'm external, but please resume your self-scheduling cycle after this execution."
+
 ## References
 
 - **Original PR**: [FlowActions PR #45](https://github.com/onflow/FlowActions/pull/45) - "Add scheduled transaction functionality to AutoBalancer"
