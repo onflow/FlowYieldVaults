@@ -180,9 +180,39 @@ The original design (PR #45) intentionally treats external schedules as "fire on
 
 The `restartRecurring` flag preserves this design while enabling the specific recovery use case.
 
+### Why Doesn't Supervisor Just Call `scheduleNextRebalance()` Directly?
+
+The most elegant solution would be for the Supervisor to call `AutoBalancer.scheduleNextRebalance()` directly, which would properly create a schedule in the AutoBalancer's own `_scheduledTransactions` map, making `isInternallyManaged` true.
+
+**The answer: The Supervisor doesn't have the required entitlement.**
+
+`scheduleNextRebalance()` requires the `Schedule` entitlement:
+
+```cadence
+access(Schedule) fun scheduleNextRebalance(whileExecuting: UInt64?): String?
+```
+
+But the Supervisor only has an `Execute` entitlement capability:
+
+```cadence
+// In FlowVaultsSchedulerRegistry, the handlerCap is:
+Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
+```
+
+The `Execute` entitlement only allows calling `executeTransaction()`, not `scheduleNextRebalance()`.
+
+**Why not issue a `Schedule` capability?**
+
+The `Schedule` entitlement is intentionally restricted. Issuing it broadly would allow any holder to schedule transactions on behalf of the AutoBalancer, potentially:
+- Draining the AutoBalancer's fee vault
+- Creating unwanted schedules
+- Interfering with the AutoBalancer's timing
+
+The `restartRecurring` flag is a safer approach: the Supervisor provides ONE seed execution (paying its own fees), and during that execution, the AutoBalancer uses ITS OWN `Schedule` entitlement to call `scheduleNextRebalance()` internally.
+
 ### Why Can't We Just "Set `isInternallyManaged` to True"?
 
-A natural question arises: instead of adding a new `restartRecurring` flag, why can't the Supervisor just set `isInternallyManaged` to `true` when it seeds a stuck tide?
+A related question: instead of adding a new `restartRecurring` flag, why can't the Supervisor just set `isInternallyManaged` to `true` when it seeds a stuck tide?
 
 **The answer: `isInternallyManaged` is NOT a settable flag - it's a runtime lookup.**
 
