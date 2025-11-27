@@ -137,13 +137,14 @@ fun testNativeScheduledRebalancing() {
     log("Tide is registered in FlowVaultsSchedulerRegistry")
     
     // Step 3: Get initial AutoBalancer balance
-    let initialBalance = getAutoBalancerBalanceByID(tideID: tideID)
+    let initialBalance = getAutoBalancerBalance(id: tideID)
     log("Initial AutoBalancer balance: ".concat((initialBalance ?? 0.0).toString()))
     
-    // Step 4: Change FLOW price to trigger rebalancing need
-    log("Step 3: Changing FLOW price...")
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5)
-    log("FLOW price changed to 1.5 (from 1.0)")
+    // Step 4: Change prices to trigger rebalancing
+    log("Step 3: Changing prices...")
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0)
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5)
+    log("FLOW price changed to 2.0, YieldToken to 1.5")
     
     // Step 5: Wait for automatic execution by emulator FVM
     log("Step 4: Waiting for automatic execution...")
@@ -166,15 +167,17 @@ fun testNativeScheduledRebalancing() {
         message: "Expected at least 1 scheduler execution, found ".concat(schedulerExecutedEvents.length.toString())
     )
     
-    // Step 7: Check final balance
+    // Step 7: Check final balance and assert it changed
     log("Step 6: Checking balance changes...")
     
     let initialBal = initialBalance ?? 0.0
-    let finalBalance = getAutoBalancerBalanceByID(tideID: tideID) ?? 0.0
+    let finalBalance = getAutoBalancerBalance(id: tideID) ?? 0.0
     
     log("Initial AutoBalancer balance: ".concat(initialBal.toString()))
     log("Final AutoBalancer balance: ".concat(finalBalance.toString()))
     log("Balance change: ".concat((finalBalance - initialBal).toString()))
+    
+    Test.assert(finalBalance != initialBal, message: "Balance should change after rebalancing")
     
     log("PASS: Native scheduled rebalancing")
 }
@@ -183,6 +186,7 @@ fun testNativeScheduledRebalancing() {
 ///
 access(all)
 fun testMultipleExecutionsWithPriceChanges() {
+    Test.reset(to: snapshot)
     log("\n========================================")
     log("TEST: Multiple executions with price changes")
     log("========================================")
@@ -205,38 +209,44 @@ fun testMultipleExecutionsWithPriceChanges() {
     log("Tide created: ".concat(myTideID.toString()))
     
     // Track initial state
-    let balance0 = getAutoBalancerBalanceByID(tideID: myTideID) ?? 0.0
+    let balance0 = getAutoBalancerBalance(id: myTideID) ?? 0.0
     log("Initial balance: ".concat(balance0.toString()))
     
     // Step 2: First execution with price change
     log("Step 2: First execution...")
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.2)
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5)
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2)
     Test.moveTime(by: 70.0)
     Test.commitBlock()
     
     let execEvents1 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-    let balance1 = getAutoBalancerBalanceByID(tideID: myTideID) ?? 0.0
+    let balance1 = getAutoBalancerBalance(id: myTideID) ?? 0.0
     log("After execution 1 - Events: ".concat(execEvents1.length.toString()).concat(", Balance: ").concat(balance1.toString()))
+    Test.assert(balance1 != balance0, message: "Balance should change after execution 1")
     
     // Step 3: Second execution with price change
     log("Step 3: Second execution...")
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5)
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.5)
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 2.0)
     Test.moveTime(by: 70.0)
     Test.commitBlock()
     
     let execEvents2 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-    let balance2 = getAutoBalancerBalanceByID(tideID: myTideID) ?? 0.0
+    let balance2 = getAutoBalancerBalance(id: myTideID) ?? 0.0
     log("After execution 2 - Events: ".concat(execEvents2.length.toString()).concat(", Balance: ").concat(balance2.toString()))
+    Test.assert(balance2 != balance1, message: "Balance should change after execution 2")
     
     // Step 4: Third execution with price change
     log("Step 4: Third execution...")
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.8)
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 4.0)
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 3.0)
     Test.moveTime(by: 70.0)
     Test.commitBlock()
     
     let execEvents3 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-    let balance3 = getAutoBalancerBalanceByID(tideID: myTideID) ?? 0.0
+    let balance3 = getAutoBalancerBalance(id: myTideID) ?? 0.0
     log("After execution 3 - Events: ".concat(execEvents3.length.toString()).concat(", Balance: ").concat(balance3.toString()))
+    Test.assert(balance3 != balance2, message: "Balance should change after execution 3")
     
     // Verification: At least 3 executions should have occurred
     Test.assert(
@@ -244,23 +254,11 @@ fun testMultipleExecutionsWithPriceChanges() {
         message: "Expected at least 3 scheduler executions, found ".concat(execEvents3.length.toString())
     )
     
-    log("PASS: Multiple executions with price changes")
-}
-
-// Helper functions
-access(all)
-fun getAutoBalancerBalanceByID(tideID: UInt64): UFix64? {
-    let res = executeScript(
-        "../scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc",
-        [tideID]
-    )
-    if res.status == Test.ResultStatus.succeeded {
-        return res.returnValue as! UFix64?
-    }
-    return nil
+    log("PASS: Multiple executions with price changes and verified balance changes")
 }
 
 // Main test runner
+// Note: getAutoBalancerBalance helper is in test_helpers.cdc
 access(all)
 fun main() {
     setup()
