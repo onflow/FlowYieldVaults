@@ -80,14 +80,14 @@ fun setup() {
     snapshot = getCurrentBlockHeight()
 }
 
-/// Test: Supervisor prevents double-scheduling same Tide for recovery
+/// Test: New tide has active native schedule immediately after creation
 ///
-/// When Supervisor seeds a tide, scheduling the same tide again should fail
-/// until the first recovery completes or is cancelled.
+/// Verifies that when a tide is created, it automatically starts self-scheduling
+/// via the native AutoBalancer mechanism without any Supervisor intervention.
 ///
 access(all)
-fun testSupervisorDoubleSchedulingPrevented() {
-    log("\n[TEST] Supervisor prevents double-scheduling same Tide for recovery...")
+fun testTideHasNativeScheduleAfterCreation() {
+    log("\n[TEST] Tide has native schedule immediately after creation...")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 200.0)
@@ -110,9 +110,9 @@ fun testSupervisorDoubleSchedulingPrevented() {
         "../scripts/flow-vaults/has_active_schedule.cdc",
         [tideID]
     ).returnValue! as! Bool)
-    Test.assert(hasActive, message: "Tide should have active native schedule")
+    Test.assert(hasActive, message: "Tide should have active native schedule immediately after creation")
     
-    log("PASS: Tide has native self-scheduling (Supervisor not needed for healthy tides)")
+    log("PASS: Tide has native self-scheduling immediately after creation")
 }
 
 /// NOTE: Cancel recovery transaction was removed.

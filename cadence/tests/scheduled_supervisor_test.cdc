@@ -191,68 +191,8 @@ fun testMultiTideNativeScheduling() {
     log("PASS: Multiple Tides Native Scheduling")
 }
 
-/// Test: Native recurring rebalancing executes at least 3 times
-/// 
-/// NEW ARCHITECTURE:
-/// - AutoBalancer self-schedules via native mechanism
-/// - No Supervisor needed for normal recurring execution
-///
-access(all)
-fun testRecurringRebalancingThreeRuns() {
-    log("\n Testing native recurring rebalancing (3 runs)...")
-
-    let user = Test.createAccount()
-    mintFlow(to: user, amount: 1000.0)
-    grantBeta(flowVaultsAccount, user)
-
-    // Create Tide (auto-schedules via native mechanism)
-    let createTideRes = executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
-        [strategyIdentifier, flowTokenIdentifier, 100.0],
-        user
-    )
-    Test.expect(createTideRes, Test.beSucceeded())
-
-    let tideIDs = getTideIDs(address: user.address)!
-    let tideID = tideIDs[0]
-    log("Tide created: ".concat(tideID.toString()))
-
-    // Get initial balance
-    var prevBalance = getAutoBalancerBalance(id: tideID) ?? 0.0
-    log("Initial balance: ".concat(prevBalance.toString()))
-
-    // Wait for 3 native executions with balance verification
-    var count = 0
-    var round = 1
-    while round <= 10 && count < 3 {
-        // Use VERY LARGE price changes to ensure rebalancing triggers
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 3.0 * UFix64(round))
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 2.5 * UFix64(round))
-        Test.moveTime(by: 70.0)
-        Test.commitBlock()
-        
-        let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-        let newCount = execEvents.length
-        
-        // If we got a new execution, verify balance changed
-        if newCount > count {
-            let newBalance = getAutoBalancerBalance(id: tideID) ?? 0.0
-            log("Round ".concat(round.toString()).concat(": Balance ").concat(prevBalance.toString()).concat(" -> ").concat(newBalance.toString()))
-            Test.assert(newBalance != prevBalance, message: "Balance should change after execution (was: ".concat(prevBalance.toString()).concat(", now: ").concat(newBalance.toString()).concat(")"))
-            prevBalance = newBalance
-        }
-        
-        count = newCount
-        round = round + 1
-    }
-
-    Test.assert(
-        count >= 3,
-        message: "Expected at least 3 executions but found ".concat(count.toString())
-    )
-    log("PASS: Native recurring executed ".concat(count.toString()).concat(" times with verified balance changes")
-    )
-}
+// NOTE: testRecurringRebalancingThreeRuns was removed as it duplicates
+// testSingleAutoBalancerThreeExecutions in scheduled_rebalance_scenario_test.cdc
 
 /// Test: Multiple tides execute independently via native scheduling
 /// 

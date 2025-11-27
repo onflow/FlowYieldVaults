@@ -310,5 +310,8 @@ access(all) contract FlowVaultsScheduler {
 
         // Initialize paths
         self.SupervisorStoragePath = /storage/FlowVaultsSupervisor
+        
+        // Configure Supervisor at deploy time
+        self.ensureSupervisorConfigured()
     }
 }
