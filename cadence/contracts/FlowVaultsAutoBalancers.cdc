@@ -44,6 +44,65 @@ access(all) contract FlowVaultsAutoBalancers {
         return self.account.capabilities.borrow<&DeFiActions.AutoBalancer>(publicPath)
     }
 
+    /// Checks if an AutoBalancer has at least one active (Scheduled) transaction.
+    /// Used by Supervisor to detect stuck tides that need recovery.
+    ///
+    /// @param id: The tide/AutoBalancer ID
+    /// @return Bool: true if there's at least one Scheduled transaction, false otherwise
+    ///
+    access(all) fun hasActiveSchedule(id: UInt64): Bool {
+        let autoBalancer = self.borrowAutoBalancer(id: id)
+        if autoBalancer == nil {
+            return false
+        }
+        
+        let txnIDs = autoBalancer!.getScheduledTransactionIDs()
+        for txnID in txnIDs {
+            if let txnRef = autoBalancer!.borrowScheduledTransaction(id: txnID) {
+                if txnRef.status() == FlowTransactionScheduler.Status.Scheduled {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    /// Checks if an AutoBalancer is overdue for execution.
+    /// A tide is considered overdue if:
+    /// - It has a recurring config
+    /// - The next expected execution time has passed
+    /// - It has no active schedule
+    ///
+    /// @param id: The tide/AutoBalancer ID
+    /// @return Bool: true if tide is overdue and stuck, false otherwise
+    ///
+    access(all) fun isStuckTide(id: UInt64): Bool {
+        let autoBalancer = self.borrowAutoBalancer(id: id)
+        if autoBalancer == nil {
+            return false
+        }
+        
+        // Check if tide has recurring config (should be executing periodically)
+        let config = autoBalancer!.getRecurringConfig()
+        if config == nil {
+            return false // Not configured for recurring, can't be "stuck"
+        }
+        
+        // Check if there's an active schedule
+        if self.hasActiveSchedule(id: id) {
+            return false // Has active schedule, not stuck
+        }
+        
+        // Check if tide is overdue
+        let nextExpected = autoBalancer!.calculateNextExecutionTimestampAsConfigured()
+        if nextExpected == nil {
+            return true // Can't calculate next time, likely stuck
+        }
+        
+        // If next expected time has passed and no active schedule, tide is stuck
+        return nextExpected! < getCurrentBlock().timestamp
+    }
+
     /* --- INTERNAL METHODS --- */
 
     /// Configures a new AutoBalancer in storage, configures its public Capability, and sets its inner authorized

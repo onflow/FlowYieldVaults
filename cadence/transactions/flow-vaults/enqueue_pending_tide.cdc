@@ -1,22 +1,31 @@
-import "FlowVaultsScheduler"
+import "FlowVaultsSchedulerRegistry"
 
-/// Manually adds a tide to the pending queue for Supervisor re-seeding.
-/// This simulates the scenario where a tide's AutoBalancer failed to self-reschedule.
-/// In production, this would be called by a monitoring service that detects failed schedules.
+/// [ADMIN/TEST ONLY] Manually adds a tide to the pending queue for Supervisor re-seeding.
+///
+/// IMPORTANT: This transaction can ONLY be signed by the FlowVaults contract account
+/// because enqueuePending requires account-level access. This is a security measure
+/// to prevent gaming the pending queue.
+///
+/// In normal operation:
+/// - Supervisor automatically detects stuck tides (via isStuckTide check)
+/// - Supervisor adds stuck tides to pending queue internally
+/// - Supervisor then schedules them via SchedulerManager
+///
+/// This transaction is only for:
+/// - Admin emergency recovery
+/// - Testing the pending queue behavior
 ///
 /// @param tideID: The ID of the tide to enqueue for re-seeding
 ///
 transaction(tideID: UInt64) {
-    let manager: &FlowVaultsScheduler.SchedulerManager
-
     prepare(signer: auth(BorrowValue) &Account) {
-        self.manager = signer.storage.borrow<&FlowVaultsScheduler.SchedulerManager>(
-            from: FlowVaultsScheduler.SchedulerManagerStoragePath
-        ) ?? panic("SchedulerManager not found. Run setup_scheduler_manager.cdc first.")
+        // This will only work if signer is the FlowVaultsSchedulerRegistry contract account
+        // because enqueuePending has access(account)
     }
 
     execute {
-        self.manager.enqueuePendingTide(tideID: tideID)
+        // Only the contract account can call this
+        FlowVaultsSchedulerRegistry.enqueuePending(tideID: tideID)
     }
 }
 

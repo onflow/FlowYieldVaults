@@ -217,7 +217,10 @@ access(all) fun deployContracts() {
     Test.expect(err, Test.beNil())
 
     // FlowVaults contracts
-    // Deploy scheduler stack before FlowVaultsAutoBalancers, since FlowVaultsAutoBalancers imports FlowVaultsSchedulerRegistry
+    // Deployment order matters due to imports:
+    // 1. FlowVaultsSchedulerRegistry (no FlowVaults dependencies)
+    // 2. FlowVaultsAutoBalancers (imports FlowVaultsSchedulerRegistry)
+    // 3. FlowVaultsScheduler (imports FlowVaultsSchedulerRegistry AND FlowVaultsAutoBalancers)
     err = Test.deployContract(
         name: "FlowVaultsSchedulerRegistry",
         path: "../contracts/FlowVaultsSchedulerRegistry.cdc",
@@ -225,14 +228,14 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FlowVaultsScheduler",
-        path: "../contracts/FlowVaultsScheduler.cdc",
+        name: "FlowVaultsAutoBalancers",
+        path: "../contracts/FlowVaultsAutoBalancers.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FlowVaultsAutoBalancers",
-        path: "../contracts/FlowVaultsAutoBalancers.cdc",
+        name: "FlowVaultsScheduler",
+        path: "../contracts/FlowVaultsScheduler.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())

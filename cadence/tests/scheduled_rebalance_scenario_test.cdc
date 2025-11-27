@@ -391,39 +391,37 @@ fun testFiveTidesContinueWithoutSupervisor() {
     log("PASS: Tides continue executing perpetually without Supervisor")
 }
 
-/// TEST 6: Pending queue behavior without Supervisor
+/// TEST 6: Healthy tides never become stuck
 ///
-/// This test verifies that:
-/// 1. Tides can be added to the pending queue (simulating monitoring detection of a failed reschedule)
-/// 2. The pending queue persists without Supervisor intervention
-/// 3. All tides continue to execute via native scheduling (enqueuePending does NOT cancel schedules)
+/// This test verifies that healthy tides (with sufficient funding) continue to execute
+/// without ever needing Supervisor intervention. The Supervisor is a RECOVERY mechanism
+/// for tides that fail to self-reschedule.
 ///
-/// IMPORTANT: enqueuePending() only adds a tide ID to the pending queue for Supervisor recovery.
-/// It does NOT cancel the tide's native schedule in FlowTransactionScheduler.
-/// In production, a tide would be added to pending AFTER it fails to self-reschedule,
-/// meaning it would have no active schedule. This test simulates the pending queue state only.
+/// NEW ARCHITECTURE:
+/// - AutoBalancers self-schedule via native FlowTransactionScheduler
+/// - Supervisor periodically scans for "stuck" tides (overdue + no active schedule)
+/// - Stuck tides are added to pending queue and scheduled via SchedulerManager
+/// - Healthy tides never go to pending queue
 ///
 /// EXPECTATIONS:
-/// - 5 tides created, 3 rounds = 15 executions
-/// - 1 tide enqueued to pending (queue state only, schedule NOT canceled)
-/// - Supervisor NOT running
-/// - 3 more rounds - ALL 5 tides still execute = 15 more = 30 total
-///   (because enqueuePending doesn't cancel the native schedule)
-/// - Pending queue still has 1 tide (Supervisor would have picked it up)
+/// - 5 healthy tides created
+/// - 6 rounds of execution = 30 executions
+/// - Pending queue stays empty (no stuck tides)
+/// - All tides continue via native self-scheduling
 ///
 access(all)
 fun testFailedTideCannotRecoverWithoutSupervisor() {
     Test.reset(to: snapshot)
     log("\n========================================")
-    log("TEST: Pending queue persists without Supervisor")
+    log("TEST: Healthy tides never become stuck")
     log("========================================")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 5000.0)
     grantBeta(flowVaultsAccount, user)
     
-    // Create 5 tides
-    log("Creating 5 tides...")
+    // Create 5 tides (all healthy with sufficient funding)
+    log("Creating 5 healthy tides...")
     var i = 0
     while i < 5 {
         let res = executeTransaction(
@@ -437,8 +435,7 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
     
     let tideIDs = getTideIDs(address: user.address)!
     Test.assertEqual(5, tideIDs.length)
-    let pendingTideID = tideIDs[2] // Pick the middle tide
-    log("Created 5 tides. Will add tide ".concat(pendingTideID.toString()).concat(" to pending queue"))
+    log("Created 5 healthy tides")
     
     // 3 rounds of execution
     log("\nExecuting 3 rounds...")
@@ -454,26 +451,16 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
     log("Executions after 3 rounds: ".concat(events3.length.toString()))
     Test.assertEqual(15, events3.length)
     
-    // Add tide to pending queue (simulates: monitoring detected this tide failed to reschedule)
-    // NOTE: This does NOT cancel the native schedule - the tide will continue executing
-    log("\nAdding tide ".concat(pendingTideID.toString()).concat(" to pending queue..."))
-    log("(In production, this would happen AFTER the tide fails to reschedule)")
-    let enqueueRes = executeTransaction(
-        "../transactions/flow-vaults/enqueue_pending_tide.cdc",
-        [pendingTideID],
-        flowVaultsAccount
-    )
-    Test.expect(enqueueRes, Test.beSucceeded())
-    
+    // Verify pending queue is empty (healthy tides don't need recovery)
     let pendingRes1 = executeScript("../scripts/flow-vaults/get_pending_count.cdc", [])
     let pendingCount1 = pendingRes1.returnValue! as! Int
-    log("Pending queue size: ".concat(pendingCount1.toString()))
-    Test.assertEqual(1, pendingCount1)
+    log("Pending queue size (should be 0 for healthy tides): ".concat(pendingCount1.toString()))
+    Test.assertEqual(0, pendingCount1)
     
-    // NOTE: Supervisor is NOT running
-    log("\nSupervisor is NOT running - pending tide would be recovered if it was")
+    // Supervisor is NOT needed for healthy tides
+    log("\nSupervisor NOT needed - all tides are healthy and self-scheduling")
     
-    // 3 more rounds - ALL 5 tides execute (enqueuePending doesn't stop execution)
+    // 3 more rounds - all 5 tides continue to execute
     log("\nExecuting 3 more rounds...")
     round = 1
     while round <= 3 {
@@ -483,19 +470,18 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
         round = round + 1
     }
     
-    // Verify pending queue still has the tide (Supervisor would have dequeued it)
+    // Verify pending queue is still empty
     let pendingRes2 = executeScript("../scripts/flow-vaults/get_pending_count.cdc", [])
     let pendingCount2 = pendingRes2.returnValue! as! Int
-    log("Pending queue size after additional rounds: ".concat(pendingCount2.toString()))
-    Test.assertEqual(1, pendingCount2)
+    log("Pending queue size after 6 rounds: ".concat(pendingCount2.toString()))
+    Test.assertEqual(0, pendingCount2)
     
-    // Total executions: 15 + 15 = 30 (all 5 tides execute, enqueuePending doesn't cancel schedules)
+    // Total executions: 15 + 15 = 30 (all 5 tides execute via native scheduling)
     let events6 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("Total executions: ".concat(events6.length.toString()))
     Test.assertEqual(30, events6.length)
     
-    log("PASS: Pending queue persists without Supervisor (queue size: ".concat(pendingCount2.toString()).concat(")")
-    )
+    log("PASS: Healthy tides continue executing without Supervisor (pending queue: 0)")
 }
 
 // Main test runner

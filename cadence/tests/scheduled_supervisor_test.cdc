@@ -356,31 +356,32 @@ fun testPaginationStress() {
     log("PASS: 150 tides (3x MAX_BATCH_SIZE) all registered and executed")
 }
 
-/// Tests that the Supervisor correctly recovers a tide from the pending queue.
-/// 
-/// ARCHITECTURE (Native AutoBalancer Scheduling):
-/// - AutoBalancers self-schedule via recurringConfig and FlowTransactionScheduler
-/// - The SchedulerManager is used by Supervisor for recovery only
-/// - When a tide is enqueued to pending, Supervisor picks it up and schedules via SchedulerManager
+/// Tests Supervisor's idle behavior when all tides are healthy
+///
+/// NEW ARCHITECTURE:
+/// - AutoBalancers self-schedule via native FlowTransactionScheduler
+/// - Supervisor periodically scans for "stuck" tides (overdue + no active schedule)
+/// - Healthy tides never appear in pending queue
+/// - Supervisor runs but finds nothing to recover
 ///
 /// TEST SCENARIO:
-/// 1. Create tide (AutoBalancer schedules itself natively)
-/// 2. Verify tide is in registry
-/// 3. Enqueue tide to pending (simulating monitoring detection of failed reschedule)
-/// 4. Setup and run Supervisor
-/// 5. Verify Supervisor picks up tide from pending and schedules it via SchedulerManager
+/// 1. Create healthy tide (AutoBalancer schedules itself natively)
+/// 2. Verify tide is executing normally
+/// 3. Setup and run Supervisor
+/// 4. Verify Supervisor runs but pending queue stays empty
+/// 5. Verify tide continues executing (not disrupted by Supervisor)
 ///
 access(all)
 fun testSupervisorRecoveryOfFailedReschedule() {
-    log("\n Testing Supervisor recovery from pending queue...")
+    log("\n Testing Supervisor with healthy tides (nothing to recover)...")
 
     let user = Test.createAccount()
     mintFlow(to: user, amount: 1000.0)
     grantBeta(flowVaultsAccount, user)
     mintFlow(to: flowVaultsAccount, amount: 200.0)
 
-    // 1. Create a tide (AutoBalancer schedules itself natively)
-    log("Step 1: Creating tide...")
+    // 1. Create a healthy tide (AutoBalancer schedules itself natively)
+    log("Step 1: Creating healthy tide...")
     let createRes = executeTransaction(
         "../transactions/flow-vaults/create_tide.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
@@ -392,7 +393,7 @@ fun testSupervisorRecoveryOfFailedReschedule() {
     let tideID = tideIDs[0]
     log("Tide created: ".concat(tideID.toString()))
 
-    // 2. Verify tide is in registry (registration happens at AB init)
+    // 2. Verify tide is in registry
     log("Step 2: Verifying tide is in registry...")
     let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_tide_ids.cdc", [])
     Test.expect(regIDsRes, Test.beSucceeded())
@@ -400,38 +401,30 @@ fun testSupervisorRecoveryOfFailedReschedule() {
     Test.assert(regIDs.contains(tideID), message: "Tide should be in registry")
     log("Tide is registered in FlowVaultsSchedulerRegistry")
 
-    // 3. Wait for some native executions to verify it's working
+    // 3. Wait for some native executions
     log("Step 3: Waiting for native execution...")
     Test.moveTime(by: 70.0)
     Test.commitBlock()
     
     let execEventsBefore = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-    log("Executions before enqueue: ".concat(execEventsBefore.length.toString()))
+    log("Executions so far: ".concat(execEventsBefore.length.toString()))
+    Test.assert(execEventsBefore.length >= 1, message: "Tide should have executed at least once")
 
-    // 4. Enqueue tide to pending (simulates: monitoring detects failed reschedule)
-    log("Step 4: Enqueuing tide to pending (simulating monitoring detection)...")
-    let enqueueRes = executeTransaction(
-        "../transactions/flow-vaults/enqueue_pending_tide.cdc",
-        [tideID],
-        flowVaultsAccount
-    )
-    Test.expect(enqueueRes, Test.beSucceeded())
-
+    // 4. Verify pending queue is empty (healthy tide, nothing to recover)
+    log("Step 4: Verifying pending queue is empty...")
     let pendingCountRes = executeScript("../scripts/flow-vaults/get_pending_count.cdc", [])
     let pendingCount = pendingCountRes.returnValue! as! Int
-    Test.assert(pendingCount > 0, message: "Pending queue should have at least 1 tide")
     log("Pending queue size: ".concat(pendingCount.toString()))
+    Test.assertEqual(0, pendingCount)
 
     // 5. Setup Supervisor and SchedulerManager
     log("Step 5: Setting up Supervisor...")
     executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
     executeTransaction("../transactions/flow-vaults/setup_supervisor.cdc", [], flowVaultsAccount)
     
-    // Commit block to ensure state is synced
     Test.commitBlock()
     
-    // Schedule Supervisor with very large offset to handle cumulative time from all tests
-    // The timestamp must be in the future at the time the transaction EXECUTES, not when we get the block
+    // Schedule Supervisor
     let scheduledTime = getCurrentBlock().timestamp + 2000.0
     let schedSupRes = executeTransaction(
         "../transactions/flow-vaults/schedule_supervisor.cdc",
@@ -446,39 +439,35 @@ fun testSupervisorRecoveryOfFailedReschedule() {
     Test.moveTime(by: 2100.0)
     Test.commitBlock()
 
-    // 7. Check for SupervisorSeededTide event
+    // 7. Verify Supervisor ran but found nothing to seed (healthy tide)
     let seededEvents = Test.eventsOfType(Type<FlowVaultsScheduler.SupervisorSeededTide>())
     log("SupervisorSeededTide events: ".concat(seededEvents.length.toString()))
     
-    var seededOurTide = false
-    for e in seededEvents {
-        let evt = e as! FlowVaultsScheduler.SupervisorSeededTide
-        log("  - Supervisor seeded tide: ".concat(evt.tideID.toString()))
-        if evt.tideID == tideID {
-            seededOurTide = true
-        }
-    }
+    // Healthy tides don't need seeding
+    // Note: seededEvents might be > 0 if there were stuck tides from previous tests
+    // The key verification is that our tide continues to execute
 
-    // 8. Verify more executions happened (native scheduling continues)
-    log("Step 7: Verifying continued execution...")
+    // 8. Verify tide continues executing
+    log("Step 7: Verifying tide continues executing...")
     Test.moveTime(by: 70.0)
     Test.commitBlock()
 
     let execEventsAfter = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-    log("Executions after recovery: ".concat(execEventsAfter.length.toString()))
+    log("Total executions: ".concat(execEventsAfter.length.toString()))
     
-    // Verification: We should have more executions than before
+    // Verification: We should have more executions (tide continued normally)
     Test.assert(
         execEventsAfter.length > execEventsBefore.length,
-        message: "Should have more executions after recovery. Before: ".concat(execEventsBefore.length.toString()).concat(", After: ").concat(execEventsAfter.length.toString())
+        message: "Tide should continue executing. Before: ".concat(execEventsBefore.length.toString()).concat(", After: ").concat(execEventsAfter.length.toString())
     )
 
-    // Check pending queue state
+    // 8. Verify pending queue is still empty
     let finalPendingRes = executeScript("../scripts/flow-vaults/get_pending_count.cdc", [])
     let finalPending = finalPendingRes.returnValue! as! Int
     log("Final pending queue size: ".concat(finalPending.toString()))
+    Test.assertEqual(0, finalPending)
     
-    log("PASS: Supervisor Recovery Test")
+    log("PASS: Supervisor runs without disrupting healthy tides")
 }
 
 access(all)

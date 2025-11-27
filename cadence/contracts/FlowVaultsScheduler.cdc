@@ -7,6 +7,8 @@ import "FlowTransactionScheduler"
 import "DeFiActions"
 // Registry storage (separate contract)
 import "FlowVaultsSchedulerRegistry"
+// AutoBalancer management (for detecting stuck tides)
+import "FlowVaultsAutoBalancers"
 
 /// FlowVaultsScheduler
 ///
@@ -77,6 +79,13 @@ access(all) contract FlowVaultsScheduler {
         tideID: UInt64,
         scheduledTransactionID: UInt64,
         timestamp: UFix64
+    )
+
+    /// Emitted when Supervisor detects a stuck tide via state-based scanning
+    /// This happens when a tide's AutoBalancer failed to self-reschedule
+    /// (possibly due to panic before FailedRecurringSchedule event could be emitted)
+    access(all) event StuckTideDetected(
+        tideID: UInt64
     )
 
     /* --- STRUCTS --- */
@@ -370,11 +379,16 @@ access(all) contract FlowVaultsScheduler {
         }
 
         /// Manually enqueues a registered tide to the pending queue for Supervisor recovery.
-        /// This is used when monitoring detects that a tide's AutoBalancer failed to self-reschedule.
+        /// RESTRICTED: Only callable by the contract account (Supervisor context).
+        /// This prevents gaming the pending queue.
+        ///
+        /// In normal operation, Supervisor detects stuck tides automatically via:
+        /// 1. FailedRecurringSchedule events
+        /// 2. State-based detection (registered tide with no active schedule)
         ///
         /// @param tideID: The ID of the registered tide to enqueue
         ///
-        access(all) fun enqueuePendingTide(tideID: UInt64) {
+        access(account) fun enqueuePendingTide(tideID: UInt64) {
             // Verify tide is registered
             assert(
                 FlowVaultsSchedulerRegistry.isRegistered(tideID: tideID),
@@ -407,6 +421,11 @@ access(all) contract FlowVaultsScheduler {
         }
 
         /// Processes pending tides from the queue (bounded by MAX_BATCH_SIZE)
+        /// Also detects stuck tides (tides that failed to self-reschedule) and adds them to pending.
+        ///
+        /// Detection methods:
+        /// 1. Event-based: FailedRecurringSchedule events are emitted by AutoBalancer
+        /// 2. State-based: Scans for registered tides with no active schedule (catches panics)
         ///
         /// data accepts optional config:
         /// {
@@ -414,7 +433,8 @@ access(all) contract FlowVaultsScheduler {
         ///   "executionEffort": UInt64,
         ///   "lookaheadSecs": UFix64,
         ///   "force": Bool,
-        ///   "recurringInterval": UFix64 (for Supervisor self-rescheduling)
+        ///   "recurringInterval": UFix64 (for Supervisor self-rescheduling),
+        ///   "scanForStuck": Bool (default true - scan all registered tides for stuck ones)
         /// }
         access(FlowTransactionScheduler.Execute) fun executeTransaction(id: UInt64, data: AnyStruct?) {
             let cfg = data as? {String: AnyStruct} ?? {}
@@ -423,6 +443,7 @@ access(all) contract FlowVaultsScheduler {
             let lookaheadSecs = cfg["lookaheadSecs"] as? UFix64 ?? FlowVaultsScheduler.DEFAULT_LOOKAHEAD_SECS
             let forceChild = cfg["force"] as? Bool ?? false
             let recurringInterval = cfg["recurringInterval"] as? UFix64
+            let scanForStuck = cfg["scanForStuck"] as? Bool ?? true
 
             let priority = FlowTransactionScheduler.Priority(rawValue: priorityRaw)
                 ?? FlowTransactionScheduler.Priority.Medium
@@ -430,7 +451,35 @@ access(all) contract FlowVaultsScheduler {
             let manager = self.managerCap.borrow()
                 ?? panic("Supervisor: missing SchedulerManager")
 
-            // Process only pending tides (first page, bounded by MAX_BATCH_SIZE)
+            // STEP 1: State-based detection - scan for stuck tides
+            // This catches cases where:
+            // - AutoBalancer panicked before emitting FailedRecurringSchedule
+            // - AutoBalancer failed to schedule for any other reason
+            if scanForStuck {
+                let registeredTides = FlowVaultsSchedulerRegistry.getRegisteredTideIDs()
+                var scanned = 0
+                for tideID in registeredTides {
+                    // Limit scan to batch size to prevent gas issues
+                    if scanned >= FlowVaultsSchedulerRegistry.MAX_BATCH_SIZE {
+                        break
+                    }
+                    scanned = scanned + 1
+                    
+                    // Skip if already in pending queue
+                    if FlowVaultsSchedulerRegistry.getPendingTideIDs().contains(tideID) {
+                        continue
+                    }
+                    
+                    // Check if tide is stuck (overdue with no active schedule)
+                    if FlowVaultsAutoBalancers.isStuckTide(id: tideID) {
+                        // Add to pending queue for recovery
+                        FlowVaultsSchedulerRegistry.enqueuePending(tideID: tideID)
+                        emit StuckTideDetected(tideID: tideID)
+                    }
+                }
+            }
+
+            // STEP 2: Process pending tides (first page, bounded by MAX_BATCH_SIZE)
             let pendingTides = FlowVaultsSchedulerRegistry.getPendingTideIDsPaginated(page: 0, size: nil)
             
             for tideID in pendingTides {
