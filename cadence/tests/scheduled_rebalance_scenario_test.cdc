@@ -193,6 +193,7 @@ fun testSingleAutoBalancerThreeExecutions() {
     
     let balance1 = getAutoBalancerBalance(id: tideID) ?? 0.0
     log("Balance after execution 1: ".concat(balance1.toString()))
+    Test.assert(balance1 != balance0, message: "Balance should change after execution 1 (was: ".concat(balance0.toString()).concat(", now: ").concat(balance1.toString()).concat(")"))
     
     // EXECUTION 2
     log("\n--- EXECUTION 2 ---")
@@ -209,6 +210,7 @@ fun testSingleAutoBalancerThreeExecutions() {
     
     let balance2 = getAutoBalancerBalance(id: tideID) ?? 0.0
     log("Balance after execution 2: ".concat(balance2.toString()))
+    Test.assert(balance2 != balance1, message: "Balance should change after execution 2 (was: ".concat(balance1.toString()).concat(", now: ").concat(balance2.toString()).concat(")"))
     
     // EXECUTION 3
     log("\n--- EXECUTION 3 ---")
@@ -225,6 +227,7 @@ fun testSingleAutoBalancerThreeExecutions() {
     
     let balance3 = getAutoBalancerBalance(id: tideID) ?? 0.0
     log("Balance after execution 3: ".concat(balance3.toString()))
+    Test.assert(balance3 != balance2, message: "Balance should change after execution 3 (was: ".concat(balance2.toString()).concat(", now: ").concat(balance3.toString()).concat(")"))
     
     // Verify DeFiActions.Rebalanced events
     let rebalanceEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
