@@ -109,6 +109,77 @@ if self._recurringConfig != nil {
 
 This was implemented temporarily in commit `1fedc9e` but changes behavior for ALL external schedulers, which may not be desired.
 
+## Why `restartRecurring` is Necessary (Not Just `isInternallyManaged`)
+
+### How AutoBalancer Tracks Its Own Schedules
+
+When an AutoBalancer schedules itself via `scheduleNextRebalance()`:
+
+```cadence
+// Inside AutoBalancer.scheduleNextRebalance():
+let txn <- FlowTransactionScheduler.schedule(...)
+let txnID = txn.id
+self._scheduledTransactions[txnID] <-! txn  // Stored in AutoBalancer's internal map
+```
+
+Later, when `executeTransaction()` runs:
+
+```cadence
+let isInternallyManaged = self.borrowScheduledTransaction(id: id) != nil
+// Returns TRUE because the transaction ID exists in AutoBalancer's _scheduledTransactions map
+```
+
+### How Supervisor Seeds a Stuck Tide
+
+When the Supervisor seeds a stuck tide:
+
+```cadence
+// Inside Supervisor.scheduleRecovery():
+let txn <- FlowTransactionScheduler.schedule(
+    handlerCap: autoBalancerCap,  // Points to AutoBalancer
+    data: {"restartRecurring": true},
+    ...
+)
+self.scheduledTransactions[tideID] <-! txn  // Stored in SUPERVISOR's map, NOT AutoBalancer's
+```
+
+When this transaction executes on the AutoBalancer:
+
+```cadence
+let isInternallyManaged = self.borrowScheduledTransaction(id: id) != nil
+// Returns FALSE because the transaction ID is NOT in AutoBalancer's _scheduledTransactions
+// It's in Supervisor's scheduledTransactions instead
+```
+
+### The Problem
+
+Without `restartRecurring`:
+1. Supervisor seeds stuck tide -> transaction stored in Supervisor's map
+2. Transaction executes on AutoBalancer
+3. `isInternallyManaged = false` (ID not in AutoBalancer's map)
+4. `scheduleNextRebalance()` is NOT called
+5. Tide executes once but does NOT resume self-scheduling
+6. Tide becomes stuck again immediately
+
+### The Solution
+
+With `restartRecurring: true`:
+1. Supervisor passes `{"restartRecurring": true}` in transaction data
+2. Transaction executes on AutoBalancer
+3. Even though `isInternallyManaged = false`, `restartRecurring = true`
+4. `scheduleNextRebalance()` IS called
+5. AutoBalancer creates a NEW scheduled transaction in ITS OWN `_scheduledTransactions` map
+6. Tide resumes normal self-scheduling cycle
+
+### Why Not Just Remove `isInternallyManaged`?
+
+The original design (PR #45) intentionally treats external schedules as "fire once" to:
+- Allow external schedulers to have full control over timing
+- Prevent interference between external scheduling logic and AutoBalancer's native scheduling
+- Support one-off manual rebalancing triggers
+
+The `restartRecurring` flag preserves this design while enabling the specific recovery use case.
+
 ## References
 
 - **Original PR**: [FlowActions PR #45](https://github.com/onflow/FlowActions/pull/45) - "Add scheduled transaction functionality to AutoBalancer"
