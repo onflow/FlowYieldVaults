@@ -87,8 +87,8 @@ fun setup() {
 /// 
 /// NEW ARCHITECTURE:
 /// - AutoBalancers self-schedule via native FlowTransactionScheduler
-/// - The Supervisor is for recovery only (picks up from pending queue)
-/// - SchedulerManager doesn't track native schedules
+/// - The Supervisor is for recovery only (detects stuck tides and seeds them)
+/// - Supervisor tracks its own recovery schedules
 ///
 access(all)
 fun testAutoRegisterAndSupervisor() {
@@ -464,9 +464,8 @@ fun testSupervisorDoesNotDisruptHealthyTides() {
     log("Pending queue size: ".concat(pendingCount.toString()))
     Test.assertEqual(0, pendingCount)
 
-    // 5. Setup Supervisor and SchedulerManager
+    // 5. Setup Supervisor (scheduling functionality is now built into Supervisor)
     log("Step 5: Setting up Supervisor...")
-    executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
     executeTransaction("../transactions/flow-vaults/setup_supervisor.cdc", [], flowVaultsAccount)
     
     Test.commitBlock()
@@ -649,13 +648,12 @@ fun testInsufficientFundsAndRecovery() {
     log("Created ".concat(tideIDs.length.toString()).concat(" tides"))
 
     // ========================================
-    // STEP 2: Setup Supervisor infrastructure (but don't schedule yet)
+    // STEP 2: Setup Supervisor (scheduling functionality is built into Supervisor)
     // ========================================
-    log("\n--- STEP 2: Setup Supervisor infrastructure ---")
-    executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
+    log("\n--- STEP 2: Setup Supervisor ---")
     executeTransaction("../transactions/flow-vaults/setup_supervisor.cdc", [], flowVaultsAccount)
     Test.commitBlock()
-    log("Supervisor infrastructure ready (will schedule after drain/refund)")
+    log("Supervisor ready (will schedule after drain/refund)")
 
     // ========================================
     // STEP 3: Let tides execute 3 rounds (and Supervisor run)

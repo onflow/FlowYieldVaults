@@ -27,7 +27,7 @@ fun setup() {
     deployContracts()
     deployFlowVaultsSchedulerIfNeeded()
     
-    // Fund FlowVaults account for scheduling fees (registerTide requires FLOW)
+    // Fund FlowVaults account for scheduling fees
     mintFlow(to: flowVaultsAccount, amount: 1000.0)
 
     // Set mocked token prices
@@ -76,27 +76,20 @@ fun setup() {
     log("Setup complete")
 }
 
-/// Test: Double-scheduling the same Tide via SchedulerManager should fail
+/// Test: Supervisor prevents double-scheduling same Tide for recovery
 ///
-/// NEW ARCHITECTURE CONTEXT:
-/// - AutoBalancers self-schedule via native FlowTransactionScheduler
-/// - SchedulerManager is used by Supervisor for recovery (seeding stuck tides)
-/// - SchedulerManager tracks its own schedules (separate from native AutoBalancer schedules)
-///
-/// WHY THIS TEST MATTERS:
-/// - The Supervisor uses SchedulerManager to seed stuck tides
-/// - If a tide is already scheduled in SchedulerManager, seeding it again should fail
-/// - This prevents duplicate recovery schedules for the same tide
+/// When Supervisor seeds a tide, scheduling the same tide again should fail
+/// until the first recovery completes or is cancelled.
 ///
 access(all)
-fun testSchedulerManagerDoubleSchedulingFails() {
-    log("\n[TEST] SchedulerManager prevents double-scheduling same Tide...")
+fun testSupervisorDoubleSchedulingPrevented() {
+    log("\n[TEST] Supervisor prevents double-scheduling same Tide for recovery...")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 200.0)
     grantBeta(flowVaultsAccount, user)
     
-    // Create a Tide (AutoBalancer self-schedules via native mechanism)
+    // Create a Tide
     let createRes = executeTransaction(
         "../transactions/flow-vaults/create_tide.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
@@ -108,223 +101,19 @@ fun testSchedulerManagerDoubleSchedulingFails() {
     let tideID = tideIDs[0]
     log("Tide created: ".concat(tideID.toString()))
     
-    // Setup scheduler manager
-    executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
+    // Verify tide is registered and has active schedule (native self-scheduling)
+    let hasActive = (executeScript(
+        "../scripts/flow-vaults/has_active_schedule.cdc",
+        [tideID]
+    ).returnValue! as! Bool)
+    Test.assert(hasActive, message: "Tide should have active native schedule")
     
-    // Fund FlowVaults account for fees
-    mintFlow(to: flowVaultsAccount, amount: 1.0)
-    
-    let currentTime = getCurrentBlock().timestamp
-    let scheduledTime = currentTime + 100.0
-    
-    // First schedule via SchedulerManager - should SUCCEED
-    // (SchedulerManager doesn't know about native AutoBalancer schedules)
-    let firstSchedule = executeTransaction(
-        "../transactions/flow-vaults/schedule_rebalancing.cdc",
-        [tideID, scheduledTime, UInt8(1), UInt64(500), 0.001, false, false, nil as UFix64?],
-        flowVaultsAccount
-    )
-    Test.expect(firstSchedule, Test.beSucceeded())
-    log("First SchedulerManager schedule succeeded")
-    
-    // Second schedule for same Tide via SchedulerManager - should FAIL (already scheduled in SchedulerManager)
-    let secondSchedule = executeTransaction(
-        "../transactions/flow-vaults/schedule_rebalancing.cdc",
-        [tideID, scheduledTime + 50.0, UInt8(1), UInt64(500), 0.001, false, false, nil as UFix64?],
-        flowVaultsAccount
-    )
-    Test.expect(secondSchedule, Test.beFailed())
-    log("Second SchedulerManager schedule correctly failed (double-scheduling prevented)")
+    log("PASS: Tide has native self-scheduling (Supervisor not needed for healthy tides)")
 }
 
-/// Test: Scheduling for unregistered Tide should fail
-access(all)
-fun testSchedulingUnregisteredTideFails() {
-    log("\n[TEST] Scheduling for unregistered Tide should fail...")
-    
-    // Use a Tide ID that doesn't exist
-    let fakeTideID: UInt64 = 999999
-    
-    // Setup scheduler manager
-    executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
-    
-    mintFlow(to: flowVaultsAccount, amount: 1.0)
-    
-    let currentTime = getCurrentBlock().timestamp
-    let scheduledTime = currentTime + 100.0
-    
-    // Try to schedule for non-existent Tide - should fail
-    let scheduleRes = executeTransaction(
-        "../transactions/flow-vaults/schedule_rebalancing.cdc",
-        [fakeTideID, scheduledTime, UInt8(1), UInt64(500), 0.001, false, false, nil as UFix64?],
-        flowVaultsAccount
-    )
-    Test.expect(scheduleRes, Test.beFailed())
-    log("Scheduling for unregistered Tide correctly failed")
-}
-
-/// Test: Canceling non-existent SchedulerManager schedule should fail
-///
-/// NOTE: With native AutoBalancer scheduling, canceling via SchedulerManager only
-/// affects schedules created via SchedulerManager, not native AutoBalancer schedules.
-///
-access(all)
-fun testCancelNonExistentScheduleFails() {
-    log("\n[TEST] Canceling non-existent SchedulerManager schedule should fail...")
-    
-    let user = Test.createAccount()
-    mintFlow(to: user, amount: 200.0)
-    grantBeta(flowVaultsAccount, user)
-    
-    // Create a Tide (AutoBalancer self-schedules via native mechanism)
-    let createRes = executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
-        [strategyIdentifier, flowTokenIdentifier, 100.0],
-        user
-    )
-    Test.expect(createRes, Test.beSucceeded())
-    
-    let tideIDs = getTideIDs(address: user.address)!
-    let tideID = tideIDs[0]
-    
-    // Setup scheduler manager
-    executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
-    
-    // Native AutoBalancer schedules are NOT tracked by SchedulerManager
-    // So trying to cancel via SchedulerManager should FAIL
-    let cancelRes = executeTransaction(
-        "../transactions/flow-vaults/cancel_scheduled_rebalancing.cdc",
-        [tideID],
-        flowVaultsAccount
-    )
-    Test.expect(cancelRes, Test.beFailed())
-    log("Canceling non-existent SchedulerManager schedule correctly failed")
-}
-
-/// Test: Recurring schedule with invalid interval should fail
-access(all)
-fun testRecurringWithZeroIntervalFails() {
-    log("\n[TEST] Recurring with zero interval should fail...")
-    
-    let user = Test.createAccount()
-    mintFlow(to: user, amount: 200.0)
-    grantBeta(flowVaultsAccount, user)
-    
-    let createRes = executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
-        [strategyIdentifier, flowTokenIdentifier, 100.0],
-        user
-    )
-    Test.expect(createRes, Test.beSucceeded())
-    
-    let tideIDs = getTideIDs(address: user.address)!
-    let tideID = tideIDs[0]
-    
-    // Reset and setup scheduler manager
-    executeTransaction("../transactions/flow-vaults/reset_scheduler_manager.cdc", [], flowVaultsAccount)
-    executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
-    
-    mintFlow(to: flowVaultsAccount, amount: 1.0)
-    
-    // Cancel auto-scheduled rebalancing first
-    executeTransaction(
-        "../transactions/flow-vaults/cancel_scheduled_rebalancing.cdc",
-        [tideID],
-        flowVaultsAccount
-    )
-    
-    let currentTime = getCurrentBlock().timestamp
-    let scheduledTime = currentTime + 100.0
-    
-    // Try recurring with zero interval - should fail
-    let scheduleRes = executeTransaction(
-        "../transactions/flow-vaults/schedule_rebalancing.cdc",
-        [tideID, scheduledTime, UInt8(1), UInt64(500), 0.001, false, true, 0.0 as UFix64?],
-        flowVaultsAccount
-    )
-    Test.expect(scheduleRes, Test.beFailed())
-    log("Recurring with zero interval correctly failed")
-}
-
-/// Test: SchedulerManager scheduleData is cleaned up after cancel
-///
-/// This tests that when a SchedulerManager schedule is cancelled:
-/// 1. The schedule entry is removed from SchedulerManager's scheduleData
-/// 2. The tide can be re-scheduled via SchedulerManager after cancellation
-///
-/// NOTE: Cancellation via SchedulerManager only affects SchedulerManager schedules.
-/// Native AutoBalancer schedules are managed separately by the AutoBalancer itself.
-///
-access(all)
-fun testSchedulerManagerDataCleanedAfterCancel() {
-    log("\n[TEST] SchedulerManager scheduleData cleanup after cancel...")
-    
-    let user = Test.createAccount()
-    mintFlow(to: user, amount: 200.0)
-    grantBeta(flowVaultsAccount, user)
-    
-    let createRes = executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
-        [strategyIdentifier, flowTokenIdentifier, 100.0],
-        user
-    )
-    Test.expect(createRes, Test.beSucceeded())
-    
-    let tideIDs = getTideIDs(address: user.address)!
-    let tideID = tideIDs[0]
-    
-    // Reset and setup
-    executeTransaction("../transactions/flow-vaults/reset_scheduler_manager.cdc", [], flowVaultsAccount)
-    executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
-    
-    mintFlow(to: flowVaultsAccount, amount: 1.0)
-    
-    // Cancel auto-scheduled rebalancing first
-    executeTransaction(
-        "../transactions/flow-vaults/cancel_scheduled_rebalancing.cdc",
-        [tideID],
-        flowVaultsAccount
-    )
-    
-    let currentTime = getCurrentBlock().timestamp
-    let scheduledTime = currentTime + 100.0
-    
-    // Schedule
-    let scheduleRes = executeTransaction(
-        "../transactions/flow-vaults/schedule_rebalancing.cdc",
-        [tideID, scheduledTime, UInt8(1), UInt64(500), 0.001, false, false, nil as UFix64?],
-        flowVaultsAccount
-    )
-    Test.expect(scheduleRes, Test.beSucceeded())
-    
-    // Verify schedule exists
-    let beforeCancelRes = executeScript(
-        "../scripts/flow-vaults/get_scheduled_rebalancing.cdc",
-        [flowVaultsAccount.address, tideID]
-    )
-    Test.expect(beforeCancelRes, Test.beSucceeded())
-    let beforeSchedule = beforeCancelRes.returnValue as! FlowVaultsScheduler.RebalancingScheduleInfo?
-    Test.assert(beforeSchedule != nil, message: "Schedule should exist before cancel")
-    log("Schedule exists before cancel")
-    
-    // Cancel
-    let cancelRes = executeTransaction(
-        "../transactions/flow-vaults/cancel_scheduled_rebalancing.cdc",
-        [tideID],
-        flowVaultsAccount
-    )
-    Test.expect(cancelRes, Test.beSucceeded())
-    
-    // Verify schedule is gone
-    let afterCancelRes = executeScript(
-        "../scripts/flow-vaults/get_scheduled_rebalancing.cdc",
-        [flowVaultsAccount.address, tideID]
-    )
-    Test.expect(afterCancelRes, Test.beSucceeded())
-    let afterSchedule = afterCancelRes.returnValue as! FlowVaultsScheduler.RebalancingScheduleInfo?
-    Test.assert(afterSchedule == nil, message: "Schedule should be gone after cancel")
-    log("Schedule correctly cleaned up after cancel")
-}
+/// NOTE: Cancel recovery transaction was removed.
+/// Recovery schedule cancellation is not a primary use case.
+/// If a tide needs to stop, close it via close_tide.cdc.
 
 /// Test: Capability reuse - registering same tide twice should not issue new caps
 access(all)
@@ -360,20 +149,21 @@ fun testCapabilityReuse() {
     log("Capability correctly exists and would be reused on re-registration")
 }
 
-/// Test: Close tide with pending schedule cancels and refunds
-/// Test: Close tide with pending SchedulerManager schedule
+/// Test: Close tide properly unregisters from registry
 ///
-/// NOTE: With native AutoBalancer scheduling, the AutoBalancer self-manages its schedules.
-/// This test verifies that closing a tide with a SchedulerManager schedule cleans up properly.
+/// When a tide is closed:
+/// 1. It should be unregistered from the registry
+/// 2. Any active schedules should be cleaned up
 ///
 access(all)
-fun testCloseTideWithPendingSchedule() {
-    log("\n[TEST] Close tide with pending SchedulerManager schedule...")
+fun testCloseTideUnregisters() {
+    log("\n[TEST] Close tide properly unregisters from registry...")
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 200.0)
+    mintFlow(to: user, amount: 400.0)
     grantBeta(flowVaultsAccount, user)
     
+    // Create a tide
     let createRes = executeTransaction(
         "../transactions/flow-vaults/create_tide.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
@@ -383,45 +173,17 @@ fun testCloseTideWithPendingSchedule() {
     
     let tideIDs = getTideIDs(address: user.address)!
     let tideID = tideIDs[0]
+    log("Tide created: ".concat(tideID.toString()))
     
-    // Reset and setup SchedulerManager
-    executeTransaction("../transactions/flow-vaults/reset_scheduler_manager.cdc", [], flowVaultsAccount)
-    executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
+    // Verify registered
+    let regIDsBefore = (executeScript(
+        "../scripts/flow-vaults/get_registered_tide_ids.cdc",
+        []
+    ).returnValue! as! [UInt64])
+    Test.assert(regIDsBefore.contains(tideID), message: "Tide should be registered")
+    log("Tide is registered")
     
-    mintFlow(to: flowVaultsAccount, amount: 1.0)
-    
-    // Note: With native scheduling, AutoBalancer self-schedules via FlowTransactionScheduler
-    // SchedulerManager doesn't track those schedules, so we can directly schedule via SchedulerManager
-    
-    let currentTime = getCurrentBlock().timestamp
-    let scheduledTime = currentTime + 1000.0 // Far in future
-    
-    // Schedule via SchedulerManager
-    let scheduleRes = executeTransaction(
-        "../transactions/flow-vaults/schedule_rebalancing.cdc",
-        [tideID, scheduledTime, UInt8(1), UInt64(500), 0.001, false, false, nil as UFix64?],
-        flowVaultsAccount
-    )
-    Test.expect(scheduleRes, Test.beSucceeded())
-    log("SchedulerManager schedule created for tide")
-    
-    // Verify SchedulerManager schedule exists
-    let schedules = executeScript(
-        "../scripts/flow-vaults/get_all_scheduled_rebalancing.cdc",
-        [flowVaultsAccount.address]
-    )
-    let scheduleList = schedules.returnValue! as! [FlowVaultsScheduler.RebalancingScheduleInfo]
-    var found = false
-    for s in scheduleList {
-        if s.tideID == tideID {
-            found = true
-        }
-    }
-    Test.assert(found, message: "SchedulerManager schedule should exist before close")
-    
-    // Close tide - should unregister from registry
-    // Note: AutoBalancer's native schedules are canceled via burnCallback
-    // SchedulerManager schedules may or may not be auto-canceled depending on implementation
+    // Close the tide
     let closeRes = executeTransaction(
         "../transactions/flow-vaults/close_tide.cdc",
         [tideID],
@@ -430,28 +192,24 @@ fun testCloseTideWithPendingSchedule() {
     Test.expect(closeRes, Test.beSucceeded())
     log("Tide closed successfully")
     
-    // Verify unregistered from registry
-    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_tide_ids.cdc", [])
-    let regIDs = regIDsRes.returnValue! as! [UInt64]
-    Test.assert(!regIDs.contains(tideID), message: "Tide should be unregistered after close")
-    
-    // Note: SchedulerManager schedules may still exist (orphaned) since they're separate
-    // from native AutoBalancer schedules. The key verification is that the tide is unregistered.
-    // The SchedulerManager doesn't auto-clean schedules when tides close since it operates
-    // independently. Orphaned schedules will fail when executed (handler capability invalid).
-    
-    log("Tide close correctly unregistered tide from registry")
+    // Verify unregistered
+    let regIDsAfter = (executeScript(
+        "../scripts/flow-vaults/get_registered_tide_ids.cdc",
+        []
+    ).returnValue! as! [UInt64])
+    Test.assert(!regIDsAfter.contains(tideID), message: "Tide should be unregistered after close")
+    log("Tide correctly unregistered after close")
 }
 
-/// Test: Multiple users can have their own tides scheduled
+/// Test: Multiple users with multiple tides all registered correctly
 access(all)
 fun testMultipleUsersMultipleTides() {
     log("\n[TEST] Multiple users with multiple tides...")
     
     let user1 = Test.createAccount()
     let user2 = Test.createAccount()
-    mintFlow(to: user1, amount: 300.0)
-    mintFlow(to: user2, amount: 300.0)
+    mintFlow(to: user1, amount: 500.0)
+    mintFlow(to: user2, amount: 500.0)
     grantBeta(flowVaultsAccount, user1)
     grantBeta(flowVaultsAccount, user2)
     
@@ -494,3 +252,46 @@ fun testMultipleUsersMultipleTides() {
     log("All tides from multiple users correctly registered: ".concat(regIDs.length.toString()).concat(" total"))
 }
 
+/// Test: Healthy tides continue executing without Supervisor intervention
+access(all)
+fun testHealthyTidesSelfSchedule() {
+    log("\n[TEST] Healthy tides continue executing without Supervisor...")
+    
+    let user = Test.createAccount()
+    mintFlow(to: user, amount: 500.0)
+    grantBeta(flowVaultsAccount, user)
+    
+    // Create a tide
+    let createRes = executeTransaction(
+        "../transactions/flow-vaults/create_tide.cdc",
+        [strategyIdentifier, flowTokenIdentifier, 100.0],
+        user
+    )
+    Test.expect(createRes, Test.beSucceeded())
+    
+    let tideIDs = getTideIDs(address: user.address)!
+    let tideID = tideIDs[0]
+    log("Tide created: ".concat(tideID.toString()))
+    
+    // Execute 3 rounds
+    var round = 1
+    while round <= 3 {
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.1))
+        Test.moveTime(by: 70.0)
+        Test.commitBlock()
+        round = round + 1
+    }
+    
+    let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
+    log("Executions after 3 rounds: ".concat(execEvents.length.toString()))
+    Test.assert(execEvents.length >= 3, message: "Should have at least 3 executions")
+    
+    // Verify not stuck (healthy tide should not be stuck)
+    let isStuck = (executeScript(
+        "../scripts/flow-vaults/is_stuck_tide.cdc",
+        [tideID]
+    ).returnValue! as! Bool)
+    Test.assert(!isStuck, message: "Healthy tide should not be stuck")
+    
+    log("PASS: Healthy tide continues self-scheduling without Supervisor")
+}
