@@ -3,7 +3,7 @@
 **Document Version:** 2.0  
 **Date:** November 26, 2025  
 **Source:** Synthesized from multiple independent code review analyses  
-**Original Reviewer:** sisyphusSmiling (onflow/flow-defi)  
+**Original Reviewer:** sisyphusSmiling (onflow/flow-defi)
 **Status:** IMPLEMENTATION COMPLETE
 
 ---

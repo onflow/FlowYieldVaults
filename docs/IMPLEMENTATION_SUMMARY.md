@@ -21,7 +21,7 @@ Autonomous scheduled rebalancing for FlowVaults Tides using Flow's native transa
 ### Component Design
 
 ```
-FlowVaults Contract Account
+FlowVaults Contract Account  
     |
     +-- FlowVaultsScheduler
     |       +-- SchedulerManager (tracks scheduled transactions)

@@ -8,14 +8,14 @@
 - The Tide itself does **not** know about scheduling or FlowALP; it just holds a strategy resource
 
 ### FlowVaultsStrategies (TracerStrategy stack)
-- `TracerStrategyComposer` wires together:
+  - `TracerStrategyComposer` wires together:
   - A **DeFiActions.AutoBalancer** (manages Yield token exposure around deposits value)
   - A **FlowALP.Position** (borrow/lend position in the FlowALP pool)
   - Swappers and connectors that shuttle value between AutoBalancer and FlowALP
 - This is where the **Tide -> AutoBalancer -> FlowALP** wiring is defined
 
 ### FlowVaultsAutoBalancers
-- Utility contract for:
+  - Utility contract for:
   - Storing AutoBalancer resources in the FlowVaults account (per Tide/UniqueID)
   - Publishing public/private capabilities
   - Setting the AutoBalancer's **self capability** (for scheduling)
@@ -25,11 +25,11 @@
 
 ### DeFiActions.AutoBalancer (from FlowActions)
 - Holds a vault of some asset (here: `YieldToken`)
-- Tracks:
+  - Tracks:
   - `valueOfDeposits` (historical value of all deposits)
   - `currentValue` (vault balance * oracle price)
   - `rebalanceRange` / thresholds
-- Provides:
+  - Provides:
   - `rebalance(force: Bool)`: adjusts position based on price/value changes
   - `executeTransaction(id, data)`: entrypoint for **FlowTransactionScheduler**
   - `scheduleNextRebalance()`: self-schedules next execution (when configured with recurringConfig)
@@ -59,12 +59,12 @@
 Inside `FlowVaultsStrategies.TracerStrategyComposer.createStrategy(...)`:
 
 ### Step 1: Create an AutoBalancer
-- Configured with:
+   - Configured with:
   - Oracle: `MockOracle.PriceOracle()`
   - Vault type: `YieldToken.Vault`
   - Thresholds: `lowerThreshold = 0.95`, `upperThreshold = 1.05`
   - Recurring config: `nil` (scheduling handled by FlowVaultsScheduler)
-- Saved via `FlowVaultsAutoBalancers._initNewAutoBalancer(...)`, which:
+   - Saved via `FlowVaultsAutoBalancers._initNewAutoBalancer(...)`, which:
   - Stores the AutoBalancer
   - Issues public capability
   - Issues a **self-cap** with `auth(FungibleToken.Withdraw, FlowTransactionScheduler.Execute)`
@@ -80,8 +80,8 @@ Inside `FlowVaultsStrategies.TracerStrategyComposer.createStrategy(...)`:
 - Initial user Flow goes through `abaSwapSink` to become Yield, deposited into AutoBalancer, then into FlowALP position
 
 ### Step 4: Create FlowALP position-level sink/source
-- `positionSink = position.createSinkWithOptions(type: collateralType, pushToDrawDownSink: true)`
-- `positionSource = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)`
+   - `positionSink = position.createSinkWithOptions(type: collateralType, pushToDrawDownSink: true)`  
+   - `positionSource = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)`
 
 ### Step 5: Wire AutoBalancer's rebalance sink into FlowALP position
 - Create `positionSwapSink` to swap Yield -> Flow and deposit into `positionSink`
@@ -90,11 +90,11 @@ Inside `FlowVaultsStrategies.TracerStrategyComposer.createStrategy(...)`:
 
 ### Step 6: FlowALP's `pushToDrawDownSink` triggers position rebalancing
 - In FlowALP's `depositAndPush` logic with `pushToDrawDownSink: true`:
-  ```cadence
-  if pushToDrawDownSink {
-      self.rebalancePosition(pid: pid, force: true)
-  }
-  ```
+     ```cadence
+     if pushToDrawDownSink {
+         self.rebalancePosition(pid: pid, force: true)
+     }
+     ```
 - Any deposit via that sink automatically triggers `rebalancePosition(pid, force: true)`
 
 **Conclusion:** When AutoBalancer performs a rebalance that moves value through its sink, it indirectly causes:
@@ -109,7 +109,7 @@ Inside `FlowVaultsStrategies.TracerStrategyComposer.createStrategy(...)`:
 
 The capability is issued directly to the AutoBalancer at its storage path:
 
-```cadence
+   ```cadence
 // In registerTide():
 let abPath = FlowVaultsAutoBalancers.deriveAutoBalancerPath(id: tideID, storage: true) as! StoragePath
 let handlerCap = self.account.capabilities.storage
@@ -120,7 +120,7 @@ let handlerCap = self.account.capabilities.storage
 
 When `_initNewAutoBalancer()` is called:
 
-```cadence
+   ```cadence
 // Register with scheduler and schedule first execution atomically
 // This panics if scheduling fails, reverting AutoBalancer creation
 FlowVaultsScheduler.registerTide(tideID: uniqueID.id)
@@ -136,7 +136,7 @@ FlowVaultsScheduler.registerTide(tideID: uniqueID.id)
 
 After each execution, AutoBalancers with `recurringConfig` call `scheduleNextRebalance()`:
 
-```cadence
+   ```cadence
 access(FlowTransactionScheduler.Execute)
 fun executeTransaction(id: UInt64, data: AnyStruct?) {
     // Extract force parameter
@@ -148,15 +148,15 @@ fun executeTransaction(id: UInt64, data: AnyStruct?) {
     // Self-schedule next execution if configured
     if let config = self.recurringConfig {
         self.scheduleNextRebalance()
-    }
-}
-```
+       }
+   }
+   ```
 
 ### Supervisor Recovery (Bounded)
 
 The Supervisor handles failed schedules via a bounded pending queue:
 
-```cadence
+  ```cadence
 access(FlowTransactionScheduler.Execute)
 fun executeTransaction(id: UInt64, data: AnyStruct?) {
     // Process only pending tides (MAX 50 per run)
@@ -176,9 +176,9 @@ fun executeTransaction(id: UInt64, data: AnyStruct?) {
     // Self-reschedule if more pending work
     if FlowVaultsSchedulerRegistry.getPendingCount() > 0 {
         // Schedule next Supervisor run
-    }
-}
-```
+      }
+  }
+  ```
 
 ---
 
