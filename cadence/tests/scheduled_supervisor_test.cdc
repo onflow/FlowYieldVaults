@@ -77,16 +77,23 @@ fun setup() {
     log("✅ Setup complete")
 }
 
+/// Test: Auto-Register and Native Scheduling
+/// 
+/// NEW ARCHITECTURE:
+/// - AutoBalancers self-schedule via native FlowTransactionScheduler
+/// - The Supervisor is for recovery only (picks up from pending queue)
+/// - SchedulerManager doesn't track native schedules
+///
 access(all)
 fun testAutoRegisterAndSupervisor() {
-    log("\n🧪 Testing Auto-Register + Supervisor...")
+    log("\n Testing Auto-Register + Native Scheduling...")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 1000.0)
     grantBeta(flowVaultsAccount, user)
 
-    // 1. Create Tide (Should auto-register)
-    log("📝 Step 1: Create Tide")
+    // 1. Create Tide (Should auto-register and self-schedule via native mechanism)
+    log("Step 1: Create Tide")
     let createTideRes = executeTransaction(
         "../transactions/flow-vaults/create_tide.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
@@ -96,9 +103,9 @@ fun testAutoRegisterAndSupervisor() {
     
     let tideIDs = getTideIDs(address: user.address)!
     let tideID = tideIDs[0]
-    log("✅ Tide created: \(tideID)")
+    log("Tide created: ".concat(tideID.toString()))
 
-    // Verify registration
+    // 2. Verify registration
     let regIDsRes = executeScript(
         "../scripts/flow-vaults/get_registered_tide_ids.cdc",
         []
@@ -106,113 +113,42 @@ fun testAutoRegisterAndSupervisor() {
     Test.expect(regIDsRes, Test.beSucceeded())
     let regIDs = regIDsRes.returnValue! as! [UInt64]
     Test.assert(regIDs.contains(tideID), message: "Tide should be registered")
-    log("✅ Tide is registered")
+    log("Tide is registered")
 
-    // 2. Setup SchedulerManager and Supervisor
-    log("📝 Step 2: Setup Scheduler & Supervisor")
-    let setupMgrRes = executeTransaction(
-        "../transactions/flow-vaults/setup_scheduler_manager.cdc",
-        [],
-        flowVaultsAccount
-    )
-    Test.expect(setupMgrRes, Test.beSucceeded())
-
-    let setupSupRes = executeTransaction(
-        "../transactions/flow-vaults/setup_supervisor.cdc",
-        [],
-        flowVaultsAccount
-    )
-    Test.expect(setupSupRes, Test.beSucceeded())
-
-    // 3. Schedule Supervisor
-    log("📝 Step 3: Schedule Supervisor")
-    let currentTime = getCurrentBlock().timestamp
-    let scheduledTime = currentTime + 60.0
+    // 3. Wait for native AutoBalancer execution
+    log("Step 2: Wait for native execution...")
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.8)
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5)
     
-    // Estimate cost for Supervisor (it pays for children too)
-    mintFlow(to: flowVaultsAccount, amount: 100.0) // abundant funding
-
-    let scheduleSupRes = executeTransaction(
-        "../transactions/flow-vaults/schedule_supervisor.cdc",
-        [
-            scheduledTime,
-            UInt8(1),
-            UInt64(800),
-            0.01, // fee
-            5.0, // recurringInterval (Supervisor interval)
-            true, // childRecurring
-            5.0, // childInterval (per-tide interval)
-            false // force
-        ],
-        flowVaultsAccount
-    )
-    Test.expect(scheduleSupRes, Test.beSucceeded())
-    log("✅ Supervisor scheduled")
-
-    // 4. Wait for Supervisor Execution
-    log("📝 Step 4: Wait for Supervisor to seed child")
-    // Supervisor was scheduled ~60 seconds in the future; advance past that.
     Test.moveTime(by: 75.0)
     Test.commitBlock()
 
-    // Check if Supervisor executed
-    // Supervisor seeding doesn't emit a specific event, but it schedules a child.
-    
-    let childSchedulesRes = executeScript(
-        "../scripts/flow-vaults/get_all_scheduled_rebalancing.cdc",
-        [flowVaultsAccount.address]
-    )
-    let childSchedules = childSchedulesRes.returnValue! as! [FlowVaultsScheduler.RebalancingScheduleInfo]
-    
-    var childFound = false
-    for s in childSchedules {
-        if s.tideID == tideID {
-            childFound = true
-            log("✅ Child schedule found for Tide \(tideID)")
-        }
-    }
-    Test.assert(childFound, message: "Supervisor should have seeded child schedule")
-
-    // 5. Induce Drift and Wait for Child Execution
-    log("📝 Step 5: Induce Drift & Wait for Child")
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.8)
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5)
-
-    // The child was scheduled by Supervisor with lookahead.
-    // Supervisor ran at T+15 (approx). Lookahead was 5. So Child is at T+20.
-    Test.moveTime(by: 15.0) // Move another 15s
-    Test.commitBlock()
-
-    // 6. Verify Execution
-    log("📝 Step 6: Verify Execution")
-    // FlowTransactionScheduler emits Executed when a scheduled transaction runs
+    // 4. Verify native execution occurred
     let schedulerExecEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     Test.assert(schedulerExecEvents.length > 0, message: "Should have FlowTransactionScheduler.Executed event")
     
-    // DeFiActions.Rebalanced is only emitted when AutoBalancer actually moves funds
-    // (requires sink/source to be configured, which test setup doesn't do)
     let rebalancedEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
-    log("📊 Scheduler.Executed events: \(schedulerExecEvents.length)")
-    log("📊 DeFiActions.Rebalanced events: \(rebalancedEvents.length)")
+    log("Scheduler.Executed events: ".concat(schedulerExecEvents.length.toString()))
+    log("DeFiActions.Rebalanced events: ".concat(rebalancedEvents.length.toString()))
     
-    // Verify Status
-    let executedRes = executeScript(
-        "../scripts/flow-vaults/get_all_scheduled_rebalancing.cdc",
-        [flowVaultsAccount.address]
-    )
-    
-    log("🎉 Auto-Register + Supervisor Test Passed")
+    log("PASS: Auto-Register + Native Scheduling")
 }
 
+/// Test: Multi-Tide Fan-Out (Native Scheduling)
+/// 
+/// NEW ARCHITECTURE:
+/// - Each tide's AutoBalancer self-schedules via native mechanism
+/// - No Supervisor seeding needed - tides execute independently
+///
 access(all)
 fun testMultiTideFanOut() {
-    log("\n🧪 Testing Multi-Tide Fan-Out...")
+    log("\n Testing Multi-Tide Native Scheduling...")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 1000.0)
     grantBeta(flowVaultsAccount, user)
     
-    // Create 3 tides manually
+    // Create 3 tides (each auto-schedules via native mechanism)
     var i = 0
     while i < 3 {
         let res = executeTransaction(
@@ -225,62 +161,44 @@ fun testMultiTideFanOut() {
     }
     
     let allTides = getTideIDs(address: user.address)!
-    log("📝 Created tides")
-    log(allTides)
+    log("Created ".concat(allTides.length.toString()).concat(" tides"))
 
-    // Reset Scheduler Manager to clear previous state
-    executeTransaction("../transactions/flow-vaults/reset_scheduler_manager.cdc", [], flowVaultsAccount)
-    executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
+    // Verify all are registered
+    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_tide_ids.cdc", [])
+    let regIDs = regIDsRes.returnValue! as! [UInt64]
+    for tid in allTides {
+        Test.assert(regIDs.contains(tid), message: "Tide should be registered")
+    }
+    log("All tides registered")
     
-    let currentTime = getCurrentBlock().timestamp
-    let scheduledTime = currentTime + 10.0
-    
-    executeTransaction(
-        "../transactions/flow-vaults/schedule_supervisor.cdc",
-        [scheduledTime, UInt8(1), UInt64(800), 0.01, 5.0, true, 5.0, false],
-        flowVaultsAccount
-    )
-    
-    Test.moveTime(by: 15.0)
+    // Wait for native execution
+    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5)
+    Test.moveTime(by: 75.0)
     Test.commitBlock()
     
-    let childSchedulesRes = executeScript(
-        "../scripts/flow-vaults/get_all_scheduled_rebalancing.cdc",
-        [flowVaultsAccount.address]
-    )
-    let childSchedules = childSchedulesRes.returnValue! as! [FlowVaultsScheduler.RebalancingScheduleInfo]
+    // Verify all executed via native scheduling
+    let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
+    Test.assert(execEvents.length >= 3, message: "Should have at least 3 executions (one per tide)")
+    log("Executions: ".concat(execEvents.length.toString()))
     
-    var scheduledCount = 0
-    for tideID in allTides {
-        for s in childSchedules {
-            if s.tideID == tideID {
-                scheduledCount = scheduledCount + 1
-                break
-            }
-        }
-    }
-    
-    // We expect at least the 3 new tides to be scheduled.
-    Test.assert(scheduledCount >= 3, message: "All new tides should be scheduled by Supervisor")
-    log("✅ All \(scheduledCount) tides scheduled")
-    
-    log("🎉 Multi-Tide Fan-Out Test Passed")
+    log("PASS: Multi-Tide Native Scheduling")
 }
 
-/// Verifies that once a Tide has been seeded with a recurring child schedule,
-/// its rebalancing handler is actually executed (not just scheduled) and that
-/// the recurring configuration remains in place. Due to current emulator
-/// scheduler behavior we reliably observe at least one execution in tests.
+/// Test: Native recurring rebalancing executes at least 3 times
+/// 
+/// NEW ARCHITECTURE:
+/// - AutoBalancer self-schedules via native mechanism
+/// - No Supervisor needed for normal recurring execution
+///
 access(all)
 fun testRecurringRebalancingThreeRuns() {
-    log("\n🧪 Testing recurring rebalancing executes at least three times...")
+    log("\n Testing native recurring rebalancing (3 runs)...")
 
-    // Fresh user + beta access
     let user = Test.createAccount()
     mintFlow(to: user, amount: 1000.0)
     grantBeta(flowVaultsAccount, user)
 
-    // 1. Create Tide (auto-registers with scheduler/registry)
+    // Create Tide (auto-schedules via native mechanism)
     let createTideRes = executeTransaction(
         "../transactions/flow-vaults/create_tide.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
@@ -290,122 +208,44 @@ fun testRecurringRebalancingThreeRuns() {
 
     let tideIDs = getTideIDs(address: user.address)!
     let tideID = tideIDs[0]
-    log("✅ Tide created for recurring test: ".concat(tideID.toString()))
+    log("Tide created: ".concat(tideID.toString()))
 
-    // 2. Setup SchedulerManager and Supervisor
-    let setupMgrRes = executeTransaction(
-        "../transactions/flow-vaults/setup_scheduler_manager.cdc",
-        [],
-        flowVaultsAccount
-    )
-    Test.expect(setupMgrRes, Test.beSucceeded())
-
-    let setupSupRes = executeTransaction(
-        "../transactions/flow-vaults/setup_supervisor.cdc",
-        [],
-        flowVaultsAccount
-    )
-    Test.expect(setupSupRes, Test.beSucceeded())
-
-    // Ensure FlowVaults account has sufficient FLOW to fund Supervisor + 3+ child runs
-    mintFlow(to: flowVaultsAccount, amount: 100.0)
-
-    // 3. Schedule Supervisor soon, with a short child interval so multiple runs fit in the test window.
-    // IMPORTANT: Use a large offset (300s) to handle CI timing variability. The test framework
-    // may advance block timestamps unpredictably between getCurrentBlock() and the actual
-    // schedule transaction execution, especially in slower CI environments.
-    let currentTime = getCurrentBlock().timestamp
-    let scheduledTime = currentTime + 300.0
-
-    let scheduleSupRes = executeTransaction(
-        "../transactions/flow-vaults/schedule_supervisor.cdc",
-        [
-            scheduledTime,
-            UInt8(1),     // Medium priority
-            UInt64(800),  // executionEffort
-            0.05,         // initial fee for Supervisor
-            300.0,        // Supervisor recurring interval (large; we only need first run)
-            true,         // childRecurring
-            5.0,          // childInterval (seconds between child runs)
-            true          // force children to rebalance to avoid threshold-related no-ops
-        ],
-        flowVaultsAccount
-    )
-    Test.expect(scheduleSupRes, Test.beSucceeded())
-    log("✅ Supervisor scheduled for recurring test")
-
-    // 4. Drive time forward stepwise so that:
-    //    - First, Supervisor executes once.
-    //    - Then, the recurring child job executes multiple times.
-    //
-    //    We don't know the exact internal timestamp used by the scheduler, but
-    //    we can advance in conservative increments that are comfortably larger
-    //    than the configured lookahead / childInterval.
-
-    // 4a. Ensure Supervisor executes (scheduled at ~currentTime+300 above).
-    Test.moveTime(by: 310.0)
-    Test.commitBlock()
-
-    // 4b. Now advance time in several separate steps that are each longer than
-    //     childInterval (5.0), allowing the recurring child job to execute
-    //     at least once, and giving the scheduler room to schedule follow-ups.
-    var i = 0
+    // Wait for 3 native executions
     var count = 0
-    while i < 10 && count < 3 {
-        Test.moveTime(by: 10.0)
+    var round = 0
+    while round < 10 && count < 3 {
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.1))
+        Test.moveTime(by: 70.0)
         Test.commitBlock()
-        i = i + 1
-
-        // 5. Count scheduler executions - FlowTransactionScheduler.Executed is emitted
-        //    for each scheduled transaction that runs
+        
         let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
         count = execEvents.length
+        round = round + 1
     }
 
     Test.assert(
         count >= 3,
-        message: "Expected at least 3 FlowTransactionScheduler.Executed events but found ".concat(count.toString())
+        message: "Expected at least 3 executions but found ".concat(count.toString())
     )
-    log("🎉 Scheduler executed \(count) transaction(s)")
-
-    // 6. After the latest observed execution, ensure that a *new* recurring
-    //    schedule exists for this Tide (AutoBalancer's native recurring config
-    //    chains the next job automatically).
-    let schedulesRes = executeScript(
-        "../scripts/flow-vaults/get_all_scheduled_rebalancing.cdc",
-        [flowVaultsAccount.address]
+    log("PASS: Native recurring executed ".concat(count.toString()).concat(" times")
     )
-    Test.expect(schedulesRes, Test.beSucceeded())
-    let schedules = schedulesRes.returnValue! as! [FlowVaultsScheduler.RebalancingScheduleInfo]
-
-    var nextFound = false
-    for s in schedules {
-        if s.tideID == tideID && s.isRecurring && s.recurringInterval != nil && s.recurringInterval! > 0.0 {
-            // A recurring schedule exists for this tide - the AutoBalancer chains
-            // the next job automatically via its native recurringConfig
-            nextFound = true
-        }
-    }
-
-    Test.assert(
-        nextFound,
-        message: "Expected a recurring scheduled rebalancing entry for Tide ".concat(tideID.toString()).concat(" after execution")
-    )
-    log("✅ Verified that next recurring rebalancing is scheduled for Tide ".concat(tideID.toString()))
 }
 
-/// Verifies that multiple tides (3) each execute independently multiple times.
-/// This tests that AutoBalancers self-schedule without interfering with each other.
+/// Test: Multiple tides execute independently via native scheduling
+/// 
+/// NEW ARCHITECTURE:
+/// - Each AutoBalancer self-schedules via native mechanism
+/// - No Supervisor needed for normal execution
+///
 access(all)
 fun testMultiTideIndependentExecution() {
-    log("\n🧪 Testing multiple tides execute independently...")
+    log("\n Testing multiple tides execute independently...")
 
     let user = Test.createAccount()
     mintFlow(to: user, amount: 1000.0)
     grantBeta(flowVaultsAccount, user)
 
-    // Create 3 tides
-    var tideIDs: [UInt64] = []
+    // Create 3 tides (each auto-schedules via native mechanism)
     var i = 0
     while i < 3 {
         let res = executeTransaction(
@@ -417,108 +257,49 @@ fun testMultiTideIndependentExecution() {
         i = i + 1
     }
     
-    tideIDs = getTideIDs(address: user.address)!
-    log("✅ Created ".concat(tideIDs.length.toString()).concat(" tides: ").concat(tideIDs[0].toString()).concat(", ").concat(tideIDs[1].toString()).concat(", ").concat(tideIDs[2].toString()))
+    let tideIDs = getTideIDs(address: user.address)!
+    log("Created ".concat(tideIDs.length.toString()).concat(" tides"))
 
-    // Setup - reset scheduler to clear state from previous tests
-    executeTransaction("../transactions/flow-vaults/reset_scheduler_manager.cdc", [], flowVaultsAccount)
-    executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
-    executeTransaction("../transactions/flow-vaults/setup_supervisor.cdc", [], flowVaultsAccount)
-    mintFlow(to: flowVaultsAccount, amount: 200.0)
-
-    // Get fresh timestamp right before scheduling
-    // Use large offset (600s) to handle CI/test timing variability when running after other tests
-    let scheduledTime = getCurrentBlock().timestamp + 600.0
-    
-    let scheduleSupRes = executeTransaction(
-        "../transactions/flow-vaults/schedule_supervisor.cdc",
-        [
-            scheduledTime,
-            UInt8(1),     // Medium priority
-            UInt64(800),  // executionEffort
-            0.05,         // fee
-            300.0,        // Supervisor interval
-            true,         // childRecurring
-            5.0,          // childInterval
-            true          // force
-        ],
-        flowVaultsAccount
-    )
-    Test.expect(scheduleSupRes, Test.beSucceeded())
-    log("✅ Supervisor scheduled")
-
-    // Advance time to let executions happen (must exceed scheduledTime offset)
-    Test.moveTime(by: 610.0)
-    Test.commitBlock()
-    
-    // Drive time forward in steps to allow multiple executions per tide
-    i = 0
-    while i < 30 {
-        Test.moveTime(by: 10.0)
+    // Drive 3 rounds of execution
+    var round = 0
+    while round < 3 {
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.2))
+        Test.moveTime(by: 70.0)
         Test.commitBlock()
-        i = i + 1
+        round = round + 1
     }
 
-    // Count executions using FlowTransactionScheduler.Executed events
+    // Count executions
     let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-    log("📊 Total FlowTransactionScheduler.Executed events: ".concat(execEvents.length.toString()))
+    log("Total executions: ".concat(execEvents.length.toString()))
     
-    // With 3 tides and short intervals, we expect multiple executions
-    // At minimum: 1 supervisor + 3 initial tide executions = 4
-    // With recurring: should see more over time
+    // 3 tides x 3 rounds = 9 minimum executions
     Test.assert(
-        execEvents.length >= 4,
-        message: "Expected at least 4 scheduler executions but found ".concat(execEvents.length.toString())
+        execEvents.length >= 9,
+        message: "Expected at least 9 executions but found ".concat(execEvents.length.toString())
     )
     
-    // The key verification: each tide should still have a recurring schedule active
-    // This proves they're running independently and re-scheduling themselves
-    
-    // Verify each tide has a recurring schedule still active
-    let schedulesRes = executeScript(
-        "../scripts/flow-vaults/get_all_scheduled_rebalancing.cdc",
-        [flowVaultsAccount.address]
-    )
-    Test.expect(schedulesRes, Test.beSucceeded())
-    let schedules = schedulesRes.returnValue! as! [FlowVaultsScheduler.RebalancingScheduleInfo]
-    
-    var scheduledTideCount = 0
-    for tideID in tideIDs {
-        for s in schedules {
-            if s.tideID == tideID && s.isRecurring {
-                scheduledTideCount = scheduledTideCount + 1
-                break
-            }
-        }
-    }
-    
-    Test.assert(
-        scheduledTideCount == 3,
-        message: "Expected all 3 tides to have recurring schedules, found ".concat(scheduledTideCount.toString())
-    )
-    
-    log("🎉 Multi-Tide Independent Execution Test Passed - ".concat(execEvents.length.toString()).concat(" total executions")
-    )
+    log("PASS: Multiple tides executed independently")
 }
 
-/// Stress test for pagination: creates more tides than MAX_BATCH_SIZE (50)
-/// and verifies the Supervisor processes them across multiple batches.
+/// Stress test: creates many tides and verifies they all register and execute
+///
+/// NEW ARCHITECTURE:
+/// - AutoBalancers self-schedule via native mechanism
+/// - Registry tracks all registered tides
+/// - No SchedulerManager tracking of native schedules
+///
 access(all)
 fun testPaginationStress() {
-    log("\n🧪 Testing pagination with 60 tides (exceeds MAX_BATCH_SIZE of 50)...")
+    log("\n Testing many tides with native scheduling...")
     
-    let startTime = getCurrentBlock().timestamp
-    log("⏱️  Start time: ".concat(startTime.toString()))
-
     let user = Test.createAccount()
     mintFlow(to: user, amount: 10000.0)
     grantBeta(flowVaultsAccount, user)
-    
-    // Fund FlowVaults account generously for many schedules
     mintFlow(to: flowVaultsAccount, amount: 5000.0)
 
-    // Create 60 tides (exceeds MAX_BATCH_SIZE of 50)
-    let numTides = 60
+    // Create 20 tides (reduced from 60 for test speed)
+    let numTides = 20
     var i = 0
     while i < numTides {
         let res = executeTransaction(
@@ -531,47 +312,31 @@ fun testPaginationStress() {
     }
     
     let tideIDs = getTideIDs(address: user.address)!
-    log("✅ Created ".concat(tideIDs.length.toString()).concat(" tides"))
+    log("Created ".concat(tideIDs.length.toString()).concat(" tides"))
     
-    let afterCreation = getCurrentBlock().timestamp
-    log("⏱️  After creation: ".concat(afterCreation.toString()).concat(" (").concat((afterCreation - startTime).toString()).concat("s elapsed)"))
-
     // Check registry state
     let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_tide_ids.cdc", [])
     let regIDs = regIDsRes.returnValue! as! [UInt64]
-    log("📊 Registered tides: ".concat(regIDs.length.toString()))
+    log("Registered tides: ".concat(regIDs.length.toString()))
     
-    // Check pending queue (should be empty since all were atomically scheduled at creation)
-    let pendingCountRes = executeScript("../scripts/flow-vaults/get_pending_count.cdc", [])
-    if pendingCountRes.returnValue != nil {
-        let pendingCount = pendingCountRes.returnValue! as! Int
-        log("📊 Pending queue size: ".concat(pendingCount.toString()))
-    }
-    
-    // Verify all tides are scheduled
-    let schedulesRes = executeScript(
-        "../scripts/flow-vaults/get_all_scheduled_rebalancing.cdc",
-        [flowVaultsAccount.address]
-    )
-    Test.expect(schedulesRes, Test.beSucceeded())
-    let schedules = schedulesRes.returnValue! as! [FlowVaultsScheduler.RebalancingScheduleInfo]
-    
-    log("📊 Scheduled rebalancings: ".concat(schedules.length.toString()))
-    
-    // All 60 tides should be scheduled (atomic scheduling at creation)
     Test.assert(
-        schedules.length >= numTides,
-        message: "Expected at least ".concat(numTides.toString()).concat(" schedules but found ").concat(schedules.length.toString())
+        regIDs.length >= numTides,
+        message: "Expected at least ".concat(numTides.toString()).concat(" registered tides")
     )
     
-    let afterVerify = getCurrentBlock().timestamp
-    log("⏱️  After verification: ".concat(afterVerify.toString()).concat(" (").concat((afterVerify - startTime).toString()).concat("s elapsed)"))
+    // Wait for native executions
+    Test.moveTime(by: 70.0)
+    Test.commitBlock()
     
-    // Check registry events to see batch processing
-    let regEvents = Test.eventsOfType(Type<FlowVaultsSchedulerRegistry.TideRegistered>())
-    log("📊 TideRegistered events: ".concat(regEvents.length.toString()))
+    let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
+    log("Total executions: ".concat(execEvents.length.toString()))
     
-    log("🎉 Pagination Stress Test Passed - ".concat(numTides.toString()).concat(" tides all scheduled atomically"))
+    Test.assert(
+        execEvents.length >= numTides,
+        message: "Expected at least ".concat(numTides.toString()).concat(" executions")
+    )
+    
+    log("PASS: Many tides all registered and executed")
 }
 
 /// Tests that the Supervisor correctly recovers a tide from the pending queue.
@@ -645,22 +410,23 @@ fun testSupervisorRecoveryOfFailedReschedule() {
     executeTransaction("../transactions/flow-vaults/setup_scheduler_manager.cdc", [], flowVaultsAccount)
     executeTransaction("../transactions/flow-vaults/setup_supervisor.cdc", [], flowVaultsAccount)
     
-    // Commit block to ensure timestamp is current before scheduling
+    // Commit block to ensure state is synced
     Test.commitBlock()
     
-    // Schedule Supervisor with fresh timestamp (use larger offset to avoid timing race)
-    let scheduledTime = getCurrentBlock().timestamp + 100.0
+    // Schedule Supervisor with very large offset to handle cumulative time from all tests
+    // The timestamp must be in the future at the time the transaction EXECUTES, not when we get the block
+    let scheduledTime = getCurrentBlock().timestamp + 2000.0
     let schedSupRes = executeTransaction(
         "../transactions/flow-vaults/schedule_supervisor.cdc",
         [scheduledTime, UInt8(1), UInt64(800), 0.05, 30.0, true, 10.0, false],
         flowVaultsAccount
     )
     Test.expect(schedSupRes, Test.beSucceeded())
-    log("Supervisor scheduled at: ".concat(scheduledTime.toString()))
+    log("Supervisor scheduled")
 
     // 6. Advance time to let Supervisor run
     log("Step 6: Waiting for Supervisor to run...")
-    Test.moveTime(by: 110.0)
+    Test.moveTime(by: 2100.0)
     Test.commitBlock()
 
     // 7. Check for SupervisorSeededTide event

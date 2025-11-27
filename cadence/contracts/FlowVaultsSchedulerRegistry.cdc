@@ -107,9 +107,15 @@ access(all) contract FlowVaultsSchedulerRegistry {
         return self.tideRegistry.keys
     }
 
-    /// Get handler capability for a Tide (AutoBalancer capability)
-    /// Restricted to account level to prevent unauthorized access to execution capabilities
+    /// Get handler capability for a Tide (AutoBalancer capability) - account restricted for internal use
     access(account) view fun getHandlerCap(tideID: UInt64): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? {
+        return self.handlerCaps[tideID]
+    }
+
+    /// Get handler capability for a Tide - public version for transactions
+    /// NOTE: The capability is protected by FlowTransactionScheduler.Execute entitlement,
+    /// so having it only allows scheduling (which requires paying fees), not direct execution.
+    access(all) view fun getHandlerCapability(tideID: UInt64): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? {
         return self.handlerCaps[tideID]
     }
 

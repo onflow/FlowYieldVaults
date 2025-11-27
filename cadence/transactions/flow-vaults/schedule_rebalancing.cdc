@@ -57,7 +57,7 @@ transaction(
             ?? panic("Could not borrow SchedulerManager from storage")
 
         // Get the handler capability (AutoBalancer) from the Registry
-        self.handlerCap = FlowVaultsSchedulerRegistry.getHandlerCap(tideID: tideID)
+        self.handlerCap = FlowVaultsSchedulerRegistry.getHandlerCapability(tideID: tideID)
             ?? panic("No handler capability found for Tide #".concat(tideID.toString()).concat(". Is it registered?"))
 
         // Withdraw payment from the signer's FlowToken vault
