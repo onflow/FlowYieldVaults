@@ -171,6 +171,7 @@ access(all) contract FlowVaultsScheduler {
         /// @param force: Whether to force rebalancing regardless of thresholds
         /// @param isRecurring: Whether this should be a recurring rebalancing
         /// @param recurringInterval: If recurring, the interval in seconds between executions
+        /// @param restartRecurring: Whether to signal the AutoBalancer to restart its self-scheduling cycle
         ///
         access(all) fun scheduleRebalancing(
             handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>,
@@ -181,7 +182,8 @@ access(all) contract FlowVaultsScheduler {
             fees: @FlowToken.Vault,
             force: Bool,
             isRecurring: Bool,
-            recurringInterval: UFix64?
+            recurringInterval: UFix64?,
+            restartRecurring: Bool
         ) {
             // Cleanup any executed/removed entry for this tideID
             let existingRef = &self.scheduledTransactions[tideID] as &FlowTransactionScheduler.ScheduledTransaction?
@@ -209,8 +211,11 @@ access(all) contract FlowVaultsScheduler {
                 panic("Invalid handler capability provided")
             }
 
-            // Schedule the transaction with force parameter in data
-            let data: {String: AnyStruct} = {"force": force}
+            // Schedule the transaction with force and restartRecurring parameters in data
+            let data: {String: AnyStruct} = {
+                "force": force,
+                "restartRecurring": restartRecurring
+            }
             let scheduledTx <- FlowTransactionScheduler.schedule(
                 handlerCap: handlerCap,
                 data: data,
@@ -518,7 +523,8 @@ access(all) contract FlowVaultsScheduler {
                     fees: <-pay,
                     force: forceChild,
                     isRecurring: true,  // AutoBalancer will handle recurrence natively
-                    recurringInterval: FlowVaultsScheduler.DEFAULT_RECURRING_INTERVAL
+                    recurringInterval: FlowVaultsScheduler.DEFAULT_RECURRING_INTERVAL,
+                    restartRecurring: true  // Signal AutoBalancer to resume self-scheduling after this seed
                 )
 
                 // Remove from pending queue after successful scheduling
