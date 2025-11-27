@@ -8,6 +8,9 @@ This document summarizes all changes made from commit `2479635` (PR review ackno
 **Files changed**: 31 files  
 **Lines changed**: +2,043 / -2,031
 
+**Related PRs**:
+- FlowActions (fee buffer fix): https://github.com/onflow/FlowActions/pull/68
+
 ---
 
 ## Core Architecture Change
@@ -170,7 +173,8 @@ This document summarizes all changes made from commit `2479635` (PR review ackno
 
 ## DeFiActions (FlowALP/FlowActions) Changes
 
-**Branch**: `fix/restart-recurring-flag`
+**Branch**: `fix/restart-recurring-flag`  
+**PR**: https://github.com/onflow/FlowActions/pull/68
 
 ### Final Changes (kept)
 - **5% fee buffer**: `estimate.flowFee! * 1.05` for scheduling fee estimation variance
