@@ -44,7 +44,6 @@ fun setup() {
     log("Setting up scheduled rebalancing test with native AutoBalancer recurring...")
     
     deployContracts()
-    deployFlowVaultsSchedulerIfNeeded()
     
     // Fund FlowVaults account for scheduling fees
     mintFlow(to: flowVaultsAccount, amount: 2000.0)

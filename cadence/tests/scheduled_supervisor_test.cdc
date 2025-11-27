@@ -29,7 +29,6 @@ fun setup() {
     log("🚀 Setting up Supervisor integration test...")
     
     deployContracts()
-    deployFlowVaultsSchedulerIfNeeded()
     
     // Fund FlowVaults account BEFORE any Tides are created, as registerTide
     // now atomically schedules the first execution which requires FLOW for fees

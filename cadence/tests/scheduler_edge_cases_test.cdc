@@ -26,7 +26,6 @@ fun setup() {
     log("Setting up scheduler edge cases test...")
     
     deployContracts()
-    deployFlowVaultsSchedulerIfNeeded()
     
     // Fund FlowVaults account for scheduling fees
     mintFlow(to: flowVaultsAccount, amount: 1000.0)

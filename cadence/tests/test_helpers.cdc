@@ -345,13 +345,6 @@ fun setupFlowALP(signer: Test.TestAccount) {
     )
 }
 
-// No-op for backward compatibility - scheduler is now deployed in deployContracts()
-access(all)
-fun deployFlowVaultsSchedulerIfNeeded() {
-    // Scheduler contracts are deployed as part of deployContracts()
-    // This function exists for backward compatibility with tests that call it separately
-}
-
 /* --- Script helpers */
 
 access(all)

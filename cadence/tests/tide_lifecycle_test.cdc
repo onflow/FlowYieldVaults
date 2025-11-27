@@ -75,8 +75,7 @@ fun setup() {
         beFailed: false
     )
     
-    // Deploy FlowVaultsScheduler
-    deployFlowVaultsSchedulerIfNeeded()
+    // Scheduler contracts are deployed as part of deployContracts()
 
     // Fund FlowVaults account for scheduling fees (atomic initial scheduling)
     mintFlow(to: flowVaultsAccount, amount: 100.0)

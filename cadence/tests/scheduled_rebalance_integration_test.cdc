@@ -33,8 +33,7 @@ fun setup() {
     
     deployContracts()
     
-    // Deploy FlowVaultsScheduler (idempotent across tests)
-    deployFlowVaultsSchedulerIfNeeded()
+    // Scheduler contracts are deployed as part of deployContracts()
     log("FlowVaultsScheduler available")
     
     // Fund FlowVaults account for scheduling fees
