@@ -201,14 +201,33 @@ Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.Tra
 
 The `Execute` entitlement only allows calling `executeTransaction()`, not `scheduleNextRebalance()`.
 
-**Why not issue a `Schedule` capability?**
+**Why not issue a `Schedule` capability specifically to the Supervisor?**
 
-The `Schedule` entitlement is intentionally restricted. Issuing it broadly would allow any holder to schedule transactions on behalf of the AutoBalancer, potentially:
-- Draining the AutoBalancer's fee vault
-- Creating unwanted schedules
-- Interfering with the AutoBalancer's timing
+Technically, we COULD issue a `Schedule` capability to the Supervisor. Each AutoBalancer could issue one during registration. However, this approach has a **critical flaw for the recovery use case**:
 
-The `restartRecurring` flag is a safer approach: the Supervisor provides ONE seed execution (paying its own fees), and during that execution, the AutoBalancer uses ITS OWN `Schedule` entitlement to call `scheduleNextRebalance()` internally.
+**The problem: Who pays for scheduling?**
+
+When `scheduleNextRebalance()` is called, it withdraws fees from the AutoBalancer's configured fee source:
+
+```cadence
+// Inside scheduleNextRebalance():
+let fees <- config.txnFunder.withdrawAvailable(maxAmount: feeWithMargin)
+```
+
+**If the AutoBalancer failed to self-schedule because its fee source was empty** (the most common recovery scenario), then calling `scheduleNextRebalance()` via a `Schedule` capability would **just fail again for the same reason!**
+
+**The `restartRecurring` approach solves this:**
+
+1. **Supervisor pays for the seed execution** (using Supervisor's fee source, not AutoBalancer's)
+2. **AutoBalancer executes** the rebalance
+3. **By this point, the fee source should be refunded** (that's why we're doing recovery - funds are back)
+4. **AutoBalancer calls `scheduleNextRebalance()` internally** using its own (now refunded) fee source
+
+This separation of "who pays for what" is critical:
+- **Supervisor**: Pays for the ONE-TIME recovery seed
+- **AutoBalancer**: Pays for all subsequent self-schedules (from its own fee source)
+
+If Supervisor had `Schedule` entitlement and called `scheduleNextRebalance()` directly, it would try to use the AutoBalancer's fee source - which might still be empty at that exact moment, causing the recovery to fail.
 
 ### Why Can't We Just "Set `isInternallyManaged` to True"?
 
