@@ -78,13 +78,19 @@ fun setup() {
 
 /// Test: Double-scheduling the same Tide via SchedulerManager should fail
 ///
-/// NOTE: With native AutoBalancer scheduling, the AutoBalancer self-schedules via
-/// FlowTransactionScheduler. The SchedulerManager is separate and tracks its own schedules.
-/// Double-scheduling via SchedulerManager is still prevented.
+/// NEW ARCHITECTURE CONTEXT:
+/// - AutoBalancers self-schedule via native FlowTransactionScheduler
+/// - SchedulerManager is used by Supervisor for recovery (seeding stuck tides)
+/// - SchedulerManager tracks its own schedules (separate from native AutoBalancer schedules)
+///
+/// WHY THIS TEST MATTERS:
+/// - The Supervisor uses SchedulerManager to seed stuck tides
+/// - If a tide is already scheduled in SchedulerManager, seeding it again should fail
+/// - This prevents duplicate recovery schedules for the same tide
 ///
 access(all)
-fun testDoubleSchedulingSameTideFails() {
-    log("\n[TEST] Double-scheduling same Tide via SchedulerManager should fail...")
+fun testSchedulerManagerDoubleSchedulingFails() {
+    log("\n[TEST] SchedulerManager prevents double-scheduling same Tide...")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 200.0)
@@ -240,10 +246,18 @@ fun testRecurringWithZeroIntervalFails() {
     log("Recurring with zero interval correctly failed")
 }
 
-/// Test: Verify scheduleData is cleaned up after cancel
+/// Test: SchedulerManager scheduleData is cleaned up after cancel
+///
+/// This tests that when a SchedulerManager schedule is cancelled:
+/// 1. The schedule entry is removed from SchedulerManager's scheduleData
+/// 2. The tide can be re-scheduled via SchedulerManager after cancellation
+///
+/// NOTE: Cancellation via SchedulerManager only affects SchedulerManager schedules.
+/// Native AutoBalancer schedules are managed separately by the AutoBalancer itself.
+///
 access(all)
-fun testScheduleDataCleanedAfterCancel() {
-    log("\n[TEST] ScheduleData cleanup after cancel...")
+fun testSchedulerManagerDataCleanedAfterCancel() {
+    log("\n[TEST] SchedulerManager scheduleData cleanup after cancel...")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 200.0)

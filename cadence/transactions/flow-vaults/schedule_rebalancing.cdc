@@ -74,6 +74,8 @@ transaction(
             ?? FlowTransactionScheduler.Priority.Medium
 
         // Schedule the rebalancing
+        // Note: restartRecurring is false for manual scheduling - the tide should not restart
+        // its self-scheduling cycle from manual intervention (that's for Supervisor recovery only)
         self.schedulerManager.scheduleRebalancing(
             handlerCap: self.handlerCap,
             tideID: tideID,
@@ -83,7 +85,8 @@ transaction(
             fees: <-self.paymentVault,
             force: force,
             isRecurring: isRecurring,
-            recurringInterval: recurringInterval
+            recurringInterval: recurringInterval,
+            restartRecurring: false
         )
     }
 }

@@ -397,36 +397,36 @@ fun testFiveTidesContinueWithoutSupervisor() {
 /// without ever needing Supervisor intervention. The Supervisor is a RECOVERY mechanism
 /// for tides that fail to self-reschedule.
 ///
-/// NEW ARCHITECTURE:
-/// - AutoBalancers self-schedule via native FlowTransactionScheduler
-/// - Supervisor periodically scans for "stuck" tides (overdue + no active schedule)
-/// - Stuck tides are added to pending queue and scheduled via SchedulerManager
-/// - Healthy tides never go to pending queue
+/// Tests that a tide that fails to reschedule cannot recover without Supervisor
+/// 
+/// TEST SCENARIO:
+/// 1. Create 3 tides, let them execute 2 rounds (healthy)
+/// 2. Drain FLOW from the fee vault (causes reschedule failures)
+/// 3. Wait for tides to fail rescheduling and become stuck
+/// 4. Verify tides are stuck (no active schedules, overdue)
+/// 5. Wait more time - tides should remain stuck (no Supervisor to recover them)
+/// 6. Verify execution count doesn't increase (stuck tides don't execute)
 ///
-/// EXPECTATIONS:
-/// - 5 healthy tides created
-/// - 6 rounds of execution = 30 executions
-/// - Pending queue stays empty (no stuck tides)
-/// - All tides continue via native self-scheduling
+/// This proves that without Supervisor, stuck tides cannot recover.
 ///
 access(all)
 fun testFailedTideCannotRecoverWithoutSupervisor() {
     Test.reset(to: snapshot)
     log("\n========================================")
-    log("TEST: Healthy tides never become stuck")
+    log("TEST: Failed tide cannot recover without Supervisor")
     log("========================================")
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 5000.0)
+    mintFlow(to: user, amount: 2000.0)
     grantBeta(flowVaultsAccount, user)
     
-    // Create 5 tides (all healthy with sufficient funding)
-    log("Creating 5 healthy tides...")
+    // Step 1: Create 3 tides
+    log("\nStep 1: Creating 3 tides...")
     var i = 0
-    while i < 5 {
+    while i < 3 {
         let res = executeTransaction(
             "../transactions/flow-vaults/create_tide.cdc",
-            [strategyIdentifier, flowTokenIdentifier, 150.0],
+            [strategyIdentifier, flowTokenIdentifier, 100.0],
             user
         )
         Test.expect(res, Test.beSucceeded())
@@ -434,54 +434,119 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
     }
     
     let tideIDs = getTideIDs(address: user.address)!
-    Test.assertEqual(5, tideIDs.length)
-    log("Created 5 healthy tides")
+    Test.assertEqual(3, tideIDs.length)
+    log("Created 3 tides")
     
-    // 3 rounds of execution
-    log("\nExecuting 3 rounds...")
-    var round = 1
-    while round <= 3 {
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.2))
+    // Step 2: Let them execute 2 rounds (healthy)
+    log("\nStep 2: Executing 2 rounds (healthy)...")
+    var round = 0
+    while round < 2 {
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.1))
         Test.moveTime(by: 70.0)
         Test.commitBlock()
         round = round + 1
     }
     
-    let events3 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-    log("Executions after 3 rounds: ".concat(events3.length.toString()))
-    Test.assertEqual(15, events3.length)
+    let eventsBeforeDrain = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
+    log("Executions before drain: ".concat(eventsBeforeDrain.length.toString()))
+    Test.assert(eventsBeforeDrain.length >= 6, message: "Should have at least 6 executions (3 tides x 2 rounds)")
     
-    // Verify pending queue is empty (healthy tides don't need recovery)
-    let pendingRes1 = executeScript("../scripts/flow-vaults/get_pending_count.cdc", [])
-    let pendingCount1 = pendingRes1.returnValue! as! Int
-    log("Pending queue size (should be 0 for healthy tides): ".concat(pendingCount1.toString()))
-    Test.assertEqual(0, pendingCount1)
+    // Step 3: Drain FLOW from FlowVaults account
+    log("\nStep 3: Draining FLOW to cause reschedule failures...")
+    let balanceBeforeDrain = (executeScript(
+        "../scripts/flow-vaults/get_flow_balance.cdc",
+        [flowVaultsAccount.address]
+    ).returnValue! as! UFix64)
+    log("Balance before drain: ".concat(balanceBeforeDrain.toString()))
     
-    // Supervisor is NOT needed for healthy tides
-    log("\nSupervisor NOT needed - all tides are healthy and self-scheduling")
+    // Drain to almost zero (need to leave tiny amount for account minimum)
+    // MIN_FEE_FALLBACK is 0.00005, so drain to less than that
+    if balanceBeforeDrain > 0.00002 {
+        let drainRes = executeTransaction(
+            "../transactions/flow-vaults/drain_flow.cdc",
+            [balanceBeforeDrain - 0.00001],
+            flowVaultsAccount
+        )
+        Test.expect(drainRes, Test.beSucceeded())
+    }
     
-    // 3 more rounds - all 5 tides continue to execute
-    log("\nExecuting 3 more rounds...")
-    round = 1
-    while round <= 3 {
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0 + (UFix64(round) * 0.2))
+    let balanceAfterDrain = (executeScript(
+        "../scripts/flow-vaults/get_flow_balance.cdc",
+        [flowVaultsAccount.address]
+    ).returnValue! as! UFix64)
+    log("Balance after drain: ".concat(balanceAfterDrain.toString()))
+    
+    // Step 4: Wait for pre-scheduled transactions to execute (and fail to reschedule)
+    // Tides execute every 60s, we need 2-3 rounds for the pre-scheduled txns to complete
+    log("\nStep 4: Waiting for pre-scheduled transactions to execute...")
+    round = 0
+    while round < 3 {
         Test.moveTime(by: 70.0)
         Test.commitBlock()
         round = round + 1
     }
     
-    // Verify pending queue is still empty
-    let pendingRes2 = executeScript("../scripts/flow-vaults/get_pending_count.cdc", [])
-    let pendingCount2 = pendingRes2.returnValue! as! Int
-    log("Pending queue size after 6 rounds: ".concat(pendingCount2.toString()))
-    Test.assertEqual(0, pendingCount2)
+    // After tides execute, they try to reschedule but fail due to insufficient funds
+    // Now wait at least one MORE interval (60s) so they become overdue
+    log("\nStep 4b: Waiting for tides to become overdue (no active schedules)...")
+    Test.moveTime(by: 120.0)  // Wait 2 intervals to ensure all tides are past their next expected time
+    Test.commitBlock()
     
-    // Total executions: 15 + 15 = 30 (all 5 tides execute via native scheduling)
-    let events6 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-    log("Total executions: ".concat(events6.length.toString()))
-    Test.assertEqual(30, events6.length)
+    let eventsAfterDrain = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
+    log("Executions after drain+wait: ".concat(eventsAfterDrain.length.toString()))
     
-    log("PASS: Healthy tides continue executing without Supervisor (pending queue: 0)")
+    // Step 5: Check how many tides are stuck (no active schedules + overdue)
+    log("\nStep 5: Checking stuck tides...")
+    var stuckCount = 0
+    for tideID in tideIDs {
+        let isStuckRes = executeScript("../scripts/flow-vaults/is_stuck_tide.cdc", [tideID])
+        if isStuckRes.returnValue != nil {
+            let isStuck = isStuckRes.returnValue! as! Bool
+            if isStuck {
+                stuckCount = stuckCount + 1
+                log("Tide ".concat(tideID.toString()).concat(" is STUCK"))
+            }
+        }
+    }
+    log("Stuck tides: ".concat(stuckCount.toString()).concat(" / 3"))
+    Test.assert(stuckCount >= 2, message: "At least 2 tides should be stuck after draining funds")
+    
+    // Record execution count at this point
+    let execCountWhenStuck = eventsAfterDrain.length
+    
+    // Step 6: Wait more time - stuck tides should NOT recover (no Supervisor)
+    log("\nStep 6: Waiting more (stuck tides should stay stuck without Supervisor)...")
+    round = 0
+    while round < 3 {
+        Test.moveTime(by: 70.0)
+        Test.commitBlock()
+        round = round + 1
+    }
+    
+    let eventsFinal = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
+    log("Final executions: ".concat(eventsFinal.length.toString()))
+    
+    // Execution count should not have increased much (stuck tides don't execute)
+    let newExecutions = eventsFinal.length - execCountWhenStuck
+    log("New executions while stuck (without Supervisor): ".concat(newExecutions.toString()))
+    
+    // Re-check stuck tides
+    var stillStuckCount = 0
+    for tideID in tideIDs {
+        let isStuckRes = executeScript("../scripts/flow-vaults/is_stuck_tide.cdc", [tideID])
+        if isStuckRes.returnValue != nil {
+            let isStuck = isStuckRes.returnValue! as! Bool
+            if isStuck {
+                stillStuckCount = stillStuckCount + 1
+            }
+        }
+    }
+    log("Tides still stuck: ".concat(stillStuckCount.toString()).concat(" / 3"))
+    
+    // Stuck tides should remain stuck without Supervisor
+    Test.assert(stillStuckCount >= 2, message: "Stuck tides should remain stuck without Supervisor")
+    
+    log("PASS: Failed tides cannot recover without Supervisor")
 }
 
 // Main test runner

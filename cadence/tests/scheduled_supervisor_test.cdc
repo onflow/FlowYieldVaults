@@ -140,15 +140,16 @@ fun testAutoRegisterAndSupervisor() {
     log("PASS: Auto-Register + Native Scheduling")
 }
 
-/// Test: Multi-Tide Fan-Out (Native Scheduling)
+/// Test: Multiple tides all self-schedule via native mechanism
 /// 
 /// NEW ARCHITECTURE:
-/// - Each tide's AutoBalancer self-schedules via native mechanism
+/// - Each tide's AutoBalancer self-schedules via native FlowTransactionScheduler
 /// - No Supervisor seeding needed - tides execute independently
+/// - This tests that multiple tides can be created and all self-schedule
 ///
 access(all)
-fun testMultiTideFanOut() {
-    log("\n Testing Multi-Tide Native Scheduling...")
+fun testMultiTideNativeScheduling() {
+    log("\n Testing Multiple Tides Native Scheduling...")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 1000.0)
@@ -187,7 +188,7 @@ fun testMultiTideFanOut() {
     Test.assert(execEvents.length >= 3, message: "Should have at least 3 executions (one per tide)")
     log("Executions: ".concat(execEvents.length.toString()))
     
-    log("PASS: Multi-Tide Native Scheduling")
+    log("PASS: Multiple Tides Native Scheduling")
 }
 
 /// Test: Native recurring rebalancing executes at least 3 times
@@ -296,22 +297,37 @@ fun testMultiTideIndependentExecution() {
 /// - Pending queue is for RECOVERY (failed self-schedules)
 /// - Pagination is used when processing pending queue in batches
 ///
-/// This test creates 150 tides (3x MAX_BATCH_SIZE) to verify:
+/// Tests pagination with a large number of tides, each executing at least 3 times.
+///
+/// Uses dynamic batch size: 3 * MAX_BATCH_SIZE + partial (23 in this case)
+/// MAX_BATCH_SIZE = 50, so total = 3*50 + 23 = 173 tides
+///
+/// This verifies:
 /// 1. All tides are registered correctly
-/// 2. All tides self-schedule and execute via native mechanism
-/// 3. Pagination functions work correctly for pending queue
+/// 2. Pagination functions work correctly across multiple pages
+/// 3. All tides self-schedule and execute at least 3 times each
 ///
 access(all)
 fun testPaginationStress() {
-    log("\n Testing pagination with 150 tides (3x MAX_BATCH_SIZE of 50)...")
+    // Calculate number of tides: 3 * MAX_BATCH_SIZE + partial batch
+    // MAX_BATCH_SIZE is 50 in FlowVaultsSchedulerRegistry
+    let maxBatchSize = 50
+    let fullBatches = 3
+    let partialBatch = 23  // Less than MAX_BATCH_SIZE
+    let numTides = fullBatches * maxBatchSize + partialBatch  // 173 tides
+    let minExecutionsPerTide = 3
+    let minTotalExecutions = numTides * minExecutionsPerTide  // 519 minimum
+    
+    log("\n Testing pagination with ".concat(numTides.toString()).concat(" tides (").concat(fullBatches.toString()).concat("x MAX_BATCH_SIZE + ").concat(partialBatch.toString()).concat(")..."))
+    log("Expecting at least ".concat(minTotalExecutions.toString()).concat(" total executions (").concat(minExecutionsPerTide.toString()).concat(" per tide)"))
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 50000.0)
+    mintFlow(to: user, amount: 100000.0)  // Increased for 3 rounds of 173 tides
     grantBeta(flowVaultsAccount, user)
-    mintFlow(to: flowVaultsAccount, amount: 10000.0)
+    mintFlow(to: flowVaultsAccount, amount: 50000.0)  // Increased for scheduling fees
 
-    // Create 150 tides (3x MAX_BATCH_SIZE of 50)
-    let numTides = 150
+    // Create tides
+    log("Creating ".concat(numTides.toString()).concat(" tides..."))
     var i = 0
     while i < numTides {
         let res = executeTransaction(
@@ -325,6 +341,7 @@ fun testPaginationStress() {
     
     let tideIDs = getTideIDs(address: user.address)!
     log("Created ".concat(tideIDs.length.toString()).concat(" tides"))
+    Test.assertEqual(numTides, tideIDs.length)
     
     // Check registry state - all tides should be registered
     let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_tide_ids.cdc", [])
@@ -333,33 +350,54 @@ fun testPaginationStress() {
     
     Test.assert(
         regIDs.length >= numTides,
-        message: "Expected at least ".concat(numTides.toString()).concat(" registered tides")
+        message: "Expected at least ".concat(numTides.toString()).concat(" registered tides, got ").concat(regIDs.length.toString())
     )
     
     // Verify pagination works on pending queue (should be empty since all self-schedule)
     let pendingCountRes = executeScript("../scripts/flow-vaults/get_pending_count.cdc", [])
     let pendingCount = pendingCountRes.returnValue! as! Int
     log("Pending queue size (should be 0 since all self-schedule): ".concat(pendingCount.toString()))
+    Test.assertEqual(0, pendingCount)
     
-    // Test paginated access to pending queue
-    let page0Res = executeScript("../scripts/flow-vaults/get_pending_tides_paginated.cdc", [0, 50])
-    let page0 = page0Res.returnValue! as! [UInt64]
-    log("Page 0 of pending queue: ".concat(page0.length.toString()).concat(" tides"))
+    // Test paginated access - request each page up to MAX_BATCH_SIZE
+    var page = 0
+    while page <= fullBatches {
+        let pageRes = executeScript("../scripts/flow-vaults/get_pending_tides_paginated.cdc", [page, maxBatchSize])
+        let pageData = pageRes.returnValue! as! [UInt64]
+        log("Page ".concat(page.toString()).concat(" of pending queue: ").concat(pageData.length.toString()).concat(" tides"))
+        page = page + 1
+    }
     
-    // Wait for native executions
-    Test.moveTime(by: 70.0)
-    Test.commitBlock()
+    // Execute 3 rounds - verify each tide executes at least 3 times
+    log("\n--- Executing 3 rounds ---")
+    var round = 1
+    while round <= minExecutionsPerTide {
+        // Change price to trigger rebalancing
+        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.2))
+        Test.moveTime(by: 70.0)
+        Test.commitBlock()
+        
+        let roundEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
+        let expectedMinEvents = numTides * round
+        log("Round ".concat(round.toString()).concat(": ").concat(roundEvents.length.toString()).concat(" total executions (expected >= ").concat(expectedMinEvents.toString()).concat(")"))
+        
+        Test.assert(
+            roundEvents.length >= expectedMinEvents,
+            message: "Round ".concat(round.toString()).concat(": Expected at least ").concat(expectedMinEvents.toString()).concat(" executions, got ").concat(roundEvents.length.toString())
+        )
+        round = round + 1
+    }
     
-    let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-    log("Total executions: ".concat(execEvents.length.toString()))
+    // Final verification
+    let finalEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
+    log("\nFinal total executions: ".concat(finalEvents.length.toString()))
     
-    // All 150 tides should have executed at least once
     Test.assert(
-        execEvents.length >= numTides,
-        message: "Expected at least ".concat(numTides.toString()).concat(" executions")
+        finalEvents.length >= minTotalExecutions,
+        message: "Expected at least ".concat(minTotalExecutions.toString()).concat(" total executions (").concat(numTides.toString()).concat(" tides x ").concat(minExecutionsPerTide.toString()).concat(" rounds), got ").concat(finalEvents.length.toString())
     )
     
-    log("PASS: 150 tides (3x MAX_BATCH_SIZE) all registered and executed")
+    log("PASS: ".concat(numTides.toString()).concat(" tides all registered and executed at least ").concat(minExecutionsPerTide.toString()).concat(" times each"))
 }
 
 /// Tests that Supervisor does not disrupt healthy tides
@@ -864,7 +902,7 @@ access(all)
 fun main() {
     setup()
     testAutoRegisterAndSupervisor()
-    testMultiTideFanOut()
+    testMultiTideNativeScheduling()
     testStuckTideDetectionLogic()
     testInsufficientFundsAndRecovery()
 }
