@@ -289,7 +289,7 @@ fun testMultiTideIndependentExecution() {
     log("PASS: Multiple tides executed independently")
 }
 
-/// Stress test: tests pagination with many tides exceeding MAX_BATCH_SIZE (50)
+/// Stress test: tests pagination with many tides exceeding MAX_BATCH_SIZE (5)
 ///
 /// NEW ARCHITECTURE:
 /// - AutoBalancers self-schedule via native mechanism
@@ -299,7 +299,7 @@ fun testMultiTideIndependentExecution() {
 ///
 /// Tests pagination with a large number of tides, each executing at least 3 times.
 ///
-/// Uses dynamic batch size: 3 * MAX_BATCH_SIZE + partial (23 in this case)
+/// Uses dynamic batch size: 3 * MAX_BATCH_SIZE + partial (3 in this case)
 /// MAX_BATCH_SIZE = 5, so total = 3*5 + 3 = 18 tides
 ///
 /// This verifies:
