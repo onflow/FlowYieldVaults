@@ -203,31 +203,40 @@ The `Execute` entitlement only allows calling `executeTransaction()`, not `sched
 
 **Why not issue a `Schedule` capability specifically to the Supervisor?**
 
-Technically, we COULD issue a `Schedule` capability to the Supervisor. Each AutoBalancer could issue one during registration. However, this approach has a **critical flaw for the recovery use case**:
+Technically, we COULD issue a `Schedule` capability to the Supervisor, and it would work. Both Supervisor and AutoBalancer use the same fund source (the contract account's FlowToken vault), so the "who pays" argument doesn't apply.
 
-**The problem: Who pays for scheduling?**
+However, we chose the `restartRecurring` flag approach for these reasons:
 
-When `scheduleNextRebalance()` is called, it withdraws fees from the AutoBalancer's configured fee source:
+**1. Simpler capability management**
 
+With `Schedule` capability approach:
+- Each AutoBalancer must issue TWO capabilities at registration (`Execute` + `Schedule`)
+- Registry must store TWO capabilities per tide
+- Cleanup must revoke TWO capabilities
+
+With `restartRecurring` approach:
+- Only ONE capability needed (`Execute`)
+- Just pass a flag in the transaction data
+
+**2. Generic mechanism for any external scheduler**
+
+The `restartRecurring` flag can be used by ANY external entity that wants to tell the AutoBalancer to resume self-scheduling, not just the Supervisor. This is more flexible than giving `Schedule` capability to specific entities.
+
+**3. Minimal changes to DeFiActions**
+
+Adding `restartRecurring` requires only a small change to `executeTransaction()` in DeFiActions:
 ```cadence
-// Inside scheduleNextRebalance():
-let fees <- config.txnFunder.withdrawAvailable(maxAmount: feeWithMargin)
+let restartRecurring = dataDict["restartRecurring"] as? Bool ?? false
+if isInternallyManaged || restartRecurring {
+    self.scheduleNextRebalance(...)
+}
 ```
 
-**If the AutoBalancer failed to self-schedule because its fee source was empty** (the most common recovery scenario), then calling `scheduleNextRebalance()` via a `Schedule` capability would **just fail again for the same reason!**
+Issuing `Schedule` capability would require more architectural changes to how AutoBalancers are registered.
 
-**The `restartRecurring` approach solves this:**
+**4. The `Schedule` approach would also work**
 
-1. **Supervisor pays for the seed execution** (using Supervisor's fee source, not AutoBalancer's)
-2. **AutoBalancer executes** the rebalance
-3. **By this point, the fee source should be refunded** (that's why we're doing recovery - funds are back)
-4. **AutoBalancer calls `scheduleNextRebalance()` internally** using its own (now refunded) fee source
-
-This separation of "who pays for what" is critical:
-- **Supervisor**: Pays for the ONE-TIME recovery seed
-- **AutoBalancer**: Pays for all subsequent self-schedules (from its own fee source)
-
-If Supervisor had `Schedule` entitlement and called `scheduleNextRebalance()` directly, it would try to use the AutoBalancer's fee source - which might still be empty at that exact moment, causing the recovery to fail.
+To be clear: giving Supervisor a `Schedule` capability and having it call `scheduleNextRebalance()` directly WOULD work correctly. It's a valid alternative. We simply chose the `restartRecurring` flag as a simpler implementation.
 
 ### Why Can't We Just "Set `isInternallyManaged` to True"?
 
