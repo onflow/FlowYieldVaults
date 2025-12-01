@@ -37,6 +37,7 @@ SHELL ["/bin/bash", "-lc"]
 RUN set -euo pipefail; \
   mkdir -p "$SEED_DIR"; \
   echo "▶ Start emulator (build-time) with --persist to ${SEED_DIR}"; \
+  flow deps install --skip-alias --skip-deployments; \
   flow emulator start --verbose --contracts --persist "$SEED_DIR" > /tmp/emulator-build.log 2>&1 & \
   EM_PID=$!; \
   cleanup() { \
