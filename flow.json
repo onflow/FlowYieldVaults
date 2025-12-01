@@ -845,8 +845,7 @@
 							"type": "String"
 						},
 						{
-							"value": [
-							],
+							"value": [],
 							"type": "Array"
 						},
 						{
@@ -976,7 +975,12 @@
 							"type": "Array"
 						},
 						{
-							"value": [{"value": "3000", "type": "UInt32"}],
+							"value": [
+								{
+									"value": "3000",
+									"type": "UInt32"
+								}
+							],
 							"type": "Array"
 						}
 					]
