@@ -1,4 +1,4 @@
-import "FlowALP"
+import "FlowCreditMarket"
 
 /// Returns the Pool's reserve balance for a given Vault type
 ///
@@ -8,10 +8,10 @@ access(all)
 fun main(vaultIdentifier: String): UFix64 {
     let vaultType = CompositeType(vaultIdentifier) ?? panic("Invalid vaultIdentifier \(vaultIdentifier)")
 
-    let protocolAddress= Type<@FlowALP.Pool>().address!
+    let protocolAddress= Type<@FlowCreditMarket.Pool>().address!
 
-    let pool = getAccount(protocolAddress).capabilities.borrow<&FlowALP.Pool>(FlowALP.PoolPublicPath)
-        ?? panic("Could not find a configured FlowALP Pool in account \(protocolAddress) at path \(FlowALP.PoolPublicPath)")
+    let pool = getAccount(protocolAddress).capabilities.borrow<&FlowCreditMarket.Pool>(FlowCreditMarket.PoolPublicPath)
+        ?? panic("Could not find a configured FlowCreditMarket Pool in account \(protocolAddress) at path \(FlowCreditMarket.PoolPublicPath)")
 
     return pool.reserveBalance(type: vaultType)
 }

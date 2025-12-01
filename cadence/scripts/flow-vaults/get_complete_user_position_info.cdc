@@ -1,6 +1,6 @@
 import "FlowVaults"
 import "FlowVaultsAutoBalancers"
-import "FlowALP"
+import "FlowCreditMarket"
 import "MockOracle"
 import "YieldToken"
 import "MOET"
@@ -181,8 +181,8 @@ fun main(address: Address): CompleteUserSummary {
     let moetPrice = oracle.price(ofToken: Type<@MOET.Vault>()) ?? 1.0
     let flowPrice = oracle.price(ofToken: Type<@FlowToken.Vault>()) ?? 1.0
     
-    // Note: FlowALP positions and FlowVaults tides use different ID systems
-    // We'll calculate health manually since tide IDs don't correspond to FlowALP position IDs
+    // Note: FlowCreditMarket positions and FlowVaults tides use different ID systems
+    // We'll calculate health manually since tide IDs don't correspond to FlowCreditMarket position IDs
     
     var totalCollateralValue = 0.0
     var totalYieldTokenValue = 0.0
@@ -196,7 +196,7 @@ fun main(address: Address): CompleteUserSummary {
             let yieldTokenBalance = autoBalancer?.vaultBalance() ?? 0.0
             
             // Use the AutoBalancer's balance as the primary balance source
-            // This bypasses the FlowALP overflow issue
+            // This bypasses the FlowCreditMarket overflow issue
             let realAvailableBalance = yieldTokenBalance
             
             let yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
@@ -231,13 +231,13 @@ fun main(address: Address): CompleteUserSummary {
             
             let netWorth = estimatedCollateralValue + yieldTokenValue - estimatedDebtValue
             
-            // Get the actual position health from FlowALP.Pool
-            // FlowALP positions use sequential IDs (0, 1, 2, ...) while tide IDs are different
+            // Get the actual position health from FlowCreditMarket.Pool
+            // FlowCreditMarket positions use sequential IDs (0, 1, 2, ...) while tide IDs are different
             var actualHealth: UFix128 = 999.0
             
-            // Try to get the real health from FlowALP.Pool using sequential position IDs
-            let protocolAddress = Type<@FlowALP.Pool>().address!
-            if let pool = getAccount(protocolAddress).capabilities.borrow<&FlowALP.Pool>(FlowALP.PoolPublicPath) {
+            // Try to get the real health from FlowCreditMarket.Pool using sequential position IDs
+            let protocolAddress = Type<@FlowCreditMarket.Pool>().address!
+            if let pool = getAccount(protocolAddress).capabilities.borrow<&FlowCreditMarket.Pool>(FlowCreditMarket.PoolPublicPath) {
                 // Since we can't directly map tide IDs to position IDs, we'll try sequential IDs
                 // This assumes positions are created in order (0, 1, 2, ...)
                 let positionIndex = UInt64(positions.length)  // Use the current position index

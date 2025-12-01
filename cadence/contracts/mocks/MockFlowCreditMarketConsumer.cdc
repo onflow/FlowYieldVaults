@@ -1,20 +1,20 @@
 import "FungibleToken"
 
 import "DeFiActions"
-import "FlowALP"
+import "FlowCreditMarket"
 
 /// THIS CONTRACT IS NOT SAFE FOR PRODUCTION - FOR TEST USE ONLY
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ///
 /// A simple contract enabling the persistent storage of a Position similar to a pattern expected for platforms
-/// building on top of FlowALP's lending protocol
+/// building on top of FlowCreditMarket's lending protocol
 ///
-access(all) contract MockFlowALPConsumer {
+access(all) contract MockFlowCreditMarketConsumer {
 
     /// Canonical path for where the wrapper is to be stored
     access(all) let WrapperStoragePath: StoragePath
 
-    /// Opens a FlowALP Position and returns a PositionWrapper containing that new position
+    /// Opens a FlowCreditMarket Position and returns a PositionWrapper containing that new position
     ///
     access(all)
     fun createPositionWrapper(
@@ -24,7 +24,7 @@ access(all) contract MockFlowALPConsumer {
         pushToDrawDownSink: Bool
     ): @PositionWrapper {
         return <- create PositionWrapper(
-            position: FlowALP.openPosition(
+            position: FlowCreditMarket.openPosition(
                 collateral: <-collateral,
                 issuanceSink: issuanceSink,
                 repaymentSource: repaymentSource,
@@ -33,28 +33,28 @@ access(all) contract MockFlowALPConsumer {
         )
     }
 
-    /// A simple resource encapsulating a FlowALP Position
+    /// A simple resource encapsulating a FlowCreditMarket Position
     access(all) resource PositionWrapper {
 
-        access(self) let position: FlowALP.Position
+        access(self) let position: FlowCreditMarket.Position
 
-        init(position: FlowALP.Position) {
+        init(position: FlowCreditMarket.Position) {
             self.position = position
         }
 
         /// NOT SAFE FOR PRODUCTION
         ///
         /// Returns a reference to the wrapped Position
-        access(all) fun borrowPosition(): &FlowALP.Position {
+        access(all) fun borrowPosition(): &FlowCreditMarket.Position {
             return &self.position
         }
 
-        access(all) fun borrowPositionForWithdraw(): auth(FungibleToken.Withdraw) &FlowALP.Position {
+        access(all) fun borrowPositionForWithdraw(): auth(FungibleToken.Withdraw) &FlowCreditMarket.Position {
             return &self.position
         }
     }
 
     init() {
-        self.WrapperStoragePath = /storage/flowALPPositionWrapper
+        self.WrapperStoragePath = /storage/flowCreditMarketPositionWrapper
     }
 }

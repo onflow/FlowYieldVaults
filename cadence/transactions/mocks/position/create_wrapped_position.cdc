@@ -4,16 +4,16 @@ import "DeFiActions"
 import "FungibleTokenConnectors"
 
 import "MOET"
-import "MockFlowALPConsumer"
+import "MockFlowCreditMarketConsumer"
 
 /// TEST TRANSACTION - DO NOT USE IN PRODUCTION
 ///
 /// Opens a Position with the amount of funds source from the Vault at the provided StoragePath and wraps it in a
-/// MockFlowALPConsumer PositionWrapper
+/// MockFlowCreditMarketConsumer PositionWrapper
 ///
 transaction(amount: UFix64, vaultStoragePath: StoragePath, pushToDrawDownSink: Bool) {
     
-    // the funds that will be used as collateral for a FlowALP loan
+    // the funds that will be used as collateral for a FlowCreditMarket loan
     let collateral: @{FungibleToken.Vault}
     // this DeFiActions Sink that will receive the loaned funds
     let sink: {DeFiActions.Sink}
@@ -63,13 +63,13 @@ transaction(amount: UFix64, vaultStoragePath: StoragePath, pushToDrawDownSink: B
 
     execute {
         // open a position & save in the Wrapper
-        let wrapper <- MockFlowALPConsumer.createPositionWrapper(
+        let wrapper <- MockFlowCreditMarketConsumer.createPositionWrapper(
             collateral: <-self.collateral,
             issuanceSink: self.sink,
             repaymentSource: self.source,
             pushToDrawDownSink: pushToDrawDownSink
         )
         // save the wrapper into the signer's account - reverts on storage collision
-        self.account.storage.save(<-wrapper, to: MockFlowALPConsumer.WrapperStoragePath)
+        self.account.storage.save(<-wrapper, to: MockFlowCreditMarketConsumer.WrapperStoragePath)
     }
 }

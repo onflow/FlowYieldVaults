@@ -4,7 +4,7 @@ import "EVM"
 import "MetadataViews"
 import "FlowToken"
 import "MOET"
-import "FlowALP"
+import "FlowCreditMarket"
 
 access(all) let serviceAccount = Test.serviceAccount()
 
@@ -30,7 +30,7 @@ access(all)
 fun grantProtocolBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
     let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
     let betaTxn = Test.Transaction(
-        code: Test.readFile("../../lib/FlowALP/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc"),
+        code: Test.readFile("../../lib/FlowCreditMarket/cadence/tests/transactions/flow-credit-market/pool-management/03_grant_beta.cdc"),
         authorizers: [admin.address, grantee.address],
         signers: signers,
         arguments: []
@@ -107,7 +107,7 @@ access(all) let bridgedTokenCodeChunks = [
 
 access(all)
 fun getEVMAddressAssociated(withType: String): String? {
-    let res = _executeScript("../../lib/FlowALP/FlowActions/cadence/tests/scripts/get_evm_address_associated_with_type.cdc",
+    let res = _executeScript("../../lib/FlowCreditMarket/FlowActions/cadence/tests/scripts/get_evm_address_associated_with_type.cdc",
             [withType]
         )
     Test.expect(res, Test.beSucceeded())
@@ -145,45 +145,45 @@ access(all) fun deployContracts() {
     // DeFiActions contracts
     var err = Test.deployContract(
         name: "DeFiActionsUtils",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FlowALPMath",
-        path: "../../lib/FlowALP/cadence/lib/FlowALPMath.cdc",
+        name: "FlowCreditMarketMath",
+        path: "../../lib/FlowCreditMarket/cadence/lib/FlowCreditMarketMath.cdc",
         arguments: []
     )
     err = Test.deployContract(
         name: "DeFiActions",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "SwapConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "FungibleTokenConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
-    // FlowALP contracts
+    // FlowCreditMarket contracts
     let initialMoetSupply = 0.0
     err = Test.deployContract(
         name: "MOET",
-        path: "../../lib/FlowALP/cadence/contracts/MOET.cdc",
+        path: "../../lib/FlowCreditMarket/cadence/contracts/MOET.cdc",
         arguments: [initialMoetSupply]
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FlowALP",
-        path: "../../lib/FlowALP/cadence/contracts/FlowALP.cdc",
+        name: "FlowCreditMarket",
+        path: "../../lib/FlowCreditMarket/cadence/contracts/FlowCreditMarket.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -210,8 +210,8 @@ access(all) fun deployContracts() {
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
-        name: "MockFlowALPConsumer",
-        path: "../../lib/FlowALP/cadence/contracts/mocks/MockFlowALPConsumer.cdc",
+        name: "MockFlowCreditMarketConsumer",
+        path: "../../lib/FlowCreditMarket/cadence/contracts/mocks/MockFlowCreditMarketConsumer.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -253,48 +253,48 @@ access(all) fun deployContracts() {
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "EVMAbiHelpers",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "UniswapV3SwapConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
         name: "ERC4626Utils",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
         name: "EVMTokenConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
         name: "ERC4626SinkConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
         name: "ERC4626SwapConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
         name: "ERC4626PriceOracles",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -338,8 +338,8 @@ access(all) fun deployContracts() {
 }
 
 access(all)
-fun setupFlowALP(signer: Test.TestAccount) {
-    let res = _executeTransaction("../transactions/flow-alp/create_and_store_pool.cdc",
+fun setupFlowCreditMarket(signer: Test.TestAccount) {
+    let res = _executeTransaction("../transactions/flow-credit-market/create_and_store_pool.cdc",
         [],
         signer
     )
@@ -383,19 +383,19 @@ fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
 }
 
 access(all)
-fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowALP.PositionDetails {
-    let res = _executeScript("../scripts/flow-alp/position_details.cdc",
+fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowCreditMarket.PositionDetails {
+    let res = _executeScript("../scripts/flow-credit-market/position_details.cdc",
         [pid]
     )
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 
-    return res.returnValue as! FlowALP.PositionDetails
+    return res.returnValue as! FlowCreditMarket.PositionDetails
 }
 
 access(all)
 fun getReserveBalanceForType(vaultIdentifier: String): UFix64 {
     let res = _executeScript(
-        "../../lib/FlowALP/cadence/scripts/flow-alp/get_reserve_balance_for_type.cdc",
+        "../../lib/FlowCreditMarket/cadence/scripts/flow-credit-market/get_reserve_balance_for_type.cdc",
         [vaultIdentifier]
     )
     Test.expect(res, Test.beSucceeded())
@@ -411,7 +411,7 @@ fun positionAvailableBalance(
     beFailed: Bool
 ): UFix64 {
     let res = _executeScript(
-        "../scripts/flow-alp/get_available_balance.cdc",
+        "../scripts/flow-credit-market/get_available_balance.cdc",
         [pid, type, pullFromSource]
     )
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
@@ -424,7 +424,7 @@ fun positionAvailableBalance(
 access(all)
 fun createAndStorePool(signer: Test.TestAccount, defaultTokenIdentifier: String, beFailed: Bool) {
     let createRes = _executeTransaction(
-        "../transactions/flow-alp/pool-factory/create_and_store_pool.cdc",
+        "../transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc",
         [defaultTokenIdentifier],
         signer
     )
@@ -441,7 +441,7 @@ fun addSupportedTokenSimpleInterestCurve(
     depositCapacityCap: UFix64
 ) {
     let additionRes = _executeTransaction(
-        "../transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc",
+        "../transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc",
         [ tokenTypeIdentifier, collateralFactor, borrowFactor, depositRate, depositCapacityCap ],
         signer
     )
@@ -451,7 +451,7 @@ fun addSupportedTokenSimpleInterestCurve(
 access(all)
 fun rebalancePosition(signer: Test.TestAccount, pid: UInt64, force: Bool, beFailed: Bool) {
     let rebalanceRes = _executeTransaction(
-        "../transactions/flow-alp/pool-management/rebalance_position.cdc",
+        "../transactions/flow-credit-market/pool-management/rebalance_position.cdc",
         [ pid, force ],
         signer
     )
@@ -532,7 +532,7 @@ fun rebalanceTide(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: B
 
 // access(all)
 // fun rebalancePosition(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
-//     let res = _executeTransaction("../../lib/FlowALP/cadence/transactions/flow-alp/pool-management/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
+//     let res = _executeTransaction("../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-management/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
 //     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 // }
 
@@ -540,14 +540,14 @@ fun rebalanceTide(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: B
 
 access(all)
 fun getLastPositionOpenedEvent(_ evts: [AnyStruct]): AnyStruct { // can't return event types directly, they must be cast by caller
-    Test.assert(evts.length > 0, message: "Expected at least 1 FlowALP.Opened event but found none")
-    return evts[evts.length - 1] as! FlowALP.Opened
+    Test.assert(evts.length > 0, message: "Expected at least 1 FlowCreditMarket.Opened event but found none")
+    return evts[evts.length - 1] as! FlowCreditMarket.Opened
 }
 
 access(all)
 fun getLastPositionDepositedEvent(_ evts: [AnyStruct]): AnyStruct { // can't return event types directly, they must be cast by caller
-    Test.assert(evts.length > 0, message: "Expected at least 1 FlowALP.Deposited event but found none")
-    return evts[evts.length - 1] as! FlowALP.Deposited
+    Test.assert(evts.length > 0, message: "Expected at least 1 FlowCreditMarket.Deposited event but found none")
+    return evts[evts.length - 1] as! FlowCreditMarket.Deposited
 }
 
 /* --- Mock helpers --- */
@@ -627,7 +627,7 @@ access(all) fun setupBetaAccess(): Void {
 
 // Returns the balance for a given Vault 'Type' if present, otherwise nil.
 access(all) fun findBalance(
-    details: FlowALP.PositionDetails,
+    details: FlowCreditMarket.PositionDetails,
     vaultType: Type
 ): UFix64? {
     for b in details.balances {
@@ -706,7 +706,7 @@ fun transferFlow(signer: Test.TestAccount, recipient: Address, amount: UFix64) {
 access(all)
 fun createCOA(_ signer: Test.TestAccount, fundingAmount: UFix64) {
     let createCOAResult = _executeTransaction(
-        "../../lib/FlowALP/FlowActions/cadence/transactions/evm/create_coa.cdc",
+        "../../lib/FlowCreditMarket/FlowActions/cadence/transactions/evm/create_coa.cdc",
         [fundingAmount],
         signer
     )

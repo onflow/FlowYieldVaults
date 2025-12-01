@@ -1,7 +1,7 @@
 {
 	"contracts": {
 		"BandOracleConnectors": {
-			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/band-oracle/BandOracleConnectors.cdc",
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/band-oracle/BandOracleConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "e36ef556b8b5d955",
@@ -10,7 +10,7 @@
 			}
 		},
 		"DeFiActions": {
-			"source": "./lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6d888f175c158410",
@@ -19,7 +19,7 @@
 			}
 		},
 		"DeFiActionsUtils": {
-			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6d888f175c158410",
@@ -28,7 +28,7 @@
 			}
 		},
 		"DummyConnectors": {
-			"source": "./lib/FlowALP/cadence/contracts/mocks/DummyConnectors.cdc",
+			"source": "./lib/FlowCreditMarket/cadence/contracts/mocks/DummyConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
@@ -36,7 +36,7 @@
 			}
 		},
 		"ERC4626PriceOracles": {
-			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "04f5ae6bef48c1fc",
@@ -45,7 +45,7 @@
 			}
 		},
 		"ERC4626SinkConnectors": {
-			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "04f5ae6bef48c1fc",
@@ -54,7 +54,7 @@
 			}
 		},
 		"ERC4626SwapConnectors": {
-			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "04f5ae6bef48c1fc",
@@ -63,7 +63,7 @@
 			}
 		},
 		"ERC4626Utils": {
-			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "04f5ae6bef48c1fc",
@@ -72,7 +72,7 @@
 			}
 		},
 		"EVMAbiHelpers": {
-			"source": "./lib/FlowALP/FlowActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "a7825d405ac89518",
@@ -81,7 +81,7 @@
 			}
 		},
 		"EVMTokenConnectors": {
-			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "1a771b21fcceadc2",
@@ -89,8 +89,8 @@
 				"testnet": "b88ba0e976146cd1"
 			}
 		},
-		"FlowALP": {
-			"source": "./lib/FlowALP/cadence/contracts/FlowALP.cdc",
+		"FlowCreditMarket": {
+			"source": "./lib/FlowCreditMarket/cadence/contracts/FlowCreditMarket.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
@@ -98,8 +98,8 @@
 				"testnet": "426f0458ced60037"
 			}
 		},
-		"FlowALPMath": {
-			"source": "./lib/FlowALP/cadence/lib/FlowALPMath.cdc",
+		"FlowCreditMarketMath": {
+			"source": "./lib/FlowCreditMarket/cadence/lib/FlowCreditMarketMath.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
@@ -160,7 +160,7 @@
 			}
 		},
 		"FungibleTokenConnectors": {
-			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "0c237e1265caa7a3",
@@ -169,7 +169,7 @@
 			}
 		},
 		"MOET": {
-			"source": "./lib/FlowALP/cadence/contracts/MOET.cdc",
+			"source": "./lib/FlowCreditMarket/cadence/contracts/MOET.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
@@ -177,8 +177,8 @@
 				"testnet": "426f0458ced60037"
 			}
 		},
-		"MockFlowALPConsumer": {
-			"source": "./lib/FlowALP/cadence/contracts/mocks/MockFlowALPConsumer.cdc",
+		"MockFlowCreditMarketConsumer": {
+			"source": "./lib/FlowCreditMarket/cadence/contracts/mocks/MockFlowCreditMarketConsumer.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000008",
@@ -210,7 +210,7 @@
 			}
 		},
 		"SwapConnectors": {
-			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "e1a479f0cb911df9",
@@ -219,7 +219,7 @@
 			}
 		},
 		"UniswapV3SwapConnectors": {
-			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "a7825d405ac89518",
@@ -719,7 +719,7 @@
 				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
-		"mainnet-flow-alp-deployer": {
+		"mainnet-flow-credit-market-deployer": {
 			"address": "6b00ff876c299c61",
 			"key": {
 				"type": "google-kms",
@@ -764,7 +764,7 @@
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
-		"testnet-flow-alp-deployer": {
+		"testnet-flow-credit-market-deployer": {
 			"address": "426f0458ced60037",
 			"key": {
 				"type": "google-kms",
@@ -787,11 +787,11 @@
 				},
 				"DeFiActionsUtils",
 				"DeFiActions",
-				"FlowALPMath",
+				"FlowCreditMarketMath",
 				"FungibleTokenConnectors",
 				"SwapConnectors",
 				"DummyConnectors",
-				"FlowALP",
+				"FlowCreditMarket",
 				{
 					"name": "YieldToken",
 					"args": [

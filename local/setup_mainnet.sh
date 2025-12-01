@@ -12,31 +12,31 @@ flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.1654
 echo "bridge YieldToken to Cadence"
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc 0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c --network mainnet --signer mainnet-admin 
 echo "bridge MOET to EVM"
-flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.6b00ff876c299c61.MOET.Vault" --gas-limit 9999 --network mainnet --signer mainnet-flow-alp-deployer
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.6b00ff876c299c61.MOET.Vault" --gas-limit 9999 --network mainnet --signer mainnet-flow-credit-market-deployer
 
-# configure FlowALP
+# configure FlowCreditMarket
 #
 # create Pool with MOET as default token
-flow transactions send ./cadence/transactions/flow-alp/pool-factory/create_and_store_pool.cdc 'A.6b00ff876c299c61.MOET.Vault' --network mainnet --signer mainnet-flow-alp-deployer
+flow transactions send ./cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc 'A.6b00ff876c299c61.MOET.Vault' --network mainnet --signer mainnet-flow-credit-market-deployer
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
-flow transactions send ./cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
     'A.1654653399040a61.FlowToken.Vault' \
     0.8 \
     1.0 \
     1_000_000.0 \
     1_000_000.0 \
     --network mainnet \
-    --signer mainnet-flow-alp-deployer
+    --signer mainnet-flow-credit-market-deployer
 
 # TODO 
 # swap
 # echo "swap Flow to MOET"
-# flow transactions send ./cadence/transactions/flow-alp/create_position.cdc 100000.0 --network mainnet --signer mainnet-flow-alp-deployer
+# flow transactions send ./cadence/transactions/flow-credit-market/create_position.cdc 100000.0 --network mainnet --signer mainnet-flow-credit-market-deployer
 
 # TODO 
 # flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/tokens/bridge_tokens_to_any_evm_address.cdc \
 #	"A.6b00ff876c299c61.MOET.Vault" 100000.0 "0xOWNER" \
-#	--network mainnet --signer mainnet-flow-alp-deployer
+#	--network mainnet --signer mainnet-flow-credit-market-deployer
 # create pool
 
 # add liquidity to pool
@@ -51,7 +51,7 @@ flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connec
 
 # TODO 
 # setup vault and set connector
-flow transactions send ./lib/FlowALP/FlowActions/cadence/transactions/fungible-tokens/setup_generic_vault.cdc 'A.1e4aa0b87d10b141.EVMVMBridgedToken_c52e820d2d6207d18667a97e2c6ac22eb26e803c.Vault' --network mainnet --signer mainnet-admin
+flow transactions send ./lib/FlowCreditMarket/FlowActions/cadence/transactions/fungible-tokens/setup_generic_vault.cdc 'A.1e4aa0b87d10b141.EVMVMBridgedToken_c52e820d2d6207d18667a97e2c6ac22eb26e803c.Vault' --network mainnet --signer mainnet-admin
 # flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault --network mainnet --signer mainnet-admin
 #
 # add TracerStrategy as supported Strategy with the ability to initialize when new Tides are created
@@ -64,9 +64,9 @@ flow transactions send ./cadence/transactions/flow-vaults/admin/add_strategy_com
 
 # grant PoolBeta cap
 echo "Grant Protocol Beta access to FlowVaults"
-flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc \
-  --authorizer mainnet-flow-alp-deployer,mainnet-admin \
-  --proposer mainnet-flow-alp-deployer \
+flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-credit-market/pool-management/03_grant_beta.cdc \
+  --authorizer mainnet-flow-credit-market-deployer,mainnet-admin \
+  --proposer mainnet-flow-credit-market-deployer \
   --payer mainnet-admin \
   --network mainnet
 
