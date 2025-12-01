@@ -48,7 +48,7 @@ flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connec
 flow transactions send ./lib/FlowALP/FlowActions/cadence/transactions/fungible-tokens/setup_generic_vault.cdc 'A.dfc20aee650fcbdf.EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95.Vault' --network testnet --signer testnet-admin
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault --network testnet --signer testnet-admin
 
-# add TracerStrategy as supported Strategy with the ability to initialize when new Tides are created
+# add TracerStrategy as supported Strategy with the ability to initialize when new YieldVaults are created
 flow transactions send ./cadence/transactions/flow-vaults/admin/add_strategy_composer.cdc \
     'A.d2580caf2ef07c2f.FlowVaultsStrategies.TracerStrategy' \
     'A.d2580caf2ef07c2f.FlowVaultsStrategies.TracerStrategyComposer' \
@@ -82,7 +82,7 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/tra
 #   --proposer <TEST_USER> \
 #   --payer testnet-admin \
 #   --network testnet 
-# flow transactions send ./cadence/transactions/flow-vaults/create_tide.cdc \
+# flow transactions send ./cadence/transactions/flow-vaults/create_yield_vault.cdc \
 #   A.d2580caf2ef07c2f.FlowVaultsStrategies.mUSDCStrategy \
 #   A.7e60df042a9c0868.FlowToken.Vault \
 #   100.0 \

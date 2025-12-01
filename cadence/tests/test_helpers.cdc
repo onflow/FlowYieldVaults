@@ -513,14 +513,14 @@ fun closeYieldVault(signer: Test.TestAccount, id: UInt64, beFailed: Bool) {
 }
 
 access(all)
-fun depositToTide(signer: Test.TestAccount, id: UInt64, amount: UFix64, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/flow-vaults/deposit_to_tide.cdc", [id, amount], signer)
+fun depositToYieldVault(signer: Test.TestAccount, id: UInt64, amount: UFix64, beFailed: Bool) {
+    let res = _executeTransaction("../transactions/flow-vaults/deposit_to_yield_vault.cdc", [id, amount], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
 access(all)
-fun withdrawFromTide(signer: Test.TestAccount, id: UInt64, amount: UFix64, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/flow-vaults/withdraw_from_tide.cdc", [id, amount], signer)
+fun withdrawFromYieldVault(signer: Test.TestAccount, id: UInt64, amount: UFix64, beFailed: Bool) {
+    let res = _executeTransaction("../transactions/flow-vaults/withdraw_from_yield_vault.cdc", [id, amount], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 

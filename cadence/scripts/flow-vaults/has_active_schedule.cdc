@@ -1,12 +1,12 @@
 import "FlowVaultsAutoBalancers"
 
-/// Returns true if the tide/AutoBalancer has at least one active (Scheduled) transaction.
-/// Used to verify that healthy tides maintain their scheduling chain.
+/// Returns true if the yield vault/AutoBalancer has at least one active (Scheduled) transaction.
+/// Used to verify that healthy yield vaults maintain their scheduling chain.
 ///
-/// @param tideID: The tide/AutoBalancer ID
+/// @param yieldVaultID: The YieldVault/AutoBalancer ID
 /// @return Bool: true if there's at least one Scheduled transaction, false otherwise
 ///
-access(all) fun main(tideID: UInt64): Bool {
-    return FlowVaultsAutoBalancers.hasActiveSchedule(id: tideID)
+access(all) fun main(yieldVaultID: UInt64): Bool {
+    return FlowVaultsAutoBalancers.hasActiveSchedule(id: yieldVaultID)
 }
 

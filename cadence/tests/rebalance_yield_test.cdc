@@ -110,7 +110,7 @@ fun test_RebalanceYieldVaultScenario2() {
 
     var yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-    log("[TEST] Initial tide balance: \(yieldVaultBalance ?? 0.0)")
+    log("[TEST] Initial yield vault balance: \(yieldVaultBalance ?? 0.0)")
 
     rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
     rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)

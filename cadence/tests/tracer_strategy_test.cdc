@@ -196,7 +196,7 @@ fun test_RebalanceYieldVaultSucceeds() {
     let positionDetails = getPositionDetails(pid: positionID, beFailed: false)
     let positionFlowBalance = findBalance(details: positionDetails, vaultType: Type<@FlowToken.Vault>()) ?? 0.0
 
-    // The math here is a little off, expected amount is around 130, but the final value of the tide is 127
+    // The math here is a little off, expected amount is around 130, but the final value of the yield vault is 127
     let initialLoan = fundingAmount * (flowCollateralFactor / targetHealthFactor)
     let expectedBalance = initialLoan * yieldTokenPriceIncrease + fundingAmount
     log("Position Flow balance after rebalance: \(positionFlowBalance)")
@@ -318,10 +318,10 @@ fun test_RebalanceYieldVaultSucceedsAfterCollateralPriceIncrease() {
     log("Yield token balance before rebalance: \(yieldTokensBefore)")
 
     // Rebalance the YieldVault to adjust the Yield tokens based on the new collateral price
-    // Force both tide and position to rebalance
+    // Force both yield vault and position to rebalance
     rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 
-    // Position ID is hardcoded to 1 here since this is the first tide created, 
+    // Position ID is hardcoded to 1 here since this is the first yield vault created, 
     // if there is a better way to get the position ID, please let me know
     rebalancePosition(signer: protocolAccount, pid: positionID, force: true, beFailed: false)
 

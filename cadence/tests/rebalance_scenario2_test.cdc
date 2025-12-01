@@ -62,15 +62,15 @@ access(all) fun performDiagnosticPrecisionTrace(
     
     // Values at different layers
     let positionValue = flowAmount * 1.0  // Flow price = 1.0 in Scenario 2
-    let tideValue = getYieldVaultBalance(address: userAddress, yieldVaultID: yieldVaultID) ?? 0.0
-    
+    let yieldVaultValue = getYieldVaultBalance(address: userAddress, yieldVaultID: yieldVaultID) ?? 0.0
+
     // Calculate drifts with proper sign handling
-    let tideDriftAbs = tideValue > expectedValue ? tideValue - expectedValue : expectedValue - tideValue
-    let tideDriftSign = tideValue > expectedValue ? "+" : "-"
+    let yieldVaultDriftAbs = yieldVaultValue > expectedValue ? yieldVaultValue - expectedValue : expectedValue - yieldVaultValue
+    let yieldVaultDriftSign = yieldVaultValue > expectedValue ? "+" : "-"
     let positionDriftAbs = positionValue > expectedValue ? positionValue - expectedValue : expectedValue - positionValue
     let positionDriftSign = positionValue > expectedValue ? "+" : "-"
-    let tideVsPositionAbs = tideValue > positionValue ? tideValue - positionValue : positionValue - tideValue
-    let tideVsPositionSign = tideValue > positionValue ? "+" : "-"
+    let yieldVaultVsPositionAbs = yieldVaultValue > positionValue ? yieldVaultValue - positionValue : positionValue - yieldVaultValue
+    let yieldVaultVsPositionSign = yieldVaultValue > positionValue ? "+" : "-"
     
     // Enhanced logging with intermediate values
     log("\n+----------------------------------------------------------------+")
@@ -79,10 +79,10 @@ access(all) fun performDiagnosticPrecisionTrace(
     log("| Layer          | Value          | Drift         | % Drift      |")
     log("|----------------|----------------|---------------|--------------|")
     log("| Position       | \(formatValue(positionValue)) | \(positionDriftSign)\(formatValue(positionDriftAbs)) | \(positionDriftSign)\(formatPercent(positionDriftAbs / expectedValue))% |")
-    log("| YieldVault Balance   | \(formatValue(tideValue)) | \(tideDriftSign)\(formatValue(tideDriftAbs)) | \(tideDriftSign)\(formatPercent(tideDriftAbs / expectedValue))% |")
+    log("| YieldVault Balance   | \(formatValue(yieldVaultValue)) | \(yieldVaultDriftSign)\(formatValue(yieldVaultDriftAbs)) | \(yieldVaultDriftSign)\(formatPercent(yieldVaultDriftAbs / expectedValue))% |")
     log("| Expected       | \(formatValue(expectedValue)) | ------------- | ------------ |")
     log("|----------------|----------------|---------------|--------------|")
-    log("| YieldVault vs Position: \(tideVsPositionSign)\(formatValue(tideVsPositionAbs))                                   |")
+    log("| YieldVault vs Position: \(yieldVaultVsPositionSign)\(formatValue(yieldVaultVsPositionAbs))                                   |")
     log("+----------------------------------------------------------------+")
     
     // Log intermediate calculation values
@@ -99,11 +99,11 @@ access(all) fun performDiagnosticPrecisionTrace(
     // Log precision loss summary without complex calculations
     log("- Precision Loss Summary:")
     log("  * Position vs Expected: \(positionDriftSign)\(formatValue(positionDriftAbs)) (\(positionDriftSign)\(formatPercent(positionDriftAbs / expectedValue))%)")
-    log("  * YieldVault vs Expected: \(tideDriftSign)\(formatValue(tideDriftAbs)) (\(tideDriftSign)\(formatPercent(tideDriftAbs / expectedValue))%)")
-    log("  * Additional YieldVault Loss: \(tideVsPositionSign)\(formatValue(tideVsPositionAbs))")
-    
+    log("  * YieldVault vs Expected: \(yieldVaultDriftSign)\(formatValue(yieldVaultDriftAbs)) (\(yieldVaultDriftSign)\(formatPercent(yieldVaultDriftAbs / expectedValue))%)")
+    log("  * Additional YieldVault Loss: \(yieldVaultVsPositionSign)\(formatValue(yieldVaultVsPositionAbs))")
+
     // Warning if significant drift
-    if tideDriftAbs > 0.00000100 {
+    if yieldVaultDriftAbs > 0.00000100 {
         log("\n⚠️  WARNING: Significant precision drift detected!")
     }
 }
@@ -202,7 +202,7 @@ fun test_RebalanceYieldVaultScenario2() {
 
 	var yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-	log("[TEST] Initial tide balance: \(yieldVaultBalance ?? 0.0)")
+	log("[TEST] Initial yield vault balance: \(yieldVaultBalance ?? 0.0)")
 
 	rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
@@ -243,16 +243,16 @@ fun test_RebalanceYieldVaultScenario2() {
 		let expectedBalance = expectedFlowBalance[index]
 		
 		// Calculate differences
-		let tideDiff = actualYieldVaultBalance > expectedBalance ? actualYieldVaultBalance - expectedBalance : expectedBalance - actualYieldVaultBalance
-		let tideSign = actualYieldVaultBalance > expectedBalance ? "+" : "-"
-		let tidePercentDiff = (tideDiff / expectedBalance) * 100.0
-		
+		let yieldVaultDiff = actualYieldVaultBalance > expectedBalance ? actualYieldVaultBalance - expectedBalance : expectedBalance - actualYieldVaultBalance
+		let yieldVaultSign = actualYieldVaultBalance > expectedBalance ? "+" : "-"
+		let yieldVaultPercentDiff = (yieldVaultDiff / expectedBalance) * 100.0
+
 		let positionDiff = flowCollateralValue > expectedBalance ? flowCollateralValue - expectedBalance : expectedBalance - flowCollateralValue
 		let positionSign = flowCollateralValue > expectedBalance ? "+" : "-"
 		let positionPercentDiff = (positionDiff / expectedBalance) * 100.0
-		
-		let tideVsPositionDiff = actualYieldVaultBalance > flowCollateralValue ? actualYieldVaultBalance - flowCollateralValue : flowCollateralValue - actualYieldVaultBalance
-		let tideVsPositionSign = actualYieldVaultBalance > flowCollateralValue ? "+" : "-"
+
+		let yieldVaultVsPositionDiff = actualYieldVaultBalance > flowCollateralValue ? actualYieldVaultBalance - flowCollateralValue : flowCollateralValue - actualYieldVaultBalance
+		let yieldVaultVsPositionSign = actualYieldVaultBalance > flowCollateralValue ? "+" : "-"
 		
 		log("\n=== PRECISION COMPARISON for Yield Price \(yieldTokenPrice) ===")
 		log("Expected Value:         \(expectedBalance)")
@@ -260,9 +260,9 @@ fun test_RebalanceYieldVaultScenario2() {
 		log("Flow Position Value:    \(flowCollateralValue)")
 		log("Flow Position Amount:   \(flowCollateralAmount) tokens")
 		log("")
-		log("YieldVault vs Expected:       \(tideSign)\(tideDiff) (\(tideSign)\(tidePercentDiff)%)")
+		log("YieldVault vs Expected:       \(yieldVaultSign)\(yieldVaultDiff) (\(yieldVaultSign)\(yieldVaultPercentDiff)%)")
 		log("Position vs Expected:   \(positionSign)\(positionDiff) (\(positionSign)\(positionPercentDiff)%)")
-		log("YieldVault vs Position:       \(tideVsPositionSign)\(tideVsPositionDiff)")
+		log("YieldVault vs Position:       \(yieldVaultVsPositionSign)\(yieldVaultVsPositionDiff)")
 		log("===============================================\n")
 
 		// Temporarily commented to see all precision differences

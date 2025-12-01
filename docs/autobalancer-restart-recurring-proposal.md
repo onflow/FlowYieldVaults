@@ -25,7 +25,7 @@ Instead of modifying DeFiActions to add a `restartRecurring` flag, we use the ex
 
 1. **AutoBalancer Registration**
 
-   When a Tide is created, the AutoBalancer issues TWO capabilities:
+   When a YieldVault is created, the AutoBalancer issues TWO capabilities:
    - `Execute` capability - for FlowTransactionScheduler to execute transactions
    - `Schedule` capability - for Supervisor to directly call `scheduleNextRebalance()`
 
@@ -37,22 +37,22 @@ Instead of modifying DeFiActions to add a `restartRecurring` flag, we use the ex
    let scheduleCap = self.account.capabilities.storage
        .issue<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>(storagePath)
 
-   FlowVaultsSchedulerRegistry.register(tideID: uniqueID.id, handlerCap: handlerCap, scheduleCap: scheduleCap)
+   FlowVaultsSchedulerRegistry.register(yieldVaultID: uniqueID.id, handlerCap: handlerCap, scheduleCap: scheduleCap)
    ```
 
 2. **Supervisor Recovery**
 
-   When the Supervisor detects a stuck tide, it uses the `Schedule` capability to directly call `scheduleNextRebalance()`:
+   When the Supervisor detects a stuck yield vault, it uses the `Schedule` capability to directly call `scheduleNextRebalance()`:
 
    ```cadence
    // In Supervisor.executeTransaction():
-   let scheduleCap = FlowVaultsSchedulerRegistry.getScheduleCap(tideID: tideID)
+   let scheduleCap = FlowVaultsSchedulerRegistry.getScheduleCap(yieldVaultID: yieldVaultID)
    let autoBalancerRef = scheduleCap!.borrow()!
    let scheduleError = autoBalancerRef.scheduleNextRebalance(whileExecuting: nil)
    
    if scheduleError == nil {
-       FlowVaultsSchedulerRegistry.dequeuePending(tideID: tideID)
-       emit TideRecovered(tideID: tideID)
+       FlowVaultsSchedulerRegistry.dequeuePending(yieldVaultID: yieldVaultID)
+       emit YieldVaultRecovered(yieldVaultID: yieldVaultID)
    }
    ```
 
@@ -98,14 +98,14 @@ Instead of modifying DeFiActions to add a `restartRecurring` flag, we use the ex
 │ 1. AutoBalancer executes successfully                          │
 │ 2. scheduleNextRebalance() fails (e.g., insufficient fees)     │
 │ 3. FailedRecurringSchedule event emitted                       │
-│ 4. Tide becomes "stuck" - no active schedule, overdue          │
+│ 4. YieldVault becomes "stuck" - no active schedule, overdue          │
 └────────────────────────────────────────────────────────────────┘
 
 ┌────────────────────────────────────────────────────────────────┐
 │                    Supervisor Recovery                          │
 ├────────────────────────────────────────────────────────────────┤
-│ 1. Supervisor scans registered tides                           │
-│ 2. Detects stuck tides via isStuckTide() check:               │
+│ 1. Supervisor scans registered yield vaults                           │
+│ 2. Detects stuck yield vaults via isStuckYieldVault() check:               │
 │    - Has recurringConfig                                       │
 │    - No active schedule                                        │
 │    - Next expected execution time is in the past              │
@@ -120,9 +120,9 @@ Instead of modifying DeFiActions to add a `restartRecurring` flag, we use the ex
 
 The Supervisor emits these events during recovery:
 
-- `StuckTideDetected(tideID: UInt64)` - When a stuck tide is identified
-- `TideRecovered(tideID: UInt64)` - When `scheduleNextRebalance()` succeeds
-- `TideRecoveryFailed(tideID: UInt64, error: String)` - When recovery fails
+- `StuckYieldVaultDetected(yieldVaultID: UInt64)` - When a stuck yield vault is identified
+- `YieldVaultRecovered(yieldVaultID: UInt64)` - When `scheduleNextRebalance()` succeeds
+- `YieldVaultRecoveryFailed(yieldVaultID: UInt64, error: String)` - When recovery fails
 
 ## Fee Source Considerations
 
@@ -132,10 +132,10 @@ Both Supervisor and AutoBalancer use the same fund source (the FlowVaultsStrateg
 2. If the account is refunded, BOTH can schedule again
 
 The recovery flow assumes:
-1. Something caused tides to become stuck (e.g., fund drain)
+1. Something caused yield vaults to become stuck (e.g., fund drain)
 2. The issue is resolved (e.g., fund refund)
 3. Supervisor is manually restarted or scheduled
-4. Supervisor detects stuck tides and recovers them
+4. Supervisor detects stuck yield vaults and recovers them
 
 ## Related Changes
 
@@ -147,12 +147,12 @@ Added storage for Schedule capabilities:
 access(self) var scheduleCaps: {UInt64: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>}
 
 access(account) fun register(
-    tideID: UInt64,
+    yieldVaultID: UInt64,
     handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>,
     scheduleCap: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>
 )
 
-access(account) view fun getScheduleCap(tideID: UInt64): Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>?
+access(account) view fun getScheduleCap(yieldVaultID: UInt64): Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>?
 ```
 
 ### FlowVaultsAutoBalancers
@@ -169,7 +169,7 @@ let scheduleCap = self.account.capabilities.storage
 Simplified Supervisor that directly calls `scheduleNextRebalance()`:
 
 ```cadence
-let scheduleCap = FlowVaultsSchedulerRegistry.getScheduleCap(tideID: tideID)
+let scheduleCap = FlowVaultsSchedulerRegistry.getScheduleCap(yieldVaultID: yieldVaultID)
 let autoBalancerRef = scheduleCap!.borrow()!
 let scheduleError = autoBalancerRef.scheduleNextRebalance(whileExecuting: nil)
 ```
@@ -187,7 +187,7 @@ let feeWithMargin = estimate.flowFee! * 1.05  // 5% buffer for estimation varian
 
 The following tests verify the recovery mechanism:
 
-1. **testInsufficientFundsAndRecovery** - Creates 5 tides, drains funds to cause failures, refunds, and verifies Supervisor recovers all tides
-2. **testFailedTideCannotRecoverWithoutSupervisor** - Verifies stuck tides stay stuck without Supervisor intervention
-3. **testStuckTideDetectionLogic** - Verifies `isStuckTide()` correctly identifies stuck vs healthy tides
-4. **testSupervisorDoesNotDisruptHealthyTides** - Verifies Supervisor doesn't interfere with healthy self-scheduling tides
+1. **testInsufficientFundsAndRecovery** - Creates 5 yield vaults, drains funds to cause failures, refunds, and verifies Supervisor recovers all yield vaults
+2. **testFailedYieldVaultCannotRecoverWithoutSupervisor** - Verifies stuck yield vaults stay stuck without Supervisor intervention
+3. **testStuckYieldVaultDetectionLogic** - Verifies `isStuckYieldVault()` correctly identifies stuck vs healthy yield vaults
+4. **testSupervisorDoesNotDisruptHealthyYieldVaults** - Verifies Supervisor doesn't interfere with healthy self-scheduling yield vaults

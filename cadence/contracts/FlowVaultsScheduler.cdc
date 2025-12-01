@@ -7,7 +7,7 @@ import "FlowTransactionScheduler"
 import "DeFiActions"
 // Registry storage (separate contract)
 import "FlowVaultsSchedulerRegistry"
-// AutoBalancer management (for detecting stuck tides)
+// AutoBalancer management (for detecting stuck yield vaults)
 import "FlowVaultsAutoBalancers"
 
 /// FlowVaultsScheduler
@@ -21,7 +21,7 @@ import "FlowVaultsAutoBalancers"
 /// - The Supervisor is a recovery mechanism for AutoBalancers that fail to self-schedule
 ///
 /// Key Features:
-/// - Supervisor detects stuck tides (failed to self-schedule) and recovers them
+/// - Supervisor detects stuck yield vaults (failed to self-schedule) and recovers them
 /// - Uses Schedule capability to directly call AutoBalancer.scheduleNextRebalance()
 /// - Query and estimation functions for scripts
 ///
@@ -54,20 +54,20 @@ access(all) contract FlowVaultsScheduler {
 
     /* --- EVENTS --- */
 
-    /// Emitted when the Supervisor successfully recovers a stuck tide
-    access(all) event TideRecovered(
-        tideID: UInt64
+    /// Emitted when the Supervisor successfully recovers a stuck yield vault
+    access(all) event YieldVaultRecovered(
+        yieldVaultID: UInt64
     )
 
-    /// Emitted when Supervisor fails to recover a tide
-    access(all) event TideRecoveryFailed(
-        tideID: UInt64,
+    /// Emitted when Supervisor fails to recover a yield vault
+    access(all) event YieldVaultRecoveryFailed(
+        yieldVaultID: UInt64,
         error: String
     )
 
-    /// Emitted when Supervisor detects a stuck tide via state-based scanning
-    access(all) event StuckTideDetected(
-        tideID: UInt64
+    /// Emitted when Supervisor detects a stuck yield vault via state-based scanning
+    access(all) event StuckYieldVaultDetected(
+        yieldVaultID: UInt64
     )
 
     /// Emitted when Supervisor self-reschedules
@@ -81,8 +81,8 @@ access(all) contract FlowVaultsScheduler {
     /// Supervisor - The recovery mechanism for stuck AutoBalancers
     ///
     /// The Supervisor:
-    /// - Detects stuck tides (AutoBalancers that failed to self-schedule)
-    /// - Recovers stuck tides by directly calling scheduleNextRebalance() via Schedule capability
+    /// - Detects stuck yield vaults (AutoBalancers that failed to self-schedule)
+    /// - Recovers stuck yield vaults by directly calling scheduleNextRebalance() via Schedule capability
     /// - Can self-reschedule for perpetual operation
     ///
     /// Primary scheduling is done by AutoBalancers themselves via their native recurringConfig.
@@ -100,10 +100,10 @@ access(all) contract FlowVaultsScheduler {
 
         /* --- TRANSACTION HANDLER --- */
 
-        /// Detects and recovers stuck tides by directly calling their scheduleNextRebalance().
+        /// Detects and recovers stuck yield vaults by directly calling their scheduleNextRebalance().
         ///
         /// Detection methods:
-        /// 1. State-based: Scans for registered tides with no active schedule that are overdue
+        /// 1. State-based: Scans for registered yield vaults with no active schedule that are overdue
         ///
         /// Recovery method:
         /// - Uses Schedule capability to call AutoBalancer.scheduleNextRebalance() directly
@@ -115,7 +115,7 @@ access(all) contract FlowVaultsScheduler {
         ///   "priority": UInt8 (0=High,1=Medium,2=Low) - for Supervisor self-rescheduling
         ///   "executionEffort": UInt64 - for Supervisor self-rescheduling
         ///   "recurringInterval": UFix64 (for Supervisor self-rescheduling)
-        ///   "scanForStuck": Bool (default true - scan all registered tides for stuck ones)
+        ///   "scanForStuck": Bool (default true - scan all registered yield vaults for stuck ones)
         /// }
         access(FlowTransactionScheduler.Execute) fun executeTransaction(id: UInt64, data: AnyStruct?) {
             let cfg = data as? {String: AnyStruct} ?? {}
@@ -127,59 +127,59 @@ access(all) contract FlowVaultsScheduler {
             let priority = FlowTransactionScheduler.Priority(rawValue: priorityRaw)
                 ?? FlowTransactionScheduler.Priority.Medium
 
-            // STEP 1: State-based detection - scan for stuck tides
+            // STEP 1: State-based detection - scan for stuck yield vaults
             if scanForStuck {
-                let registeredTides = FlowVaultsSchedulerRegistry.getRegisteredTideIDs()
+                let registeredYieldVaults = FlowVaultsSchedulerRegistry.getRegisteredYieldVaultIDs()
                 var scanned = 0
-                for tideID in registeredTides {
+                for yieldVaultID in registeredYieldVaults {
                     if scanned >= FlowVaultsSchedulerRegistry.MAX_BATCH_SIZE {
                         break
                     }
                     scanned = scanned + 1
                     
                     // Skip if already in pending queue
-                    if FlowVaultsSchedulerRegistry.getPendingTideIDs().contains(tideID) {
+                    if FlowVaultsSchedulerRegistry.getPendingYieldVaultIDs().contains(yieldVaultID) {
                         continue
                     }
-                    
-                    // Check if tide is stuck (has recurring config, no active schedule, overdue)
-                    if FlowVaultsAutoBalancers.isStuckTide(id: tideID) {
-                        FlowVaultsSchedulerRegistry.enqueuePending(tideID: tideID)
-                        emit StuckTideDetected(tideID: tideID)
+
+                    // Check if yield vault is stuck (has recurring config, no active schedule, overdue)
+                    if FlowVaultsAutoBalancers.isStuckYieldVault(id: yieldVaultID) {
+                        FlowVaultsSchedulerRegistry.enqueuePending(yieldVaultID: yieldVaultID)
+                        emit StuckYieldVaultDetected(yieldVaultID: yieldVaultID)
                     }
                 }
             }
 
-            // STEP 2: Process pending tides - recover them via Schedule capability
-            let pendingTides = FlowVaultsSchedulerRegistry.getPendingTideIDsPaginated(page: 0, size: nil)
+            // STEP 2: Process pending yield vaults - recover them via Schedule capability
+            let pendingYieldVaults = FlowVaultsSchedulerRegistry.getPendingYieldVaultIDsPaginated(page: 0, size: nil)
             
-            for tideID in pendingTides {
-                // Get Schedule capability for this tide
-                let scheduleCap = FlowVaultsSchedulerRegistry.getScheduleCap(tideID: tideID)
+            for yieldVaultID in pendingYieldVaults {
+                // Get Schedule capability for this yield vault
+                let scheduleCap = FlowVaultsSchedulerRegistry.getScheduleCap(yieldVaultID: yieldVaultID)
                 if scheduleCap == nil || !scheduleCap!.check() {
-                    emit TideRecoveryFailed(tideID: tideID, error: "Invalid Schedule capability")
+                    emit YieldVaultRecoveryFailed(yieldVaultID: yieldVaultID, error: "Invalid Schedule capability")
                     continue
                 }
 
                 // Borrow the AutoBalancer and call scheduleNextRebalance() directly
                 let autoBalancerRef = scheduleCap!.borrow()!
                 let scheduleError = autoBalancerRef.scheduleNextRebalance(whileExecuting: nil)
-                
+
                 if scheduleError != nil {
-                    emit TideRecoveryFailed(tideID: tideID, error: scheduleError!)
+                    emit YieldVaultRecoveryFailed(yieldVaultID: yieldVaultID, error: scheduleError!)
                     // Leave in pending queue for retry on next Supervisor run
                     continue
                 }
 
                 // Successfully recovered - dequeue from pending
-                FlowVaultsSchedulerRegistry.dequeuePending(tideID: tideID)
-                emit TideRecovered(tideID: tideID)
+                FlowVaultsSchedulerRegistry.dequeuePending(yieldVaultID: yieldVaultID)
+                emit YieldVaultRecovered(yieldVaultID: yieldVaultID)
             }
 
             // STEP 3: Self-reschedule for perpetual operation if configured
-            // Only reschedule if there are still registered tides to monitor
+            // Only reschedule if there are still registered yield vaults to monitor
             if let interval = recurringInterval {
-                if FlowVaultsSchedulerRegistry.getRegisteredTideIDs().length > 0 {
+                if FlowVaultsSchedulerRegistry.getRegisteredYieldVaultIDs().length > 0 {
                     let nextTimestamp = getCurrentBlock().timestamp + interval
                     let supervisorCap = FlowVaultsSchedulerRegistry.getSupervisorCap()
                     
@@ -286,17 +286,17 @@ access(all) contract FlowVaultsScheduler {
         return self.account.storage.borrow<&Supervisor>(from: self.SupervisorStoragePath)
     }
 
-    /// Manually enqueues a registered tide to the pending queue for recovery.
-    /// This allows manual triggering of recovery for a specific tide.
+    /// Manually enqueues a registered yield vault to the pending queue for recovery.
+    /// This allows manual triggering of recovery for a specific yield vault.
     ///
-    /// @param tideID: The ID of the registered tide to enqueue
+    /// @param yieldVaultID: The ID of the registered yield vault to enqueue
     ///
-    access(account) fun enqueuePendingTide(tideID: UInt64) {
+    access(account) fun enqueuePendingYieldVault(yieldVaultID: UInt64) {
         assert(
-            FlowVaultsSchedulerRegistry.isRegistered(tideID: tideID),
-            message: "enqueuePendingTide: Tide #".concat(tideID.toString()).concat(" is not registered")
+            FlowVaultsSchedulerRegistry.isRegistered(yieldVaultID: yieldVaultID),
+            message: "enqueuePendingYieldVault: YieldVault #".concat(yieldVaultID.toString()).concat(" is not registered")
         )
-        FlowVaultsSchedulerRegistry.enqueuePending(tideID: tideID)
+        FlowVaultsSchedulerRegistry.enqueuePending(yieldVaultID: yieldVaultID)
     }
 
     init() {

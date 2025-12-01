@@ -319,51 +319,34 @@ access(all) contract FlowVaults {
         access(all) view fun getNumberOfYieldVaults(): Int {
             return self.yieldVaults.length
         }
-<<<<<<< HEAD
-        /// Creates a new Tide executing the specified Strategy with the provided funds.
-        /// Returns the newly created Tide ID.
-        access(all) fun createTide(
+        /// Creates a new YieldVault executing the specified Strategy with the provided funds.
+        /// Returns the newly created YieldVault ID.
+        access(all) fun createYieldVault(
             betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge,
             strategyType: Type,
             withVault: @{FungibleToken.Vault}
         ): UInt64 {
-=======
-        /// Creates a new YieldVault executing the specified Strategy with the provided funds
-        access(all) fun createYieldVault(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, strategyType: Type, withVault: @{FungibleToken.Vault}) {
->>>>>>> efc9417 (rename tide to yieldVault)
             pre {
                 FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
             }
             let balance = withVault.balance
             let type = withVault.getType()
-<<<<<<< HEAD
-            let tide <-create Tide(strategyType: strategyType, withVault: <-withVault)
-            let newID = tide.uniqueID.id
-
-            emit CreatedTide(
-                id: newID,
-                uuid: tide.uuid,
-=======
             let yieldVault <-create YieldVault(strategyType: strategyType, withVault: <-withVault)
+            let newID = yieldVault.uniqueID.id
 
             emit CreatedYieldVault(
-                id: yieldVault.uniqueID.id,
+                id: newID,
                 uuid: yieldVault.uuid,
->>>>>>> efc9417 (rename tide to yieldVault)
                 strategyType: strategyType.identifier,
                 tokenType: type.identifier,
                 initialAmount: balance,
                 creator: self.owner?.address
             )
 
-<<<<<<< HEAD
-            self.addTide(betaRef: betaRef, <-tide)
+            self.addYieldVault(betaRef: betaRef, <-yieldVault)
 
             return newID
-=======
-            self.addYieldVault(betaRef: betaRef, <-yieldVault)
->>>>>>> efc9417 (rename tide to yieldVault)
         }
         /// Adds an open YieldVault to this YieldVaultManager resource. This effectively transfers ownership of the newly added
         /// YieldVault to the owner of this YieldVaultManager
@@ -390,7 +373,7 @@ access(all) contract FlowVaults {
             let yieldVault = (&self.yieldVaults[id] as &YieldVault?)!
             yieldVault.deposit(from: <-from)
         }
-        access(self) fun _withdrawYieldVault(id: UInt64): @YieldVault {
+        access(self) fun _withdrawYieldVault(id: UInt64): @ YieldVault {
             pre {
                 self.yieldVaults[id] != nil:
                 "No YieldVault with ID \(id) found"
@@ -398,7 +381,7 @@ access(all) contract FlowVaults {
             return <- self.yieldVaults.remove(key: id)!
         }
         /// Withdraws the specified YieldVault, reverting if none exists with the provided ID
-        access(FungibleToken.Withdraw) fun withdrawYieldVault(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, id: UInt64): @YieldVault {
+        access(FungibleToken.Withdraw) fun withdrawYieldVault(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge, id: UInt64): @ YieldVault {
             pre {
                 self.yieldVaults[id] != nil:
                 "No YieldVault with ID \(id) found"
@@ -406,11 +389,7 @@ access(all) contract FlowVaults {
                 FlowVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
             }
-<<<<<<< HEAD
-            return <- self._withdrawTide(id: id)
-=======
-            return <- self._withdrawYieldVault(id: id)!
->>>>>>> efc9417 (rename tide to yieldVault)
+            return <- self._withdrawYieldVault(id: id)
         }
         /// Withdraws funds from the specified YieldVault in the given amount. The resulting Vault Type will be whatever
         /// denomination is supported by the YieldVault, so callers should examine the YieldVault to know the resulting Vault to
@@ -430,16 +409,10 @@ access(all) contract FlowVaults {
                 self.yieldVaults[id] != nil:
                 "No YieldVault with ID \(id) found"
             }
-<<<<<<< HEAD
 
-            let tide <- self._withdrawTide(id: id)
-            let res <- tide.withdraw(amount: tide.getTideBalance())
-            Burner.burn(<-tide)
-=======
             let yieldVault <- self._withdrawYieldVault(id: id)
             let res <- yieldVault.withdraw(amount: yieldVault.getYieldVaultBalance())
             Burner.burn(<-yieldVault)
->>>>>>> efc9417 (rename tide to yieldVault)
             return <-res
         }
     }
@@ -464,7 +437,7 @@ access(all) contract FlowVaults {
         return <- self._borrowFactory().createStrategy(type, uniqueID: uniqueID, withFunds: <-withFunds)
     }
     /// Creates a YieldVaultManager used to create and manage YieldVaults
-    access(all) fun createYieldVaultManager(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge): @YieldVaultManager {
+    access(all) fun createYieldVaultManager(betaRef: auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge): @ YieldVaultManager {
         return <-create YieldVaultManager()
     }
     /// Creates a StrategyFactory resource

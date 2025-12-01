@@ -79,46 +79,46 @@ fun setup() {
     snapshot = getCurrentBlockHeight()
 }
 
-/// Test: New tide has active native schedule immediately after creation
+/// Test: New yield vault has active native schedule immediately after creation
 ///
-/// Verifies that when a tide is created, it automatically starts self-scheduling
+/// Verifies that when a yield vault is created, it automatically starts self-scheduling
 /// via the native AutoBalancer mechanism without any Supervisor intervention.
 ///
 access(all)
-fun testTideHasNativeScheduleAfterCreation() {
-    log("\n[TEST] Tide has native schedule immediately after creation...")
+fun testYieldVaultHasNativeScheduleAfterCreation() {
+    log("\n[TEST] YieldVault has native schedule immediately after creation...")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 200.0)
     grantBeta(flowVaultsAccount, user)
     
-    // Create a Tide
+    // Create a YieldVault
     let createRes = executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
+        "../transactions/flow-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user
     )
     Test.expect(createRes, Test.beSucceeded())
     
-    let tideIDs = getTideIDs(address: user.address)!
-    let tideID = tideIDs[0]
-    log("Tide created: ".concat(tideID.toString()))
+    let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
+    let yieldVaultID = yieldVaultIDs[0]
+    log("YieldVault created: ".concat(yieldVaultID.toString()))
     
-    // Verify tide is registered and has active schedule (native self-scheduling)
+    // Verify yield vault is registered and has active schedule (native self-scheduling)
     let hasActive = (executeScript(
         "../scripts/flow-vaults/has_active_schedule.cdc",
-        [tideID]
+        [yieldVaultID]
     ).returnValue! as! Bool)
-    Test.assert(hasActive, message: "Tide should have active native schedule immediately after creation")
+    Test.assert(hasActive, message: "YieldVault should have active native schedule immediately after creation")
     
-    log("PASS: Tide has native self-scheduling immediately after creation")
+    log("PASS: YieldVault has native self-scheduling immediately after creation")
 }
 
 /// NOTE: Cancel recovery transaction was removed.
 /// Recovery schedule cancellation is not a primary use case.
-/// If a tide needs to stop, close it via close_tide.cdc.
+/// If a yield vault needs to stop, close it via close_yield_vault.cdc.
 
-/// Test: Capability reuse - registering same tide twice should not issue new caps
+/// Test: Capability reuse - registering same yield vault twice should not issue new caps
 access(all)
 fun testCapabilityReuse() {
     log("\n[TEST] Capability reuse on re-registration...")
@@ -128,23 +128,23 @@ fun testCapabilityReuse() {
     grantBeta(flowVaultsAccount, user)
     
     let createRes = executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
+        "../transactions/flow-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user
     )
     Test.expect(createRes, Test.beSucceeded())
     
-    let tideIDs = getTideIDs(address: user.address)!
-    let tideID = tideIDs[0]
+    let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
+    let yieldVaultID = yieldVaultIDs[0]
     
     // Check registration
-    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_tide_ids.cdc", [])
+    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_yield_vault_ids.cdc", [])
     Test.expect(regIDsRes, Test.beSucceeded())
     let regIDs = regIDsRes.returnValue! as! [UInt64]
-    Test.assert(regIDs.contains(tideID), message: "Tide should be registered")
+    Test.assert(regIDs.contains(yieldVaultID), message: "YieldVault should be registered")
     
     // Get wrapper cap (first time)
-    let capRes1 = executeScript("../scripts/flow-vaults/has_wrapper_cap_for_tide.cdc", [tideID])
+    let capRes1 = executeScript("../scripts/flow-vaults/has_wrapper_cap_for_yield_vault.cdc", [yieldVaultID])
     Test.expect(capRes1, Test.beSucceeded())
     let hasCap1 = capRes1.returnValue! as! Bool
     Test.assert(hasCap1, message: "Should have wrapper cap after creation")
@@ -152,62 +152,62 @@ fun testCapabilityReuse() {
     log("Capability correctly exists and would be reused on re-registration")
 }
 
-/// Test: Close tide properly unregisters from registry
+/// Test: Close yield vault properly unregisters from registry
 ///
-/// When a tide is closed:
+/// When a yield vault is closed:
 /// 1. It should be unregistered from the registry
 /// 2. Any active schedules should be cleaned up
 ///
 access(all)
-fun testCloseTideUnregisters() {
-    log("\n[TEST] Close tide properly unregisters from registry...")
+fun testCloseYieldVaultUnregisters() {
+    log("\n[TEST] Close yield vault properly unregisters from registry...")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 400.0)
     grantBeta(flowVaultsAccount, user)
     
-    // Create a tide
+    // Create a yield vault
     let createRes = executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
+        "../transactions/flow-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user
     )
     Test.expect(createRes, Test.beSucceeded())
     
-    let tideIDs = getTideIDs(address: user.address)!
-    let tideID = tideIDs[0]
-    log("Tide created: ".concat(tideID.toString()))
+    let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
+    let yieldVaultID = yieldVaultIDs[0]
+    log("YieldVault created: ".concat(yieldVaultID.toString()))
     
     // Verify registered
     let regIDsBefore = (executeScript(
-        "../scripts/flow-vaults/get_registered_tide_ids.cdc",
+        "../scripts/flow-vaults/get_registered_yield_vault_ids.cdc",
         []
     ).returnValue! as! [UInt64])
-    Test.assert(regIDsBefore.contains(tideID), message: "Tide should be registered")
-    log("Tide is registered")
+    Test.assert(regIDsBefore.contains(yieldVaultID), message: "YieldVault should be registered")
+    log("YieldVault is registered")
     
-    // Close the tide
+    // Close the yield vault
     let closeRes = executeTransaction(
-        "../transactions/flow-vaults/close_tide.cdc",
-        [tideID],
+        "../transactions/flow-vaults/close_yield_vault.cdc",
+        [yieldVaultID],
         user
     )
     Test.expect(closeRes, Test.beSucceeded())
-    log("Tide closed successfully")
+    log("YieldVault closed successfully")
     
     // Verify unregistered
     let regIDsAfter = (executeScript(
-        "../scripts/flow-vaults/get_registered_tide_ids.cdc",
+        "../scripts/flow-vaults/get_registered_yield_vault_ids.cdc",
         []
     ).returnValue! as! [UInt64])
-    Test.assert(!regIDsAfter.contains(tideID), message: "Tide should be unregistered after close")
-    log("Tide correctly unregistered after close")
+    Test.assert(!regIDsAfter.contains(yieldVaultID), message: "YieldVault should be unregistered after close")
+    log("YieldVault correctly unregistered after close")
 }
 
-/// Test: Multiple users with multiple tides all registered correctly
+/// Test: Multiple users with multiple yield vaults all registered correctly
 access(all)
-fun testMultipleUsersMultipleTides() {
-    log("\n[TEST] Multiple users with multiple tides...")
+fun testMultipleUsersMultipleYieldVaults() {
+    log("\n[TEST] Multiple users with multiple yield vaults...")
     
     let user1 = Test.createAccount()
     let user2 = Test.createAccount()
@@ -216,69 +216,69 @@ fun testMultipleUsersMultipleTides() {
     grantBeta(flowVaultsAccount, user1)
     grantBeta(flowVaultsAccount, user2)
     
-    // User1 creates 2 tides
+    // User1 creates 2 yield vaults
     executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
+        "../transactions/flow-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user1
     )
     executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
+        "../transactions/flow-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user1
     )
     
-    // User2 creates 1 tide
+    // User2 creates 1 yield vault
     executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
+        "../transactions/flow-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user2
     )
     
-    let user1Tides = getTideIDs(address: user1.address)!
-    let user2Tides = getTideIDs(address: user2.address)!
+    let user1YieldVaults = getYieldVaultIDs(address: user1.address)!
+    let user2YieldVaults = getYieldVaultIDs(address: user2.address)!
     
-    Test.assert(user1Tides.length >= 2, message: "User1 should have at least 2 tides")
-    Test.assert(user2Tides.length >= 1, message: "User2 should have at least 1 tide")
+    Test.assert(user1YieldVaults.length >= 2, message: "User1 should have at least 2 yield vaults")
+    Test.assert(user2YieldVaults.length >= 1, message: "User2 should have at least 1 yield vault")
     
     // Verify all are registered
-    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_tide_ids.cdc", [])
+    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_yield_vault_ids.cdc", [])
     let regIDs = regIDsRes.returnValue! as! [UInt64]
     
-    for tid in user1Tides {
-        Test.assert(regIDs.contains(tid), message: "User1 tide should be registered")
+    for tid in user1YieldVaults {
+        Test.assert(regIDs.contains(tid), message: "User1 yield vault should be registered")
     }
-    for tid in user2Tides {
-        Test.assert(regIDs.contains(tid), message: "User2 tide should be registered")
+    for tid in user2YieldVaults {
+        Test.assert(regIDs.contains(tid), message: "User2 yield vault should be registered")
     }
     
-    log("All tides from multiple users correctly registered: ".concat(regIDs.length.toString()).concat(" total"))
+    log("All yield vaults from multiple users correctly registered: ".concat(regIDs.length.toString()).concat(" total"))
 }
 
-/// Test: Healthy tides continue executing without Supervisor intervention
+/// Test: Healthy yield vaults continue executing without Supervisor intervention
 access(all)
-fun testHealthyTidesSelfSchedule() {
+fun testHealthyYieldVaultsSelfSchedule() {
     Test.reset(to: snapshot)
-    log("\n[TEST] Healthy tides continue executing without Supervisor...")
+    log("\n[TEST] Healthy yield vaults continue executing without Supervisor...")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 500.0)
     grantBeta(flowVaultsAccount, user)
     
-    // Create a tide
+    // Create a yield vault
     let createRes = executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
+        "../transactions/flow-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user
     )
     Test.expect(createRes, Test.beSucceeded())
     
-    let tideIDs = getTideIDs(address: user.address)!
-    let tideID = tideIDs[0]
-    log("Tide created: ".concat(tideID.toString()))
+    let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
+    let yieldVaultID = yieldVaultIDs[0]
+    log("YieldVault created: ".concat(yieldVaultID.toString()))
     
     // Track initial balance
-    var prevBalance = getAutoBalancerBalance(id: tideID) ?? 0.0
+    var prevBalance = getAutoBalancerBalance(id: yieldVaultID) ?? 0.0
     log("Initial balance: ".concat(prevBalance.toString()))
     
     // Execute 3 rounds with balance verification using LARGE price changes
@@ -290,7 +290,7 @@ fun testHealthyTidesSelfSchedule() {
         Test.moveTime(by: 70.0)
         Test.commitBlock()
         
-        let newBalance = getAutoBalancerBalance(id: tideID) ?? 0.0
+        let newBalance = getAutoBalancerBalance(id: yieldVaultID) ?? 0.0
         log("Round ".concat(round.toString()).concat(": Balance ").concat(prevBalance.toString()).concat(" -> ").concat(newBalance.toString()))
         Test.assert(newBalance != prevBalance, message: "Balance should change after round ".concat(round.toString()))
         prevBalance = newBalance
@@ -302,12 +302,12 @@ fun testHealthyTidesSelfSchedule() {
     log("Executions after 3 rounds: ".concat(execEvents.length.toString()))
     Test.assert(execEvents.length >= 3, message: "Should have at least 3 executions")
     
-    // Verify not stuck (healthy tide should not be stuck)
+    // Verify not stuck (healthy yield vault should not be stuck)
     let isStuck = (executeScript(
-        "../scripts/flow-vaults/is_stuck_tide.cdc",
-        [tideID]
+        "../scripts/flow-vaults/is_stuck_yield_vault.cdc",
+        [yieldVaultID]
     ).returnValue! as! Bool)
-    Test.assert(!isStuck, message: "Healthy tide should not be stuck")
+    Test.assert(!isStuck, message: "Healthy yield vault should not be stuck")
     
-    log("PASS: Healthy tide continues self-scheduling without Supervisor with verified balance changes")
+    log("PASS: Healthy yield vault continues self-scheduling without Supervisor with verified balance changes")
 }
