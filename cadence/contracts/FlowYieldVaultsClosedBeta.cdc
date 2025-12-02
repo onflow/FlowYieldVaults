@@ -62,7 +62,7 @@ access(all) contract FlowYieldVaultsClosedBeta {
         self.issuedCapIDs[addr] = AccessInfo(cap.id, false)
 
         if let ctrl = self.account.capabilities.storage.getController(byCapabilityID: cap.id) {
-            ctrl.setTag("flowvaults-beta")
+            ctrl.setTag("flowyieldvaults-beta")
         }
 
         emit BetaGranted(addr: addr, capID: cap.id)

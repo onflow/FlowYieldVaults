@@ -621,8 +621,8 @@ access(all) fun setupBetaAccess(): Void {
     let protocolBeta = grantProtocolBeta(protocolAccount, protocolAccount)
     Test.expect(protocolBeta, Test.beSucceeded())
 
-    let flowVaultsBeta = grantProtocolBeta(protocolAccount, flowYieldVaultsAccount)
-    Test.expect(flowVaultsBeta, Test.beSucceeded())
+    let flowYieldVaultsBeta = grantProtocolBeta(protocolAccount, flowYieldVaultsAccount)
+    Test.expect(flowYieldVaultsBeta, Test.beSucceeded())
 }
 
 // Returns the balance for a given Vault 'Type' if present, otherwise nil.

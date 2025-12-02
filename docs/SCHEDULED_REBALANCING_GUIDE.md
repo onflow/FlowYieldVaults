@@ -122,14 +122,14 @@ flow transactions send cadence/transactions/flow-yield-vaults/schedule_rebalanci
 
 ```bash
 flow scripts execute cadence/scripts/flow-yield-vaults/get_all_scheduled_rebalancing.cdc \
-  --arg Address:FLOWVAULTS_ADDRESS
+  --arg Address:FLOWYIELDVAULTS_ADDRESS
 ```
 
 ### View Specific YieldVault Schedule
 
 ```bash
 flow scripts execute cadence/scripts/flow-yield-vaults/get_scheduled_rebalancing.cdc \
-  --arg Address:FLOWVAULTS_ADDRESS \
+  --arg Address:FLOWYIELDVAULTS_ADDRESS \
   --arg UInt64:YOUR_YIELD_VAULT_ID
 ```
 

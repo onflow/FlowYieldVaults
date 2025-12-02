@@ -19,7 +19,7 @@ transaction(provider: Address) {
         assert(claimedCap.check(), message: "Invalid AdminHandle claimed from \(provider)")
         acct.storage.save(
             claimedCap,
-            to: /storage/flowVaultsAdminHandleCap
+            to: /storage/flowYieldVaultsAdminHandleCap
         )
     }
 

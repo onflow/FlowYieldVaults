@@ -8,7 +8,7 @@ transaction(grantee: Address) {
         admin: auth(CopyValue, PublishInboxCapability) &Account
     ) {
         let adminHandleCap = admin.storage.copy<Capability<auth(FlowYieldVaultsClosedBeta.Admin) &FlowYieldVaultsClosedBeta.AdminHandle>>(
-            from: /storage/flowVaultsAdminHandleCap
+            from: /storage/flowYieldVaultsAdminHandleCap
         ) ?? panic("Missing AdminHandleCap")
 
         let handle = adminHandleCap.borrow()
