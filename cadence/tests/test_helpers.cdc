@@ -339,7 +339,7 @@ access(all) fun deployContracts() {
 
 access(all)
 fun setupFlowCreditMarket(signer: Test.TestAccount) {
-    let res = _executeTransaction("../transactions/flow-credit-market/create_and_store_pool.cdc",
+    let res = _executeTransaction("../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/create_and_store_pool.cdc",
         [],
         signer
     )
@@ -384,7 +384,7 @@ fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
 
 access(all)
 fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowCreditMarket.PositionDetails {
-    let res = _executeScript("../scripts/flow-credit-market/position_details.cdc",
+    let res = _executeScript("../../lib/FlowCreditMarket/cadence/scripts/flow-credit-market/position_details.cdc",
         [pid]
     )
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
@@ -411,7 +411,7 @@ fun positionAvailableBalance(
     beFailed: Bool
 ): UFix64 {
     let res = _executeScript(
-        "../scripts/flow-credit-market/get_available_balance.cdc",
+        "../../lib/FlowCreditMarket/cadence/scripts/flow-credit-market/get_available_balance.cdc",
         [pid, type, pullFromSource]
     )
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
@@ -424,7 +424,7 @@ fun positionAvailableBalance(
 access(all)
 fun createAndStorePool(signer: Test.TestAccount, defaultTokenIdentifier: String, beFailed: Bool) {
     let createRes = _executeTransaction(
-        "../transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc",
+        "../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc",
         [defaultTokenIdentifier],
         signer
     )
@@ -441,7 +441,7 @@ fun addSupportedTokenSimpleInterestCurve(
     depositCapacityCap: UFix64
 ) {
     let additionRes = _executeTransaction(
-        "../transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc",
+        "../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc",
         [ tokenTypeIdentifier, collateralFactor, borrowFactor, depositRate, depositCapacityCap ],
         signer
     )
@@ -451,7 +451,7 @@ fun addSupportedTokenSimpleInterestCurve(
 access(all)
 fun rebalancePosition(signer: Test.TestAccount, pid: UInt64, force: Bool, beFailed: Bool) {
     let rebalanceRes = _executeTransaction(
-        "../transactions/flow-credit-market/pool-management/rebalance_position.cdc",
+        "../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-management/rebalance_position.cdc",
         [ pid, force ],
         signer
     )
@@ -460,7 +460,7 @@ fun rebalancePosition(signer: Test.TestAccount, pid: UInt64, force: Bool, beFail
 
 access(all)
 fun setupMoetVault(_ signer: Test.TestAccount, beFailed: Bool) {
-    let setupRes = _executeTransaction("../transactions/moet/setup_vault.cdc", [], signer)
+    let setupRes = _executeTransaction("../../lib/FlowCreditMarket/cadence/transactions/moet/setup_vault.cdc", [], signer)
     Test.expect(setupRes, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
@@ -472,7 +472,7 @@ fun setupYieldVault(_ signer: Test.TestAccount, beFailed: Bool) {
 
 access(all)
 fun mintMoet(signer: Test.TestAccount, to: Address, amount: UFix64, beFailed: Bool) {
-    let mintRes = _executeTransaction("../transactions/moet/mint_moet.cdc", [to, amount], signer)
+    let mintRes = _executeTransaction("../../lib/FlowCreditMarket/cadence/transactions/moet/mint_moet.cdc", [to, amount], signer)
     Test.expect(mintRes, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
