@@ -1,14 +1,14 @@
 # Scheduled Rebalancing Guide
 
-This guide explains how scheduled rebalancing works for FlowVaults Tides.
+This guide explains how scheduled rebalancing works for FlowVaults YieldVaults.
 
 ## Overview
 
-FlowVaults integrates with Flow's native transaction scheduler ([FLIP 330](https://github.com/onflow/flips/pull/330)) to enable automatic rebalancing of Tides without manual intervention.
+FlowVaults integrates with Flow's native transaction scheduler ([FLIP 330](https://github.com/onflow/flips/pull/330)) to enable automatic rebalancing of YieldVaults without manual intervention.
 
 ### Key Features
 
-- **Automatic Setup**: Tides are automatically scheduled for rebalancing upon creation
+- **Automatic Setup**: YieldVaults are automatically scheduled for rebalancing upon creation
 - **Self-Scheduling**: AutoBalancers chain their own subsequent executions
 - **Recovery System**: Supervisor handles failed schedules via bounded pending queue
 - **Cancellation**: Cancel scheduled transactions and receive partial refunds
@@ -20,13 +20,13 @@ FlowVaults integrates with Flow's native transaction scheduler ([FLIP 330](https
 ### How It Works
 
 ```
-Tide Creation (Atomic)
+YieldVault Creation (Atomic)
          |
          v
 FlowVaultsAutoBalancers._initNewAutoBalancer()
          |
          v
-FlowVaultsScheduler.registerTide()
+FlowVaultsScheduler.registerYieldVault()
     |-- Issues capability to AutoBalancer
     |-- Registers in FlowVaultsSchedulerRegistry
     +-- Schedules first execution
@@ -43,7 +43,7 @@ AutoBalancer.executeTransaction()
 ### Components
 
 1. **FlowVaultsScheduler**: Manages registration and scheduling
-2. **FlowVaultsSchedulerRegistry**: Stores registry of tides and pending queue
+2. **FlowVaultsSchedulerRegistry**: Stores registry of yield vaults and pending queue
 3. **AutoBalancer**: Implements `TransactionHandler`, executes rebalancing
 4. **Supervisor**: Recovery handler for failed schedules (paginated)
 
@@ -55,17 +55,17 @@ AutoBalancers implement `FlowTransactionScheduler.TransactionHandler` directly. 
 
 ## Automatic Scheduling
 
-### On Tide Creation
+### On YieldVault Creation
 
-When you create a Tide, it's automatically:
+When you create a YieldVault, it's automatically:
 1. Registered with the scheduler
 2. Scheduled for its first rebalancing execution
 
 **No manual setup required!**
 
 ```bash
-# Simply create a tide - scheduling happens automatically
-flow transactions send cadence/transactions/flow-vaults/create_tide.cdc \
+# Simply create a yield vault - scheduling happens automatically
+flow transactions send cadence/transactions/flow-vaults/create_yield_vault.cdc \
   --arg String:"TracerStrategy" \
   --arg String:"FlowToken" \
   --arg UFix64:100.0
@@ -74,7 +74,7 @@ flow transactions send cadence/transactions/flow-vaults/create_tide.cdc \
 ### Self-Scheduling
 
 After the first execution, AutoBalancers with `recurringConfig` automatically schedule their next execution. This chains indefinitely until:
-- The tide is closed
+- The yield vault is closed
 - The schedule is manually canceled
 - The account runs out of FLOW for fees
 
@@ -88,7 +88,7 @@ If you need to manually schedule (e.g., after canceling the auto-schedule):
 
 ```bash
 flow transactions send cadence/transactions/flow-vaults/cancel_scheduled_rebalancing.cdc \
-  --arg UInt64:YOUR_TIDE_ID
+  --arg UInt64:YOUR_YIELD_VAULT_ID
 ```
 
 ### Step 2: Estimate Costs
@@ -104,7 +104,7 @@ flow scripts execute cadence/scripts/flow-vaults/estimate_rebalancing_cost.cdc \
 
 ```bash
 flow transactions send cadence/transactions/flow-vaults/schedule_rebalancing.cdc \
-  --arg UInt64:YOUR_TIDE_ID \
+  --arg UInt64:YOUR_YIELD_VAULT_ID \
   --arg UFix64:1699920000.0 \     # timestamp
   --arg UInt8:1 \                 # priority
   --arg UInt64:500 \              # execution effort
@@ -125,18 +125,18 @@ flow scripts execute cadence/scripts/flow-vaults/get_all_scheduled_rebalancing.c
   --arg Address:FLOWVAULTS_ADDRESS
 ```
 
-### View Specific Tide Schedule
+### View Specific YieldVault Schedule
 
 ```bash
 flow scripts execute cadence/scripts/flow-vaults/get_scheduled_rebalancing.cdc \
   --arg Address:FLOWVAULTS_ADDRESS \
-  --arg UInt64:YOUR_TIDE_ID
+  --arg UInt64:YOUR_YIELD_VAULT_ID
 ```
 
-### Check Registered Tides
+### Check Registered Yield Vaults
 
 ```bash
-flow scripts execute cadence/scripts/flow-vaults/get_registered_tide_ids.cdc
+flow scripts execute cadence/scripts/flow-vaults/get_registered_yield_vault_ids.cdc
 ```
 
 ### Check Pending Queue
@@ -161,9 +161,9 @@ flow scripts execute cadence/scripts/flow-vaults/get_pending_count.cdc
 
 ### What It Does
 
-The Supervisor handles tides that failed to self-schedule:
-- Processes bounded `pendingQueue` (MAX 50 tides per run)
-- Schedules failed tides
+The Supervisor handles yield vaults that failed to self-schedule:
+- Processes bounded `pendingQueue` (MAX 50 yield vaults per run)
+- Schedules failed yield vaults
 - Self-reschedules if more work remains
 
 ### When It's Needed
@@ -177,11 +177,11 @@ The Supervisor handles tides that failed to self-schedule:
 If monitoring detects a failed schedule, enqueue for recovery:
 
 ```bash
-flow transactions send cadence/transactions/flow-vaults/enqueue_pending_tide.cdc \
-  --arg UInt64:TIDE_ID
+flow transactions send cadence/transactions/flow-vaults/enqueue_pending_yield_vault.cdc \
+  --arg UInt64:YIELD_VAULT_ID
 ```
 
-The next Supervisor run will re-seed the tide.
+The next Supervisor run will re-seed the yield vault.
 
 ---
 
@@ -191,7 +191,7 @@ The next Supervisor run will re-seed the tide.
 
 ```cadence
 event RebalancingScheduled(
-    tideID: UInt64,
+    yieldVaultID: UInt64,
     scheduledTransactionID: UInt64,
     timestamp: UFix64,
     priority: UInt8,
@@ -201,13 +201,13 @@ event RebalancingScheduled(
 )
 
 event RebalancingCanceled(
-    tideID: UInt64,
+    yieldVaultID: UInt64,
     scheduledTransactionID: UInt64,
     feesReturned: UFix64
 )
 
-event SupervisorSeededTide(
-    tideID: UInt64,
+event SupervisorSeededYieldVault(
+    yieldVaultID: UInt64,
     scheduledTransactionID: UInt64,
     timestamp: UFix64
 )
@@ -216,10 +216,10 @@ event SupervisorSeededTide(
 ### FlowVaultsSchedulerRegistry Events
 
 ```cadence
-event TideRegistered(tideID: UInt64, handlerCapValid: Bool)
-event TideUnregistered(tideID: UInt64, wasInPendingQueue: Bool)
-event TideEnqueuedPending(tideID: UInt64, pendingQueueSize: Int)
-event TideDequeuedPending(tideID: UInt64, pendingQueueSize: Int)
+event YieldVaultRegistered(yieldVaultID: UInt64, handlerCapValid: Bool)
+event YieldVaultUnregistered(yieldVaultID: UInt64, wasInPendingQueue: Bool)
+event YieldVaultEnqueuedPending(yieldVaultID: UInt64, pendingQueueSize: Int)
+event YieldVaultDequeuedPending(yieldVaultID: UInt64, pendingQueueSize: Int)
 ```
 
 ---
@@ -230,18 +230,18 @@ event TideDequeuedPending(tideID: UInt64, pendingQueueSize: Int)
 
 ```bash
 flow transactions send cadence/transactions/flow-vaults/cancel_scheduled_rebalancing.cdc \
-  --arg UInt64:YOUR_TIDE_ID
+  --arg UInt64:YOUR_YIELD_VAULT_ID
 ```
 
 **Note**: Partial refunds are subject to the scheduler's refund policy.
 
-### What Happens on Tide Close
+### What Happens on YieldVault Close
 
-When a tide is closed:
+When a yield vault is closed:
 1. `_cleanupAutoBalancer()` is called
-2. `unregisterTide()` cancels pending schedules
+2. `unregisterYieldVault()` cancels pending schedules
 3. Fees are refunded to the FlowVaults account
-4. Tide is removed from registry
+4. YieldVault is removed from registry
 
 ---
 
@@ -270,7 +270,7 @@ Cancel the existing schedule first:
 
 ```bash
 flow transactions send cadence/transactions/flow-vaults/cancel_scheduled_rebalancing.cdc \
-  --arg UInt64:YOUR_TIDE_ID
+  --arg UInt64:YOUR_YIELD_VAULT_ID
 ```
 
 ### Schedule Not Executing
@@ -286,7 +286,7 @@ Check:
 ## Best Practices
 
 1. **Trust Automatic Scheduling**: Let the system handle scheduling automatically
-2. **Monitor Events**: Watch for `TideEnqueuedPending` events indicating failed schedules
+2. **Monitor Events**: Watch for `YieldVaultEnqueuedPending` events indicating failed schedules
 3. **Maintain FLOW Balance**: Ensure FlowVaults account has sufficient FLOW for fees
 4. **Use Appropriate Priority**: Medium is usually sufficient
 
@@ -294,20 +294,20 @@ Check:
 
 ## FAQ
 
-**Q: Do I need to manually schedule rebalancing?**  
-A: No, tides are automatically scheduled upon creation.
+**Q: Do I need to manually schedule rebalancing?**
+A: No, yield vaults are automatically scheduled upon creation.
 
-**Q: What happens if scheduling fails?**  
-A: The tide creation reverts entirely (atomic operation).
+**Q: What happens if scheduling fails?**
+A: The yield vault creation reverts entirely (atomic operation).
 
-**Q: How does recurring work?**  
+**Q: How does recurring work?**
 A: AutoBalancers self-schedule their next execution after each run.
 
-**Q: What if the FlowVaults account runs out of FLOW?**  
-A: AutoBalancers will fail to self-schedule. Monitor for `FailedRecurringSchedule` events and fund the account.
+**Q: What if the FlowVaults account runs out of FLOW?**
+A: AutoBalancers will fail to self-schedule. The yield vaults will be enqueued in the pending queue and the Supervisor will recover them once the account is funded.
 
-**Q: Can I have multiple schedules for one tide?**  
-A: No, one schedule per tide. Cancel to reschedule.
+**Q: Can I have multiple schedules for one yield vault?**
+A: No, one schedule per yield vault. Cancel to reschedule.
 
 ---
 

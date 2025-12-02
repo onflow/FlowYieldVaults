@@ -9,7 +9,7 @@ import "FlowVaultsAutoBalancers"
 ///
 /// For more information on DeFiActions AutoBalancers, see the DeFiActions contract.
 ///
-/// @param id: The Tide ID for which the AutoBalancer is associated
+/// @param id: The YieldVault ID for which the AutoBalancer is associated
 /// @param force: Whether or not to force rebalancing, bypassing it's thresholds for automatic rebalancing
 ///
 transaction(id: UInt64, force: Bool) {

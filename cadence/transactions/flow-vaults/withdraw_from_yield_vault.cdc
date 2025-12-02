@@ -4,23 +4,24 @@ import "ViewResolver"
 
 import "FlowVaults"
 
-/// Withdraws the full balance from an existing Tide stored in the signer's TideManager and closes the Tide. If the
-/// signer does not yet have a Vault of the withdrawn Type, one is configured.
+/// Withdraws from an existing YieldVault stored in the signer's YieldVaultManager. If the signer does not yet have a Vault of the
+/// withdrawn Type, one is configured.
 ///
-/// @param id: The Tide.id() of the Tide from which the full balance will be withdrawn
+/// @param id: The YieldVault.id() of the YieldVault from which the amount will be withdrawn
+/// @param amount: The amount to deposit into the new YieldVault, denominated in the YieldVault's Vault type
 ///
-transaction(id: UInt64) {
-    let manager: auth(FungibleToken.Withdraw) &FlowVaults.TideManager
+transaction(id: UInt64, amount: UFix64) {
+    let manager: auth(FungibleToken.Withdraw) &FlowVaults.YieldVaultManager
     let receiver: &{FungibleToken.Vault}
 
     prepare(signer: auth(BorrowValue, SaveValue, StorageCapabilities, PublishCapability) &Account) {
-        // reference the signer's TideManager & underlying Tide
-        self.manager = signer.storage.borrow<auth(FungibleToken.Withdraw) &FlowVaults.TideManager>(from: FlowVaults.TideManagerStoragePath)
-            ?? panic("Signer does not have a TideManager stored at path \(FlowVaults.TideManagerStoragePath) - configure and retry")
-        let tide = self.manager.borrowTide(id: id) ?? panic("Tide with ID \(id) was not found")
-        
+        // reference the signer's YieldVaultManager & underlying YieldVault
+        self.manager = signer.storage.borrow<auth(FungibleToken.Withdraw) &FlowVaults.YieldVaultManager>(from: FlowVaults.YieldVaultManagerStoragePath)
+            ?? panic("Signer does not have a YieldVaultManager stored at path \(FlowVaults.YieldVaultManagerStoragePath) - configure and retry")
+        let yieldVault = self.manager.borrowYieldVault(id: id) ?? panic("YieldVault with ID \(id) was not found")
+
         // get the data for where the vault type is canoncially stored
-        let vaultType = tide.getSupportedVaultTypes().keys[0]
+        let vaultType = yieldVault.getSupportedVaultTypes().keys[0]
         let tokenContract = getAccount(vaultType.address!).contracts.borrow<&{FungibleToken}>(name: vaultType.contractName!)
             ?? panic("Vault type \(vaultType.identifier) is not defined by a FungibleToken contract")
         let vaultData = tokenContract.resolveContractView(
@@ -45,7 +46,7 @@ transaction(id: UInt64) {
 
     execute {
         self.receiver.deposit(
-            from: <-self.manager.closeTide(id)
+            from: <-self.manager.withdrawFromYieldVault(id, amount: amount)
         )
     }
 }

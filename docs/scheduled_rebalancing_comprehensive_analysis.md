@@ -45,7 +45,7 @@ The scheduled-rebalancing branch has been significantly refactored to address al
 1. **Removed `RebalancingHandler` wrapper** - AutoBalancers scheduled directly
 2. **Atomic initial scheduling** - Registration + first schedule in one operation
 3. **Paginated Supervisor** - Recovery-only, bounded by `MAX_BATCH_SIZE`
-4. **Moved registration to `FlowVaultsAutoBalancers`** - Decoupled from Tide lifecycle
+4. **Moved registration to `FlowVaultsAutoBalancers`** - Decoupled from YieldVault lifecycle
 5. **Hardened access control** - `getSupervisorCap()` restricted to `access(account)`
 6. **Fixed capability issuance** - Only on first Supervisor creation
 7. **Fixed vault borrowing** - Non-auth reference for deposit-only operations
@@ -69,7 +69,7 @@ The scheduled-rebalancing branch has been significantly refactored to address al
 | ID | Issue | Location | Impact |
 |----|-------|----------|--------|
 | C1 | Supervisor O(N) Iteration | `FlowVaultsScheduler.cdc` | System failure at scale |
-| C2 | Registry `getRegisteredTideIDs()` Unbounded | `FlowVaultsSchedulerRegistry.cdc` | Memory/compute exhaustion |
+| C2 | Registry `getRegisteredYieldVaultIDs()` Unbounded | `FlowVaultsSchedulerRegistry.cdc` | Memory/compute exhaustion |
 | C3 | Failure Recovery Ineffective | Architectural | No actual recovery capability |
 
 ### High Priority Issues
@@ -111,33 +111,33 @@ The scheduled-rebalancing branch has been significantly refactored to address al
 
 The Supervisor resource in `FlowVaultsScheduler.cdc` executes the following workflow on each scheduled run:
 
-1. Retrieves **all** registered Tide IDs via `FlowVaultsSchedulerRegistry.getRegisteredTideIDs()`
-2. For each Tide ID in the full set:
-   - Checks `SchedulerManager.hasScheduled(tideID:)` - one contract call per tide
-   - Fetches wrapper capability via `FlowVaultsSchedulerRegistry.getWrapperCap(tideID:)` - one lookup per tide
-   - Estimates scheduling cost - one computation per tide
-   - Withdraws fees from shared FlowToken vault - one storage operation per tide
-   - Calls `SchedulerManager.scheduleRebalancing` - one contract call per tide
+1. Retrieves **all** registered YieldVault IDs via `FlowVaultsSchedulerRegistry.getRegisteredYieldVaultIDs()`
+2. For each YieldVault ID in the full set:
+   - Checks `SchedulerManager.hasScheduled(yieldVaultID:)` - one contract call per yield vault
+   - Fetches wrapper capability via `FlowVaultsSchedulerRegistry.getWrapperCap(yieldVaultID:)` - one lookup per yield vault
+   - Estimates scheduling cost - one computation per yield vault
+   - Withdraws fees from shared FlowToken vault - one storage operation per yield vault
+   - Calls `SchedulerManager.scheduleRebalancing` - one contract call per yield vault
 3. Optionally self-reschedules for recurrence
 
 #### Complexity Analysis
 
 | Operation | Complexity | Notes |
 |-----------|------------|-------|
-| Key iteration | O(N) | Iterates all registered tides |
+| Key iteration | O(N) | Iterates all registered yield vaults |
 | `hasScheduled` check | O(1) per call, O(N) total | N contract calls |
 | Capability lookup | O(1) per call, O(N) total | N dictionary accesses |
 | Cost estimation | O(1) per call, O(N) total | N computations |
 | Fee withdrawal | O(1) per call, O(N) total | N storage operations |
 | Schedule creation | O(1) per call, O(N) total | N contract calls |
-| **Total per run** | **O(N)** | Linear in registered tides |
+| **Total per run** | **O(N)** | Linear in registered yield vaults |
 
 #### Failure Trajectory
 
 Given Cadence compute limits, the Supervisor will inevitably fail when:
 
 ```
-N_tides * (cost_per_tide) > COMPUTE_LIMIT
+N_yield_vaults * (cost_per_yield_vault) > COMPUTE_LIMIT
 ```
 
 This creates a cascade failure pattern:
@@ -151,13 +151,13 @@ This creates a cascade failure pattern:
 
 All four analyses independently identified this as a critical, blocking issue. The reviewer's original statement that "the current setup still is guaranteed not to scale" is technically accurate and mathematically demonstrable.
 
-### 3.2 Registry `getRegisteredTideIDs()` Scalability
+### 3.2 Registry `getRegisteredYieldVaultIDs()` Scalability
 
 #### Implementation
 
 ```cadence
-access(all) fun getRegisteredTideIDs(): [UInt64] {
-    return self.tideRegistry.keys
+access(all) fun getRegisteredYieldVaultIDs(): [UInt64] {
+    return self.yieldVaultRegistry.keys
 }
 ```
 
@@ -177,7 +177,7 @@ This function returns the complete key set from the registry dictionary. For arb
 | Caller | Context | Risk Level |
 |--------|---------|------------|
 | `Supervisor.executeTransaction()` | Transaction - must succeed | **CRITICAL** |
-| `FlowVaultsScheduler.getRegisteredTideIDs()` | Public accessor (scripts) | **MEDIUM** - tolerable in scripts |
+| `FlowVaultsScheduler.getRegisteredYieldVaultIDs()` | Public accessor (scripts) | **MEDIUM** - tolerable in scripts |
 
 The function is **fundamentally unsafe** for use in transactions that must succeed for system health.
 
@@ -214,20 +214,20 @@ The failure recovery justification for the Supervisor architecture does not hold
 #### Current Architecture
 
 ```
-FlowVaults.TideManager
+FlowVaults.YieldVaultManager
     |
     v
 FlowVaultsScheduler
     |
-    +-- Supervisor (iterates all tides)
+    +-- Supervisor (iterates all yield vaults)
     +-- SchedulerManager (tracks schedule state)
     +-- RebalancingHandler (wrapper around AutoBalancer)
     |
     v
 FlowVaultsSchedulerRegistry
     |
-    +-- tideRegistry (all tide IDs)
-    +-- wrapperCaps (per-tide capabilities)
+    +-- yieldVaultRegistry (all yield vault IDs)
+    +-- wrapperCaps (per-yield-vault capabilities)
     +-- supervisorCap (supervisor capability)
     |
     v
@@ -257,12 +257,12 @@ The current implementation already employs a **hybrid approach** that partially 
 
 **Phase 1: Registration (No Initial Scheduling)**
 ```
-Tide Creation -> FlowVaults.TideManager.createTide()
+YieldVault Creation -> FlowVaults.YieldVaultManager.createYieldVault()
     |
-    +-> FlowVaultsScheduler.registerTide(tideID)
+    +-> FlowVaultsScheduler.registerYieldVault(yieldVaultID)
         |
         +-> Creates RebalancingHandler wrapper
-        +-> Registers tide ID and capability in Registry
+        +-> Registers yield vault ID and capability in Registry
         +-> Does NOT schedule initial execution
 ```
 
@@ -270,7 +270,7 @@ Tide Creation -> FlowVaults.TideManager.createTide()
 ```
 Supervisor.executeTransaction() OR schedule_rebalancing.cdc
     |
-    +-> Checks manager.hasScheduled(tideID) 
+    +-> Checks manager.hasScheduled(yieldVaultID) 
     +-> If NOT scheduled: creates initial schedule
     +-> Schedule marked with isRecurring: true, recurringInterval: X
 ```
@@ -288,13 +288,13 @@ Scheduled execution triggers -> RebalancingHandler.executeTransaction()
 
 #### Key Insight: The Supervisor Skip Logic
 
-The Supervisor explicitly skips already-scheduled tides:
+The Supervisor explicitly skips already-scheduled yield vaults:
 
 ```cadence
 // Lines 418-422 in FlowVaultsScheduler.cdc
-for tideID in FlowVaultsSchedulerRegistry.getRegisteredTideIDs() {
+for yieldVaultID in FlowVaultsSchedulerRegistry.getRegisteredYieldVaultIDs() {
     // Skip if already scheduled
-    if manager.hasScheduled(tideID: tideID) {
+    if manager.hasScheduled(yieldVaultID: yieldVaultID) {
         continue
     }
     // ... only schedules if NOT already scheduled
@@ -302,9 +302,9 @@ for tideID in FlowVaultsSchedulerRegistry.getRegisteredTideIDs() {
 ```
 
 This means:
-1. Once a tide is initially seeded, `scheduleNextIfRecurring` handles all future scheduling
-2. The Supervisor only needs to seed tides that have never been scheduled or whose schedules failed/expired
-3. In steady state, most tides should be skipped
+1. Once a yield vault is initially seeded, `scheduleNextIfRecurring` handles all future scheduling
+2. The Supervisor only needs to seed yield vaults that have never been scheduled or whose schedules failed/expired
+3. In steady state, most yield vaults should be skipped
 
 #### Why the Scalability Problem Persists Despite This Design
 
@@ -312,12 +312,12 @@ Even with the skip logic, the O(N) problem remains because:
 
 | Operation | Still O(N) | Reason |
 |-----------|------------|--------|
-| `getRegisteredTideIDs()` | Yes | Returns full key array before iteration |
+| `getRegisteredYieldVaultIDs()` | Yes | Returns full key array before iteration |
 | Loop iteration | Yes | Must touch every element to check |
-| `hasScheduled()` calls | Yes | Called for each tide, even if most skip |
+| `hasScheduled()` calls | Yes | Called for each yield vault, even if most skip |
 
 **Example at scale:**
-- 10,000 registered tides
+- 10,000 registered yield vaults
 - 9,990 are already scheduled (would skip)
 - 10 need seeding
 - **Current cost**: O(10,000) iterations + 10,000 `hasScheduled()` calls
@@ -327,14 +327,14 @@ Even with the skip logic, the O(N) problem remains because:
 
 The current implementation is "partially internalized" but still requires the Supervisor for initial seeding because:
 
-1. `registerTide()` only registers - it does NOT schedule the initial execution
+1. `registerYieldVault()` only registers - it does NOT schedule the initial execution
 2. `AutoBalancer` is created with `recurringConfig: nil` - not using native scheduler recurrence
 3. Initial scheduling requires either:
-   - The Supervisor to iterate and find unscheduled tides
+   - The Supervisor to iterate and find unscheduled yield vaults
    - A user to manually call `schedule_rebalancing.cdc`
 
 **To achieve true Option B (fully internalized):**
-- `registerTide()` should also schedule the initial execution
+- `registerYieldVault()` should also schedule the initial execution
 - OR `_initNewAutoBalancer()` should schedule the initial execution
 - This would eliminate the need for Supervisor to iterate for seeding
 
@@ -344,7 +344,7 @@ The current implementation is "partially internalized" but still requires the Su
 
 The `RebalancingHandler` resource:
 - Stores a capability to the underlying `TransactionHandler` (AutoBalancer)
-- Stores a `tideID` field
+- Stores a `yieldVaultID` field
 - In `executeTransaction`:
   - Borrows and calls the underlying handler
   - Calls `scheduleNextIfRecurring`
@@ -354,7 +354,7 @@ The `RebalancingHandler` resource:
 
 | Aspect | Wrapper Contribution | Alternative |
 |--------|---------------------|-------------|
-| `tideID` storage | Redundant - AutoBalancer has unique ID | Use AutoBalancer ID directly |
+| `yieldVaultID` storage | Redundant - AutoBalancer has unique ID | Use AutoBalancer ID directly |
 | `scheduleNextIfRecurring` | Post-hook | Move to AutoBalancer or use native recurrence |
 | Event emission | Useful | Emit from AutoBalancer or scheduler |
 | Capability indirection | None | Direct capability to AutoBalancer |
@@ -372,28 +372,28 @@ All analyses agree the wrapper provides no unique functionality that cannot be a
 
 | Action | Location | Trigger |
 |--------|----------|---------|
-| `registerTide()` | `FlowVaults.TideManager.createTide()` | Tide creation |
-| `unregisterTide()` | `FlowVaults.TideManager.closeTide()` | Tide closure |
+| `registerYieldVault()` | `FlowVaults.YieldVaultManager.createYieldVault()` | YieldVault creation |
+| `unregisterYieldVault()` | `FlowVaults.YieldVaultManager.closeYieldVault()` | YieldVault closure |
 
 #### Problems Identified
 
-1. **Forced Participation**: All Tides are registered regardless of whether their strategies use AutoBalancers or require scheduled rebalancing
+1. **Forced Participation**: All YieldVaults are registered regardless of whether their strategies use AutoBalancers or require scheduled rebalancing
 
-2. **Coupling Violation**: Core `FlowVaults` Tide lifecycle is coupled to a specific scheduling implementation
+2. **Coupling Violation**: Core `FlowVaults` YieldVault lifecycle is coupled to a specific scheduling implementation
 
 3. **Flexibility Reduction**: Prevents:
    - Strategies with manual/pull-based rebalancing
    - Alternative scheduling implementations
    - Non-recurrent strategies
 
-4. **Semantic Mismatch**: The registry tracks "things that need scheduled rebalancing" but registration happens at Tide creation, not AutoBalancer creation
+4. **Semantic Mismatch**: The registry tracks "things that need scheduled rebalancing" but registration happens at YieldVault creation, not AutoBalancer creation
 
 #### Recommended Placement
 
 | Action | Location | Rationale |
 |--------|----------|-----------|
-| `registerTide()` | `FlowVaultsAutoBalancers._initNewAutoBalancer()` | Only strategies with AutoBalancers participate |
-| `unregisterTide()` | `FlowVaultsAutoBalancers._cleanupAutoBalancer()` | Cleanup at strategy disposal |
+| `registerYieldVault()` | `FlowVaultsAutoBalancers._initNewAutoBalancer()` | Only strategies with AutoBalancers participate |
+| `unregisterYieldVault()` | `FlowVaultsAutoBalancers._cleanupAutoBalancer()` | Cleanup at strategy disposal |
 
 ### 4.4 Two Architectural Paths Forward
 
@@ -402,7 +402,7 @@ All analyses agree the wrapper provides no unique functionality that cannot be a
 **Concept**: Replace full-registry iteration with bounded queue processing.
 
 **Mechanics**:
-1. On AutoBalancer creation, enqueue Tide ID into "to-be-seeded" queue
+1. On AutoBalancer creation, enqueue YieldVault ID into "to-be-seeded" queue
 2. Supervisor processes at most `MAX_SCHEDULE_COUNT` entries per run
 3. Successfully scheduled entries are dequeued
 4. Remaining entries persist for future runs
@@ -450,7 +450,7 @@ Three of four analyses explicitly recommend Option B (internalized recurrence) a
 | Function | Location | Current Access | Exposed Entitlement |
 |----------|----------|----------------|---------------------|
 | `getSupervisorCap()` | Registry | `access(all)` | `auth(FlowTransactionScheduler.Execute)` |
-| `getWrapperCap(tideID:)` | Registry | `access(all)` | `auth(FlowTransactionScheduler.Execute)` |
+| `getWrapperCap(yieldVaultID:)` | Registry | `access(all)` | `auth(FlowTransactionScheduler.Execute)` |
 
 #### Risk Assessment
 
@@ -467,7 +467,7 @@ Three of four analyses explicitly recommend Option B (internalized recurrence) a
 | Function | Recommended Access | Rationale |
 |----------|-------------------|-----------|
 | `getSupervisorCap()` | `access(account)` or entitlement-gated | Only scheduler contract needs access |
-| `getWrapperCap(tideID:)` | `access(account)` or entitlement-gated | Only scheduler contract needs access |
+| `getWrapperCap(yieldVaultID:)` | `access(account)` or entitlement-gated | Only scheduler contract needs access |
 
 ### 5.2 Supervisor Initialization Pattern
 
@@ -501,7 +501,7 @@ access(all) fun ensureSupervisorConfigured() {
 
 ### 5.3 FlowToken Vault Entitlement Usage
 
-#### Current Pattern in `unregisterTide`
+#### Current Pattern in `unregisterYieldVault`
 
 ```cadence
 let vaultRef = self.account.storage
@@ -590,7 +590,7 @@ Several getter functions could be marked as `view` for better static analysis an
 |----------|----------|---------|-------------|
 | `getSupervisorCap()` | Registry | None | `view` |
 | `getWrapperCap()` | Registry | None | `view` |
-| `getRegisteredTideIDs()` | Registry | None | `view` |
+| `getRegisteredYieldVaultIDs()` | Registry | None | `view` |
 | `getSchedulerConfig()` | Scheduler | None | `view` |
 
 ---
@@ -735,7 +735,7 @@ The scheduled-rebalancing branch represents a significant architectural addition
 
 1. **The Supervisor pattern is fundamentally non-scalable** and will fail at production volumes
 2. **Unnecessary abstractions** (RebalancingHandler wrapper) add complexity without proportional benefit
-3. **Registration logic is misplaced**, coupling core Tide lifecycle to scheduling implementation
+3. **Registration logic is misplaced**, coupling core YieldVault lifecycle to scheduling implementation
 4. **Access control is too permissive**, exposing privileged capabilities publicly
 5. **Strategy changes introduce breaking regressions** for existing Mainnet integrations
 
@@ -759,8 +759,8 @@ The branch demonstrates good intent in providing structured scheduling for FlowV
 
 | ID | Issue | Resolution |
 |----|-------|------------|
-| C1 | Supervisor O(N) Iteration | Supervisor now uses `getPendingTideIDs()` bounded by `MAX_BATCH_SIZE=50` |
-| C2 | Registry Unbounded | Supervisor no longer calls `getRegisteredTideIDs()`; uses bounded queue |
+| C1 | Supervisor O(N) Iteration | Supervisor now uses `getPendingYieldVaultIDs()` bounded by `MAX_BATCH_SIZE=50` |
+| C2 | Registry Unbounded | Supervisor no longer calls `getRegisteredYieldVaultIDs()`; uses bounded queue |
 | C3 | Failure Recovery Ineffective | Architecture changed to atomic scheduling; Supervisor is recovery-only |
 
 ### All High Priority Issues - RESOLVED
@@ -777,7 +777,7 @@ The branch demonstrates good intent in providing structured scheduling for FlowV
 | ID | Issue | Resolution |
 |----|-------|------------|
 | M1 | Priority Enum Conversion | Fixed in `schedule_rebalancing.cdc` using `Priority(rawValue:)` |
-| M2 | Vault Borrow Entitlement | Fixed; `unregisterTide` uses non-auth reference for deposit |
+| M2 | Vault Borrow Entitlement | Fixed; `unregisterYieldVault` uses non-auth reference for deposit |
 | M3 | Multiple Supervisor Ambiguity | Simplified; now uses `SupervisorStoragePath` constant |
 | M4 | Handler Creation Helpers | Removed with wrapper |
 | M5 | `getSchedulerConfig()` | Documented as convenience wrapper |
@@ -796,18 +796,18 @@ The branch demonstrates good intent in providing structured scheduling for FlowV
 
 **Before (Original):**
 ```
-TideManager.createTide()
-    -> FlowVaultsScheduler.registerTide()
+YieldVaultManager.createYieldVault()
+    -> FlowVaultsScheduler.registerYieldVault()
         -> Creates RebalancingHandler wrapper
         -> Registers in Registry
-        -> Supervisor iterates ALL tides to seed unscheduled ones (O(N))
+        -> Supervisor iterates ALL yield vaults to seed unscheduled ones (O(N))
 ```
 
 **After (Implemented):**
 ```
 Strategy creation via StrategyComposer
     -> FlowVaultsAutoBalancers._initNewAutoBalancer()
-        -> FlowVaultsScheduler.registerTide()
+        -> FlowVaultsScheduler.registerYieldVault()
             -> Issues capability directly to AutoBalancer (no wrapper)
             -> Registers in Registry
             -> Schedules first execution atomically (panics if fails)
@@ -825,7 +825,7 @@ Strategy creation via StrategyComposer
 | `FlowVaultsStrategies.cdc` | Added `recurringConfig: nil` to AutoBalancer creation |
 | `FlowVaults.cdc` | Removed scheduler calls (moved to AutoBalancers) |
 | `schedule_rebalancing.cdc` | Updated to use new API, fixed priority enum |
-| `has_wrapper_cap_for_tide.cdc` | Updated to use `getHandlerCap` |
+| `has_wrapper_cap_for_yield_vault.cdc` | Updated to use `getHandlerCap` |
 
 ---
 

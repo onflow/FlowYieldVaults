@@ -2,7 +2,7 @@ import "FungibleToken"
 import "FungibleTokenMetadataViews"
 import "FlowVaults"
 
-/// Create tide without beta requirement (for testing only)
+/// Create yieldVault without beta requirement (for testing only)
 /// This bypasses the beta check by directly creating strategies
 transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64) {
     let depositVault: @{FungibleToken.Vault}
