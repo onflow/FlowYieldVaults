@@ -6,15 +6,15 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "FlowVaultsStrategies"
+import "FlowYieldVaultsStrategies"
 import "FlowCreditMarket"
-import "FlowVaults"
+import "FlowYieldVaults"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
-access(all) let flowVaultsAccount = Test.getAccount(0x0000000000000009)
+access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@FlowVaultsStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -114,8 +114,8 @@ fun setup() {
 	
 
 	// set mocked token prices
-	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
-	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
+	setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
+	setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
 
 	// mint tokens & set liquidity in mock swapper contract
 	let reserveAmount = 100_000_00.0
@@ -150,15 +150,15 @@ fun setup() {
 
 	// enable mocked Strategy creation
 	addStrategyComposer(
-		signer: flowVaultsAccount,
+		signer: flowYieldVaultsAccount,
 		strategyIdentifier: strategyIdentifier,
-		composerIdentifier: Type<@FlowVaultsStrategies.TracerStrategyComposer>().identifier,
-		issuerStoragePath: FlowVaultsStrategies.IssuerStoragePath,
+		composerIdentifier: Type<@FlowYieldVaultsStrategies.TracerStrategyComposer>().identifier,
+		issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
 		beFailed: false
 	)
 
-	// Fund FlowVaults account for scheduling fees (atomic initial scheduling)
-	mintFlow(to: flowVaultsAccount, amount: 100.0)
+	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
+	mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
 
 	snapshot = getCurrentBlockHeight()
 }
@@ -184,7 +184,7 @@ fun test_RebalanceYieldVaultScenario2() {
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	mintFlow(to: user, amount: fundingAmount)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
 
 	createYieldVault(
 		signer: user,
@@ -204,7 +204,7 @@ fun test_RebalanceYieldVaultScenario2() {
 
 	log("[TEST] Initial yield vault balance: \(yieldVaultBalance ?? 0.0)")
 
-	rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
+	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
 	for index, yieldTokenPrice in yieldPriceIncreases {
@@ -212,13 +212,13 @@ fun test_RebalanceYieldVaultScenario2() {
 
 		log("[TEST] YieldVault balance before yield price \(yieldTokenPrice): \(yieldVaultBalance ?? 0.0)")
 
-		setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldTokenPrice)
+		setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldTokenPrice)
 
 		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
 		log("[TEST] YieldVault balance before yield price \(yieldTokenPrice) rebalance: \(yieldVaultBalance ?? 0.0)")
 
-		rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultIDs![0], force: false, beFailed: false)
+		rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: false, beFailed: false)
 		rebalancePosition(signer: protocolAccount, pid: pid, force: false, beFailed: false)
 
 		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])

@@ -11,7 +11,7 @@ on:
 
 jobs:
   scheduled-rebalance-tests:
-    name: FlowVaults Scheduled Rebalancing Tests
+    name: FlowYieldVaults Scheduled Rebalancing Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

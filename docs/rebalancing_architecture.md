@@ -2,24 +2,24 @@
 
 ## 1. Main Components and Their Responsibilities
 
-### FlowVaults (YieldVaults)
+### FlowYieldVaults (YieldVaults)
 - Owns `YieldVault` and `YieldVaultManager`
-- Each YieldVault wraps a **FlowVaults Strategy** (e.g. `TracerStrategy`)
+- Each YieldVault wraps a **FlowYieldVaults Strategy** (e.g. `TracerStrategy`)
 - The YieldVault itself does **not** know about scheduling or FlowCreditMarket; it just holds a strategy resource
 
-### FlowVaultsStrategies (TracerStrategy stack)
+### FlowYieldVaultsStrategies (TracerStrategy stack)
   - `TracerStrategyComposer` wires together:
   - A **DeFiActions.AutoBalancer** (manages Yield token exposure around deposits value)
   - A **FlowCreditMarket.Position** (borrow/lend position in the FlowCreditMarket pool)
   - Swappers and connectors that shuttle value between AutoBalancer and FlowCreditMarket
 - This is where the **YieldVault -> AutoBalancer -> FlowCreditMarket** wiring is defined
 
-### FlowVaultsAutoBalancers
+### FlowYieldVaultsAutoBalancers
   - Utility contract for:
-  - Storing AutoBalancer resources in the FlowVaults account (per YieldVault/UniqueID)
+  - Storing AutoBalancer resources in the FlowYieldVaults account (per YieldVault/UniqueID)
   - Publishing public/private capabilities
   - Setting the AutoBalancer's **self capability** (for scheduling)
-  - **Registering/unregistering with FlowVaultsScheduler**
+  - **Registering/unregistering with FlowYieldVaultsScheduler**
 - On `_initNewAutoBalancer()`: registers yield vault and schedules first execution atomically
 - On `_cleanupAutoBalancer()`: unregisters and cancels pending schedules
 
@@ -40,13 +40,13 @@
   - If undercollateralized and there is a `topUpSource`, pulls extra collateral
   - If overcollateralized and there is a `drawDownSink`, withdraws collateral
 
-### FlowVaultsScheduler + FlowVaultsSchedulerRegistry
-- **FlowVaultsSchedulerRegistry** stores:
+### FlowYieldVaultsScheduler + FlowYieldVaultsSchedulerRegistry
+- **FlowYieldVaultsSchedulerRegistry** stores:
   - `yieldVaultRegistry`: registered yield vault IDs
   - `handlerCaps`: direct capabilities to AutoBalancers (no wrapper)
   - `pendingQueue`: yield vaults needing (re)seeding (bounded by MAX_BATCH_SIZE=50)
   - `supervisorCap`: capability for Supervisor self-scheduling
-- **FlowVaultsScheduler** provides:
+- **FlowYieldVaultsScheduler** provides:
   - `registerYieldVault()`: atomic registration + initial scheduling
   - `unregisterYieldVault()`: cleanup and fee refund
   - `SchedulerManager`: tracks scheduled transactions
@@ -56,15 +56,15 @@
 
 ## 2. How the Tracer Strategy Wires AutoBalancer and FlowCreditMarket Together
 
-Inside `FlowVaultsStrategies.TracerStrategyComposer.createStrategy(...)`:
+Inside `FlowYieldVaultsStrategies.TracerStrategyComposer.createStrategy(...)`:
 
 ### Step 1: Create an AutoBalancer
    - Configured with:
   - Oracle: `MockOracle.PriceOracle()`
   - Vault type: `YieldToken.Vault`
   - Thresholds: `lowerThreshold = 0.95`, `upperThreshold = 1.05`
-  - Recurring config: `nil` (scheduling handled by FlowVaultsScheduler)
-   - Saved via `FlowVaultsAutoBalancers._initNewAutoBalancer(...)`, which:
+  - Recurring config: `nil` (scheduling handled by FlowYieldVaultsScheduler)
+   - Saved via `FlowYieldVaultsAutoBalancers._initNewAutoBalancer(...)`, which:
   - Stores the AutoBalancer
   - Issues public capability
   - Issues a **self-cap** with `auth(FungibleToken.Withdraw, FlowTransactionScheduler.Execute)`
@@ -111,7 +111,7 @@ The capability is issued directly to the AutoBalancer at its storage path:
 
    ```cadence
 // In registerYieldVault():
-let abPath = FlowVaultsAutoBalancers.deriveAutoBalancerPath(id: yieldVaultID, storage: true) as! StoragePath
+let abPath = FlowYieldVaultsAutoBalancers.deriveAutoBalancerPath(id: yieldVaultID, storage: true) as! StoragePath
 let handlerCap = self.account.capabilities.storage
     .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(abPath)
 ```
@@ -123,12 +123,12 @@ When `_initNewAutoBalancer()` is called:
    ```cadence
 // Register with scheduler and schedule first execution atomically
 // This panics if scheduling fails, reverting AutoBalancer creation
-FlowVaultsScheduler.registerYieldVault(yieldVaultID: uniqueID.id)
+FlowYieldVaultsScheduler.registerYieldVault(yieldVaultID: uniqueID.id)
 ```
 
 `registerYieldVault()` atomically:
 1. Issues capability to AutoBalancer
-2. Registers in FlowVaultsSchedulerRegistry
+2. Registers in FlowYieldVaultsSchedulerRegistry
 3. Schedules first execution via SchedulerManager
 4. If any step fails, entire transaction reverts
 
@@ -160,21 +160,21 @@ The Supervisor handles failed schedules via a bounded pending queue:
 access(FlowTransactionScheduler.Execute)
 fun executeTransaction(id: UInt64, data: AnyStruct?) {
     // Process only pending yield vaults (MAX 50 per run)
-    let pendingYieldVaultIDs = FlowVaultsSchedulerRegistry.getPendingYieldVaultIDs()
+    let pendingYieldVaultIDs = FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDs()
     
     for yieldVaultID in pendingYieldVaults {
         if manager.hasScheduled(yieldVaultID: yieldVaultID) {
-            FlowVaultsSchedulerRegistry.dequeuePending(yieldVaultID: yieldVaultID)
+            FlowYieldVaultsSchedulerRegistry.dequeuePending(yieldVaultID: yieldVaultID)
             continue
         }
         
         // Schedule and dequeue
-        let handlerCap = FlowVaultsSchedulerRegistry.getHandlerCap(yieldVaultID: yieldVaultID)
+        let handlerCap = FlowYieldVaultsSchedulerRegistry.getHandlerCap(yieldVaultID: yieldVaultID)
         // ... estimate fees, schedule, dequeue ...
     }
     
     // Self-reschedule if more pending work
-    if FlowVaultsSchedulerRegistry.getPendingCount() > 0 {
+    if FlowYieldVaultsSchedulerRegistry.getPendingCount() > 0 {
         // Schedule next Supervisor run
       }
   }
@@ -220,7 +220,7 @@ fun executeTransaction(id: UInt64, data: AnyStruct?) {
    
 4. **For FlowCreditMarket position rebalancing on collateral moves**
    - Would need separate scheduling in FlowCreditMarket
-   - Belongs in FlowCreditMarket/FlowActions, not FlowVaults
+   - Belongs in FlowCreditMarket/FlowActions, not FlowYieldVaults
 
 ---
 
@@ -228,12 +228,12 @@ fun executeTransaction(id: UInt64, data: AnyStruct?) {
 
 | Component | Responsibility |
 |-----------|---------------|
-| FlowVaults YieldVault | Holds strategy, user-facing |
+| FlowYieldVaults YieldVault | Holds strategy, user-facing |
 | TracerStrategy | Wires AutoBalancer <-> FlowCreditMarket |
 | AutoBalancer | Manages Yield exposure, executes rebalance |
 | FlowCreditMarket Position | Manages collateral/debt health |
-| FlowVaultsScheduler | Registration, atomic initial scheduling |
-| FlowVaultsSchedulerRegistry | Stores registry, pending queue |
+| FlowYieldVaultsScheduler | Registration, atomic initial scheduling |
+| FlowYieldVaultsSchedulerRegistry | Stores registry, pending queue |
 | Supervisor | Recovery for failed schedules (bounded) |
 
 **Last Updated**: November 26, 2025

@@ -6,17 +6,17 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "FlowVaultsStrategies"
-import "FlowVaultsScheduler"
+import "FlowYieldVaultsStrategies"
+import "FlowYieldVaultsScheduler"
 import "FlowTransactionScheduler"
-import "FlowVaultsSchedulerRegistry"
+import "FlowYieldVaultsSchedulerRegistry"
 import "DeFiActions"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
-access(all) let flowVaultsAccount = Test.getAccount(0x0000000000000009)
+access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@FlowVaultsStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -34,14 +34,14 @@ fun setup() {
     deployContracts()
     
     // Scheduler contracts are deployed as part of deployContracts()
-    log("FlowVaultsScheduler available")
+    log("FlowYieldVaultsScheduler available")
     
-    // Fund FlowVaults account for scheduling fees
-    mintFlow(to: flowVaultsAccount, amount: 1000.0)
+    // Fund FlowYieldVaults account for scheduling fees
+    mintFlow(to: flowYieldVaultsAccount, amount: 1000.0)
 
     // Set mocked token prices
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
     log("Mock oracle prices set")
 
     // Mint tokens & set liquidity in mock swapper contract
@@ -79,10 +79,10 @@ fun setup() {
 
     // Enable mocked Strategy creation
     addStrategyComposer(
-        signer: flowVaultsAccount,
+        signer: flowYieldVaultsAccount,
         strategyIdentifier: strategyIdentifier,
-        composerIdentifier: Type<@FlowVaultsStrategies.TracerStrategyComposer>().identifier,
-        issuerStoragePath: FlowVaultsStrategies.IssuerStoragePath,
+        composerIdentifier: Type<@FlowYieldVaultsStrategies.TracerStrategyComposer>().identifier,
+        issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
         beFailed: false
     )
     log("Strategy composer added")
@@ -110,11 +110,11 @@ fun testNativeScheduledRebalancing() {
     // Step 1: Create a YieldVault with initial funding
     log("Step 1: Creating YieldVault...")
     mintFlow(to: user, amount: fundingAmount)
-    let betaRef = grantBeta(flowVaultsAccount, user)
+    let betaRef = grantBeta(flowYieldVaultsAccount, user)
     Test.expect(betaRef, Test.beSucceeded())
     
     let createYieldVaultRes = executeTransaction(
-        "../transactions/flow-vaults/create_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, fundingAmount],
         user
     )
@@ -130,11 +130,11 @@ fun testNativeScheduledRebalancing() {
     
     // Step 2: Verify yield vault is registered in registry
     log("Step 2: Verifying yield vault registration...")
-    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_yield_vault_ids.cdc", [])
+    let regIDsRes = executeScript("../scripts/flow-yield-vaults/get_registered_yield_vault_ids.cdc", [])
     Test.expect(regIDsRes, Test.beSucceeded())
     let regIDs = regIDsRes.returnValue! as! [UInt64]
     Test.assert(regIDs.contains(yieldVaultID), message: "YieldVault should be in registry")
-    log("YieldVault is registered in FlowVaultsSchedulerRegistry")
+    log("YieldVault is registered in FlowYieldVaultsSchedulerRegistry")
     
     // Step 3: Get initial AutoBalancer balance
     let initialBalance = getAutoBalancerBalance(id: yieldVaultID)
@@ -142,8 +142,8 @@ fun testNativeScheduledRebalancing() {
     
     // Step 4: Change prices to trigger rebalancing
     log("Step 3: Changing prices...")
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0)
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5)
     log("FLOW price changed to 2.0, YieldToken to 1.5")
     
     // Step 5: Wait for automatic execution by emulator FVM
@@ -193,12 +193,12 @@ fun testMultipleExecutionsWithPriceChanges() {
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 500.0)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
     
     // Step 1: Create YieldVault
     log("Step 1: Creating YieldVault...")
     let createYieldVaultRes = executeTransaction(
-        "../transactions/flow-vaults/create_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 200.0],
         user
     )
@@ -214,8 +214,8 @@ fun testMultipleExecutionsWithPriceChanges() {
     
     // Step 2: First execution with price change
     log("Step 2: First execution...")
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5)
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2)
     Test.moveTime(by: 70.0)
     Test.commitBlock()
     
@@ -226,8 +226,8 @@ fun testMultipleExecutionsWithPriceChanges() {
     
     // Step 3: Second execution with price change
     log("Step 3: Second execution...")
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.5)
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 2.0)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.5)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 2.0)
     Test.moveTime(by: 70.0)
     Test.commitBlock()
     
@@ -238,8 +238,8 @@ fun testMultipleExecutionsWithPriceChanges() {
     
     // Step 4: Third execution with price change
     log("Step 4: Third execution...")
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 4.0)
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 3.0)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 4.0)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 3.0)
     Test.moveTime(by: 70.0)
     Test.commitBlock()
     

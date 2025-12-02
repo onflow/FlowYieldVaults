@@ -11,7 +11,7 @@
 !local/emulator-account.pkey
 !local/evm-gateway.pkey
 !local/test-user.pkey
-!local/emulator-flow-vaults.pkey
+!local/emulator-flow-yield-vaults.pkey
 imports/
 coverage.lcov
 coverage.json

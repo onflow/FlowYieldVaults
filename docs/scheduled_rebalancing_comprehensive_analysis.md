@@ -1,4 +1,4 @@
-# Comprehensive Analysis: FlowVaults Scheduled Rebalancing Branch
+# Comprehensive Analysis: FlowYieldVaults Scheduled Rebalancing Branch
 
 **Document Version:** 2.0  
 **Date:** November 26, 2025  
@@ -45,7 +45,7 @@ The scheduled-rebalancing branch has been significantly refactored to address al
 1. **Removed `RebalancingHandler` wrapper** - AutoBalancers scheduled directly
 2. **Atomic initial scheduling** - Registration + first schedule in one operation
 3. **Paginated Supervisor** - Recovery-only, bounded by `MAX_BATCH_SIZE`
-4. **Moved registration to `FlowVaultsAutoBalancers`** - Decoupled from YieldVault lifecycle
+4. **Moved registration to `FlowYieldVaultsAutoBalancers`** - Decoupled from YieldVault lifecycle
 5. **Hardened access control** - `getSupervisorCap()` restricted to `access(account)`
 6. **Fixed capability issuance** - Only on first Supervisor creation
 7. **Fixed vault borrowing** - Non-auth reference for deposit-only operations
@@ -68,38 +68,38 @@ The scheduled-rebalancing branch has been significantly refactored to address al
 
 | ID | Issue | Location | Impact |
 |----|-------|----------|--------|
-| C1 | Supervisor O(N) Iteration | `FlowVaultsScheduler.cdc` | System failure at scale |
-| C2 | Registry `getRegisteredYieldVaultIDs()` Unbounded | `FlowVaultsSchedulerRegistry.cdc` | Memory/compute exhaustion |
+| C1 | Supervisor O(N) Iteration | `FlowYieldVaultsScheduler.cdc` | System failure at scale |
+| C2 | Registry `getRegisteredYieldVaultIDs()` Unbounded | `FlowYieldVaultsSchedulerRegistry.cdc` | Memory/compute exhaustion |
 | C3 | Failure Recovery Ineffective | Architectural | No actual recovery capability |
 
 ### High Priority Issues
 
 | ID | Issue | Location | Impact |
 |----|-------|----------|--------|
-| H1 | Unnecessary RebalancingHandler Wrapper | `FlowVaultsScheduler.cdc` | Complexity without benefit |
-| H2 | Misplaced Registration Logic | `FlowVaults.cdc` | Tight coupling, reduced flexibility |
-| H3 | Public Capability Exposure | `FlowVaultsSchedulerRegistry.cdc` | Security surface expansion |
-| H4 | Supervisor Initialization Timing | `FlowVaultsScheduler.cdc` | Resource inefficiency |
+| H1 | Unnecessary RebalancingHandler Wrapper | `FlowYieldVaultsScheduler.cdc` | Complexity without benefit |
+| H2 | Misplaced Registration Logic | `FlowYieldVaults.cdc` | Tight coupling, reduced flexibility |
+| H3 | Public Capability Exposure | `FlowYieldVaultsSchedulerRegistry.cdc` | Security surface expansion |
+| H4 | Supervisor Initialization Timing | `FlowYieldVaultsScheduler.cdc` | Resource inefficiency |
 
 ### Medium Priority Issues
 
 | ID | Issue | Location | Impact |
 |----|-------|----------|--------|
 | M1 | Priority Enum Manual Conversion | `estimate_rebalancing_cost.cdc` | Maintenance burden |
-| M2 | Incorrect Vault Borrow Entitlement | `FlowVaultsScheduler.cdc` | Violates least-privilege |
-| M3 | Multiple Supervisor Design Ambiguity | `FlowVaultsScheduler.cdc` | Unclear intent |
-| M4 | Redundant Handler Creation Helpers | `FlowVaultsScheduler.cdc` | Dead code if wrapper removed |
-| M5 | Unclear `getSchedulerConfig()` Purpose | `FlowVaultsScheduler.cdc` | API bloat |
-| M6 | Section Mislabeling | `FlowVaultsScheduler.cdc` | Documentation inconsistency |
+| M2 | Incorrect Vault Borrow Entitlement | `FlowYieldVaultsScheduler.cdc` | Violates least-privilege |
+| M3 | Multiple Supervisor Design Ambiguity | `FlowYieldVaultsScheduler.cdc` | Unclear intent |
+| M4 | Redundant Handler Creation Helpers | `FlowYieldVaultsScheduler.cdc` | Dead code if wrapper removed |
+| M5 | Unclear `getSchedulerConfig()` Purpose | `FlowYieldVaultsScheduler.cdc` | API bloat |
+| M6 | Section Mislabeling | `FlowYieldVaultsScheduler.cdc` | Documentation inconsistency |
 
 ### Low Priority Issues
 
 | ID | Issue | Location | Impact |
 |----|-------|----------|--------|
-| L1 | `innerComponents` Regression | `FlowVaultsStrategies.cdc` | Reduced observability |
-| L2 | mUSDCStrategyComposer Changes | `FlowVaultsStrategies.cdc` | 4626 integration breakage |
+| L1 | `innerComponents` Regression | `FlowYieldVaultsStrategies.cdc` | Reduced observability |
+| L2 | mUSDCStrategyComposer Changes | `FlowYieldVaultsStrategies.cdc` | 4626 integration breakage |
 | L3 | Missing View Modifiers | Multiple files | Optimization opportunity |
-| L4 | `createSupervisor()` Access Level | `FlowVaultsScheduler.cdc` | Could be more restrictive |
+| L4 | `createSupervisor()` Access Level | `FlowYieldVaultsScheduler.cdc` | Could be more restrictive |
 
 ---
 
@@ -109,12 +109,12 @@ The scheduled-rebalancing branch has been significantly refactored to address al
 
 #### Current Implementation Pattern
 
-The Supervisor resource in `FlowVaultsScheduler.cdc` executes the following workflow on each scheduled run:
+The Supervisor resource in `FlowYieldVaultsScheduler.cdc` executes the following workflow on each scheduled run:
 
-1. Retrieves **all** registered YieldVault IDs via `FlowVaultsSchedulerRegistry.getRegisteredYieldVaultIDs()`
+1. Retrieves **all** registered YieldVault IDs via `FlowYieldVaultsSchedulerRegistry.getRegisteredYieldVaultIDs()`
 2. For each YieldVault ID in the full set:
    - Checks `SchedulerManager.hasScheduled(yieldVaultID:)` - one contract call per yield vault
-   - Fetches wrapper capability via `FlowVaultsSchedulerRegistry.getWrapperCap(yieldVaultID:)` - one lookup per yield vault
+   - Fetches wrapper capability via `FlowYieldVaultsSchedulerRegistry.getWrapperCap(yieldVaultID:)` - one lookup per yield vault
    - Estimates scheduling cost - one computation per yield vault
    - Withdraws fees from shared FlowToken vault - one storage operation per yield vault
    - Calls `SchedulerManager.scheduleRebalancing` - one contract call per yield vault
@@ -177,7 +177,7 @@ This function returns the complete key set from the registry dictionary. For arb
 | Caller | Context | Risk Level |
 |--------|---------|------------|
 | `Supervisor.executeTransaction()` | Transaction - must succeed | **CRITICAL** |
-| `FlowVaultsScheduler.getRegisteredYieldVaultIDs()` | Public accessor (scripts) | **MEDIUM** - tolerable in scripts |
+| `FlowYieldVaultsScheduler.getRegisteredYieldVaultIDs()` | Public accessor (scripts) | **MEDIUM** - tolerable in scripts |
 
 The function is **fundamentally unsafe** for use in transactions that must succeed for system health.
 
@@ -214,24 +214,24 @@ The failure recovery justification for the Supervisor architecture does not hold
 #### Current Architecture
 
 ```
-FlowVaults.YieldVaultManager
+FlowYieldVaults.YieldVaultManager
     |
     v
-FlowVaultsScheduler
+FlowYieldVaultsScheduler
     |
     +-- Supervisor (iterates all yield vaults)
     +-- SchedulerManager (tracks schedule state)
     +-- RebalancingHandler (wrapper around AutoBalancer)
     |
     v
-FlowVaultsSchedulerRegistry
+FlowYieldVaultsSchedulerRegistry
     |
     +-- yieldVaultRegistry (all yield vault IDs)
     +-- wrapperCaps (per-yield-vault capabilities)
     +-- supervisorCap (supervisor capability)
     |
     v
-FlowVaultsAutoBalancers
+FlowYieldVaultsAutoBalancers
     |
     +-- AutoBalancer resources (actual execution)
     |
@@ -257,9 +257,9 @@ The current implementation already employs a **hybrid approach** that partially 
 
 **Phase 1: Registration (No Initial Scheduling)**
 ```
-YieldVault Creation -> FlowVaults.YieldVaultManager.createYieldVault()
+YieldVault Creation -> FlowYieldVaults.YieldVaultManager.createYieldVault()
     |
-    +-> FlowVaultsScheduler.registerYieldVault(yieldVaultID)
+    +-> FlowYieldVaultsScheduler.registerYieldVault(yieldVaultID)
         |
         +-> Creates RebalancingHandler wrapper
         +-> Registers yield vault ID and capability in Registry
@@ -280,7 +280,7 @@ Supervisor.executeTransaction() OR schedule_rebalancing.cdc
 Scheduled execution triggers -> RebalancingHandler.executeTransaction()
     |
     +-> Delegates to AutoBalancer
-    +-> Calls FlowVaultsScheduler.scheduleNextIfRecurring()
+    +-> Calls FlowYieldVaultsScheduler.scheduleNextIfRecurring()
         |
         +-> If isRecurring was true: schedules next execution
         +-> New schedule maintains recurrence parameters
@@ -291,8 +291,8 @@ Scheduled execution triggers -> RebalancingHandler.executeTransaction()
 The Supervisor explicitly skips already-scheduled yield vaults:
 
 ```cadence
-// Lines 418-422 in FlowVaultsScheduler.cdc
-for yieldVaultID in FlowVaultsSchedulerRegistry.getRegisteredYieldVaultIDs() {
+// Lines 418-422 in FlowYieldVaultsScheduler.cdc
+for yieldVaultID in FlowYieldVaultsSchedulerRegistry.getRegisteredYieldVaultIDs() {
     // Skip if already scheduled
     if manager.hasScheduled(yieldVaultID: yieldVaultID) {
         continue
@@ -372,14 +372,14 @@ All analyses agree the wrapper provides no unique functionality that cannot be a
 
 | Action | Location | Trigger |
 |--------|----------|---------|
-| `registerYieldVault()` | `FlowVaults.YieldVaultManager.createYieldVault()` | YieldVault creation |
-| `unregisterYieldVault()` | `FlowVaults.YieldVaultManager.closeYieldVault()` | YieldVault closure |
+| `registerYieldVault()` | `FlowYieldVaults.YieldVaultManager.createYieldVault()` | YieldVault creation |
+| `unregisterYieldVault()` | `FlowYieldVaults.YieldVaultManager.closeYieldVault()` | YieldVault closure |
 
 #### Problems Identified
 
 1. **Forced Participation**: All YieldVaults are registered regardless of whether their strategies use AutoBalancers or require scheduled rebalancing
 
-2. **Coupling Violation**: Core `FlowVaults` YieldVault lifecycle is coupled to a specific scheduling implementation
+2. **Coupling Violation**: Core `FlowYieldVaults` YieldVault lifecycle is coupled to a specific scheduling implementation
 
 3. **Flexibility Reduction**: Prevents:
    - Strategies with manual/pull-based rebalancing
@@ -392,8 +392,8 @@ All analyses agree the wrapper provides no unique functionality that cannot be a
 
 | Action | Location | Rationale |
 |--------|----------|-----------|
-| `registerYieldVault()` | `FlowVaultsAutoBalancers._initNewAutoBalancer()` | Only strategies with AutoBalancers participate |
-| `unregisterYieldVault()` | `FlowVaultsAutoBalancers._cleanupAutoBalancer()` | Cleanup at strategy disposal |
+| `registerYieldVault()` | `FlowYieldVaultsAutoBalancers._initNewAutoBalancer()` | Only strategies with AutoBalancers participate |
+| `unregisterYieldVault()` | `FlowYieldVaultsAutoBalancers._cleanupAutoBalancer()` | Cleanup at strategy disposal |
 
 ### 4.4 Two Architectural Paths Forward
 
@@ -476,13 +476,13 @@ Three of four analyses explicitly recommend Option B (internalized recurrence) a
 ```cadence
 access(all) fun ensureSupervisorConfigured() {
     let path = self.deriveSupervisorPath()
-    if self.account.storage.borrow<&FlowVaultsScheduler.Supervisor>(from: path) == nil {
+    if self.account.storage.borrow<&FlowYieldVaultsScheduler.Supervisor>(from: path) == nil {
         let sup <- self.createSupervisor()
         self.account.storage.save(<-sup, to: path)
     }
     // ISSUE: Outside the if block - runs every time!
     let supCap = self.account.capabilities.storage.issue<...>(path)
-    FlowVaultsSchedulerRegistry.setSupervisorCap(cap: supCap)
+    FlowYieldVaultsSchedulerRegistry.setSupervisorCap(cap: supCap)
 }
 ```
 
@@ -533,7 +533,7 @@ borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
 
 ## 6. Code Quality and Regression Analysis
 
-### 6.1 FlowVaultsStrategies Regressions
+### 6.1 FlowYieldVaultsStrategies Regressions
 
 #### Issue L1: `innerComponents` Regression
 
@@ -570,7 +570,7 @@ borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
 
 #### Section Mislabeling
 
-**Location**: `FlowVaultsScheduler.cdc` around line 550
+**Location**: `FlowYieldVaultsScheduler.cdc` around line 550
 
 **Issue**: Section header `/* --- PUBLIC FUNCTIONS --- */` appears above `createSupervisor()` which is `access(account)`. Multiple non-public methods grouped under public section.
 
@@ -641,7 +641,7 @@ access(all) fun getSchedulerConfig(): {FlowTransactionScheduler.SchedulerConfig}
 
 ```cadence
 access(all) fun deriveSupervisorPath(): StoragePath {
-    let identifier = "FlowVaultsScheduler_Supervisor_".concat(self.account.address.toString())
+    let identifier = "FlowYieldVaultsScheduler_Supervisor_".concat(self.account.address.toString())
     return StoragePath(identifier: identifier)!
 }
 ```
@@ -663,7 +663,7 @@ Same concerns apply. Both should be `access(self)` unless external callers legit
 
 | Priority | Action | Rationale |
 |----------|--------|-----------|
-| 1 | Revert `FlowVaultsStrategies.cdc` changes | Restore Mainnet 4626 compatibility |
+| 1 | Revert `FlowYieldVaultsStrategies.cdc` changes | Restore Mainnet 4626 compatibility |
 | 2 | Decide architectural path (A or B) | Foundation for all other changes |
 | 3 | Restrict capability getter access | Security hardening |
 | 4 | Fix Supervisor initialization pattern | Resource efficiency |
@@ -731,7 +731,7 @@ Same concerns apply. Both should be `access(self)` unless external callers legit
 
 ### Consensus Findings
 
-The scheduled-rebalancing branch represents a significant architectural addition to FlowVaults but is **not production-ready** in its current state. Four independent analyses converge on the following conclusions:
+The scheduled-rebalancing branch represents a significant architectural addition to FlowYieldVaults but is **not production-ready** in its current state. Four independent analyses converge on the following conclusions:
 
 1. **The Supervisor pattern is fundamentally non-scalable** and will fail at production volumes
 2. **Unnecessary abstractions** (RebalancingHandler wrapper) add complexity without proportional benefit
@@ -749,7 +749,7 @@ The scheduled-rebalancing branch represents a significant architectural addition
 
 ### Final Assessment
 
-The branch demonstrates good intent in providing structured scheduling for FlowVaults rebalancing operations. However, the implementation makes assumptions about scalability that do not hold, introduces abstractions that are not justified by their complexity cost, and inadvertently regresses critical production functionality. With the recommended changes, the feature can be delivered safely and effectively.
+The branch demonstrates good intent in providing structured scheduling for FlowYieldVaults rebalancing operations. However, the implementation makes assumptions about scalability that do not hold, introduces abstractions that are not justified by their complexity cost, and inadvertently regresses critical production functionality. With the recommended changes, the feature can be delivered safely and effectively.
 
 ---
 
@@ -768,7 +768,7 @@ The branch demonstrates good intent in providing structured scheduling for FlowV
 | ID | Issue | Resolution |
 |----|-------|------------|
 | H1 | RebalancingHandler Wrapper | Removed entirely; AutoBalancers scheduled directly |
-| H2 | Misplaced Registration | Moved to `FlowVaultsAutoBalancers._initNewAutoBalancer()` and `_cleanupAutoBalancer()` |
+| H2 | Misplaced Registration | Moved to `FlowYieldVaultsAutoBalancers._initNewAutoBalancer()` and `_cleanupAutoBalancer()` |
 | H3 | Public Capability Exposure | `getSupervisorCap()` changed to `access(account)`; `getWrapperCap` removed |
 | H4 | Supervisor Init Timing | Capability issuance now inside existence check; runs only once |
 
@@ -797,7 +797,7 @@ The branch demonstrates good intent in providing structured scheduling for FlowV
 **Before (Original):**
 ```
 YieldVaultManager.createYieldVault()
-    -> FlowVaultsScheduler.registerYieldVault()
+    -> FlowYieldVaultsScheduler.registerYieldVault()
         -> Creates RebalancingHandler wrapper
         -> Registers in Registry
         -> Supervisor iterates ALL yield vaults to seed unscheduled ones (O(N))
@@ -806,8 +806,8 @@ YieldVaultManager.createYieldVault()
 **After (Implemented):**
 ```
 Strategy creation via StrategyComposer
-    -> FlowVaultsAutoBalancers._initNewAutoBalancer()
-        -> FlowVaultsScheduler.registerYieldVault()
+    -> FlowYieldVaultsAutoBalancers._initNewAutoBalancer()
+        -> FlowYieldVaultsScheduler.registerYieldVault()
             -> Issues capability directly to AutoBalancer (no wrapper)
             -> Registers in Registry
             -> Schedules first execution atomically (panics if fails)
@@ -819,11 +819,11 @@ Strategy creation via StrategyComposer
 
 | File | Changes |
 |------|---------|
-| `FlowVaultsScheduler.cdc` | Removed wrapper, added atomic scheduling, paginated Supervisor |
-| `FlowVaultsSchedulerRegistry.cdc` | Added pending queue, bounded iteration, restricted access |
-| `FlowVaultsAutoBalancers.cdc` | Added `recurringConfig` param, registration calls |
-| `FlowVaultsStrategies.cdc` | Added `recurringConfig: nil` to AutoBalancer creation |
-| `FlowVaults.cdc` | Removed scheduler calls (moved to AutoBalancers) |
+| `FlowYieldVaultsScheduler.cdc` | Removed wrapper, added atomic scheduling, paginated Supervisor |
+| `FlowYieldVaultsSchedulerRegistry.cdc` | Added pending queue, bounded iteration, restricted access |
+| `FlowYieldVaultsAutoBalancers.cdc` | Added `recurringConfig` param, registration calls |
+| `FlowYieldVaultsStrategies.cdc` | Added `recurringConfig: nil` to AutoBalancer creation |
+| `FlowYieldVaults.cdc` | Removed scheduler calls (moved to AutoBalancers) |
 | `schedule_rebalancing.cdc` | Updated to use new API, fixed priority enum |
 | `has_wrapper_cap_for_yield_vault.cdc` | Updated to use `getHandlerCap` |
 

@@ -6,14 +6,14 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "FlowVaultsStrategies"
+import "FlowYieldVaultsStrategies"
 import "FlowCreditMarket"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
-access(all) let flowVaultsAccount = Test.getAccount(0x0000000000000009)
+access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@FlowVaultsStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -33,8 +33,8 @@ fun setup() {
     deployContracts()
 
     // set mocked token prices
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: startingYieldPrice)
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: startingFlowPrice)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: startingYieldPrice)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: startingFlowPrice)
 
     // mint tokens & set liquidity in mock swapper contract
     let reserveAmount = 100_000_00.0
@@ -68,17 +68,17 @@ fun setup() {
 
     // enable mocked Strategy creation
     addStrategyComposer(
-        signer: flowVaultsAccount,
+        signer: flowYieldVaultsAccount,
         strategyIdentifier: strategyIdentifier,
-        composerIdentifier: Type<@FlowVaultsStrategies.TracerStrategyComposer>().identifier,
-        issuerStoragePath: FlowVaultsStrategies.IssuerStoragePath,
+        composerIdentifier: Type<@FlowYieldVaultsStrategies.TracerStrategyComposer>().identifier,
+        issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
         beFailed: false
     )
     
     // Scheduler contracts are deployed as part of deployContracts()
 
-    // Fund FlowVaults account for scheduling fees (atomic initial scheduling)
-    mintFlow(to: flowVaultsAccount, amount: 100.0)
+    // Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
+    mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
 
     snapshot = getCurrentBlockHeight()
 }
@@ -91,7 +91,7 @@ fun testLifecycle() {
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: initialFunding + depositAmount + 10.0) // extra for fees/buffer
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
 
     // 1. Create YieldVault
     createYieldVault(

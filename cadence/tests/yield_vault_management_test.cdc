@@ -6,7 +6,7 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MockStrategy"
 
-access(all) let flowVaultsAccount = Test.getAccount(0x0000000000000009)
+access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
 
 access(all) var strategyIdentifier = Type<@MockStrategy.Strategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
@@ -18,7 +18,7 @@ fun setup() {
     deployContracts()
 
     // enable mocked Strategy creation
-    addStrategyComposer(signer: flowVaultsAccount,
+    addStrategyComposer(signer: flowYieldVaultsAccount,
         strategyIdentifier: strategyIdentifier,
         composerIdentifier: Type<@MockStrategy.StrategyComposer>().identifier,
         issuerStoragePath: MockStrategy.IssuerStoragePath,
@@ -34,7 +34,7 @@ fun test_CreateYieldVaultSucceeds() {
 
     let user = Test.createAccount()
     mintFlow(to: user, amount: fundingAmount)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
 
     createYieldVault(
         signer: user,
@@ -57,7 +57,7 @@ fun test_CloseYieldVaultSucceeds() {
 
     let user = Test.createAccount()
     mintFlow(to: user, amount: fundingAmount)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
 
     createYieldVault(
         signer: user,

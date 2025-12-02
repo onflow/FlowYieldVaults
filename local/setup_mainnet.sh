@@ -41,7 +41,7 @@ flow transactions send ./cadence/transactions/flow-credit-market/pool-governance
 
 # add liquidity to pool
 
-# configure FlowVaults
+# configure FlowYieldVaults
 # 
 # wire up liquidity to MockSwapper, mocking AMM liquidity sources
 flow transactions send ./cadence/transactions/moet/setup_vault.cdc --network mainnet --signer mainnet-admin
@@ -55,15 +55,15 @@ flow transactions send ./lib/FlowCreditMarket/FlowActions/cadence/transactions/f
 # flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault --network mainnet --signer mainnet-admin
 #
 # add TracerStrategy as supported Strategy with the ability to initialize when new YieldVaults are created
-flow transactions send ./cadence/transactions/flow-vaults/admin/add_strategy_composer.cdc \
-    'A.b1d63873c3cc9f79.FlowVaultsStrategies.mUSDCStrategy' \
-    'A.b1d63873c3cc9f79.FlowVaultsStrategies.mUSDCStrategyComposer' \
-    /storage/FlowVaultsStrategyComposerIssuer_0xb1d63873c3cc9f79 \
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
+    'A.b1d63873c3cc9f79.FlowYieldVaultsStrategies.mUSDCStrategy' \
+    'A.b1d63873c3cc9f79.FlowYieldVaultsStrategies.mUSDCStrategyComposer' \
+    /storage/FlowYieldVaultsStrategyComposerIssuer_0xb1d63873c3cc9f79 \
     --network mainnet \
     --signer mainnet-admin
 
 # grant PoolBeta cap
-echo "Grant Protocol Beta access to FlowVaults"
+echo "Grant Protocol Beta access to FlowYieldVaults"
 flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-credit-market/pool-management/03_grant_beta.cdc \
   --authorizer mainnet-flow-credit-market-deployer,mainnet-admin \
   --proposer mainnet-flow-credit-market-deployer \
