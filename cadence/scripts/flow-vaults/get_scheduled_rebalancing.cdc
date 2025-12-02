@@ -1,12 +1,12 @@
 import "FlowVaultsScheduler"
 
-/// Returns information about a scheduled rebalancing transaction for a specific Tide.
+/// Returns information about a scheduled rebalancing transaction for a specific YieldVault.
 ///
 /// @param account: The address of the account that scheduled the rebalancing
-/// @param tideID: The ID of the Tide to query
+/// @param yieldVaultID: The ID of the YieldVault to query
 /// @return Information about the scheduled rebalancing, or nil if none exists
 ///
-access(all) fun main(account: Address, tideID: UInt64): FlowVaultsScheduler.RebalancingScheduleInfo? {
+access(all) fun main(account: Address, yieldVaultID: UInt64): FlowVaultsScheduler.RebalancingScheduleInfo? {
     // Borrow the public capability for the SchedulerManager
     let schedulerManager = getAccount(account)
         .capabilities.borrow<&FlowVaultsScheduler.SchedulerManager>(
@@ -16,6 +16,6 @@ access(all) fun main(account: Address, tideID: UInt64): FlowVaultsScheduler.Reba
         return nil
     }
 
-    return schedulerManager!.getScheduledRebalancing(tideID: tideID)
+    return schedulerManager!.getScheduledRebalancing(yieldVaultID: yieldVaultID)
 }
 

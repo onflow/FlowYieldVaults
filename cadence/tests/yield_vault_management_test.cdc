@@ -29,14 +29,14 @@ fun setup() {
 }
 
 access(all)
-fun test_CreateTideSucceeds() {
+fun test_CreateYieldVaultSucceeds() {
     let fundingAmount = 100.0
 
     let user = Test.createAccount()
     mintFlow(to: user, amount: fundingAmount)
     grantBeta(flowVaultsAccount, user)
 
-    createTide(
+    createYieldVault(
         signer: user,
         strategyIdentifier: strategyIdentifier,
         vaultIdentifier: flowTokenIdentifier,
@@ -44,13 +44,13 @@ fun test_CreateTideSucceeds() {
         beFailed: false
     )
 
-    let tideIDs = getTideIDs(address: user.address)
-    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
-    Test.assertEqual(1, tideIDs!.length)
+    let yieldVaultIDs = getYieldVaultIDs(address: user.address)
+    Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
+    Test.assertEqual(1, yieldVaultIDs!.length)
 }
 
 access(all)
-fun test_CloseTideSucceeds() {
+fun test_CloseYieldVaultSucceeds() {
     Test.reset(to: snapshot)
 
     let fundingAmount = 100.0
@@ -59,7 +59,7 @@ fun test_CloseTideSucceeds() {
     mintFlow(to: user, amount: fundingAmount)
     grantBeta(flowVaultsAccount, user)
 
-    createTide(
+    createYieldVault(
         signer: user,
         strategyIdentifier: strategyIdentifier,
         vaultIdentifier: flowTokenIdentifier,
@@ -67,13 +67,13 @@ fun test_CloseTideSucceeds() {
         beFailed: false
     )
 
-    var tideIDs = getTideIDs(address: user.address)
-    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
-    Test.assertEqual(1, tideIDs!.length)
+    var yieldVaultIDs = getYieldVaultIDs(address: user.address)
+    Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
+    Test.assertEqual(1, yieldVaultIDs!.length)
 
-    closeTide(signer: user, id: tideIDs![0], beFailed: false)
+    closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
 
-    tideIDs = getTideIDs(address: user.address)
-    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
-    Test.assertEqual(0, tideIDs!.length)
+    yieldVaultIDs = getYieldVaultIDs(address: user.address)
+    Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
+    Test.assertEqual(0, yieldVaultIDs!.length)
 }

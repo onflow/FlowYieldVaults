@@ -7,20 +7,20 @@ import "MOET"
 import "FlowToken"
 
 access(all) struct CompletePositionInfo {
-    access(all) let tideId: UInt64
+    access(all) let yieldVaultId: UInt64
     access(all) let collateralInfo: CollateralInfo
     access(all) let yieldTokenInfo: YieldTokenInfo
     access(all) let debtInfo: DebtInfo
     access(all) let healthMetrics: HealthMetrics
-    
+
     init(
-        tideId: UInt64,
+        yieldVaultId: UInt64,
         collateralInfo: CollateralInfo,
         yieldTokenInfo: YieldTokenInfo,
         debtInfo: DebtInfo,
         healthMetrics: HealthMetrics
     ) {
-        self.tideId = tideId
+        self.yieldVaultId = yieldVaultId
         self.collateralInfo = collateralInfo
         self.yieldTokenInfo = yieldTokenInfo
         self.debtInfo = debtInfo
@@ -155,9 +155,9 @@ access(all) struct PortfolioSummary {
 
 access(all)
 fun main(address: Address): CompleteUserSummary {
-    let tideManager = getAccount(address).capabilities.borrow<&FlowVaults.TideManager>(FlowVaults.TideManagerPublicPath)
-    
-    if tideManager == nil {
+    let yieldVaultManager = getAccount(address).capabilities.borrow<&FlowVaults.YieldVaultManager>(FlowVaults.YieldVaultManagerPublicPath)
+
+    if yieldVaultManager == nil {
         return CompleteUserSummary(
             userAddress: address,
             totalPositions: 0,
@@ -173,26 +173,26 @@ fun main(address: Address): CompleteUserSummary {
         )
     }
     
-    let tideIds = tideManager!.getIDs()
+    let yieldVaultIds = yieldVaultManager!.getIDs()
     let positions: [CompletePositionInfo] = []
-    
+
     let oracle = MockOracle.PriceOracle()
     let yieldTokenPrice = oracle.price(ofToken: Type<@YieldToken.Vault>()) ?? 2.0
     let moetPrice = oracle.price(ofToken: Type<@MOET.Vault>()) ?? 1.0
     let flowPrice = oracle.price(ofToken: Type<@FlowToken.Vault>()) ?? 1.0
-    
-    // Note: FlowCreditMarket positions and FlowVaults tides use different ID systems
-    // We'll calculate health manually since tide IDs don't correspond to FlowCreditMarket position IDs
-    
+
+    // Note: FlowCreditMarket positions and FlowVaults yield vaults use different ID systems
+    // We'll calculate health manually since yield vault IDs don't correspond to FlowCreditMarket position IDs
+
     var totalCollateralValue = 0.0
     var totalYieldTokenValue = 0.0
     var totalEstimatedDebtValue = 0.0
     var totalLeverageRatio = 0.0
     var totalYieldTokenRatio = 0.0
-    
-    for tideId in tideIds {
-        if let tide = tideManager!.borrowTide(id: tideId) {
-            let autoBalancer = FlowVaultsAutoBalancers.borrowAutoBalancer(id: tideId)
+
+    for yieldVaultId in yieldVaultIds {
+        if let yieldVault = yieldVaultManager!.borrowYieldVault(id: yieldVaultId) {
+            let autoBalancer = FlowVaultsAutoBalancers.borrowAutoBalancer(id: yieldVaultId)
             let yieldTokenBalance = autoBalancer?.vaultBalance() ?? 0.0
             
             // Use the AutoBalancer's balance as the primary balance source
@@ -203,10 +203,10 @@ fun main(address: Address): CompleteUserSummary {
             let yieldTokenValue = yieldTokenBalance * yieldTokenPrice
             let isActive = autoBalancer != nil
             
-            let supportedVaultTypes = tide.getSupportedVaultTypes()
+            let supportedVaultTypes = yieldVault.getSupportedVaultTypes()
             var collateralType = "Unknown"
             let supportedTypes: [String] = []
-            
+
             for vaultType in supportedVaultTypes.keys {
                 if supportedVaultTypes[vaultType]! {
                     supportedTypes.append(vaultType.identifier)
@@ -232,13 +232,13 @@ fun main(address: Address): CompleteUserSummary {
             let netWorth = estimatedCollateralValue + yieldTokenValue - estimatedDebtValue
             
             // Get the actual position health from FlowCreditMarket.Pool
-            // FlowCreditMarket positions use sequential IDs (0, 1, 2, ...) while tide IDs are different
+            // FlowCreditMarket positions use sequential IDs (0, 1, 2, ...) while yield vault IDs are different
             var actualHealth: UFix128 = 999.0
             
             // Try to get the real health from FlowCreditMarket.Pool using sequential position IDs
             let protocolAddress = Type<@FlowCreditMarket.Pool>().address!
             if let pool = getAccount(protocolAddress).capabilities.borrow<&FlowCreditMarket.Pool>(FlowCreditMarket.PoolPublicPath) {
-                // Since we can't directly map tide IDs to position IDs, we'll try sequential IDs
+                // Since we can't directly map yield vault IDs to position IDs, we'll try sequential IDs
                 // This assumes positions are created in order (0, 1, 2, ...)
                 let positionIndex = UInt64(positions.length)  // Use the current position index
                 actualHealth = pool.positionHealth(pid: positionIndex)
@@ -256,7 +256,7 @@ fun main(address: Address): CompleteUserSummary {
             )
             
             positions.append(CompletePositionInfo(
-                tideId: tideId,
+                yieldVaultId: yieldVaultId,
                 collateralInfo: CollateralInfo(
                     collateralType: collateralType,
                     availableBalance: realAvailableBalance,
@@ -289,12 +289,12 @@ fun main(address: Address): CompleteUserSummary {
     }
     
     let totalNetWorth = totalCollateralValue + totalYieldTokenValue - totalEstimatedDebtValue
-    let averageLeverageRatio = tideIds.length > 0 ? totalLeverageRatio / UFix64(tideIds.length) : 0.0
-    let portfolioHealthRatio = tideIds.length > 0 ? totalYieldTokenRatio / UFix64(tideIds.length) : 0.0
-    
+    let averageLeverageRatio = yieldVaultIds.length > 0 ? totalLeverageRatio / UFix64(yieldVaultIds.length) : 0.0
+    let portfolioHealthRatio = yieldVaultIds.length > 0 ? totalYieldTokenRatio / UFix64(yieldVaultIds.length) : 0.0
+
     return CompleteUserSummary(
         userAddress: address,
-        totalPositions: tideIds.length,
+        totalPositions: yieldVaultIds.length,
         portfolioSummary: PortfolioSummary(
             totalCollateralValue: totalCollateralValue,
             totalYieldTokenValue: totalYieldTokenValue,

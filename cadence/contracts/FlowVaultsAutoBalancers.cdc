@@ -4,7 +4,7 @@ import "FungibleToken"
 // DeFiActions
 import "DeFiActions"
 import "FlowTransactionScheduler"
-// Registry for global tide mapping
+// Registry for global yield vault mapping
 import "FlowVaultsSchedulerRegistry"
 
 /// FlowVaultsAutoBalancers
@@ -15,13 +15,13 @@ import "FlowVaultsSchedulerRegistry"
 /// AutoBalancers are stored in contract account storage at paths derived by their related DeFiActions.UniqueIdentifier.id
 /// which identifies all DeFiActions components in the stack related to their composite Strategy.
 ///
-/// When a Tide and necessarily the related Strategy is closed & burned, the related AutoBalancer and its Capabilities
+/// When a YieldVault and necessarily the related Strategy is closed & burned, the related AutoBalancer and its Capabilities
 /// are destroyed and deleted.
 ///
 /// Scheduling approach:
 /// - AutoBalancers are configured with a recurringConfig at creation
 /// - After creation, scheduleNextRebalance(nil) starts the self-scheduling chain
-/// - The registry tracks all live tide IDs for global mapping
+/// - The registry tracks all live yield vault IDs for global mapping
 /// - Cleanup unregisters from the registry
 ///
 access(all) contract FlowVaultsAutoBalancers {
@@ -45,9 +45,9 @@ access(all) contract FlowVaultsAutoBalancers {
     }
 
     /// Checks if an AutoBalancer has at least one active (Scheduled) transaction.
-    /// Used by Supervisor to detect stuck tides that need recovery.
+    /// Used by Supervisor to detect stuck yield vaults that need recovery.
     ///
-    /// @param id: The tide/AutoBalancer ID
+    /// @param id: The yield vault/AutoBalancer ID
     /// @return Bool: true if there's at least one Scheduled transaction, false otherwise
     ///
     access(all) fun hasActiveSchedule(id: UInt64): Bool {
@@ -68,21 +68,21 @@ access(all) contract FlowVaultsAutoBalancers {
     }
 
     /// Checks if an AutoBalancer is overdue for execution.
-    /// A tide is considered overdue if:
+    /// A yield vault is considered overdue if:
     /// - It has a recurring config
     /// - The next expected execution time has passed
     /// - It has no active schedule
     ///
-    /// @param id: The tide/AutoBalancer ID
-    /// @return Bool: true if tide is overdue and stuck, false otherwise
+    /// @param id: The yield vault/AutoBalancer ID
+    /// @return Bool: true if yield vault is overdue and stuck, false otherwise
     ///
-    access(all) fun isStuckTide(id: UInt64): Bool {
+    access(all) fun isStuckYieldVault(id: UInt64): Bool {
         let autoBalancer = self.borrowAutoBalancer(id: id)
         if autoBalancer == nil {
             return false
         }
         
-        // Check if tide has recurring config (should be executing periodically)
+        // Check if yield vault has recurring config (should be executing periodically)
         let config = autoBalancer!.getRecurringConfig()
         if config == nil {
             return false // Not configured for recurring, can't be "stuck"
@@ -93,13 +93,13 @@ access(all) contract FlowVaultsAutoBalancers {
             return false // Has active schedule, not stuck
         }
         
-        // Check if tide is overdue
+        // Check if yield vault is overdue
         let nextExpected = autoBalancer!.calculateNextExecutionTimestampAsConfigured()
         if nextExpected == nil {
             return true // Can't calculate next time, likely stuck
         }
         
-        // If next expected time has passed and no active schedule, tide is stuck
+        // If next expected time has passed and no active schedule, yield vault is stuck
         return nextExpected! < getCurrentBlock().timestamp
     }
 
@@ -176,8 +176,8 @@ access(all) contract FlowVaultsAutoBalancers {
         let scheduleCap = self.account.capabilities.storage
             .issue<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>(storagePath)
 
-        // Register tide in registry for global mapping of live tide IDs
-        FlowVaultsSchedulerRegistry.register(tideID: uniqueID.id, handlerCap: handlerCap, scheduleCap: scheduleCap)
+        // Register yield vault in registry for global mapping of live yield vault IDs
+        FlowVaultsSchedulerRegistry.register(yieldVaultID: uniqueID.id, handlerCap: handlerCap, scheduleCap: scheduleCap)
 
         // Start the native AutoBalancer self-scheduling chain
         // This schedules the first rebalance; subsequent ones are scheduled automatically
@@ -203,8 +203,8 @@ access(all) contract FlowVaultsAutoBalancers {
     /// Called by strategies defined in the FlowVaults account which leverage account-hosted AutoBalancers when a
     /// Strategy is burned
     access(account) fun _cleanupAutoBalancer(id: UInt64) {
-        // Unregister from registry (removes from global tide mapping)
-        FlowVaultsSchedulerRegistry.unregister(tideID: id)
+        // Unregister from registry (removes from global yield vault mapping)
+        FlowVaultsSchedulerRegistry.unregister(yieldVaultID: id)
 
         let storagePath = self.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
         let publicPath = self.deriveAutoBalancerPath(id: id, storage: false) as! PublicPath

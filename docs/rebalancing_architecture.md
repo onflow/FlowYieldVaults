@@ -2,25 +2,25 @@
 
 ## 1. Main Components and Their Responsibilities
 
-### FlowVaults (Tides)
-- Owns `Tide` and `TideManager`
-- Each Tide wraps a **FlowVaults Strategy** (e.g. `TracerStrategy`)
-- The Tide itself does **not** know about scheduling or FlowCreditMarket; it just holds a strategy resource
+### FlowVaults (YieldVaults)
+- Owns `YieldVault` and `YieldVaultManager`
+- Each YieldVault wraps a **FlowVaults Strategy** (e.g. `TracerStrategy`)
+- The YieldVault itself does **not** know about scheduling or FlowCreditMarket; it just holds a strategy resource
 
 ### FlowVaultsStrategies (TracerStrategy stack)
   - `TracerStrategyComposer` wires together:
   - A **DeFiActions.AutoBalancer** (manages Yield token exposure around deposits value)
   - A **FlowCreditMarket.Position** (borrow/lend position in the FlowCreditMarket pool)
   - Swappers and connectors that shuttle value between AutoBalancer and FlowCreditMarket
-- This is where the **Tide -> AutoBalancer -> FlowCreditMarket** wiring is defined
+- This is where the **YieldVault -> AutoBalancer -> FlowCreditMarket** wiring is defined
 
 ### FlowVaultsAutoBalancers
   - Utility contract for:
-  - Storing AutoBalancer resources in the FlowVaults account (per Tide/UniqueID)
+  - Storing AutoBalancer resources in the FlowVaults account (per YieldVault/UniqueID)
   - Publishing public/private capabilities
   - Setting the AutoBalancer's **self capability** (for scheduling)
   - **Registering/unregistering with FlowVaultsScheduler**
-- On `_initNewAutoBalancer()`: registers tide and schedules first execution atomically
+- On `_initNewAutoBalancer()`: registers yield vault and schedules first execution atomically
 - On `_cleanupAutoBalancer()`: unregisters and cancels pending schedules
 
 ### DeFiActions.AutoBalancer (from FlowActions)
@@ -42,13 +42,13 @@
 
 ### FlowVaultsScheduler + FlowVaultsSchedulerRegistry
 - **FlowVaultsSchedulerRegistry** stores:
-  - `tideRegistry`: registered tide IDs
+  - `yieldVaultRegistry`: registered yield vault IDs
   - `handlerCaps`: direct capabilities to AutoBalancers (no wrapper)
-  - `pendingQueue`: tides needing (re)seeding (bounded by MAX_BATCH_SIZE=50)
+  - `pendingQueue`: yield vaults needing (re)seeding (bounded by MAX_BATCH_SIZE=50)
   - `supervisorCap`: capability for Supervisor self-scheduling
 - **FlowVaultsScheduler** provides:
-  - `registerTide()`: atomic registration + initial scheduling
-  - `unregisterTide()`: cleanup and fee refund
+  - `registerYieldVault()`: atomic registration + initial scheduling
+  - `unregisterYieldVault()`: cleanup and fee refund
   - `SchedulerManager`: tracks scheduled transactions
   - `Supervisor`: recovery handler for failed schedules
 
@@ -110,23 +110,23 @@ Inside `FlowVaultsStrategies.TracerStrategyComposer.createStrategy(...)`:
 The capability is issued directly to the AutoBalancer at its storage path:
 
    ```cadence
-// In registerTide():
-let abPath = FlowVaultsAutoBalancers.deriveAutoBalancerPath(id: tideID, storage: true) as! StoragePath
+// In registerYieldVault():
+let abPath = FlowVaultsAutoBalancers.deriveAutoBalancerPath(id: yieldVaultID, storage: true) as! StoragePath
 let handlerCap = self.account.capabilities.storage
     .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(abPath)
 ```
 
-### Atomic Registration at Tide Creation
+### Atomic Registration at YieldVault Creation
 
 When `_initNewAutoBalancer()` is called:
 
    ```cadence
 // Register with scheduler and schedule first execution atomically
 // This panics if scheduling fails, reverting AutoBalancer creation
-FlowVaultsScheduler.registerTide(tideID: uniqueID.id)
+FlowVaultsScheduler.registerYieldVault(yieldVaultID: uniqueID.id)
 ```
 
-`registerTide()` atomically:
+`registerYieldVault()` atomically:
 1. Issues capability to AutoBalancer
 2. Registers in FlowVaultsSchedulerRegistry
 3. Schedules first execution via SchedulerManager
@@ -159,17 +159,17 @@ The Supervisor handles failed schedules via a bounded pending queue:
   ```cadence
 access(FlowTransactionScheduler.Execute)
 fun executeTransaction(id: UInt64, data: AnyStruct?) {
-    // Process only pending tides (MAX 50 per run)
-    let pendingTides = FlowVaultsSchedulerRegistry.getPendingTideIDs()
+    // Process only pending yield vaults (MAX 50 per run)
+    let pendingYieldVaultIDs = FlowVaultsSchedulerRegistry.getPendingYieldVaultIDs()
     
-    for tideID in pendingTides {
-        if manager.hasScheduled(tideID: tideID) {
-            FlowVaultsSchedulerRegistry.dequeuePending(tideID: tideID)
+    for yieldVaultID in pendingYieldVaults {
+        if manager.hasScheduled(yieldVaultID: yieldVaultID) {
+            FlowVaultsSchedulerRegistry.dequeuePending(yieldVaultID: yieldVaultID)
             continue
         }
         
         // Schedule and dequeue
-        let handlerCap = FlowVaultsSchedulerRegistry.getHandlerCap(tideID: tideID)
+        let handlerCap = FlowVaultsSchedulerRegistry.getHandlerCap(yieldVaultID: yieldVaultID)
         // ... estimate fees, schedule, dequeue ...
     }
     
@@ -209,9 +209,9 @@ fun executeTransaction(id: UInt64, data: AnyStruct?) {
 ## 5. Key Points
 
 1. **Scheduled execution = calling `AutoBalancer.rebalance(force)` at time T**
-   - Semantically equivalent to manual `rebalanceTide`
+   - Semantically equivalent to manual `rebalanceYieldVault`
    
-2. **`rebalanceTide` does NOT directly call `rebalancePosition`**
+2. **`rebalanceYieldVault` does NOT directly call `rebalancePosition`**
    - Position rebalancing happens **indirectly** via connector graph and FlowCreditMarket's `pushToDrawDownSink` logic
    
 3. **Flow-only price changes do NOT trigger AutoBalancer rebalance**
@@ -228,7 +228,7 @@ fun executeTransaction(id: UInt64, data: AnyStruct?) {
 
 | Component | Responsibility |
 |-----------|---------------|
-| FlowVaults Tide | Holds strategy, user-facing |
+| FlowVaults YieldVault | Holds strategy, user-facing |
 | TracerStrategy | Wires AutoBalancer <-> FlowCreditMarket |
 | AutoBalancer | Manages Yield exposure, executes rebalance |
 | FlowCreditMarket Position | Manages collateral/debt health |

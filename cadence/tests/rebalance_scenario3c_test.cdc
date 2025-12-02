@@ -107,7 +107,7 @@ fun setup() {
 }
 
 access(all)
-fun test_RebalanceTideScenario3C() {
+fun test_RebalanceYieldVaultScenario3C() {
 	// Test.reset(to: snapshot)
 
 	let fundingAmount = 1000.0
@@ -126,7 +126,7 @@ fun test_RebalanceTideScenario3C() {
 	mintFlow(to: user, amount: fundingAmount)
     grantBeta(flowVaultsAccount, user)
 
-	createTide(
+	createYieldVault(
 		signer: user,
 		strategyIdentifier: strategyIdentifier,
 		vaultIdentifier: flowTokenIdentifier,
@@ -134,15 +134,15 @@ fun test_RebalanceTideScenario3C() {
 		beFailed: false
 	)
 
-	var tideIDs = getTideIDs(address: user.address)
+	var yieldVaultIDs = getYieldVaultIDs(address: user.address)
 	var pid  = 1 as UInt64
-	log("[TEST] Tide ID: \(tideIDs![0])")
-	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
-	Test.assertEqual(1, tideIDs!.length)
+	log("[TEST] YieldVault ID: \(yieldVaultIDs![0])")
+	Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
+	Test.assertEqual(1, yieldVaultIDs!.length)
 
 	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPriceIncrease)
 
-	let yieldTokensBefore = getAutoBalancerBalance(id: tideIDs![0])!
+	let yieldTokensBefore = getAutoBalancerBalance(id: yieldVaultIDs![0])!
 	let debtBefore = getMOETDebtFromPosition(pid: pid)
 	let flowCollateralBefore = getFlowCollateralFromPosition(pid: pid)
 	let flowCollateralValueBefore = flowCollateralBefore * 1.0  // Initial price is 1.0
@@ -180,10 +180,10 @@ fun test_RebalanceTideScenario3C() {
 		message: "Expected MOET debt to be \(expectedDebtValues[0]) but got \(debtBefore)"
 	)
 
-	rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
-	let yieldTokensAfterFlowPriceIncrease = getAutoBalancerBalance(id: tideIDs![0])!
+	let yieldTokensAfterFlowPriceIncrease = getAutoBalancerBalance(id: yieldVaultIDs![0])!
 	let flowCollateralAfterFlowIncrease = getFlowCollateralFromPosition(pid: pid)
 	let flowCollateralValueAfterFlowIncrease = flowCollateralAfterFlowIncrease * flowPriceIncrease
 	let debtAfterFlowIncrease = getMOETDebtFromPosition(pid: pid)
@@ -224,10 +224,10 @@ fun test_RebalanceTideScenario3C() {
 
 	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPriceIncrease)
 
-	rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	//rebalancePosition(signer: protocolAccount, pid: 0, force: true, beFailed: false)
 
-	let yieldTokensAfterYieldPriceIncrease = getAutoBalancerBalance(id: tideIDs![0])!
+	let yieldTokensAfterYieldPriceIncrease = getAutoBalancerBalance(id: yieldVaultIDs![0])!
 	let flowCollateralAfterYieldIncrease = getFlowCollateralFromPosition(pid: pid)
 	let flowCollateralValueAfterYieldIncrease = flowCollateralAfterYieldIncrease * flowPriceIncrease  // Flow price remains at 2.0
 	let debtAfterYieldIncrease = getMOETDebtFromPosition(pid: pid)
@@ -268,8 +268,8 @@ fun test_RebalanceTideScenario3C() {
 	
 
 
-	        // Skip closeTide for now due to getTideBalance precision issues
-        closeTide(signer: user, id: tideIDs![0], beFailed: false)
+	        // Skip closeYieldVault for now due to getYieldVaultBalance precision issues
+        closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
         
         log("\n=== TEST COMPLETE ===")
 }

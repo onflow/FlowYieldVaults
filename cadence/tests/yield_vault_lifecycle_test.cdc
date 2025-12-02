@@ -93,8 +93,8 @@ fun testLifecycle() {
     mintFlow(to: user, amount: initialFunding + depositAmount + 10.0) // extra for fees/buffer
     grantBeta(flowVaultsAccount, user)
 
-    // 1. Create Tide
-    createTide(
+    // 1. Create YieldVault
+    createYieldVault(
         signer: user,
         strategyIdentifier: strategyIdentifier,
         vaultIdentifier: flowTokenIdentifier,
@@ -102,41 +102,41 @@ fun testLifecycle() {
         beFailed: false
     )
 
-    let tideIDs = getTideIDs(address: user.address)
-    Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil")
-    Test.assertEqual(1, tideIDs!.length)
-    let tideID = tideIDs![0]
+    let yieldVaultIDs = getYieldVaultIDs(address: user.address)
+    Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil")
+    Test.assertEqual(1, yieldVaultIDs!.length)
+    let yieldVaultID = yieldVaultIDs![0]
 
-    log("✅ Tide created with ID: \(tideID)")
+    log("✅ YieldVault created with ID: \(yieldVaultID)")
 
-    // 2. Deposit to Tide
-    depositToTide(
+    // 2. Deposit to YieldVault
+    depositToYieldVault(
         signer: user,
-        id: tideID,
+        id: yieldVaultID,
         amount: depositAmount,
         beFailed: false
     )
-    log("✅ Deposited \(depositAmount) to Tide")
+    log("✅ Deposited to YieldVault")
     
     // Verify Balance roughly (exact amount depends on fees/slippage if any, but here mocks are 1:1 mostly)
-    // getTideBalance logic might need checking, but we assume it works.
+    // getYieldVaultBalance logic might need checking, but we assume it works.
 
-    // 3. Withdraw from Tide
-    withdrawFromTide(
+    // 3. Withdraw from YieldVault
+    withdrawFromYieldVault(
         signer: user,
-        id: tideID,
+        id: yieldVaultID,
         amount: withdrawAmount,
         beFailed: false
     )
-    log("✅ Withdrew \(withdrawAmount) from Tide")
+    log("✅ Withdrew from YieldVault")
 
-    // 4. Close Tide
-    closeTide(signer: user, id: tideID, beFailed: false)
-    log("✅ Closed Tide")
+    // 4. Close YieldVault
+    closeYieldVault(signer: user, id: yieldVaultID, beFailed: false)
+    log("✅ Closed YieldVault")
 
-    let finalTideIDs = getTideIDs(address: user.address)
-    Test.assert(finalTideIDs != nil, message: "Expected user's Tide IDs to be non-nil")
-    Test.assertEqual(0, finalTideIDs!.length)
+    let finalYieldVaultIDs = getYieldVaultIDs(address: user.address)
+    Test.assert(finalYieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil")
+    Test.assertEqual(0, finalYieldVaultIDs!.length)
 
     // Check final flow balance roughly
     let finalBalance = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!

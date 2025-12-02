@@ -25,7 +25,7 @@ access(all) let collateralFactor = 0.8
 access(all) let targetHealthFactor = 1.3
 
 access(all) var snapshot: UInt64 = 0
-access(all) var tideID: UInt64 = 0
+access(all) var yieldVaultID: UInt64 = 0
 
 access(all)
 fun setup() {
@@ -94,7 +94,7 @@ fun setup() {
 /// TEST 1: Native AutoBalancer scheduling and execution
 /// 
 /// ARCHITECTURE:
-/// - Tide creation triggers AutoBalancer initialization with recurringConfig
+/// - YieldVault creation triggers AutoBalancer initialization with recurringConfig
 /// - AutoBalancer self-schedules via FlowTransactionScheduler
 /// - Price changes trigger rebalancing on each execution
 ///
@@ -107,37 +107,37 @@ fun testNativeScheduledRebalancing() {
     let fundingAmount = 1000.0
     let user = Test.createAccount()
     
-    // Step 1: Create a Tide with initial funding
-    log("Step 1: Creating Tide...")
+    // Step 1: Create a YieldVault with initial funding
+    log("Step 1: Creating YieldVault...")
     mintFlow(to: user, amount: fundingAmount)
     let betaRef = grantBeta(flowVaultsAccount, user)
     Test.expect(betaRef, Test.beSucceeded())
     
-    let createTideRes = executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
+    let createYieldVaultRes = executeTransaction(
+        "../transactions/flow-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, fundingAmount],
         user
     )
-    Test.expect(createTideRes, Test.beSucceeded())
+    Test.expect(createYieldVaultRes, Test.beSucceeded())
     
-    // Get the tide ID from events
-    let tideIDsResult = getTideIDs(address: user.address)
-    Test.assert(tideIDsResult != nil, message: "Expected tide IDs to be non-nil")
-    let tideIDs = tideIDsResult!
-    Test.assert(tideIDs.length > 0, message: "Expected at least one tide")
-    tideID = tideIDs[0]
-    log("Tide created with ID: ".concat(tideID.toString()))
+    // Get the yield vault ID from events
+    let yieldVaultIDsResult = getYieldVaultIDs(address: user.address)
+    Test.assert(yieldVaultIDsResult != nil, message: "Expected yield vault IDs to be non-nil")
+    let yieldVaultIDs = yieldVaultIDsResult!
+    Test.assert(yieldVaultIDs.length > 0, message: "Expected at least one yield vault")
+    yieldVaultID = yieldVaultIDs[0]
+    log("YieldVault created with ID: ".concat(yieldVaultID.toString()))
     
-    // Step 2: Verify tide is registered in registry
-    log("Step 2: Verifying tide registration...")
-    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_tide_ids.cdc", [])
+    // Step 2: Verify yield vault is registered in registry
+    log("Step 2: Verifying yield vault registration...")
+    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_yield_vault_ids.cdc", [])
     Test.expect(regIDsRes, Test.beSucceeded())
     let regIDs = regIDsRes.returnValue! as! [UInt64]
-    Test.assert(regIDs.contains(tideID), message: "Tide should be in registry")
-    log("Tide is registered in FlowVaultsSchedulerRegistry")
+    Test.assert(regIDs.contains(yieldVaultID), message: "YieldVault should be in registry")
+    log("YieldVault is registered in FlowVaultsSchedulerRegistry")
     
     // Step 3: Get initial AutoBalancer balance
-    let initialBalance = getAutoBalancerBalance(id: tideID)
+    let initialBalance = getAutoBalancerBalance(id: yieldVaultID)
     log("Initial AutoBalancer balance: ".concat((initialBalance ?? 0.0).toString()))
     
     // Step 4: Change prices to trigger rebalancing
@@ -171,7 +171,7 @@ fun testNativeScheduledRebalancing() {
     log("Step 6: Checking balance changes...")
     
     let initialBal = initialBalance ?? 0.0
-    let finalBalance = getAutoBalancerBalance(id: tideID) ?? 0.0
+    let finalBalance = getAutoBalancerBalance(id: yieldVaultID) ?? 0.0
     
     log("Initial AutoBalancer balance: ".concat(initialBal.toString()))
     log("Final AutoBalancer balance: ".concat(finalBalance.toString()))
@@ -195,21 +195,21 @@ fun testMultipleExecutionsWithPriceChanges() {
     mintFlow(to: user, amount: 500.0)
     grantBeta(flowVaultsAccount, user)
     
-    // Step 1: Create Tide
-    log("Step 1: Creating Tide...")
-    let createTideRes = executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
+    // Step 1: Create YieldVault
+    log("Step 1: Creating YieldVault...")
+    let createYieldVaultRes = executeTransaction(
+        "../transactions/flow-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 200.0],
         user
     )
-    Test.expect(createTideRes, Test.beSucceeded())
+    Test.expect(createYieldVaultRes, Test.beSucceeded())
     
-    let tideIDs = getTideIDs(address: user.address)!
-    let myTideID = tideIDs[0]
-    log("Tide created: ".concat(myTideID.toString()))
-    
+    let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
+    let myYieldVaultID = yieldVaultIDs[0]
+    log("YieldVault created: ".concat(myYieldVaultID.toString()))
+
     // Track initial state
-    let balance0 = getAutoBalancerBalance(id: myTideID) ?? 0.0
+    let balance0 = getAutoBalancerBalance(id: myYieldVaultID) ?? 0.0
     log("Initial balance: ".concat(balance0.toString()))
     
     // Step 2: First execution with price change
@@ -220,7 +220,7 @@ fun testMultipleExecutionsWithPriceChanges() {
     Test.commitBlock()
     
     let execEvents1 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-    let balance1 = getAutoBalancerBalance(id: myTideID) ?? 0.0
+    let balance1 = getAutoBalancerBalance(id: myYieldVaultID) ?? 0.0
     log("After execution 1 - Events: ".concat(execEvents1.length.toString()).concat(", Balance: ").concat(balance1.toString()))
     Test.assert(balance1 != balance0, message: "Balance should change after execution 1")
     
@@ -232,7 +232,7 @@ fun testMultipleExecutionsWithPriceChanges() {
     Test.commitBlock()
     
     let execEvents2 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-    let balance2 = getAutoBalancerBalance(id: myTideID) ?? 0.0
+    let balance2 = getAutoBalancerBalance(id: myYieldVaultID) ?? 0.0
     log("After execution 2 - Events: ".concat(execEvents2.length.toString()).concat(", Balance: ").concat(balance2.toString()))
     Test.assert(balance2 != balance1, message: "Balance should change after execution 2")
     
@@ -244,7 +244,7 @@ fun testMultipleExecutionsWithPriceChanges() {
     Test.commitBlock()
     
     let execEvents3 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
-    let balance3 = getAutoBalancerBalance(id: myTideID) ?? 0.0
+    let balance3 = getAutoBalancerBalance(id: myYieldVaultID) ?? 0.0
     log("After execution 3 - Events: ".concat(execEvents3.length.toString()).concat(", Balance: ").concat(balance3.toString()))
     Test.assert(balance3 != balance2, message: "Balance should change after execution 3")
     

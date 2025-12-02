@@ -25,11 +25,11 @@ access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 access(all) var snapshot: UInt64 = 0
 
 // ARCHITECTURE EXPECTATIONS:
-// 1. When a Tide is created, the AutoBalancer is configured with recurringConfig
-// 2. FlowVaultsAutoBalancers._initNewAutoBalancer registers tide in FlowVaultsSchedulerRegistry
+// 1. When a YieldVault is created, the AutoBalancer is configured with recurringConfig
+// 2. FlowVaultsAutoBalancers._initNewAutoBalancer registers yield vault in FlowVaultsSchedulerRegistry
 // 3. AutoBalancer.scheduleNextRebalance(nil) starts the self-scheduling chain
 // 4. AutoBalancer self-reschedules after each execution (no external intervention needed)
-// 5. The Supervisor is for recovery only - picks up tides from pending queue
+// 5. The Supervisor is for recovery only - picks up yield vaults from pending queue
 //
 // PRICE SEMANTICS:
 // - flowTokenIdentifier (FLOW): The COLLATERAL token deposited into FlowCreditMarket
@@ -96,56 +96,56 @@ fun setup() {
     log("Setup complete. Snapshot at block: ".concat(snapshot.toString()))
 }
 
-/// TEST 1: Verify that the registry receives tide registration when AutoBalancer is initialized
+/// TEST 1: Verify that the registry receives yield vault registration when AutoBalancer is initialized
 /// 
 /// EXPECTATIONS:
-/// - Exactly 1 TideRegistered event emitted
-/// - Tide ID is in registry
+/// - Exactly 1 YieldVaultRegistered event emitted
+/// - YieldVault ID is in registry
 ///
 /// NOTE: First test does NOT call Test.reset since it runs immediately after setup()
 ///
 access(all)
-fun testRegistryReceivesTideRegistrationAtInit() {
+fun testRegistryReceivesYieldVaultRegistrationAtInit() {
     // First test - no reset needed
     log("\n========================================")
-    log("TEST: Registry receives tide registration at AutoBalancer init")
+    log("TEST: Registry receives yield vault registration at AutoBalancer init")
     log("========================================")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 1000.0)
     grantBeta(flowVaultsAccount, user)
     
-    // Create a Tide - this triggers AutoBalancer initialization
-    log("Creating Tide...")
-    let createTideRes = executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
+    // Create a YieldVault - this triggers AutoBalancer initialization
+    log("Creating YieldVault...")
+    let createYieldVaultRes = executeTransaction(
+        "../transactions/flow-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user
     )
-    Test.expect(createTideRes, Test.beSucceeded())
+    Test.expect(createYieldVaultRes, Test.beSucceeded())
     
-    let tideIDs = getTideIDs(address: user.address)!
-    let tideID = tideIDs[0]
-    log("Tide created with ID: ".concat(tideID.toString()))
+    let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
+    let yieldVaultID = yieldVaultIDs[0]
+    log("YieldVault created with ID: ".concat(yieldVaultID.toString()))
     
-    // Verify TideRegistered event
-    let regEvents = Test.eventsOfType(Type<FlowVaultsSchedulerRegistry.TideRegistered>())
+    // Verify YieldVaultRegistered event
+    let regEvents = Test.eventsOfType(Type<FlowVaultsSchedulerRegistry.YieldVaultRegistered>())
     Test.assertEqual(1, regEvents.length)
-    log("TideRegistered events: ".concat(regEvents.length.toString()))
+    log("YieldVaultRegistered events: ".concat(regEvents.length.toString()))
     
-    // Verify tide is in registry
-    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_tide_ids.cdc", [])
+    // Verify yield vault is in registry
+    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_yield_vault_ids.cdc", [])
     Test.expect(regIDsRes, Test.beSucceeded())
     let regIDs = regIDsRes.returnValue! as! [UInt64]
-    Test.assert(regIDs.contains(tideID), message: "Tide should be in registry")
+    Test.assert(regIDs.contains(yieldVaultID), message: "YieldVault should be in registry")
     
-    log("PASS: Registry receives tide registration at AutoBalancer init")
+    log("PASS: Registry receives yield vault registration at AutoBalancer init")
 }
 
 /// TEST 2: Single AutoBalancer executes exactly 3 times
 ///
 /// EXPECTATIONS:
-/// - 1 tide created
+/// - 1 yield vault created
 /// - After 3 time advances (70s each), exactly 3 FlowTransactionScheduler.Executed events
 /// - Balance changes after each execution
 ///
@@ -160,21 +160,21 @@ fun testSingleAutoBalancerThreeExecutions() {
     mintFlow(to: user, amount: 1000.0)
     grantBeta(flowVaultsAccount, user)
     
-    // Create Tide
-    log("Creating Tide...")
-    let createTideRes = executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
+    // Create YieldVault
+    log("Creating YieldVault...")
+    let createYieldVaultRes = executeTransaction(
+        "../transactions/flow-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 500.0],
         user
     )
-    Test.expect(createTideRes, Test.beSucceeded())
+    Test.expect(createYieldVaultRes, Test.beSucceeded())
     
-    let tideIDs = getTideIDs(address: user.address)!
-    let tideID = tideIDs[0]
-    log("Tide created with ID: ".concat(tideID.toString()))
+    let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
+    let yieldVaultID = yieldVaultIDs[0]
+    log("YieldVault created with ID: ".concat(yieldVaultID.toString()))
     
     // Get initial balance
-    let balance0 = getAutoBalancerBalance(id: tideID) ?? 0.0
+    let balance0 = getAutoBalancerBalance(id: yieldVaultID) ?? 0.0
     log("Initial balance: ".concat(balance0.toString()))
     
     // EXECUTION 1: Change FLOW (collateral) price and advance time
@@ -190,7 +190,7 @@ fun testSingleAutoBalancerThreeExecutions() {
     log("Scheduler.Executed events: ".concat(events1.length.toString()))
     Test.assertEqual(1, events1.length)
     
-    let balance1 = getAutoBalancerBalance(id: tideID) ?? 0.0
+    let balance1 = getAutoBalancerBalance(id: yieldVaultID) ?? 0.0
     log("Balance after execution 1: ".concat(balance1.toString()))
     Test.assert(balance1 != balance0, message: "Balance should change after execution 1 (was: ".concat(balance0.toString()).concat(", now: ").concat(balance1.toString()).concat(")"))
     
@@ -207,7 +207,7 @@ fun testSingleAutoBalancerThreeExecutions() {
     log("Scheduler.Executed events: ".concat(events2.length.toString()))
     Test.assertEqual(2, events2.length)
     
-    let balance2 = getAutoBalancerBalance(id: tideID) ?? 0.0
+    let balance2 = getAutoBalancerBalance(id: yieldVaultID) ?? 0.0
     log("Balance after execution 2: ".concat(balance2.toString()))
     Test.assert(balance2 != balance1, message: "Balance should change after execution 2 (was: ".concat(balance1.toString()).concat(", now: ").concat(balance2.toString()).concat(")"))
     
@@ -224,7 +224,7 @@ fun testSingleAutoBalancerThreeExecutions() {
     log("Scheduler.Executed events: ".concat(events3.length.toString()))
     Test.assertEqual(3, events3.length)
     
-    let balance3 = getAutoBalancerBalance(id: tideID) ?? 0.0
+    let balance3 = getAutoBalancerBalance(id: yieldVaultID) ?? 0.0
     log("Balance after execution 3: ".concat(balance3.toString()))
     Test.assert(balance3 != balance2, message: "Balance should change after execution 3 (was: ".concat(balance2.toString()).concat(", now: ").concat(balance3.toString()).concat(")"))
     
@@ -238,29 +238,29 @@ fun testSingleAutoBalancerThreeExecutions() {
     log("PASS: Single AutoBalancer executed exactly 3 times")
 }
 
-/// TEST 3: Three tides, each executes 3 times = 9 total executions
+/// TEST 3: Three yield vaults, each executes 3 times = 9 total executions
 ///
 /// EXPECTATIONS:
-/// - 3 tides created
-/// - After 3 time advances, exactly 9 FlowTransactionScheduler.Executed events (3 per tide)
+/// - 3 yield vaults created
+/// - After 3 time advances, exactly 9 FlowTransactionScheduler.Executed events (3 per yield vault)
 ///
 access(all)
-fun testThreeTidesNineExecutions() {
+fun testThreeYieldVaultsNineExecutions() {
     Test.reset(to: snapshot)
     log("\n========================================")
-    log("TEST: Three tides each execute 3 times = 9 total")
+    log("TEST: Three yield vaults each execute 3 times = 9 total")
     log("========================================")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 3000.0)
     grantBeta(flowVaultsAccount, user)
     
-    // Create 3 tides
-    log("Creating 3 tides...")
+    // Create 3 yield vaults
+    log("Creating 3 yield vaults...")
     var i = 0
     while i < 3 {
         let res = executeTransaction(
-            "../transactions/flow-vaults/create_tide.cdc",
+            "../transactions/flow-vaults/create_yield_vault.cdc",
             [strategyIdentifier, flowTokenIdentifier, 200.0],
             user
         )
@@ -268,23 +268,23 @@ fun testThreeTidesNineExecutions() {
         i = i + 1
     }
     
-    let tideIDs = getTideIDs(address: user.address)!
-    Test.assertEqual(3, tideIDs.length)
-    log("Created tides: ".concat(tideIDs[0].toString()).concat(", ").concat(tideIDs[1].toString()).concat(", ").concat(tideIDs[2].toString()))
+    let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
+    Test.assertEqual(3, yieldVaultIDs.length)
+    log("Created yield vaults: ".concat(yieldVaultIDs[0].toString()).concat(", ").concat(yieldVaultIDs[1].toString()).concat(", ").concat(yieldVaultIDs[2].toString()))
     
     // Verify all registered
-    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_tide_ids.cdc", [])
+    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_yield_vault_ids.cdc", [])
     let regIDs = regIDsRes.returnValue! as! [UInt64]
     Test.assertEqual(3, regIDs.length)
-    log("All 3 tides registered")
+    log("All 3 yield vaults registered")
     
-    // Track initial balances for all 3 tides
-    var balance0_prev = getAutoBalancerBalance(id: tideIDs[0]) ?? 0.0
-    var balance1_prev = getAutoBalancerBalance(id: tideIDs[1]) ?? 0.0
-    var balance2_prev = getAutoBalancerBalance(id: tideIDs[2]) ?? 0.0
+    // Track initial balances for all 3 yield vaults
+    var balance0_prev = getAutoBalancerBalance(id: yieldVaultIDs[0]) ?? 0.0
+    var balance1_prev = getAutoBalancerBalance(id: yieldVaultIDs[1]) ?? 0.0
+    var balance2_prev = getAutoBalancerBalance(id: yieldVaultIDs[2]) ?? 0.0
     log("Initial balances: T0=".concat(balance0_prev.toString()).concat(", T1=").concat(balance1_prev.toString()).concat(", T2=").concat(balance2_prev.toString()))
     
-    // ROUND 1: 3 executions (1 per tide)
+    // ROUND 1: 3 executions (1 per yield vault)
     log("\n--- ROUND 1 ---")
     setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.3)
     setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2)
@@ -296,13 +296,13 @@ fun testThreeTidesNineExecutions() {
     Test.assertEqual(3, events1.length)
     
     // Verify balance changes for round 1
-    var balance0_r1 = getAutoBalancerBalance(id: tideIDs[0]) ?? 0.0
-    var balance1_r1 = getAutoBalancerBalance(id: tideIDs[1]) ?? 0.0
-    var balance2_r1 = getAutoBalancerBalance(id: tideIDs[2]) ?? 0.0
+    var balance0_r1 = getAutoBalancerBalance(id: yieldVaultIDs[0]) ?? 0.0
+    var balance1_r1 = getAutoBalancerBalance(id: yieldVaultIDs[1]) ?? 0.0
+    var balance2_r1 = getAutoBalancerBalance(id: yieldVaultIDs[2]) ?? 0.0
     log("Round 1 balances: T0=".concat(balance0_r1.toString()).concat(", T1=").concat(balance1_r1.toString()).concat(", T2=").concat(balance2_r1.toString()))
-    Test.assert(balance0_r1 != balance0_prev, message: "Tide 0 balance should change after round 1")
-    Test.assert(balance1_r1 != balance1_prev, message: "Tide 1 balance should change after round 1")
-    Test.assert(balance2_r1 != balance2_prev, message: "Tide 2 balance should change after round 1")
+    Test.assert(balance0_r1 != balance0_prev, message: "YieldVault 0 balance should change after round 1")
+    Test.assert(balance1_r1 != balance1_prev, message: "YieldVault 1 balance should change after round 1")
+    Test.assert(balance2_r1 != balance2_prev, message: "YieldVault 2 balance should change after round 1")
     
     // ROUND 2: 6 total executions
     log("\n--- ROUND 2 ---")
@@ -316,13 +316,13 @@ fun testThreeTidesNineExecutions() {
     Test.assertEqual(6, events2.length)
     
     // Verify balance changes for round 2
-    var balance0_r2 = getAutoBalancerBalance(id: tideIDs[0]) ?? 0.0
-    var balance1_r2 = getAutoBalancerBalance(id: tideIDs[1]) ?? 0.0
-    var balance2_r2 = getAutoBalancerBalance(id: tideIDs[2]) ?? 0.0
+    var balance0_r2 = getAutoBalancerBalance(id: yieldVaultIDs[0]) ?? 0.0
+    var balance1_r2 = getAutoBalancerBalance(id: yieldVaultIDs[1]) ?? 0.0
+    var balance2_r2 = getAutoBalancerBalance(id: yieldVaultIDs[2]) ?? 0.0
     log("Round 2 balances: T0=".concat(balance0_r2.toString()).concat(", T1=").concat(balance1_r2.toString()).concat(", T2=").concat(balance2_r2.toString()))
-    Test.assert(balance0_r2 != balance0_r1, message: "Tide 0 balance should change after round 2")
-    Test.assert(balance1_r2 != balance1_r1, message: "Tide 1 balance should change after round 2")
-    Test.assert(balance2_r2 != balance2_r1, message: "Tide 2 balance should change after round 2")
+    Test.assert(balance0_r2 != balance0_r1, message: "YieldVault 0 balance should change after round 2")
+    Test.assert(balance1_r2 != balance1_r1, message: "YieldVault 1 balance should change after round 2")
+    Test.assert(balance2_r2 != balance2_r1, message: "YieldVault 2 balance should change after round 2")
     
     // ROUND 3: 9 total executions
     log("\n--- ROUND 3 ---")
@@ -336,51 +336,51 @@ fun testThreeTidesNineExecutions() {
     Test.assertEqual(9, events3.length)
     
     // Verify balance changes for round 3
-    var balance0_r3 = getAutoBalancerBalance(id: tideIDs[0]) ?? 0.0
-    var balance1_r3 = getAutoBalancerBalance(id: tideIDs[1]) ?? 0.0
-    var balance2_r3 = getAutoBalancerBalance(id: tideIDs[2]) ?? 0.0
+    var balance0_r3 = getAutoBalancerBalance(id: yieldVaultIDs[0]) ?? 0.0
+    var balance1_r3 = getAutoBalancerBalance(id: yieldVaultIDs[1]) ?? 0.0
+    var balance2_r3 = getAutoBalancerBalance(id: yieldVaultIDs[2]) ?? 0.0
     log("Round 3 balances: T0=".concat(balance0_r3.toString()).concat(", T1=").concat(balance1_r3.toString()).concat(", T2=").concat(balance2_r3.toString()))
-    Test.assert(balance0_r3 != balance0_r2, message: "Tide 0 balance should change after round 3")
-    Test.assert(balance1_r3 != balance1_r2, message: "Tide 1 balance should change after round 3")
-    Test.assert(balance2_r3 != balance2_r2, message: "Tide 2 balance should change after round 3")
+    Test.assert(balance0_r3 != balance0_r2, message: "YieldVault 0 balance should change after round 3")
+    Test.assert(balance1_r3 != balance1_r2, message: "YieldVault 1 balance should change after round 3")
+    Test.assert(balance2_r3 != balance2_r2, message: "YieldVault 2 balance should change after round 3")
     
     // Verify rebalancing events
     let rebalanceEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
     log("DeFiActions.Rebalanced events: ".concat(rebalanceEvents.length.toString()))
     Test.assertEqual(9, rebalanceEvents.length)
     
-    log("PASS: Three tides each executed exactly 3 times (9 total)")
+    log("PASS: Three yield vaults each executed exactly 3 times (9 total)")
 }
 
 // NOTE: Supervisor recovery test is in scheduled_supervisor_test.cdc
 // to avoid Test.reset timing issues with accumulated block time.
 
-/// TEST 4: Five tides continue executing even if Supervisor is not running
+/// TEST 4: Five yield vaults continue executing even if Supervisor is not running
 ///
 /// EXPECTATIONS:
-/// - 5 tides created
+/// - 5 yield vaults created
 /// - 3 rounds of execution = 15 executions
 /// - Supervisor is NOT set up
 /// - 3 more rounds = 15 more executions = 30 total
-/// - Tides continue perpetually without Supervisor
+/// - YieldVaults continue perpetually without Supervisor
 ///
 access(all)
-fun testFiveTidesContinueWithoutSupervisor() {
+fun testFiveYieldVaultsContinueWithoutSupervisor() {
     Test.reset(to: snapshot)
     log("\n========================================")
-    log("TEST: Tides continue executing without Supervisor")
+    log("TEST: YieldVaults continue executing without Supervisor")
     log("========================================")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 5000.0)
     grantBeta(flowVaultsAccount, user)
     
-    // Create 5 tides
-    log("Creating 5 tides...")
+    // Create 5 yield vaults
+    log("Creating 5 yield vaults...")
     var i = 0
     while i < 5 {
         let res = executeTransaction(
-            "../transactions/flow-vaults/create_tide.cdc",
+            "../transactions/flow-vaults/create_yield_vault.cdc",
             [strategyIdentifier, flowTokenIdentifier, 150.0],
             user
         )
@@ -388,15 +388,15 @@ fun testFiveTidesContinueWithoutSupervisor() {
         i = i + 1
     }
     
-    let tideIDs = getTideIDs(address: user.address)!
-    Test.assertEqual(5, tideIDs.length)
-    log("Created 5 tides")
+    let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
+    Test.assertEqual(5, yieldVaultIDs.length)
+    log("Created 5 yield vaults")
     
-    // Track balances for all 5 tides - use arrays for tracking
+    // Track balances for all 5 yield vaults - use arrays for tracking
     var prevBalances: [UFix64] = []
     var idx = 0
     while idx < 5 {
-        prevBalances.append(getAutoBalancerBalance(id: tideIDs[idx]) ?? 0.0)
+        prevBalances.append(getAutoBalancerBalance(id: yieldVaultIDs[idx]) ?? 0.0)
         idx = idx + 1
     }
     log("Initial balances: T0=".concat(prevBalances[0].toString()).concat(", T1=").concat(prevBalances[1].toString()).concat(", T2=").concat(prevBalances[2].toString()).concat(", T3=").concat(prevBalances[3].toString()).concat(", T4=").concat(prevBalances[4].toString()))
@@ -411,15 +411,15 @@ fun testFiveTidesContinueWithoutSupervisor() {
         Test.moveTime(by: 70.0)
         Test.commitBlock()
         
-        // Verify all 5 tides changed balance
+        // Verify all 5 yield vaults changed balance
         idx = 0
         while idx < 5 {
-            let newBal = getAutoBalancerBalance(id: tideIDs[idx]) ?? 0.0
-            Test.assert(newBal != prevBalances[idx], message: "Tide ".concat(idx.toString()).concat(" balance should change after round ").concat(round.toString()))
+            let newBal = getAutoBalancerBalance(id: yieldVaultIDs[idx]) ?? 0.0
+            Test.assert(newBal != prevBalances[idx], message: "YieldVault ".concat(idx.toString()).concat(" balance should change after round ").concat(round.toString()))
             prevBalances[idx] = newBal
             idx = idx + 1
         }
-        log("Round ".concat(round.toString()).concat(" balances verified for all 5 tides"))
+        log("Round ".concat(round.toString()).concat(" balances verified for all 5 yield vaults"))
         round = round + 1
     }
     
@@ -430,7 +430,7 @@ fun testFiveTidesContinueWithoutSupervisor() {
     // NOTE: Supervisor is NOT running
     log("\nSupervisor is NOT running (simulating failure)")
     
-    // 3 more rounds - tides should continue with balance verification
+    // 3 more rounds - yield vaults should continue with balance verification
     log("\nExecuting 3 more rounds without Supervisor...")
     round = 1
     while round <= 3 {
@@ -440,15 +440,15 @@ fun testFiveTidesContinueWithoutSupervisor() {
         Test.moveTime(by: 70.0)
         Test.commitBlock()
         
-        // Verify all 5 tides changed balance
+        // Verify all 5 yield vaults changed balance
         idx = 0
         while idx < 5 {
-            let newBal = getAutoBalancerBalance(id: tideIDs[idx]) ?? 0.0
-            Test.assert(newBal != prevBalances[idx], message: "Tide ".concat(idx.toString()).concat(" balance should change after round ").concat((round + 3).toString()))
+            let newBal = getAutoBalancerBalance(id: yieldVaultIDs[idx]) ?? 0.0
+            Test.assert(newBal != prevBalances[idx], message: "YieldVault ".concat(idx.toString()).concat(" balance should change after round ").concat((round + 3).toString()))
             prevBalances[idx] = newBal
             idx = idx + 1
         }
-        log("Round ".concat((round + 3).toString()).concat(" balances verified for all 5 tides"))
+        log("Round ".concat((round + 3).toString()).concat(" balances verified for all 5 yield vaults"))
         round = round + 1
     }
     
@@ -456,44 +456,44 @@ fun testFiveTidesContinueWithoutSupervisor() {
     log("Executions after 6 rounds: ".concat(events6.length.toString()))
     Test.assertEqual(30, events6.length)
     
-    log("PASS: Tides continue executing perpetually without Supervisor with verified balance changes")
+    log("PASS: YieldVaults continue executing perpetually without Supervisor with verified balance changes")
 }
 
-/// TEST 6: Healthy tides never become stuck
+/// TEST 6: Healthy yield vaults never become stuck
 ///
-/// This test verifies that healthy tides (with sufficient funding) continue to execute
+/// This test verifies that healthy yield vaults (with sufficient funding) continue to execute
 /// without ever needing Supervisor intervention. The Supervisor is a RECOVERY mechanism
-/// for tides that fail to self-reschedule.
+/// for yield vaults that fail to self-reschedule.
 ///
-/// Tests that a tide that fails to reschedule cannot recover without Supervisor
+/// Tests that a yield vault that fails to reschedule cannot recover without Supervisor
 /// 
 /// TEST SCENARIO:
-/// 1. Create 3 tides, let them execute 2 rounds (healthy)
+/// 1. Create 3 yield vaults, let them execute 2 rounds (healthy)
 /// 2. Drain FLOW from the fee vault (causes reschedule failures)
-/// 3. Wait for tides to fail rescheduling and become stuck
-/// 4. Verify tides are stuck (no active schedules, overdue)
-/// 5. Wait more time - tides should remain stuck (no Supervisor to recover them)
-/// 6. Verify execution count doesn't increase (stuck tides don't execute)
+/// 3. Wait for yield vaults to fail rescheduling and become stuck
+/// 4. Verify yield vaults are stuck (no active schedules, overdue)
+/// 5. Wait more time - yield vaults should remain stuck (no Supervisor to recover them)
+/// 6. Verify execution count doesn't increase (stuck yield vaults don't execute)
 ///
-/// This proves that without Supervisor, stuck tides cannot recover.
+/// This proves that without Supervisor, stuck yield vaults cannot recover.
 ///
 access(all)
-fun testFailedTideCannotRecoverWithoutSupervisor() {
+fun testFailedYieldVaultCannotRecoverWithoutSupervisor() {
     Test.reset(to: snapshot)
     log("\n========================================")
-    log("TEST: Failed tide cannot recover without Supervisor")
+    log("TEST: Failed yield vault cannot recover without Supervisor")
     log("========================================")
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 2000.0)
     grantBeta(flowVaultsAccount, user)
     
-    // Step 1: Create 3 tides
-    log("\nStep 1: Creating 3 tides...")
+    // Step 1: Create 3 yield vaults
+    log("\nStep 1: Creating 3 yield vaults...")
     var i = 0
     while i < 3 {
         let res = executeTransaction(
-            "../transactions/flow-vaults/create_tide.cdc",
+            "../transactions/flow-vaults/create_yield_vault.cdc",
             [strategyIdentifier, flowTokenIdentifier, 100.0],
             user
         )
@@ -501,15 +501,15 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
         i = i + 1
     }
     
-    let tideIDs = getTideIDs(address: user.address)!
-    Test.assertEqual(3, tideIDs.length)
-    log("Created 3 tides")
+    let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
+    Test.assertEqual(3, yieldVaultIDs.length)
+    log("Created 3 yield vaults")
     
-    // Track balances for all 3 tides
+    // Track balances for all 3 yield vaults
     var prevBalances: [UFix64] = []
     var idx = 0
     while idx < 3 {
-        prevBalances.append(getAutoBalancerBalance(id: tideIDs[idx]) ?? 0.0)
+        prevBalances.append(getAutoBalancerBalance(id: yieldVaultIDs[idx]) ?? 0.0)
         idx = idx + 1
     }
     log("Initial balances: T0=".concat(prevBalances[0].toString()).concat(", T1=").concat(prevBalances[1].toString()).concat(", T2=").concat(prevBalances[2].toString()))
@@ -524,21 +524,21 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
         Test.moveTime(by: 70.0)
         Test.commitBlock()
         
-        // Verify all 3 tides changed balance
+        // Verify all 3 yield vaults changed balance
         idx = 0
         while idx < 3 {
-            let newBal = getAutoBalancerBalance(id: tideIDs[idx]) ?? 0.0
-            Test.assert(newBal != prevBalances[idx], message: "Tide ".concat(idx.toString()).concat(" balance should change after round ").concat(round.toString()))
+            let newBal = getAutoBalancerBalance(id: yieldVaultIDs[idx]) ?? 0.0
+            Test.assert(newBal != prevBalances[idx], message: "YieldVault ".concat(idx.toString()).concat(" balance should change after round ").concat(round.toString()))
             prevBalances[idx] = newBal
             idx = idx + 1
         }
-        log("Round ".concat(round.toString()).concat(" balances verified for all 3 tides"))
+        log("Round ".concat(round.toString()).concat(" balances verified for all 3 yield vaults"))
         round = round + 1
     }
     
     let eventsBeforeDrain = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("Executions before drain: ".concat(eventsBeforeDrain.length.toString()))
-    Test.assert(eventsBeforeDrain.length >= 6, message: "Should have at least 6 executions (3 tides x 2 rounds)")
+    Test.assert(eventsBeforeDrain.length >= 6, message: "Should have at least 6 executions (3 yield vaults x 2 rounds)")
     
     // Step 3: Drain FLOW from FlowVaults account
     log("\nStep 3: Draining FLOW to cause reschedule failures...")
@@ -566,7 +566,7 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
     log("Balance after drain: ".concat(balanceAfterDrain.toString()))
     
     // Step 4: Wait for pre-scheduled transactions to execute (and fail to reschedule)
-    // Tides execute every 60s, we need 2-3 rounds for the pre-scheduled txns to complete
+    // YieldVaults execute every 60s, we need 2-3 rounds for the pre-scheduled txns to complete
     log("\nStep 4: Waiting for pre-scheduled transactions to execute...")
     round = 0
     while round < 3 {
@@ -575,36 +575,36 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
         round = round + 1
     }
     
-    // After tides execute, they try to reschedule but fail due to insufficient funds
+    // After yield vaults execute, they try to reschedule but fail due to insufficient funds
     // Now wait at least one MORE interval (60s) so they become overdue
-    log("\nStep 4b: Waiting for tides to become overdue (no active schedules)...")
-    Test.moveTime(by: 120.0)  // Wait 2 intervals to ensure all tides are past their next expected time
+    log("\nStep 4b: Waiting for yield vaults to become overdue (no active schedules)...")
+    Test.moveTime(by: 120.0)  // Wait 2 intervals to ensure all yield vaults are past their next expected time
     Test.commitBlock()
     
     let eventsAfterDrain = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("Executions after drain+wait: ".concat(eventsAfterDrain.length.toString()))
     
-    // Step 5: Check how many tides are stuck (no active schedules + overdue)
-    log("\nStep 5: Checking stuck tides...")
+    // Step 5: Check how many yield vaults are stuck (no active schedules + overdue)
+    log("\nStep 5: Checking stuck yield vaults...")
     var stuckCount = 0
-    for tideID in tideIDs {
-        let isStuckRes = executeScript("../scripts/flow-vaults/is_stuck_tide.cdc", [tideID])
+    for yieldVaultID in yieldVaultIDs {
+        let isStuckRes = executeScript("../scripts/flow-vaults/is_stuck_yield_vault.cdc", [yieldVaultID])
         if isStuckRes.returnValue != nil {
             let isStuck = isStuckRes.returnValue! as! Bool
             if isStuck {
                 stuckCount = stuckCount + 1
-                log("Tide ".concat(tideID.toString()).concat(" is STUCK"))
+                log("YieldVault ".concat(yieldVaultID.toString()).concat(" is STUCK"))
             }
         }
     }
-    log("Stuck tides: ".concat(stuckCount.toString()).concat(" / 3"))
-    Test.assert(stuckCount >= 2, message: "At least 2 tides should be stuck after draining funds")
+    log("Stuck yield vaults: ".concat(stuckCount.toString()).concat(" / 3"))
+    Test.assert(stuckCount >= 2, message: "At least 2 yield vaults should be stuck after draining funds")
     
     // Record execution count at this point
     let execCountWhenStuck = eventsAfterDrain.length
     
-    // Step 6: Wait more time - stuck tides should NOT recover (no Supervisor)
-    log("\nStep 6: Waiting more (stuck tides should stay stuck without Supervisor)...")
+    // Step 6: Wait more time - stuck yield vaults should NOT recover (no Supervisor)
+    log("\nStep 6: Waiting more (stuck yield vaults should stay stuck without Supervisor)...")
     round = 0
     while round < 3 {
         Test.moveTime(by: 70.0)
@@ -615,14 +615,14 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
     let eventsFinal = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("Final executions: ".concat(eventsFinal.length.toString()))
     
-    // Execution count should not have increased much (stuck tides don't execute)
+    // Execution count should not have increased much (stuck yield vaults don't execute)
     let newExecutions = eventsFinal.length - execCountWhenStuck
     log("New executions while stuck (without Supervisor): ".concat(newExecutions.toString()))
     
-    // Re-check stuck tides
+    // Re-check stuck yield vaults
     var stillStuckCount = 0
-    for tideID in tideIDs {
-        let isStuckRes = executeScript("../scripts/flow-vaults/is_stuck_tide.cdc", [tideID])
+    for yieldVaultID in yieldVaultIDs {
+        let isStuckRes = executeScript("../scripts/flow-vaults/is_stuck_yield_vault.cdc", [yieldVaultID])
         if isStuckRes.returnValue != nil {
             let isStuck = isStuckRes.returnValue! as! Bool
             if isStuck {
@@ -630,21 +630,21 @@ fun testFailedTideCannotRecoverWithoutSupervisor() {
             }
         }
     }
-    log("Tides still stuck: ".concat(stillStuckCount.toString()).concat(" / 3"))
+    log("YieldVaults still stuck: ".concat(stillStuckCount.toString()).concat(" / 3"))
     
-    // Stuck tides should remain stuck without Supervisor
-    Test.assert(stillStuckCount >= 2, message: "Stuck tides should remain stuck without Supervisor")
+    // Stuck yield vaults should remain stuck without Supervisor
+    Test.assert(stillStuckCount >= 2, message: "Stuck yield vaults should remain stuck without Supervisor")
     
-    log("PASS: Failed tides cannot recover without Supervisor")
+    log("PASS: Failed yield vaults cannot recover without Supervisor")
 }
 
 // Main test runner
 access(all)
 fun main() {
     setup()
-    testRegistryReceivesTideRegistrationAtInit()
+    testRegistryReceivesYieldVaultRegistrationAtInit()
     testSingleAutoBalancerThreeExecutions()
-    testThreeTidesNineExecutions()
-    testFiveTidesContinueWithoutSupervisor()
-    testFailedTideCannotRecoverWithoutSupervisor()
+    testThreeYieldVaultsNineExecutions()
+    testFiveYieldVaultsContinueWithoutSupervisor()
+    testFailedYieldVaultCannotRecoverWithoutSupervisor()
 }

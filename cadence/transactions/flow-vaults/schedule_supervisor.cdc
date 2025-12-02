@@ -11,9 +11,9 @@ import "FungibleToken"
 /// - executionEffort: typical 800
 /// - feeAmount: FLOW to cover scheduling fee
 /// - recurringInterval: seconds between runs (e.g., 60.0)
-/// - childRecurring: whether per-tide jobs should be recurring (true by default)
-/// - childInterval: per-tide recurring interval (default 300.0)
-/// - forceChild: pass force flag to per-tide jobs (default false)
+/// - childRecurring: whether per-yield vault jobs should be recurring (true by default)
+/// - childInterval: per-yield vault recurring interval (default 300.0)
+/// - forceChild: pass force flag to per-yield vault jobs (default false)
 transaction(
     timestamp: UFix64,
     priorityRaw: UInt8,

@@ -82,62 +82,62 @@ access(all) fun testAtomicRegistrationAndGC() {
     let betaRef = grantBeta(flowVaultsAccount, user)
     Test.expect(betaRef, Test.beSucceeded())
 
-    // 1. Create Tide (Atomic Registration)
-    let createTideRes = executeTransaction(
-        "../transactions/flow-vaults/create_tide.cdc",
+    // 1. Create YieldVault (Atomic Registration)
+    let createYieldVaultRes = executeTransaction(
+        "../transactions/flow-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, fundingAmount],
         user
     )
-    Test.expect(createTideRes, Test.beSucceeded())
+    Test.expect(createYieldVaultRes, Test.beSucceeded())
 
-    let tideIDsResult = getTideIDs(address: user.address)
-    let tideID = tideIDsResult![0]
+    let yieldVaultIDsResult = getYieldVaultIDs(address: user.address)
+    let yieldVaultID = yieldVaultIDsResult![0]
 
-    // Verify Tide is registered in Scheduler Registry by querying registered IDs
+    // Verify YieldVault is registered in Scheduler Registry by querying registered IDs
     let registeredIDsRes = _executeScript(
-        "../scripts/flow-vaults/get_registered_tide_ids.cdc",
+        "../scripts/flow-vaults/get_registered_yield_vault_ids.cdc",
         []
     )
     Test.expect(registeredIDsRes, Test.beSucceeded())
     let registeredIDs = registeredIDsRes.returnValue! as! [UInt64]
     Test.assert(
-        registeredIDs.contains(tideID),
-        message: "Tide should be registered in FlowVaultsSchedulerRegistry atomically"
+        registeredIDs.contains(yieldVaultID),
+        message: "YieldVault should be registered in FlowVaultsSchedulerRegistry atomically"
     )
 
     // Verify Wrapper Capability exists
     let capCheck = _executeScript(
-        "../scripts/flow-vaults/has_wrapper_cap_for_tide.cdc",
-        [tideID]
+        "../scripts/flow-vaults/has_wrapper_cap_for_yield_vault.cdc",
+        [yieldVaultID]
     )
     Test.expect(capCheck, Test.beSucceeded())
     let hasCap = capCheck.returnValue! as! Bool
     Test.assert(hasCap, message: "Wrapper capability should be present in Registry")
 
-    // 2. Close Tide (Garbage Collection)
-    let closeTideRes = executeTransaction(
-        "../transactions/flow-vaults/close_tide.cdc",
-        [tideID],
+    // 2. Close YieldVault (Garbage Collection)
+    let closeYieldVaultRes = executeTransaction(
+        "../transactions/flow-vaults/close_yield_vault.cdc",
+        [yieldVaultID],
         user
     )
-    Test.expect(closeTideRes, Test.beSucceeded())
+    Test.expect(closeYieldVaultRes, Test.beSucceeded())
 
-    // Verify Tide is unregistered
+    // Verify YieldVault is unregistered
     let registeredIDsAfterRes = _executeScript(
-        "../scripts/flow-vaults/get_registered_tide_ids.cdc",
+        "../scripts/flow-vaults/get_registered_yield_vault_ids.cdc",
         []
     )
     Test.expect(registeredIDsAfterRes, Test.beSucceeded())
     let registeredIDsAfter = registeredIDsAfterRes.returnValue! as! [UInt64]
     Test.assert(
-        !registeredIDsAfter.contains(tideID),
-        message: "Tide should be unregistered from FlowVaultsSchedulerRegistry after closing"
+        !registeredIDsAfter.contains(yieldVaultID),
+        message: "YieldVault should be unregistered from FlowVaultsSchedulerRegistry after closing"
     )
 
     // Verify Wrapper Capability is gone
     let capCheckAfter = _executeScript(
-        "../scripts/flow-vaults/has_wrapper_cap_for_tide.cdc",
-        [tideID]
+        "../scripts/flow-vaults/has_wrapper_cap_for_yield_vault.cdc",
+        [yieldVaultID]
     )
     Test.expect(capCheckAfter, Test.beSucceeded())
     let hasCapAfter = capCheckAfter.returnValue! as! Bool

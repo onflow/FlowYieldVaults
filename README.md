@@ -15,8 +15,8 @@ The main contract that orchestrates the entire yield farming system:
 - **Strategy Interface**: Defines yield-generating strategies that can deposit/withdraw tokens
 - **StrategyComposer**: Creates and manages different strategy implementations
 - **StrategyFactory**: Manages multiple strategy composers and creates strategy instances
-- **Tide Resource**: Represents a user's position in a specific strategy
-- **TideManager**: Manages multiple Tide positions for a user account
+- **YieldVault Resource**: Represents a user's position in a specific strategy
+- **YieldVaultManager**: Manages multiple YieldVault positions for a user account
 
 #### 2. FlowVaultsStrategies.cdc - Strategy Implementations
 
@@ -122,10 +122,10 @@ The system heavily uses [DeFi Actions](https://developers.flow.com/blockchain-de
 
 [Cadence Scripts](https://developers.flow.com/build/cadence/basics/scripts) are written in Cadence and take advantage of [Native Data Availability](https://developers.flow.com/blockchain-development-tutorials/cadence/cadence-advantages/native-data-availibility-with-cadence-scripts) read and format any public data on the blockchain in the way the developer needs it, without relying on pre-existing view functions in the contract.
 
-#### `scripts/flow-vaults/get_tide_ids.cdc`
+#### `scripts/flow-vaults/get_yield_vault_ids.cdc`
 
 ```cadence
-// Returns all Tide IDs for a given user address
+// Returns all YieldVault IDs for a given user address
 access(all) fun main(address: Address): [UInt64]?
 ```
 
@@ -147,24 +147,24 @@ access(all) fun main(account: Address, vaultPath: StoragePath): UFix64
 transaction setup()
 ```
 
-#### Creating Tides
+#### Creating YieldVaults
 
 ```cadence
 // Create a new yield position
-transaction create_tide(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
+transaction create_yield_vault(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
 ```
 
 #### Managing Positions
 
 ```cadence
-// Deposit additional funds to existing Tide
-transaction deposit_to_tide(id: UInt64, amount: UFix64)
+// Deposit additional funds to existing YieldVault
+transaction deposit_to_yield_vault(id: UInt64, amount: UFix64)
 
-// Withdraw funds from a Tide
-transaction withdraw_from_tide(id: UInt64, amount: UFix64)
+// Withdraw funds from a YieldVault
+transaction withdraw_from_yield_vault(id: UInt64, amount: UFix64)
 
-// Close a Tide and withdraw all funds
-transaction close_tide(id: UInt64)
+// Close a YieldVault and withdraw all funds
+transaction close_yield_vault(id: UInt64)
 ```
 
 ## Development Environment
@@ -288,7 +288,7 @@ transaction rebalance_auto_balancer_by_id(id: UInt64, force: Bool)
 
 **Parameters:**
 
-- `id`: Tide ID associated with the AutoBalancer
+- `id`: YieldVault ID associated with the AutoBalancer
 - `force`: Whether to bypass threshold checks
 
 ### Monitoring Rebalancing
@@ -894,7 +894,7 @@ YIELD TOKEN DOWN Scenario not currently supported
 
 1. **Set up your test environment** with the Flow emulator
 2. **Deploy all contracts** including mocks
-3. **Create a Tide position** using `create_tide` transaction
+3. **Create a YieldVault position** using `create_yield_vault` transaction
 4. **Fund the MockSwapper** with liquidity for all token pairs
 
 ## Independent Testing Scenarios for Junior Engineers
@@ -966,19 +966,19 @@ flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connecto
   "/storage/yieldTokenVault_0x045a1763c93006ca" \
   --signer test-account
 
-# Step 5: Create Tide position
-echo "Creating Tide position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send cadence/transactions/flow-vaults/create_tide.cdc \
+# Step 5: Create YieldVault position
+echo "Creating YieldVault position with $INITIAL_DEPOSIT FLOW..."
+flow transactions send cadence/transactions/flow-vaults/create_yield_vault.cdc \
   "A.045a1763c93006ca.FlowVaultsStrategies.TracerStrategy" \
   "A.0ae53cb6e3f42a79.FlowToken.Vault" \
   $INITIAL_DEPOSIT \
   --signer test-account
 
-# Step 6: Get the Tide ID
-echo "Getting Tide ID..."
-TIDE_ID=$(flow scripts execute cadence/scripts/flow-vaults/get_tide_ids.cdc \
+# Step 6: Get the YieldVault ID
+echo "Getting YieldVault ID..."
+YIELD_VAULT_ID=$(flow scripts execute cadence/scripts/flow-vaults/get_yield_vault_ids.cdc \
   $YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
-echo "Tide ID: $TIDE_ID"
+echo "YieldVault ID: $YIELD_VAULT_ID"
 
 # Step 7: Record baseline metrics
 echo "=== RECORDING BASELINE METRICS ==="
@@ -990,13 +990,13 @@ echo "Initial YieldToken Price:"
 flow scripts execute cadence/scripts/mocks/oracle/get_price.cdc \
   "A.045a1763c93006ca.YieldToken.Vault"
 
-echo "Initial Tide Balance:"
-flow scripts execute cadence/scripts/flow-vaults/get_tide_balance.cdc \
-  $YOUR_ADDRESS $TIDE_ID
+echo "Initial YieldVault Balance:"
+flow scripts execute cadence/scripts/flow-vaults/get_yield_vault_balance.cdc \
+  $YOUR_ADDRESS $YIELD_VAULT_ID
 
 echo "Initial AutoBalancer Balance:"
 flow scripts execute cadence/scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
-  $TIDE_ID
+  $YIELD_VAULT_ID
 
 # Step 8: Execute the test - Increase FLOW price by 20%
 echo "=== EXECUTING TEST: FLOW PRICE INCREASE ==="
@@ -1013,22 +1013,22 @@ flow scripts execute cadence/scripts/mocks/oracle/get_price.cdc \
 # Step 9: Trigger rebalancing
 echo "Triggering rebalancing..."
 flow transactions send cadence/transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc \
-  $TIDE_ID true \
+  $YIELD_VAULT_ID true \
   --signer test-account
 
 flow transactions send cadence/transactions/flow-credit-market/pool-management/rebalance_position.cdc \
-  $TIDE_ID true \
+  $YIELD_VAULT_ID true \
   --signer test-account
 
 # Step 10: Verify results
 echo "=== VERIFYING RESULTS ==="
 echo "New AutoBalancer Balance (should be HIGHER):"
 flow scripts execute cadence/scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
-  $TIDE_ID
+  $YIELD_VAULT_ID
 
-echo "New Tide Balance):"
-flow scripts execute cadence/scripts/flow-vaults/get_tide_balance.cdc \
-  $YOUR_ADDRESS $TIDE_ID
+echo "New YieldVault Balance):"
+flow scripts execute cadence/scripts/flow-vaults/get_yield_vault_balance.cdc \
+  $YOUR_ADDRESS $YIELD_VAULT_ID
 
 echo "SCENARIO 1 COMPLETE!"
 echo "Expected Results:"
@@ -1112,19 +1112,19 @@ flow transactions send transactions/mocks/swapper/set_liquidity_connector.cdc \
   --arg UFix64:10000.0 \
   --signer test-account
 
-# Step 5: Create Tide position
-echo "Creating Tide position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send transactions/flow-vaults/create_tide.cdc \
+# Step 5: Create YieldVault position
+echo "Creating YieldVault position with $INITIAL_DEPOSIT FLOW..."
+flow transactions send transactions/flow-vaults/create_yield_vault.cdc \
   --arg String:"tracer" \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --arg UFix64:$INITIAL_DEPOSIT \
   --signer test-account
 
-# Step 6: Get the Tide ID
-echo "Getting Tide ID..."
-TIDE_ID=$(flow scripts execute scripts/flow-vaults/get_tide_ids.cdc \
+# Step 6: Get the YieldVault ID
+echo "Getting YieldVault ID..."
+YIELD_VAULT_ID=$(flow scripts execute scripts/flow-vaults/get_yield_vault_ids.cdc \
   --arg Address:$YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
-echo "Tide ID: $TIDE_ID"
+echo "YieldVault ID: $YIELD_VAULT_ID"
 
 # Step 7: Record baseline metrics
 echo "=== RECORDING BASELINE METRICS ==="
@@ -1136,13 +1136,13 @@ echo "Initial YieldToken Price:"
 flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
-echo "Initial Tide Balance:"
-flow scripts execute scripts/flow-vaults/get_tide_balance.cdc \
-  --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
+echo "Initial YieldVault Balance:"
+flow scripts execute scripts/flow-vaults/get_yield_vault_balance.cdc \
+  --arg Address:$YOUR_ADDRESS --arg UInt64:$YIELD_VAULT_ID
 
 echo "Initial AutoBalancer Balance:"
 flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
-  --arg UInt64:$TIDE_ID
+  --arg UInt64:$YIELD_VAULT_ID
 
 # Step 8: Execute the test - Decrease FLOW price by 30%
 echo "=== EXECUTING TEST: FLOW PRICE DECREASE ==="
@@ -1159,7 +1159,7 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
 # Step 9: Trigger rebalancing
 echo "Triggering recollateralization..."
 flow transactions send transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc \
-  --arg UInt64:$TIDE_ID \
+  --arg UInt64:$YIELD_VAULT_ID \
   --arg Bool:true \
   --signer test-account
 
@@ -1167,11 +1167,11 @@ flow transactions send transactions/flow-vaults/admin/rebalance_auto_balancer_by
 echo "=== VERIFYING RESULTS ==="
 echo "New AutoBalancer Balance (should be LOWER):"
 flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
-  --arg UInt64:$TIDE_ID
+  --arg UInt64:$YIELD_VAULT_ID
 
-echo "New Tide Balance (may be lower due to collateral needs):"
-flow scripts execute scripts/flow-vaults/get_tide_balance.cdc \
-  --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
+echo "New YieldVault Balance (may be lower due to collateral needs):"
+flow scripts execute scripts/flow-vaults/get_yield_vault_balance.cdc \
+  --arg Address:$YOUR_ADDRESS --arg UInt64:$YIELD_VAULT_ID
 
 echo "SCENARIO 2 COMPLETE!"
 echo "Expected Results:"
@@ -1255,19 +1255,19 @@ flow transactions send transactions/mocks/swapper/set_liquidity_connector.cdc \
   --arg UFix64:10000.0 \
   --signer test-account
 
-# Step 5: Create Tide position
-echo "Creating Tide position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send transactions/flow-vaults/create_tide.cdc \
+# Step 5: Create YieldVault position
+echo "Creating YieldVault position with $INITIAL_DEPOSIT FLOW..."
+flow transactions send transactions/flow-vaults/create_yield_vault.cdc \
   --arg String:"tracer" \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --arg UFix64:$INITIAL_DEPOSIT \
   --signer test-account
 
-# Step 6: Get the Tide ID
-echo "Getting Tide ID..."
-TIDE_ID=$(flow scripts execute scripts/flow-vaults/get_tide_ids.cdc \
+# Step 6: Get the YieldVault ID
+echo "Getting YieldVault ID..."
+YIELD_VAULT_ID=$(flow scripts execute scripts/flow-vaults/get_yield_vault_ids.cdc \
   --arg Address:$YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
-echo "Tide ID: $TIDE_ID"
+echo "YieldVault ID: $YIELD_VAULT_ID"
 
 # Step 7: Record baseline metrics
 echo "=== RECORDING BASELINE METRICS ==="
@@ -1279,13 +1279,13 @@ echo "Initial YieldToken Price:"
 flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
-echo "Initial Tide Balance:"
-flow scripts execute scripts/flow-vaults/get_tide_balance.cdc \
-  --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
+echo "Initial YieldVault Balance:"
+flow scripts execute scripts/flow-vaults/get_yield_vault_balance.cdc \
+  --arg Address:$YOUR_ADDRESS --arg UInt64:$YIELD_VAULT_ID
 
 echo "Initial AutoBalancer Balance:"
 flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
-  --arg UInt64:$TIDE_ID
+  --arg UInt64:$YIELD_VAULT_ID
 
 # Step 8: Execute the test - Increase YieldToken price by 15%
 echo "=== EXECUTING TEST: YIELD TOKEN PRICE INCREASE ==="
@@ -1302,7 +1302,7 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
 # Step 9: Trigger rebalancing
 echo "Triggering gain capture..."
 flow transactions send transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc \
-  --arg UInt64:$TIDE_ID \
+  --arg UInt64:$YIELD_VAULT_ID \
   --arg Bool:true \
   --signer test-account
 
@@ -1314,11 +1314,11 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
 
 echo "New AutoBalancer Balance:"
 flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
-  --arg UInt64:$TIDE_ID
+  --arg UInt64:$YIELD_VAULT_ID
 
-echo "New Tide Balance (should be HIGHER from captured gains):"
-flow scripts execute scripts/flow-vaults/get_tide_balance.cdc \
-  --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
+echo "New YieldVault Balance (should be HIGHER from captured gains):"
+flow scripts execute scripts/flow-vaults/get_yield_vault_balance.cdc \
+  --arg Address:$YOUR_ADDRESS --arg UInt64:$YIELD_VAULT_ID
 
 echo "SCENARIO 3 COMPLETE!"
 echo "Expected Results:"
@@ -1402,19 +1402,19 @@ flow transactions send transactions/mocks/swapper/set_liquidity_connector.cdc \
   --arg UFix64:10000.0 \
   --signer test-account
 
-# Step 5: Create Tide position
-echo "Creating Tide position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send transactions/flow-vaults/create_tide.cdc \
+# Step 5: Create YieldVault position
+echo "Creating YieldVault position with $INITIAL_DEPOSIT FLOW..."
+flow transactions send transactions/flow-vaults/create_yield_vault.cdc \
   --arg String:"tracer" \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --arg UFix64:$INITIAL_DEPOSIT \
   --signer test-account
 
-# Step 6: Get the Tide ID
-echo "Getting Tide ID..."
-TIDE_ID=$(flow scripts execute scripts/flow-vaults/get_tide_ids.cdc \
+# Step 6: Get the YieldVault ID
+echo "Getting YieldVault ID..."
+YIELD_VAULT_ID=$(flow scripts execute scripts/flow-vaults/get_yield_vault_ids.cdc \
   --arg Address:$YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
-echo "Tide ID: $TIDE_ID"
+echo "YieldVault ID: $YIELD_VAULT_ID"
 
 # Step 7: Record baseline metrics
 echo "=== RECORDING BASELINE METRICS ==="
@@ -1426,13 +1426,13 @@ echo "Initial YieldToken Price:"
 flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
-echo "Initial Tide Balance:"
-flow scripts execute scripts/flow-vaults/get_tide_balance.cdc \
-  --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
+echo "Initial YieldVault Balance:"
+flow scripts execute scripts/flow-vaults/get_yield_vault_balance.cdc \
+  --arg Address:$YOUR_ADDRESS --arg UInt64:$YIELD_VAULT_ID
 
 echo "Initial AutoBalancer Balance:"
 flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
-  --arg UInt64:$TIDE_ID
+  --arg UInt64:$YIELD_VAULT_ID
 
 # Step 8: Execute the test - Decrease YieldToken price by 15%
 echo "=== EXECUTING TEST: YIELD TOKEN PRICE DECREASE ==="
@@ -1449,7 +1449,7 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
 # Step 9: Trigger rebalancing
 echo "Triggering portfolio restoration..."
 flow transactions send transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc \
-  --arg UInt64:$TIDE_ID \
+  --arg UInt64:$YIELD_VAULT_ID \
   --arg Bool:true \
   --signer test-account
 
@@ -1461,11 +1461,11 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
 
 echo "New AutoBalancer Balance (should be HIGHER in token count):"
 flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
-  --arg UInt64:$TIDE_ID
+  --arg UInt64:$YIELD_VAULT_ID
 
-echo "New Tide Balance:"
-flow scripts execute scripts/flow-vaults/get_tide_balance.cdc \
-  --arg Address:$YOUR_ADDRESS --arg UInt64:$TIDE_ID
+echo "New YieldVault Balance:"
+flow scripts execute scripts/flow-vaults/get_yield_vault_balance.cdc \
+  --arg Address:$YOUR_ADDRESS --arg UInt64:$YIELD_VAULT_ID
 
 echo "SCENARIO 4 COMPLETE!"
 echo "Expected Results:"
@@ -1487,7 +1487,7 @@ echo "- Manual intervention or position-level rebalancing may be needed"
 1. **Each scenario is completely independent** - run any scenario without running others first
 2. **Only prerequisite is deployed contracts** - each scenario handles its own setup
 3. **The `force: true` parameter** bypasses threshold checks for testing
-4. **Position ID ≠ Tide ID** - they are different identifiers in the system
+4. **Position ID ≠ YieldVault ID** - they are different identifiers in the system
 5. **Compare baseline vs final values** each scenario records and displays
 6. **Each scenario demonstrates different market conditions** the protocol handles automatically
 7. **Scripts are copy-paste ready** - save any scenario as a .sh file and execute independently
@@ -1517,8 +1517,8 @@ scripts/flow-credit-market/get_available_balance.cdc
 #### User Balance
 
 ```bash
-# Total FLOW available for withdrawal from Tide
-scripts/flow-vaults/get_tide_balance.cdc
+# Total FLOW available for withdrawal from YieldVault
+scripts/flow-vaults/get_yield_vault_balance.cdc
 
 # Your account token balances
 scripts/tokens/get_balance.cdc
@@ -1550,10 +1550,10 @@ scripts/tokens/get_balance.cdc
 
 #### Common Issues:
 
-1. **"Could not borrow AutoBalancer"** - Ensure Tide ID is correct
+1. **"Could not borrow AutoBalancer"** - Ensure YieldVault ID is correct
 2. **"No price set for token"** - Set initial prices for all tokens before testing
 3. **"Insufficient liquidity"** - Fund MockSwapper with adequate token reserves
-4. **"Position not found"** - Verify FlowCreditMarket position ID (different from Tide ID)
+4. **"Position not found"** - Verify FlowCreditMarket position ID (different from YieldVault ID)
 
 #### Debugging Commands:
 
@@ -1561,8 +1561,8 @@ scripts/tokens/get_balance.cdc
 # Check if oracle has price set
 flow scripts execute scripts/mocks/oracle/get_price.cdc --arg String:"TOKEN_TYPE"
 
-# Check your Tide IDs
-flow scripts execute scripts/flow-vaults/get_tide_ids.cdc --arg Address:0xYourAddress
+# Check your YieldVault IDs
+flow scripts execute scripts/flow-vaults/get_yield_vault_ids.cdc --arg Address:0xYourAddress
 
 # Check supported strategies
 flow scripts execute scripts/flow-vaults/get_supported_strategies.cdc
@@ -1593,7 +1593,7 @@ This testing framework allows you to validate that the rebalancing system correc
 ### 4. Resource-Oriented Security
 
 - Uses Cadence's [resource model](https://cadence-lang.org/docs/language/resources) for secure asset management
-- Tides are resources owned by users
+- YieldVaults are resources owned by users
 - Automatic cleanup when positions are closed
 
 ## Important Notes
@@ -1604,10 +1604,10 @@ The contracts include extensive mock components (MockOracle, MockSwapper, etc.) 
 
 ## Getting Started
 
-1. **Setup Account**: Run the setup transaction to initialize your TideManager
-2. **Create Strategy**: Use create_tide to open a yield position
+1. **Setup Account**: Run the setup transaction to initialize your YieldVaultManager
+2. **Create Strategy**: Use create_yield_vault to open a yield position
 3. **Manage Position**: Deposit/withdraw funds as needed
 4. **Monitor Performance**: Use scripts to track your positions
-5. **Close Position**: Use close_tide to exit and reclaim all funds
+5. **Close Position**: Use close_yield_vault to exit and reclaim all funds
 
 The platform provides a foundation for sophisticated yield farming strategies while maintaining the security and composability principles of the Cadence programming language.
