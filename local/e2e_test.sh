@@ -20,33 +20,33 @@ run_txn() {
 }
 
 run_txn "Grant YieldVault Beta access to test user" \
-  ./cadence/transactions/flow-vaults/admin/grant_beta.cdc \
-  --authorizer emulator-flow-vaults,test-user \
+  ./cadence/transactions/flow-yield-vaults/admin/grant_beta.cdc \
+  --authorizer emulator-flow-yield-vaults,test-user \
   --proposer test-user \
-  --payer emulator-flow-vaults
+  --payer emulator-flow-yield-vaults
 
 run_txn "Transfer Flow tokens" \
   ./cadence/transactions/flow-token/transfer_flow.cdc \
   0x179b6b1cb6755e31 1000.0
 
 run_txn "Creating YieldVault[0]" \
-  ./cadence/transactions/flow-vaults/create_yield_vault.cdc \
-  A.045a1763c93006ca.FlowVaultsStrategies.TracerStrategy \
+  ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+  A.045a1763c93006ca.FlowYieldVaultsStrategies.TracerStrategy \
   A.0ae53cb6e3f42a79.FlowToken.Vault \
   100.0 \
   --signer test-user \
   --gas-limit 9999
 
 run_txn "Depositing 20.0 to YieldVault[0]" \
-  ./cadence/transactions/flow-vaults/deposit_to_yield_vault.cdc 0 20.0 --signer test-user \
+  ./cadence/transactions/flow-yield-vaults/deposit_to_yield_vault.cdc 0 20.0 --signer test-user \
   --gas-limit 9999
 
 run_txn "Withdrawing 10.0 from YieldVault[0]" \
-  ./cadence/transactions/flow-vaults/withdraw_from_yield_vault.cdc 0 10.0 --signer test-user \
+  ./cadence/transactions/flow-yield-vaults/withdraw_from_yield_vault.cdc 0 10.0 --signer test-user \
   --gas-limit 9999
 
 run_txn "Closing YieldVault[0]" \
-  ./cadence/transactions/flow-vaults/close_yield_vault.cdc 0 --signer test-user \
+  ./cadence/transactions/flow-yield-vaults/close_yield_vault.cdc 0 --signer test-user \
   --gas-limit 9999
 
 echo "✅ All E2E transactions SEALED successfully!"

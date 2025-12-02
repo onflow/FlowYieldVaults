@@ -1,6 +1,6 @@
 import "FungibleToken"
 import "FungibleTokenMetadataViews"
-import "FlowVaults"
+import "FlowYieldVaults"
 
 /// Create yieldVault without beta requirement (for testing only)
 /// This bypasses the beta check by directly creating strategies
@@ -32,7 +32,7 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
     execute {
         // Create strategy directly using the factory
         let uniqueID = DeFiActions.createUniqueIdentifier()
-        let strategy <- FlowVaults.createStrategy(
+        let strategy <- FlowYieldVaults.createStrategy(
             type: self.strategy,
             uniqueID: uniqueID,
             withFunds: <-self.depositVault

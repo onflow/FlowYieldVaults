@@ -30,14 +30,14 @@ Instead of modifying DeFiActions to add a `restartRecurring` flag, we use the ex
    - `Schedule` capability - for Supervisor to directly call `scheduleNextRebalance()`
 
    ```cadence
-   // In FlowVaultsAutoBalancers._initNewAutoBalancer():
+   // In FlowYieldVaultsAutoBalancers._initNewAutoBalancer():
    let handlerCap = self.account.capabilities.storage
        .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(storagePath)
 
    let scheduleCap = self.account.capabilities.storage
        .issue<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>(storagePath)
 
-   FlowVaultsSchedulerRegistry.register(yieldVaultID: uniqueID.id, handlerCap: handlerCap, scheduleCap: scheduleCap)
+   FlowYieldVaultsSchedulerRegistry.register(yieldVaultID: uniqueID.id, handlerCap: handlerCap, scheduleCap: scheduleCap)
    ```
 
 2. **Supervisor Recovery**
@@ -46,12 +46,12 @@ Instead of modifying DeFiActions to add a `restartRecurring` flag, we use the ex
 
    ```cadence
    // In Supervisor.executeTransaction():
-   let scheduleCap = FlowVaultsSchedulerRegistry.getScheduleCap(yieldVaultID: yieldVaultID)
+   let scheduleCap = FlowYieldVaultsSchedulerRegistry.getScheduleCap(yieldVaultID: yieldVaultID)
    let autoBalancerRef = scheduleCap!.borrow()!
    let scheduleError = autoBalancerRef.scheduleNextRebalance(whileExecuting: nil)
    
    if scheduleError == nil {
-       FlowVaultsSchedulerRegistry.dequeuePending(yieldVaultID: yieldVaultID)
+       FlowYieldVaultsSchedulerRegistry.dequeuePending(yieldVaultID: yieldVaultID)
        emit YieldVaultRecovered(yieldVaultID: yieldVaultID)
    }
    ```
@@ -78,7 +78,7 @@ Instead of modifying DeFiActions to add a `restartRecurring` flag, we use the ex
 │ 2. Two capabilities issued:                                    │
 │    - Execute cap (for FlowTransactionScheduler)               │
 │    - Schedule cap (for Supervisor recovery)                   │
-│ 3. Both registered in FlowVaultsSchedulerRegistry              │
+│ 3. Both registered in FlowYieldVaultsSchedulerRegistry              │
 │ 4. AutoBalancer.scheduleNextRebalance(nil) starts chain       │
 └────────────────────────────────────────────────────────────────┘
 
@@ -126,7 +126,7 @@ The Supervisor emits these events during recovery:
 
 ## Fee Source Considerations
 
-Both Supervisor and AutoBalancer use the same fund source (the FlowVaultsStrategies contract account's FlowToken vault). This means:
+Both Supervisor and AutoBalancer use the same fund source (the FlowYieldVaultsStrategies contract account's FlowToken vault). This means:
 
 1. If the account is drained, BOTH fail to schedule
 2. If the account is refunded, BOTH can schedule again
@@ -139,7 +139,7 @@ The recovery flow assumes:
 
 ## Related Changes
 
-### FlowVaultsSchedulerRegistry
+### FlowYieldVaultsSchedulerRegistry
 
 Added storage for Schedule capabilities:
 
@@ -155,7 +155,7 @@ access(account) fun register(
 access(account) view fun getScheduleCap(yieldVaultID: UInt64): Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>?
 ```
 
-### FlowVaultsAutoBalancers
+### FlowYieldVaultsAutoBalancers
 
 Issues Schedule capability during initialization:
 
@@ -164,12 +164,12 @@ let scheduleCap = self.account.capabilities.storage
     .issue<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>(storagePath)
 ```
 
-### FlowVaultsScheduler
+### FlowYieldVaultsScheduler
 
 Simplified Supervisor that directly calls `scheduleNextRebalance()`:
 
 ```cadence
-let scheduleCap = FlowVaultsSchedulerRegistry.getScheduleCap(yieldVaultID: yieldVaultID)
+let scheduleCap = FlowYieldVaultsSchedulerRegistry.getScheduleCap(yieldVaultID: yieldVaultID)
 let autoBalancerRef = scheduleCap!.borrow()!
 let scheduleError = autoBalancerRef.scheduleNextRebalance(whileExecuting: nil)
 ```

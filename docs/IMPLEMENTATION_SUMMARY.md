@@ -2,7 +2,7 @@
 
 ## Overview
 
-Autonomous scheduled rebalancing for FlowVaults YieldVaults using Flow's native transaction scheduler (FLIP 330).
+Autonomous scheduled rebalancing for FlowYieldVaults YieldVaults using Flow's native transaction scheduler (FLIP 330).
 
 ## Branch Information
 
@@ -21,19 +21,19 @@ Autonomous scheduled rebalancing for FlowVaults YieldVaults using Flow's native 
 ### Component Design
 
 ```
-FlowVaults Contract Account
+FlowYieldVaults Contract Account
     |
-    +-- FlowVaultsScheduler
+    +-- FlowYieldVaultsScheduler
     |       +-- SchedulerManager (tracks scheduled transactions)
     |       +-- Supervisor (recovery handler for failed schedules)
     |
-    +-- FlowVaultsSchedulerRegistry
+    +-- FlowYieldVaultsSchedulerRegistry
     |       +-- yieldVaultRegistry: {UInt64: Bool}
     |       +-- handlerCaps: {UInt64: Capability<AutoBalancer>}
     |       +-- pendingQueue: {UInt64: Bool}  (bounded by MAX_BATCH_SIZE=50)
     |       +-- supervisorCap
     |
-    +-- FlowVaultsAutoBalancers
+    +-- FlowYieldVaultsAutoBalancers
             +-- AutoBalancer (per YieldVault) implements TransactionHandler
 ```
 
@@ -44,7 +44,7 @@ FlowVaults Contract Account
    - Strategy creates AutoBalancer in `_initNewAutoBalancer()`
    - `registerYieldVault()` atomically:
      - Issues capability directly to AutoBalancer
-     - Registers in FlowVaultsSchedulerRegistry
+     - Registers in FlowYieldVaultsSchedulerRegistry
      - Schedules first execution
    - If any step fails, entire transaction reverts
 
@@ -62,12 +62,12 @@ FlowVaults Contract Account
 ## Files
 
 ### Core Contracts
-- **`FlowVaultsScheduler.cdc`** (~730 lines)
+- **`FlowYieldVaultsScheduler.cdc`** (~730 lines)
   - SchedulerManager resource
   - Supervisor resource (recovery handler)
   - Atomic registration with initial scheduling
   
-- **`FlowVaultsSchedulerRegistry.cdc`** (~155 lines)
+- **`FlowYieldVaultsSchedulerRegistry.cdc`** (~155 lines)
   - Registry storage (separate contract)
   - Pending queue with MAX_BATCH_SIZE pagination
   - Events: YieldVaultRegistered, YieldVaultUnregistered, YieldVaultEnqueuedPending, YieldVaultDequeuedPending
@@ -113,12 +113,12 @@ FlowVaults Contract Account
 
 ### Events
 ```cadence
-// FlowVaultsScheduler
+// FlowYieldVaultsScheduler
 event RebalancingScheduled(yieldVaultID, scheduledTransactionID, timestamp, priority, isRecurring, ...)
 event RebalancingCanceled(yieldVaultID, scheduledTransactionID, feesReturned)
 event SupervisorSeededYieldVault(yieldVaultID, scheduledTransactionID, timestamp)
 
-// FlowVaultsSchedulerRegistry
+// FlowYieldVaultsSchedulerRegistry
 event YieldVaultRegistered(yieldVaultID, handlerCapValid)
 event YieldVaultUnregistered(yieldVaultID, wasInPendingQueue)
 event YieldVaultEnqueuedPending(yieldVaultID, pendingQueueSize)
@@ -144,7 +144,7 @@ event YieldVaultDequeuedPending(yieldVaultID, pendingQueueSize)
    - `getSupervisorCap()` - `access(account)`
    - `getHandlerCap()` - `access(account)`
    - `enqueuePending()` - `access(account)`
-   - Registration/unregistration only from FlowVaultsAutoBalancers
+   - Registration/unregistration only from FlowYieldVaultsAutoBalancers
 
 2. **Atomic Operations**:
    - YieldVault creation + registration + scheduling is atomic
@@ -161,7 +161,7 @@ event YieldVaultDequeuedPending(yieldVaultID, pendingQueueSize)
 - Atomic initial scheduling at yield vault registration
 - Paginated Supervisor with pending queue
 - Self-scheduling AutoBalancers
-- Moved registration to FlowVaultsAutoBalancers
+- Moved registration to FlowYieldVaultsAutoBalancers
 - Added comprehensive events
 
 ### Version 1.0.0 (November 10, 2025)

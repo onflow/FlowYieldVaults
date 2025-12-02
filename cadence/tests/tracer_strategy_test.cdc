@@ -6,14 +6,14 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "FlowVaultsStrategies"
+import "FlowYieldVaultsStrategies"
 import "FlowCreditMarket"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
-access(all) let flowVaultsAccount = Test.getAccount(0x0000000000000009)
+access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@FlowVaultsStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -34,8 +34,8 @@ fun setup() {
 	deployContracts()
 
     // set mocked token prices
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: startingYieldPrice)
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: startingFlowPrice)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: startingYieldPrice)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: startingFlowPrice)
 
 	// mint tokens & set liquidity in mock swapper contract
 	let reserveAmount = 100_000_00.0
@@ -69,15 +69,15 @@ fun setup() {
 
 	// enable mocked Strategy creation
 	addStrategyComposer(
-		signer: flowVaultsAccount,
+		signer: flowYieldVaultsAccount,
 		strategyIdentifier: strategyIdentifier,
-		composerIdentifier: Type<@FlowVaultsStrategies.TracerStrategyComposer>().identifier,
-		issuerStoragePath: FlowVaultsStrategies.IssuerStoragePath,
+		composerIdentifier: Type<@FlowYieldVaultsStrategies.TracerStrategyComposer>().identifier,
+		issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
 		beFailed: false
 	)
 
-	// Fund FlowVaults account for scheduling fees (atomic initial scheduling)
-	mintFlow(to: flowVaultsAccount, amount: 100.0)
+	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
+	mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
 
 	snapshot = getCurrentBlockHeight()
 }
@@ -93,7 +93,7 @@ fun test_CreateYieldVaultSucceeds() {
 
 	let user = Test.createAccount()
 	mintFlow(to: user, amount: fundingAmount)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
 
 	createYieldVault(
 		signer: user,
@@ -116,7 +116,7 @@ fun test_CloseYieldVaultSucceeds() {
 
 	let user = Test.createAccount()
 	mintFlow(to: user, amount: fundingAmount)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
 
 	createYieldVault(
 		signer: user,
@@ -153,7 +153,7 @@ fun test_RebalanceYieldVaultSucceeds() {
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	mintFlow(to: user, amount: fundingAmount)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
 
     createYieldVault(signer: user,
         strategyIdentifier: strategyIdentifier,
@@ -171,7 +171,7 @@ fun test_RebalanceYieldVaultSucceeds() {
     let autoBalancerValueBefore = getAutoBalancerCurrentValue(id: yieldVaultID)!
     let yieldVaultBalanceBeforePriceIncrease = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultID)
 
-    setMockOraclePrice(signer: flowVaultsAccount,
+    setMockOraclePrice(signer: flowYieldVaultsAccount,
         forTokenIdentifier: yieldTokenIdentifier,
         price: startingYieldPrice * (1.0 + yieldTokenPriceIncrease)
     )
@@ -179,7 +179,7 @@ fun test_RebalanceYieldVaultSucceeds() {
     let autoBalancerValueAfter = getAutoBalancerCurrentValue(id: yieldVaultID)!
     let yieldVaultBalanceAfterPriceIncrease = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultID)
 
-    rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultID, force: true, beFailed: false)
+    rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultID, force: true, beFailed: false)
 
     // TODO - assert against pre- and post- getYieldVaultBalance() diff once protocol assesses balance correctly
     //      for now we can use events to intercept fund flows between pre- and post- Position & AutoBalancer state
@@ -237,7 +237,7 @@ fun test_RebalanceYieldVaultSucceedsAfterYieldPriceDecrease() {
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	mintFlow(to: user, amount: fundingAmount)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
 
 	createYieldVault(
 		signer: user,
@@ -256,13 +256,13 @@ fun test_RebalanceYieldVaultSucceedsAfterYieldPriceDecrease() {
 
 	log("YieldVault balance before yield increase: \(yieldVaultBalance ?? 0.0)")
 
-	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: priceDecrease)
+	setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: priceDecrease)
 
 	yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
 	log("YieldVault balance before rebalance: \(yieldVaultBalance ?? 0.0)")
 
-	rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
+	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: positionID, force: true, beFailed: false)
 
 	closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
@@ -294,7 +294,7 @@ fun test_RebalanceYieldVaultSucceedsAfterCollateralPriceIncrease() {
     // Likely 0.0
     let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
     mintFlow(to: user, amount: fundingAmount)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
 
     createYieldVault(
         signer: user,
@@ -311,7 +311,7 @@ fun test_RebalanceYieldVaultSucceedsAfterCollateralPriceIncrease() {
 
     // Set a high collateral price to simulate a scenario where the collateral value increases significantly
     // This should cause the rebalance to increase the amount of Yield tokens held in the YieldVault
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: collateralPriceIncrease)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: collateralPriceIncrease)
 
     let yieldTokensBefore = getAutoBalancerBalance(id: yieldVaultIDs![0])!
 
@@ -319,7 +319,7 @@ fun test_RebalanceYieldVaultSucceedsAfterCollateralPriceIncrease() {
 
     // Rebalance the YieldVault to adjust the Yield tokens based on the new collateral price
     // Force both yield vault and position to rebalance
-    rebalanceYieldVault(signer: flowVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
+    rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 
     // Position ID is hardcoded to 1 here since this is the first yield vault created, 
     // if there is a better way to get the position ID, please let me know

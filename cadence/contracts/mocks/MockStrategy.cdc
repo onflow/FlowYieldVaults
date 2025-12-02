@@ -4,7 +4,7 @@ import "FlowToken"
 import "DeFiActionsUtils"
 import "DeFiActions"
 
-import "FlowVaults"
+import "FlowYieldVaults"
 
 ///
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
@@ -71,7 +71,7 @@ access(all) contract MockStrategy {
         }
     }
 
-    access(all) resource Strategy : FlowVaults.Strategy {
+    access(all) resource Strategy : FlowYieldVaults.Strategy {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
@@ -128,7 +128,7 @@ access(all) contract MockStrategy {
         }
     }
 
-    access(all) resource StrategyComposer : FlowVaults.StrategyComposer {
+    access(all) resource StrategyComposer : FlowYieldVaults.StrategyComposer {
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
             return { Type<@Strategy>(): true }
         }
@@ -142,7 +142,7 @@ access(all) contract MockStrategy {
             _ type: Type,
             uniqueID: DeFiActions.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
-        ): @{FlowVaults.Strategy} {
+        ): @{FlowYieldVaults.Strategy} {
             let id = DeFiActions.createUniqueIdentifier()
             let strat <- create Strategy(
                 id: id,
@@ -158,11 +158,11 @@ access(all) contract MockStrategy {
     /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
     /// may utilize resource consumption (i.e. account storage). Since TracerStrategy creation consumes account storage
     /// via configured AutoBalancers
-    access(all) resource StrategyComposerIssuer : FlowVaults.StrategyComposerIssuer {
+    access(all) resource StrategyComposerIssuer : FlowYieldVaults.StrategyComposerIssuer {
         access(all) view fun getSupportedComposers(): {Type: Bool} {
             return { Type<@StrategyComposer>(): true }
         }
-        access(all) fun issueComposer(_ type: Type): @{FlowVaults.StrategyComposer} {
+        access(all) fun issueComposer(_ type: Type): @{FlowYieldVaults.StrategyComposer} {
             switch type {
             case Type<@StrategyComposer>():
                 return <- create StrategyComposer()

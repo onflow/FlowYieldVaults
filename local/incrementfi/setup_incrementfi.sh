@@ -29,11 +29,11 @@ flow transactions send ./cadence/transactions/mocks/incrementfi/setup.cdc ${SWAP
 #
 # 3. transfer funds to FLOW, MOET, and YIELD vaults
 #
-flow transactions send ./cadence/transactions/mocks/incrementfi/transfer_amm_tokens.cdc f3fcd2c1a78f5eee 1000.0 --signer emulator-flow-vaults
+flow transactions send ./cadence/transactions/mocks/incrementfi/transfer_amm_tokens.cdc f3fcd2c1a78f5eee 1000.0 --signer emulator-flow-yield-vaults
 # 
 # 4. create swap pair
 #
-flow transactions send ./lib/FlowCreditMarket/FlowActions/cadence/transactions/increment-fi/create_swap_pair.cdc $MOET_IDENTIFIER $YIELD_IDENTIFIER false --signer emulator-flow-vaults
+flow transactions send ./lib/FlowCreditMarket/FlowActions/cadence/transactions/increment-fi/create_swap_pair.cdc $MOET_IDENTIFIER $YIELD_IDENTIFIER false --signer emulator-flow-yield-vaults
 #
 #
 # 5. add liquidity to the AMMs

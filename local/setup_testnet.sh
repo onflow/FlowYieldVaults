@@ -37,7 +37,7 @@ flow transactions send ./cadence/transactions/flow-credit-market/create_position
 
 # add liquidity to pool
 
-# configure FlowVaults
+# configure FlowYieldVaults
 # 
 # wire up liquidity to MockSwapper, mocking AMM liquidity sources
 flow transactions send ./cadence/transactions/moet/setup_vault.cdc --network testnet --signer testnet-admin
@@ -49,24 +49,24 @@ flow transactions send ./lib/FlowCreditMarket/FlowActions/cadence/transactions/f
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault --network testnet --signer testnet-admin
 
 # add TracerStrategy as supported Strategy with the ability to initialize when new YieldVaults are created
-flow transactions send ./cadence/transactions/flow-vaults/admin/add_strategy_composer.cdc \
-    'A.d2580caf2ef07c2f.FlowVaultsStrategies.TracerStrategy' \
-    'A.d2580caf2ef07c2f.FlowVaultsStrategies.TracerStrategyComposer' \
-    /storage/FlowVaultsStrategyComposerIssuer_0xd2580caf2ef07c2f \
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
+    'A.d2580caf2ef07c2f.FlowYieldVaultsStrategies.TracerStrategy' \
+    'A.d2580caf2ef07c2f.FlowYieldVaultsStrategies.TracerStrategyComposer' \
+    /storage/FlowYieldVaultsStrategyComposerIssuer_0xd2580caf2ef07c2f \
     --network testnet \
     --signer testnet-admin
 
 
-flow transactions send ./cadence/transactions/flow-vaults/admin/add_strategy_composer.cdc \
-	'A.d2580caf2ef07c2f.FlowVaultsStrategies.mUSDCStrategy' \
-	'A.d2580caf2ef07c2f.FlowVaultsStrategies.mUSDCStrategyComposer' \
-	/storage/FlowVaultsStrategyComposerIssuer_0xd2580caf2ef07c2f \
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategies.mUSDCStrategy' \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategies.mUSDCStrategyComposer' \
+	/storage/FlowYieldVaultsStrategyComposerIssuer_0xd2580caf2ef07c2f \
 	--network testnet \
 	--signer testnet-admin
 
 
 # grant PoolBeta cap
-echo "Grant Protocol Beta access to FlowVaults"
+echo "Grant Protocol Beta access to FlowYieldVaults"
 flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-credit-market/pool-management/03_grant_beta.cdc \
   --authorizer testnet-flow-credit-market-deployer,testnet-admin \
   --proposer testnet-flow-credit-market-deployer \
@@ -77,13 +77,13 @@ TIDAL_COA=0x$(flow scripts execute ./lib/flow-evm-bridge/cadence/scripts/evm/get
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/transfer_flow_to_cadence_or_evm.cdc $TIDAL_COA 100.0 --network testnet --signer testnet-admin --compute-limit 9999
 
 # sanity test
-# flow transactions send ./cadence/transactions/flow-vaults/admin/grant_beta.cdc \
+# flow transactions send ./cadence/transactions/flow-yield-vaults/admin/grant_beta.cdc \
 #   --authorizer testnet-admin,<TEST_USER> \
 #   --proposer <TEST_USER> \
 #   --payer testnet-admin \
 #   --network testnet 
-# flow transactions send ./cadence/transactions/flow-vaults/create_yield_vault.cdc \
-#   A.d2580caf2ef07c2f.FlowVaultsStrategies.mUSDCStrategy \
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.d2580caf2ef07c2f.FlowYieldVaultsStrategies.mUSDCStrategy \
 #   A.7e60df042a9c0868.FlowToken.Vault \
 #   100.0 \
 #   --signer <TEST_USER> \
