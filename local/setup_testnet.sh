@@ -15,9 +15,9 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboard
 # configure FlowCreditMarket
 #
 # create Pool with MOET as default token
-flow transactions send ./cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc 'A.426f0458ced60037.MOET.Vault' --network testnet --signer testnet-flow-credit-market-deployer
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc 'A.426f0458ced60037.MOET.Vault' --network testnet --signer testnet-flow-credit-market-deployer
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
-flow transactions send ./cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
     'A.7e60df042a9c0868.FlowToken.Vault' \
     0.8 \
     1.0 \
@@ -27,7 +27,7 @@ flow transactions send ./cadence/transactions/flow-credit-market/pool-governance
     --signer testnet-flow-credit-market-deployer
 
 echo "swap Flow to MOET"
-flow transactions send ./cadence/transactions/flow-credit-market/create_position.cdc 100000.0 --network testnet --signer testnet-flow-credit-market-deployer
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/create_position.cdc 100000.0 --network testnet --signer testnet-flow-credit-market-deployer
 
 # TODO:
 # flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/tokens/bridge_tokens_to_any_evm_address.cdc \
@@ -40,7 +40,7 @@ flow transactions send ./cadence/transactions/flow-credit-market/create_position
 # configure FlowYieldVaults
 # 
 # wire up liquidity to MockSwapper, mocking AMM liquidity sources
-flow transactions send ./cadence/transactions/moet/setup_vault.cdc --network testnet --signer testnet-admin
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/moet/setup_vault.cdc --network testnet --signer testnet-admin
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/flowTokenVault --network testnet --signer testnet-admin
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/moetTokenVault_0x426f0458ced60037 --network testnet --signer testnet-admin
 #flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/yieldTokenVault_0xd2580caf2ef07c2f --network testnet --signer testnet-admin

@@ -11,8 +11,8 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboard
 # execute emulator deployment
 flow deploy
 
-flow transactions send ./cadence/transactions/moet/setup_vault.cdc
-flow transactions send ./cadence/transactions/moet/mint_moet.cdc 0x045a1763c93006ca 1000000.0 --signer emulator-flow-yield-vaults
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/moet/setup_vault.cdc
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/moet/mint_moet.cdc 0x045a1763c93006ca 1000000.0 --signer emulator-flow-yield-vaults
 
 # set mocked prices in the MockOracle contract, initialized with MOET as unitOfAccount
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.0ae53cb6e3f42a79.FlowToken.Vault' 0.5 --signer emulator-flow-yield-vaults
@@ -21,9 +21,9 @@ flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.045a
 # configure FlowCreditMarket
 #
 # create Pool with MOET as default token
-flow transactions send ./cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc 'A.045a1763c93006ca.MOET.Vault' --signer emulator-flow-yield-vaults
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc 'A.045a1763c93006ca.MOET.Vault' --signer emulator-flow-yield-vaults
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
-flow transactions send ./cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
     'A.0ae53cb6e3f42a79.FlowToken.Vault' \
     0.8 \
     1.0 \
