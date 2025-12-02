@@ -1,22 +1,22 @@
-import "FlowVaultsClosedBeta"
+import "FlowYieldVaultsClosedBeta"
 
-/// Self-grant beta when you own the FlowVaultsClosedBeta contract
+/// Self-grant beta when you own the FlowYieldVaultsClosedBeta contract
 /// Simpler version for testing on fresh account
 transaction() {
     prepare(signer: auth(Storage, BorrowValue, Capabilities) &Account) {
-        // Borrow the AdminHandle (should exist since we deployed FlowVaultsClosedBeta)
-        let handle = signer.storage.borrow<auth(FlowVaultsClosedBeta.Admin) &FlowVaultsClosedBeta.AdminHandle>(
-            from: FlowVaultsClosedBeta.AdminHandleStoragePath
-        ) ?? panic("Missing AdminHandle at \(FlowVaultsClosedBeta.AdminHandleStoragePath)")
+        // Borrow the AdminHandle (should exist since we deployed FlowYieldVaultsClosedBeta)
+        let handle = signer.storage.borrow<auth(FlowYieldVaultsClosedBeta.Admin) &FlowYieldVaultsClosedBeta.AdminHandle>(
+            from: FlowYieldVaultsClosedBeta.AdminHandleStoragePath
+        ) ?? panic("Missing AdminHandle at \(FlowYieldVaultsClosedBeta.AdminHandleStoragePath)")
         
         // Grant beta to self
         let cap = handle.grantBeta(addr: signer.address)
         
         // Save the beta capability
-        let storagePath = FlowVaultsClosedBeta.UserBetaCapStoragePath
+        let storagePath = FlowYieldVaultsClosedBeta.UserBetaCapStoragePath
         
         // Remove any existing capability
-        if let existing = signer.storage.load<Capability<auth(FlowVaultsClosedBeta.Beta) &FlowVaultsClosedBeta.BetaBadge>>(from: storagePath) {
+        if let existing = signer.storage.load<Capability<auth(FlowYieldVaultsClosedBeta.Beta) &FlowYieldVaultsClosedBeta.BetaBadge>>(from: storagePath) {
             // Old cap exists, remove it
         }
         

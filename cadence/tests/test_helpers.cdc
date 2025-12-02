@@ -42,7 +42,7 @@ access(all)
 fun grantBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
     let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
     let betaTxn = Test.Transaction(
-        code: Test.readFile("../transactions/flow-vaults/admin/grant_beta.cdc"),
+        code: Test.readFile("../transactions/flow-yield-vaults/admin/grant_beta.cdc"),
         authorizers: [admin.address, grantee.address],
         signers: signers,
         arguments: []
@@ -216,38 +216,38 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
 
-    // FlowVaults contracts
+    // FlowYieldVaults contracts
     // Deployment order matters due to imports:
-    // 1. FlowVaultsSchedulerRegistry (no FlowVaults dependencies)
-    // 2. FlowVaultsAutoBalancers (imports FlowVaultsSchedulerRegistry)
-    // 3. FlowVaultsScheduler (imports FlowVaultsSchedulerRegistry AND FlowVaultsAutoBalancers)
+    // 1. FlowYieldVaultsSchedulerRegistry (no FlowYieldVaults dependencies)
+    // 2. FlowYieldVaultsAutoBalancers (imports FlowYieldVaultsSchedulerRegistry)
+    // 3. FlowYieldVaultsScheduler (imports FlowYieldVaultsSchedulerRegistry AND FlowYieldVaultsAutoBalancers)
     err = Test.deployContract(
-        name: "FlowVaultsSchedulerRegistry",
-        path: "../contracts/FlowVaultsSchedulerRegistry.cdc",
+        name: "FlowYieldVaultsSchedulerRegistry",
+        path: "../contracts/FlowYieldVaultsSchedulerRegistry.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FlowVaultsAutoBalancers",
-        path: "../contracts/FlowVaultsAutoBalancers.cdc",
+        name: "FlowYieldVaultsAutoBalancers",
+        path: "../contracts/FlowYieldVaultsAutoBalancers.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FlowVaultsScheduler",
-        path: "../contracts/FlowVaultsScheduler.cdc",
+        name: "FlowYieldVaultsScheduler",
+        path: "../contracts/FlowYieldVaultsScheduler.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FlowVaultsClosedBeta",
-        path: "../contracts/FlowVaultsClosedBeta.cdc",
+        name: "FlowYieldVaultsClosedBeta",
+        path: "../contracts/FlowYieldVaultsClosedBeta.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FlowVaults",
-        path: "../contracts/FlowVaults.cdc",
+        name: "FlowYieldVaults",
+        path: "../contracts/FlowYieldVaults.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -309,8 +309,8 @@ access(all) fun deployContracts() {
     Test.expect(onboardMoet, Test.beSucceeded())
 
     err = Test.deployContract(
-        name: "FlowVaultsStrategies",
-        path: "../contracts/FlowVaultsStrategies.cdc",
+        name: "FlowYieldVaultsStrategies",
+        path: "../contracts/FlowYieldVaultsStrategies.cdc",
         arguments: [
             "0x986Cb42b0557159431d48fE0A40073296414d410",
             "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
@@ -356,28 +356,28 @@ fun getBalance(address: Address, vaultPublicPath: PublicPath): UFix64? {
 
 access(all)
 fun getYieldVaultIDs(address: Address): [UInt64]? {
-    let res = _executeScript("../scripts/flow-vaults/get_yield_vault_ids.cdc", [address])
+    let res = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_ids.cdc", [address])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! [UInt64]?
 }
 
 access(all)
 fun getYieldVaultBalance(address: Address, yieldVaultID: UInt64): UFix64? {
-    let res = _executeScript("../scripts/flow-vaults/get_yield_vault_balance.cdc", [address, yieldVaultID])
+    let res = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [address, yieldVaultID])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
 }
 
 access(all)
 fun getAutoBalancerBalance(id: UInt64): UFix64? {
-    let res = _executeScript("../scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc", [id])
+    let res = _executeScript("../scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc", [id])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
 }
 
 access(all)
 fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
-    let res = _executeScript("../scripts/flow-vaults/get_auto_balancer_current_value_by_id.cdc", [id])
+    let res = _executeScript("../scripts/flow-yield-vaults/get_auto_balancer_current_value_by_id.cdc", [id])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
 }
@@ -484,7 +484,7 @@ fun mintYield(signer: Test.TestAccount, to: Address, amount: UFix64, beFailed: B
 
 access(all)
 fun addStrategyComposer(signer: Test.TestAccount, strategyIdentifier: String, composerIdentifier: String, issuerStoragePath: StoragePath, beFailed: Bool) {
-    let addRes = _executeTransaction("../transactions/flow-vaults/admin/add_strategy_composer.cdc",
+    let addRes = _executeTransaction("../transactions/flow-yield-vaults/admin/add_strategy_composer.cdc",
         [ strategyIdentifier, composerIdentifier, issuerStoragePath ],
         signer
     )
@@ -499,7 +499,7 @@ fun createYieldVault(
     amount: UFix64,
     beFailed: Bool
 ) {
-    let res = _executeTransaction("../transactions/flow-vaults/create_yield_vault.cdc",
+    let res = _executeTransaction("../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [ strategyIdentifier, vaultIdentifier, amount ],
         signer
     )
@@ -508,25 +508,25 @@ fun createYieldVault(
 
 access(all)
 fun closeYieldVault(signer: Test.TestAccount, id: UInt64, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/flow-vaults/close_yield_vault.cdc", [id], signer)
+    let res = _executeTransaction("../transactions/flow-yield-vaults/close_yield_vault.cdc", [id], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
 access(all)
 fun depositToYieldVault(signer: Test.TestAccount, id: UInt64, amount: UFix64, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/flow-vaults/deposit_to_yield_vault.cdc", [id, amount], signer)
+    let res = _executeTransaction("../transactions/flow-yield-vaults/deposit_to_yield_vault.cdc", [id, amount], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
 access(all)
 fun withdrawFromYieldVault(signer: Test.TestAccount, id: UInt64, amount: UFix64, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/flow-vaults/withdraw_from_yield_vault.cdc", [id, amount], signer)
+    let res = _executeTransaction("../transactions/flow-yield-vaults/withdraw_from_yield_vault.cdc", [id, amount], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
 access(all)
 fun rebalanceYieldVault(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
+    let res = _executeTransaction("../transactions/flow-yield-vaults/admin/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
@@ -617,11 +617,11 @@ access(all) let TOLERANCE = 0.00000001
 
 access(all) fun setupBetaAccess(): Void {
     let protocolAccount = Test.getAccount(0x0000000000000008)
-    let flowVaultsAccount = Test.getAccount(0x0000000000000009)
+    let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
     let protocolBeta = grantProtocolBeta(protocolAccount, protocolAccount)
     Test.expect(protocolBeta, Test.beSucceeded())
 
-    let flowVaultsBeta = grantProtocolBeta(protocolAccount, flowVaultsAccount)
+    let flowVaultsBeta = grantProtocolBeta(protocolAccount, flowYieldVaultsAccount)
     Test.expect(flowVaultsBeta, Test.beSucceeded())
 }
 

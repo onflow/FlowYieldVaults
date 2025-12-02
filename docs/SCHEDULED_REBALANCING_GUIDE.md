@@ -1,10 +1,10 @@
 # Scheduled Rebalancing Guide
 
-This guide explains how scheduled rebalancing works for FlowVaults YieldVaults.
+This guide explains how scheduled rebalancing works for FlowYieldVaults YieldVaults.
 
 ## Overview
 
-FlowVaults integrates with Flow's native transaction scheduler ([FLIP 330](https://github.com/onflow/flips/pull/330)) to enable automatic rebalancing of YieldVaults without manual intervention.
+FlowYieldVaults integrates with Flow's native transaction scheduler ([FLIP 330](https://github.com/onflow/flips/pull/330)) to enable automatic rebalancing of YieldVaults without manual intervention.
 
 ### Key Features
 
@@ -23,12 +23,12 @@ FlowVaults integrates with Flow's native transaction scheduler ([FLIP 330](https
 YieldVault Creation (Atomic)
          |
          v
-FlowVaultsAutoBalancers._initNewAutoBalancer()
+FlowYieldVaultsAutoBalancers._initNewAutoBalancer()
          |
          v
-FlowVaultsScheduler.registerYieldVault()
+FlowYieldVaultsScheduler.registerYieldVault()
     |-- Issues capability to AutoBalancer
-    |-- Registers in FlowVaultsSchedulerRegistry
+    |-- Registers in FlowYieldVaultsSchedulerRegistry
     +-- Schedules first execution
          |
          v
@@ -42,8 +42,8 @@ AutoBalancer.executeTransaction()
 
 ### Components
 
-1. **FlowVaultsScheduler**: Manages registration and scheduling
-2. **FlowVaultsSchedulerRegistry**: Stores registry of yield vaults and pending queue
+1. **FlowYieldVaultsScheduler**: Manages registration and scheduling
+2. **FlowYieldVaultsSchedulerRegistry**: Stores registry of yield vaults and pending queue
 3. **AutoBalancer**: Implements `TransactionHandler`, executes rebalancing
 4. **Supervisor**: Recovery handler for failed schedules (paginated)
 
@@ -65,7 +65,7 @@ When you create a YieldVault, it's automatically:
 
 ```bash
 # Simply create a yield vault - scheduling happens automatically
-flow transactions send cadence/transactions/flow-vaults/create_yield_vault.cdc \
+flow transactions send cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
   --arg String:"TracerStrategy" \
   --arg String:"FlowToken" \
   --arg UFix64:100.0
@@ -87,14 +87,14 @@ If you need to manually schedule (e.g., after canceling the auto-schedule):
 ### Step 1: Cancel Existing Schedule
 
 ```bash
-flow transactions send cadence/transactions/flow-vaults/cancel_scheduled_rebalancing.cdc \
+flow transactions send cadence/transactions/flow-yield-vaults/cancel_scheduled_rebalancing.cdc \
   --arg UInt64:YOUR_YIELD_VAULT_ID
 ```
 
 ### Step 2: Estimate Costs
 
 ```bash
-flow scripts execute cadence/scripts/flow-vaults/estimate_rebalancing_cost.cdc \
+flow scripts execute cadence/scripts/flow-yield-vaults/estimate_rebalancing_cost.cdc \
   --arg UFix64:1699920000.0 \    # timestamp
   --arg UInt8:1 \                 # priority (0=High, 1=Medium, 2=Low)
   --arg UInt64:500                # execution effort
@@ -103,7 +103,7 @@ flow scripts execute cadence/scripts/flow-vaults/estimate_rebalancing_cost.cdc \
 ### Step 3: Schedule
 
 ```bash
-flow transactions send cadence/transactions/flow-vaults/schedule_rebalancing.cdc \
+flow transactions send cadence/transactions/flow-yield-vaults/schedule_rebalancing.cdc \
   --arg UInt64:YOUR_YIELD_VAULT_ID \
   --arg UFix64:1699920000.0 \     # timestamp
   --arg UInt8:1 \                 # priority
@@ -121,14 +121,14 @@ flow transactions send cadence/transactions/flow-vaults/schedule_rebalancing.cdc
 ### View All Scheduled Rebalancing
 
 ```bash
-flow scripts execute cadence/scripts/flow-vaults/get_all_scheduled_rebalancing.cdc \
+flow scripts execute cadence/scripts/flow-yield-vaults/get_all_scheduled_rebalancing.cdc \
   --arg Address:FLOWVAULTS_ADDRESS
 ```
 
 ### View Specific YieldVault Schedule
 
 ```bash
-flow scripts execute cadence/scripts/flow-vaults/get_scheduled_rebalancing.cdc \
+flow scripts execute cadence/scripts/flow-yield-vaults/get_scheduled_rebalancing.cdc \
   --arg Address:FLOWVAULTS_ADDRESS \
   --arg UInt64:YOUR_YIELD_VAULT_ID
 ```
@@ -136,13 +136,13 @@ flow scripts execute cadence/scripts/flow-vaults/get_scheduled_rebalancing.cdc \
 ### Check Registered Yield Vaults
 
 ```bash
-flow scripts execute cadence/scripts/flow-vaults/get_registered_yield_vault_ids.cdc
+flow scripts execute cadence/scripts/flow-yield-vaults/get_registered_yield_vault_ids.cdc
 ```
 
 ### Check Pending Queue
 
 ```bash
-flow scripts execute cadence/scripts/flow-vaults/get_pending_count.cdc
+flow scripts execute cadence/scripts/flow-yield-vaults/get_pending_count.cdc
 ```
 
 ---
@@ -177,7 +177,7 @@ The Supervisor handles yield vaults that failed to self-schedule:
 If monitoring detects a failed schedule, enqueue for recovery:
 
 ```bash
-flow transactions send cadence/transactions/flow-vaults/enqueue_pending_yield_vault.cdc \
+flow transactions send cadence/transactions/flow-yield-vaults/enqueue_pending_yield_vault.cdc \
   --arg UInt64:YIELD_VAULT_ID
 ```
 
@@ -187,7 +187,7 @@ The next Supervisor run will re-seed the yield vault.
 
 ## Events
 
-### FlowVaultsScheduler Events
+### FlowYieldVaultsScheduler Events
 
 ```cadence
 event RebalancingScheduled(
@@ -213,7 +213,7 @@ event SupervisorSeededYieldVault(
 )
 ```
 
-### FlowVaultsSchedulerRegistry Events
+### FlowYieldVaultsSchedulerRegistry Events
 
 ```cadence
 event YieldVaultRegistered(yieldVaultID: UInt64, handlerCapValid: Bool)
@@ -229,7 +229,7 @@ event YieldVaultDequeuedPending(yieldVaultID: UInt64, pendingQueueSize: Int)
 ### Cancel a Schedule
 
 ```bash
-flow transactions send cadence/transactions/flow-vaults/cancel_scheduled_rebalancing.cdc \
+flow transactions send cadence/transactions/flow-yield-vaults/cancel_scheduled_rebalancing.cdc \
   --arg UInt64:YOUR_YIELD_VAULT_ID
 ```
 
@@ -240,7 +240,7 @@ flow transactions send cadence/transactions/flow-vaults/cancel_scheduled_rebalan
 When a yield vault is closed:
 1. `_cleanupAutoBalancer()` is called
 2. `unregisterYieldVault()` cancels pending schedules
-3. Fees are refunded to the FlowVaults account
+3. Fees are refunded to the FlowYieldVaults account
 4. YieldVault is removed from registry
 
 ---
@@ -249,7 +249,7 @@ When a yield vault is closed:
 
 ### "Insufficient FLOW balance for scheduling"
 
-The FlowVaults account needs FLOW to pay for scheduling fees. Fund the account:
+The FlowYieldVaults account needs FLOW to pay for scheduling fees. Fund the account:
 
 ```bash
 flow transactions send --code "
@@ -258,7 +258,7 @@ import FungibleToken from 0xFungibleToken
 
 transaction(amount: UFix64) {
     prepare(signer: auth(BorrowValue) &Account) {
-        // Transfer FLOW to FlowVaults account
+        // Transfer FLOW to FlowYieldVaults account
     }
 }
 " --arg UFix64:10.0
@@ -269,7 +269,7 @@ transaction(amount: UFix64) {
 Cancel the existing schedule first:
 
 ```bash
-flow transactions send cadence/transactions/flow-vaults/cancel_scheduled_rebalancing.cdc \
+flow transactions send cadence/transactions/flow-yield-vaults/cancel_scheduled_rebalancing.cdc \
   --arg UInt64:YOUR_YIELD_VAULT_ID
 ```
 
@@ -277,7 +277,7 @@ flow transactions send cadence/transactions/flow-vaults/cancel_scheduled_rebalan
 
 Check:
 1. Timestamp is in the future
-2. FlowVaults account has sufficient FLOW
+2. FlowYieldVaults account has sufficient FLOW
 3. Priority level (Low may be delayed)
 4. Handler capability is valid
 
@@ -287,7 +287,7 @@ Check:
 
 1. **Trust Automatic Scheduling**: Let the system handle scheduling automatically
 2. **Monitor Events**: Watch for `YieldVaultEnqueuedPending` events indicating failed schedules
-3. **Maintain FLOW Balance**: Ensure FlowVaults account has sufficient FLOW for fees
+3. **Maintain FLOW Balance**: Ensure FlowYieldVaults account has sufficient FLOW for fees
 4. **Use Appropriate Priority**: Medium is usually sufficient
 
 ---
@@ -303,7 +303,7 @@ A: The yield vault creation reverts entirely (atomic operation).
 **Q: How does recurring work?**
 A: AutoBalancers self-schedule their next execution after each run.
 
-**Q: What if the FlowVaults account runs out of FLOW?**
+**Q: What if the FlowYieldVaults account runs out of FLOW?**
 A: AutoBalancers will fail to self-schedule. The yield vaults will be enqueued in the pending queue and the Supervisor will recover them once the account is funded.
 
 **Q: Can I have multiple schedules for one yield vault?**

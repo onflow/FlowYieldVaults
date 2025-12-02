@@ -2,18 +2,18 @@ import Test
 import BlockchainHelpers
 import "test_helpers.cdc"
 
-import "FlowVaultsStrategies"
-import "FlowVaultsSchedulerRegistry"
+import "FlowYieldVaultsStrategies"
+import "FlowYieldVaultsSchedulerRegistry"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "FlowCreditMarket"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
-access(all) let flowVaultsAccount = Test.getAccount(0x0000000000000009)
+access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@FlowVaultsStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -25,8 +25,8 @@ access(all) fun setup() {
     deployContracts()
 
     // Configure oracle prices for Flow / Yield so AutoBalancer initialization succeeds.
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
 
     // Mint tokens & set liquidity in the mock swapper.
     let reserveAmount = 100_000_00.0
@@ -60,17 +60,17 @@ access(all) fun setup() {
 
     // Enable Strategy creation
     addStrategyComposer(
-        signer: flowVaultsAccount,
+        signer: flowYieldVaultsAccount,
         strategyIdentifier: strategyIdentifier,
-        composerIdentifier: Type<@FlowVaultsStrategies.TracerStrategyComposer>().identifier,
-        issuerStoragePath: FlowVaultsStrategies.IssuerStoragePath,
+        composerIdentifier: Type<@FlowYieldVaultsStrategies.TracerStrategyComposer>().identifier,
+        issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
         beFailed: false
     )
 
     // Scheduler contracts are deployed as part of deployContracts()
     
-    // Fund FlowVaults account for scheduling fees (atomic initial scheduling)
-    mintFlow(to: flowVaultsAccount, amount: 100.0)
+    // Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
+    mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
 }
 
 access(all) fun testAtomicRegistrationAndGC() {
@@ -79,12 +79,12 @@ access(all) fun testAtomicRegistrationAndGC() {
     mintFlow(to: user, amount: fundingAmount)
 
     // Grant Beta Access
-    let betaRef = grantBeta(flowVaultsAccount, user)
+    let betaRef = grantBeta(flowYieldVaultsAccount, user)
     Test.expect(betaRef, Test.beSucceeded())
 
     // 1. Create YieldVault (Atomic Registration)
     let createYieldVaultRes = executeTransaction(
-        "../transactions/flow-vaults/create_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, fundingAmount],
         user
     )
@@ -95,19 +95,19 @@ access(all) fun testAtomicRegistrationAndGC() {
 
     // Verify YieldVault is registered in Scheduler Registry by querying registered IDs
     let registeredIDsRes = _executeScript(
-        "../scripts/flow-vaults/get_registered_yield_vault_ids.cdc",
+        "../scripts/flow-yield-vaults/get_registered_yield_vault_ids.cdc",
         []
     )
     Test.expect(registeredIDsRes, Test.beSucceeded())
     let registeredIDs = registeredIDsRes.returnValue! as! [UInt64]
     Test.assert(
         registeredIDs.contains(yieldVaultID),
-        message: "YieldVault should be registered in FlowVaultsSchedulerRegistry atomically"
+        message: "YieldVault should be registered in FlowYieldVaultsSchedulerRegistry atomically"
     )
 
     // Verify Wrapper Capability exists
     let capCheck = _executeScript(
-        "../scripts/flow-vaults/has_wrapper_cap_for_yield_vault.cdc",
+        "../scripts/flow-yield-vaults/has_wrapper_cap_for_yield_vault.cdc",
         [yieldVaultID]
     )
     Test.expect(capCheck, Test.beSucceeded())
@@ -116,7 +116,7 @@ access(all) fun testAtomicRegistrationAndGC() {
 
     // 2. Close YieldVault (Garbage Collection)
     let closeYieldVaultRes = executeTransaction(
-        "../transactions/flow-vaults/close_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/close_yield_vault.cdc",
         [yieldVaultID],
         user
     )
@@ -124,19 +124,19 @@ access(all) fun testAtomicRegistrationAndGC() {
 
     // Verify YieldVault is unregistered
     let registeredIDsAfterRes = _executeScript(
-        "../scripts/flow-vaults/get_registered_yield_vault_ids.cdc",
+        "../scripts/flow-yield-vaults/get_registered_yield_vault_ids.cdc",
         []
     )
     Test.expect(registeredIDsAfterRes, Test.beSucceeded())
     let registeredIDsAfter = registeredIDsAfterRes.returnValue! as! [UInt64]
     Test.assert(
         !registeredIDsAfter.contains(yieldVaultID),
-        message: "YieldVault should be unregistered from FlowVaultsSchedulerRegistry after closing"
+        message: "YieldVault should be unregistered from FlowYieldVaultsSchedulerRegistry after closing"
     )
 
     // Verify Wrapper Capability is gone
     let capCheckAfter = _executeScript(
-        "../scripts/flow-vaults/has_wrapper_cap_for_yield_vault.cdc",
+        "../scripts/flow-yield-vaults/has_wrapper_cap_for_yield_vault.cdc",
         [yieldVaultID]
     )
     Test.expect(capCheckAfter, Test.beSucceeded())

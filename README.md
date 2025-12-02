@@ -1,14 +1,14 @@
-# FlowVaults Smart Contracts
+# FlowYieldVaults Smart Contracts
 
-FlowVaults is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via FlowCreditMarket's Active Lending Platform. FlowVaults aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
+FlowYieldVaults is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via FlowCreditMarket's Active Lending Platform. FlowYieldVaults aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
 
 ## System Architecture
 
-The FlowVaults platform consists of several interconnected components:
+The FlowYieldVaults platform consists of several interconnected components:
 
 ### Core Contracts
 
-#### 1. FlowVaults.cdc - Main Platform Contract
+#### 1. FlowYieldVaults.cdc - Main Platform Contract
 
 The main contract that orchestrates the entire yield farming system:
 
@@ -18,7 +18,7 @@ The main contract that orchestrates the entire yield farming system:
 - **YieldVault Resource**: Represents a user's position in a specific strategy
 - **YieldVaultManager**: Manages multiple YieldVault positions for a user account
 
-#### 2. FlowVaultsStrategies.cdc - Strategy Implementations
+#### 2. FlowYieldVaultsStrategies.cdc - Strategy Implementations
 
 Implements specific yield strategies:
 
@@ -26,7 +26,7 @@ Implements specific yield strategies:
 - **TracerStrategyComposer**: Creates TracerStrategy instances with complex DeFi Actions stacking
 - **StrategyComposerIssuer**: Controls access to strategy composer creation
 
-#### 3. FlowVaultsAutoBalancers.cdc - Auto-Balancing System
+#### 3. FlowYieldVaultsAutoBalancers.cdc - Auto-Balancing System
 
 Manages automated rebalancing of positions:
 
@@ -64,8 +64,8 @@ Mock FungibleToken implementations representing:
 |---|---|---|---|
 | FlowActions | 0xd27920b6384e2a78 | DeFiActions | TBD |
 | FlowCreditMarket | 0xd27920b6384e2a78 | FlowALP | TBD |
-| FlowVaults | 0xd27920b6384e2a78 | FlowVaults | TBD |
-| FlowVaultsStrategies | 0xd27920b6384e2a78 | FlowVaultsStrategies | TBD |
+| FlowYieldVaults | 0xd27920b6384e2a78 | FlowYieldVaults | TBD |
+| FlowYieldVaultsStrategies | 0xd27920b6384e2a78 | FlowYieldVaultsStrategies | TBD |
 | MOET | 0xd27920b6384e2a78 | MOET | 0x51f5cc5f50afb81e8f23c926080fa38c3024b238 |
 | USDC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_d431955d55a99ef69beb96ba34718d0f9fbc91b1 | 0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1 |
 | wBTC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6 | 0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6 |
@@ -77,8 +77,8 @@ Mock FungibleToken implementations representing:
 |---|---|---|---|
 | FlowActions | 0x6d888f175c158410 | DeFiActions | TBD |
 | FlowCreditMarket | 0x6b00ff876c299c61 | FlowALP | TBD |
-| FlowVaults | 0xb1d63873c3cc9f79 | FlowVaults | TBD |
-| FlowVaultsStrategies | 0xb1d63873c3cc9f79 | FlowVaultsStrategies | TBD |
+| FlowYieldVaults | 0xb1d63873c3cc9f79 | FlowYieldVaults | TBD |
+| FlowYieldVaultsStrategies | 0xb1d63873c3cc9f79 | FlowYieldVaultsStrategies | TBD |
 | MOET | 0x6b00ff876c299c61 | MOET | 0x213979bB8A9A86966999b3AA797C1fcf3B967ae2 |
 | USDC | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_f1815bd50389c46847f0bda824ec8da914045d14 | 0xF1815bd50389c46847f0Bda824eC8da914045D14 |
 | USDF | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_2aabea2058b5ac2d339b163c6ab6f2b6d53aabed | 0x2aabea2058b5ac2d339b163c6ab6f2b6d53aabed |
@@ -88,7 +88,7 @@ Mock FungibleToken implementations representing:
 
 ## How the System Works
 
-Below is an overview of the initial prototype Tracer Strategy in the broader context of FlowCreditMarket and the FlowVaults platform.
+Below is an overview of the initial prototype Tracer Strategy in the broader context of FlowCreditMarket and the FlowYieldVaults platform.
 
 ### 1. Strategy Architecture
 
@@ -122,7 +122,7 @@ The system heavily uses [DeFi Actions](https://developers.flow.com/blockchain-de
 
 [Cadence Scripts](https://developers.flow.com/build/cadence/basics/scripts) are written in Cadence and take advantage of [Native Data Availability](https://developers.flow.com/blockchain-development-tutorials/cadence/cadence-advantages/native-data-availibility-with-cadence-scripts) read and format any public data on the blockchain in the way the developer needs it, without relying on pre-existing view functions in the contract.
 
-#### `scripts/flow-vaults/get_yield_vault_ids.cdc`
+#### `scripts/flow-yield-vaults/get_yield_vault_ids.cdc`
 
 ```cadence
 // Returns all YieldVault IDs for a given user address
@@ -143,7 +143,7 @@ access(all) fun main(account: Address, vaultPath: StoragePath): UFix64
 #### Setup
 
 ```cadence
-// Setup user account for FlowVaults platform
+// Setup user account for FlowYieldVaults platform
 transaction setup()
 ```
 
@@ -179,7 +179,7 @@ The `local/setup_emulator.sh` script provides emulator configuration for local d
 
 ## Rebalancing and Recollateralizing
 
-The FlowVaults platform implements sophisticated automatic rebalancing and recollateralizing mechanisms to maintain healthy loan positions and optimize yield generation.
+The FlowYieldVaults platform implements sophisticated automatic rebalancing and recollateralizing mechanisms to maintain healthy loan positions and optimize yield generation.
 
 **Important Distinction:** The system has TWO different rebalancing mechanisms:
 
@@ -243,7 +243,7 @@ YieldToken → Swap to FLOW → Add to Position Collateral → Reduce loan risk
 #### AutoBalancer Configuration
 
 ```cadence
-let autoBalancer = FlowVaultsAutoBalancers._initNewAutoBalancer(
+let autoBalancer = FlowYieldVaultsAutoBalancers._initNewAutoBalancer(
     oracle: oracle,               // Price feeds for value calculations
     vaultType: yieldTokenType,    // YieldToken holdings monitored
     lowerThreshold: 0.95,         // Trigger recollateralization at 95%
@@ -279,7 +279,7 @@ The system creates a sophisticated token flow:
 
 #### Manual Rebalancing
 
-**Transaction:** `transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc`
+**Transaction:** `transactions/flow-yield-vaults/admin/rebalance_auto_balancer_by_id.cdc`
 
 ```cadence
 // Force rebalancing regardless of thresholds
@@ -295,7 +295,7 @@ transaction rebalance_auto_balancer_by_id(id: UInt64, force: Bool)
 
 #### Check AutoBalancer Balance
 
-**Script:** `scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc`
+**Script:** `scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc`
 
 ```cadence
 // Returns current YieldToken balance in AutoBalancer
@@ -874,17 +874,17 @@ This section provides a step-by-step guide to test rebalancing functionality in 
 
 ## Collateral Token Price goes up
 
-![COLLATERAL PRICE UP](./1-flow-vaults-diagram.png)
+![COLLATERAL PRICE UP](./1-flow-yield-vaults-diagram.png)
 
 ## Collateral Token Price goes down
 
-![COLLATERAL PRICE DOWN](./2-flow-vaults-diagram.png)
+![COLLATERAL PRICE DOWN](./2-flow-yield-vaults-diagram.png)
 
 ### Yield Token Price Changes
 
                            YIELD TOKEN PRICE REBALANCING WITH CONTRACT INTERACTIONS
 
-![YIELD TOKEN AUTOBALANCER](./3-flow-vaults-diagram.png)
+![YIELD TOKEN AUTOBALANCER](./3-flow-yield-vaults-diagram.png)
 
 The AutoBalancer deposits to a Sink, withdrawing YIELD from the nested Vault. The inner Sink is a SwapSink that swaps from YIELD to FLOW and then deposits to a PositionSink. The deposited FLOW makes its way to the Pool and recollateralizes the position, increasing the position's size. The protocol then pushes the surplus value to its drawDownSink. That drawDownSink is also a SwapSink that takes the deposited MOET, swaps it to YIELD and then deposits the swapped tokens to the AutoBalancerSink. That sink then finally deposits the YIELD to the AutoBalancer on which the rebalance was initially called, increasing the valueOfDeposits and closing the loop.
 
@@ -901,7 +901,7 @@ YIELD TOKEN DOWN Scenario not currently supported
 
 Each scenario below is completely self-contained and can be run independently. You only need to ensure that **contracts are already deployed** to the Flow emulator. Each scenario handles its own setup, execution, and verification.
 
-**Prerequisites:** Flow emulator running with all FlowVaults contracts deployed.
+**Prerequisites:** Flow emulator running with all FlowYieldVaults contracts deployed.
 
 ---
 
@@ -922,9 +922,9 @@ echo "Setting up independent test environment..."
 export YOUR_ADDRESS="0xf8d6e0586b0a20c7"  # Default test account
 export INITIAL_DEPOSIT=100.0
 
-# Step 1: Setup account for FlowVaults platform
-echo "Setting up FlowVaults account..."
-flow transactions send cadence/transactions/flow-vaults/setup.cdc \
+# Step 1: Setup account for FlowYieldVaults platform
+echo "Setting up FlowYieldVaults account..."
+flow transactions send cadence/transactions/flow-yield-vaults/setup.cdc \
   --signer test-account
 
 # Step 2: Setup token vaults
@@ -968,15 +968,15 @@ flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connecto
 
 # Step 5: Create YieldVault position
 echo "Creating YieldVault position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send cadence/transactions/flow-vaults/create_yield_vault.cdc \
-  "A.045a1763c93006ca.FlowVaultsStrategies.TracerStrategy" \
+flow transactions send cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+  "A.045a1763c93006ca.FlowYieldVaultsStrategies.TracerStrategy" \
   "A.0ae53cb6e3f42a79.FlowToken.Vault" \
   $INITIAL_DEPOSIT \
   --signer test-account
 
 # Step 6: Get the YieldVault ID
 echo "Getting YieldVault ID..."
-YIELD_VAULT_ID=$(flow scripts execute cadence/scripts/flow-vaults/get_yield_vault_ids.cdc \
+YIELD_VAULT_ID=$(flow scripts execute cadence/scripts/flow-yield-vaults/get_yield_vault_ids.cdc \
   $YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
 echo "YieldVault ID: $YIELD_VAULT_ID"
 
@@ -991,11 +991,11 @@ flow scripts execute cadence/scripts/mocks/oracle/get_price.cdc \
   "A.045a1763c93006ca.YieldToken.Vault"
 
 echo "Initial YieldVault Balance:"
-flow scripts execute cadence/scripts/flow-vaults/get_yield_vault_balance.cdc \
+flow scripts execute cadence/scripts/flow-yield-vaults/get_yield_vault_balance.cdc \
   $YOUR_ADDRESS $YIELD_VAULT_ID
 
 echo "Initial AutoBalancer Balance:"
-flow scripts execute cadence/scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute cadence/scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc \
   $YIELD_VAULT_ID
 
 # Step 8: Execute the test - Increase FLOW price by 20%
@@ -1012,7 +1012,7 @@ flow scripts execute cadence/scripts/mocks/oracle/get_price.cdc \
 
 # Step 9: Trigger rebalancing
 echo "Triggering rebalancing..."
-flow transactions send cadence/transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc \
+flow transactions send cadence/transactions/flow-yield-vaults/admin/rebalance_auto_balancer_by_id.cdc \
   $YIELD_VAULT_ID true \
   --signer test-account
 
@@ -1023,11 +1023,11 @@ flow transactions send cadence/transactions/flow-credit-market/pool-management/r
 # Step 10: Verify results
 echo "=== VERIFYING RESULTS ==="
 echo "New AutoBalancer Balance (should be HIGHER):"
-flow scripts execute cadence/scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute cadence/scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc \
   $YIELD_VAULT_ID
 
 echo "New YieldVault Balance):"
-flow scripts execute cadence/scripts/flow-vaults/get_yield_vault_balance.cdc \
+flow scripts execute cadence/scripts/flow-yield-vaults/get_yield_vault_balance.cdc \
   $YOUR_ADDRESS $YIELD_VAULT_ID
 
 echo "SCENARIO 1 COMPLETE!"
@@ -1062,9 +1062,9 @@ echo "Setting up independent test environment..."
 export YOUR_ADDRESS="0xf8d6e0586b0a20c7"  # Default test account
 export INITIAL_DEPOSIT=100.0
 
-# Step 1: Setup account for FlowVaults platform
-echo "Setting up FlowVaults account..."
-flow transactions send transactions/flow-vaults/setup.cdc \
+# Step 1: Setup account for FlowYieldVaults platform
+echo "Setting up FlowYieldVaults account..."
+flow transactions send transactions/flow-yield-vaults/setup.cdc \
   --signer test-account
 
 # Step 2: Setup token vaults
@@ -1114,7 +1114,7 @@ flow transactions send transactions/mocks/swapper/set_liquidity_connector.cdc \
 
 # Step 5: Create YieldVault position
 echo "Creating YieldVault position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send transactions/flow-vaults/create_yield_vault.cdc \
+flow transactions send transactions/flow-yield-vaults/create_yield_vault.cdc \
   --arg String:"tracer" \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --arg UFix64:$INITIAL_DEPOSIT \
@@ -1122,7 +1122,7 @@ flow transactions send transactions/flow-vaults/create_yield_vault.cdc \
 
 # Step 6: Get the YieldVault ID
 echo "Getting YieldVault ID..."
-YIELD_VAULT_ID=$(flow scripts execute scripts/flow-vaults/get_yield_vault_ids.cdc \
+YIELD_VAULT_ID=$(flow scripts execute scripts/flow-yield-vaults/get_yield_vault_ids.cdc \
   --arg Address:$YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
 echo "YieldVault ID: $YIELD_VAULT_ID"
 
@@ -1137,11 +1137,11 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
 echo "Initial YieldVault Balance:"
-flow scripts execute scripts/flow-vaults/get_yield_vault_balance.cdc \
+flow scripts execute scripts/flow-yield-vaults/get_yield_vault_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$YIELD_VAULT_ID
 
 echo "Initial AutoBalancer Balance:"
-flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$YIELD_VAULT_ID
 
 # Step 8: Execute the test - Decrease FLOW price by 30%
@@ -1158,7 +1158,7 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
 
 # Step 9: Trigger rebalancing
 echo "Triggering recollateralization..."
-flow transactions send transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc \
+flow transactions send transactions/flow-yield-vaults/admin/rebalance_auto_balancer_by_id.cdc \
   --arg UInt64:$YIELD_VAULT_ID \
   --arg Bool:true \
   --signer test-account
@@ -1166,11 +1166,11 @@ flow transactions send transactions/flow-vaults/admin/rebalance_auto_balancer_by
 # Step 10: Verify results
 echo "=== VERIFYING RESULTS ==="
 echo "New AutoBalancer Balance (should be LOWER):"
-flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$YIELD_VAULT_ID
 
 echo "New YieldVault Balance (may be lower due to collateral needs):"
-flow scripts execute scripts/flow-vaults/get_yield_vault_balance.cdc \
+flow scripts execute scripts/flow-yield-vaults/get_yield_vault_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$YIELD_VAULT_ID
 
 echo "SCENARIO 2 COMPLETE!"
@@ -1205,9 +1205,9 @@ echo "Setting up independent test environment..."
 export YOUR_ADDRESS="0xf8d6e0586b0a20c7"  # Default test account
 export INITIAL_DEPOSIT=100.0
 
-# Step 1: Setup account for FlowVaults platform
-echo "Setting up FlowVaults account..."
-flow transactions send transactions/flow-vaults/setup.cdc \
+# Step 1: Setup account for FlowYieldVaults platform
+echo "Setting up FlowYieldVaults account..."
+flow transactions send transactions/flow-yield-vaults/setup.cdc \
   --signer test-account
 
 # Step 2: Setup token vaults
@@ -1257,7 +1257,7 @@ flow transactions send transactions/mocks/swapper/set_liquidity_connector.cdc \
 
 # Step 5: Create YieldVault position
 echo "Creating YieldVault position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send transactions/flow-vaults/create_yield_vault.cdc \
+flow transactions send transactions/flow-yield-vaults/create_yield_vault.cdc \
   --arg String:"tracer" \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --arg UFix64:$INITIAL_DEPOSIT \
@@ -1265,7 +1265,7 @@ flow transactions send transactions/flow-vaults/create_yield_vault.cdc \
 
 # Step 6: Get the YieldVault ID
 echo "Getting YieldVault ID..."
-YIELD_VAULT_ID=$(flow scripts execute scripts/flow-vaults/get_yield_vault_ids.cdc \
+YIELD_VAULT_ID=$(flow scripts execute scripts/flow-yield-vaults/get_yield_vault_ids.cdc \
   --arg Address:$YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
 echo "YieldVault ID: $YIELD_VAULT_ID"
 
@@ -1280,11 +1280,11 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
 echo "Initial YieldVault Balance:"
-flow scripts execute scripts/flow-vaults/get_yield_vault_balance.cdc \
+flow scripts execute scripts/flow-yield-vaults/get_yield_vault_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$YIELD_VAULT_ID
 
 echo "Initial AutoBalancer Balance:"
-flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$YIELD_VAULT_ID
 
 # Step 8: Execute the test - Increase YieldToken price by 15%
@@ -1301,7 +1301,7 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
 
 # Step 9: Trigger rebalancing
 echo "Triggering gain capture..."
-flow transactions send transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc \
+flow transactions send transactions/flow-yield-vaults/admin/rebalance_auto_balancer_by_id.cdc \
   --arg UInt64:$YIELD_VAULT_ID \
   --arg Bool:true \
   --signer test-account
@@ -1313,11 +1313,11 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
 echo "New AutoBalancer Balance:"
-flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$YIELD_VAULT_ID
 
 echo "New YieldVault Balance (should be HIGHER from captured gains):"
-flow scripts execute scripts/flow-vaults/get_yield_vault_balance.cdc \
+flow scripts execute scripts/flow-yield-vaults/get_yield_vault_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$YIELD_VAULT_ID
 
 echo "SCENARIO 3 COMPLETE!"
@@ -1352,9 +1352,9 @@ echo "Setting up independent test environment..."
 export YOUR_ADDRESS="0xf8d6e0586b0a20c7"  # Default test account
 export INITIAL_DEPOSIT=100.0
 
-# Step 1: Setup account for FlowVaults platform
-echo "Setting up FlowVaults account..."
-flow transactions send transactions/flow-vaults/setup.cdc \
+# Step 1: Setup account for FlowYieldVaults platform
+echo "Setting up FlowYieldVaults account..."
+flow transactions send transactions/flow-yield-vaults/setup.cdc \
   --signer test-account
 
 # Step 2: Setup token vaults
@@ -1404,7 +1404,7 @@ flow transactions send transactions/mocks/swapper/set_liquidity_connector.cdc \
 
 # Step 5: Create YieldVault position
 echo "Creating YieldVault position with $INITIAL_DEPOSIT FLOW..."
-flow transactions send transactions/flow-vaults/create_yield_vault.cdc \
+flow transactions send transactions/flow-yield-vaults/create_yield_vault.cdc \
   --arg String:"tracer" \
   --arg String:"A.0ae53cb6e3f42a79.FlowToken.Vault" \
   --arg UFix64:$INITIAL_DEPOSIT \
@@ -1412,7 +1412,7 @@ flow transactions send transactions/flow-vaults/create_yield_vault.cdc \
 
 # Step 6: Get the YieldVault ID
 echo "Getting YieldVault ID..."
-YIELD_VAULT_ID=$(flow scripts execute scripts/flow-vaults/get_yield_vault_ids.cdc \
+YIELD_VAULT_ID=$(flow scripts execute scripts/flow-yield-vaults/get_yield_vault_ids.cdc \
   --arg Address:$YOUR_ADDRESS | grep -o '[0-9]\+' | head -1)
 echo "YieldVault ID: $YIELD_VAULT_ID"
 
@@ -1427,11 +1427,11 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
 echo "Initial YieldVault Balance:"
-flow scripts execute scripts/flow-vaults/get_yield_vault_balance.cdc \
+flow scripts execute scripts/flow-yield-vaults/get_yield_vault_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$YIELD_VAULT_ID
 
 echo "Initial AutoBalancer Balance:"
-flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$YIELD_VAULT_ID
 
 # Step 8: Execute the test - Decrease YieldToken price by 15%
@@ -1448,7 +1448,7 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
 
 # Step 9: Trigger rebalancing
 echo "Triggering portfolio restoration..."
-flow transactions send transactions/flow-vaults/admin/rebalance_auto_balancer_by_id.cdc \
+flow transactions send transactions/flow-yield-vaults/admin/rebalance_auto_balancer_by_id.cdc \
   --arg UInt64:$YIELD_VAULT_ID \
   --arg Bool:true \
   --signer test-account
@@ -1460,11 +1460,11 @@ flow scripts execute scripts/mocks/oracle/get_price.cdc \
   --arg String:"A.0ae53cb6e3f42a79.YieldToken.Vault"
 
 echo "New AutoBalancer Balance (should be HIGHER in token count):"
-flow scripts execute scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc \
+flow scripts execute scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc \
   --arg UInt64:$YIELD_VAULT_ID
 
 echo "New YieldVault Balance:"
-flow scripts execute scripts/flow-vaults/get_yield_vault_balance.cdc \
+flow scripts execute scripts/flow-yield-vaults/get_yield_vault_balance.cdc \
   --arg Address:$YOUR_ADDRESS --arg UInt64:$YIELD_VAULT_ID
 
 echo "SCENARIO 4 COMPLETE!"
@@ -1498,7 +1498,7 @@ echo "- Manual intervention or position-level rebalancing may be needed"
 
 ```bash
 # Current YieldToken holdings in AutoBalancer
-scripts/flow-vaults/get_auto_balancer_balance_by_id.cdc
+scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc
 
 # Compare against expected value based on deposits
 # Ratio should stay between 0.95 - 1.05 for healthy positions
@@ -1518,7 +1518,7 @@ scripts/flow-credit-market/get_available_balance.cdc
 
 ```bash
 # Total FLOW available for withdrawal from YieldVault
-scripts/flow-vaults/get_yield_vault_balance.cdc
+scripts/flow-yield-vaults/get_yield_vault_balance.cdc
 
 # Your account token balances
 scripts/tokens/get_balance.cdc
@@ -1562,10 +1562,10 @@ scripts/tokens/get_balance.cdc
 flow scripts execute scripts/mocks/oracle/get_price.cdc --arg String:"TOKEN_TYPE"
 
 # Check your YieldVault IDs
-flow scripts execute scripts/flow-vaults/get_yield_vault_ids.cdc --arg Address:0xYourAddress
+flow scripts execute scripts/flow-yield-vaults/get_yield_vault_ids.cdc --arg Address:0xYourAddress
 
 # Check supported strategies
-flow scripts execute scripts/flow-vaults/get_supported_strategies.cdc
+flow scripts execute scripts/flow-yield-vaults/get_supported_strategies.cdc
 ```
 
 This testing framework allows you to validate that the rebalancing system correctly responds to market conditions while maintaining position safety and optimizing yield generation.

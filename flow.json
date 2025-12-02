@@ -107,8 +107,8 @@
 				"testnet": "426f0458ced60037"
 			}
 		},
-		"FlowVaults": {
-			"source": "cadence/contracts/FlowVaults.cdc",
+		"FlowYieldVaults": {
+			"source": "cadence/contracts/FlowYieldVaults.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -116,8 +116,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowVaultsAutoBalancers": {
-			"source": "cadence/contracts/FlowVaultsAutoBalancers.cdc",
+		"FlowYieldVaultsAutoBalancers": {
+			"source": "cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -125,8 +125,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowVaultsClosedBeta": {
-			"source": "cadence/contracts/FlowVaultsClosedBeta.cdc",
+		"FlowYieldVaultsClosedBeta": {
+			"source": "cadence/contracts/FlowYieldVaultsClosedBeta.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -134,8 +134,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowVaultsScheduler": {
-			"source": "cadence/contracts/FlowVaultsScheduler.cdc",
+		"FlowYieldVaultsScheduler": {
+			"source": "cadence/contracts/FlowYieldVaultsScheduler.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -143,8 +143,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowVaultsSchedulerRegistry": {
-			"source": "cadence/contracts/FlowVaultsSchedulerRegistry.cdc",
+		"FlowYieldVaultsSchedulerRegistry": {
+			"source": "cadence/contracts/FlowYieldVaultsSchedulerRegistry.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -152,8 +152,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowVaultsStrategies": {
-			"source": "cadence/contracts/FlowVaultsStrategies.cdc",
+		"FlowYieldVaultsStrategies": {
+			"source": "cadence/contracts/FlowYieldVaultsStrategies.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -699,11 +699,11 @@
 				"location": "local/emulator-account.pkey"
 			}
 		},
-		"emulator-flow-vaults": {
+		"emulator-flow-yield-vaults": {
 			"address": "045a1763c93006ca",
 			"key": {
 				"type": "file",
-				"location": "local/emulator-flow-vaults.pkey"
+				"location": "local/emulator-flow-yield-vaults.pkey"
 			}
 		},
 		"evm-gateway": {
@@ -777,7 +777,7 @@
 	},
 	"deployments": {
 		"emulator": {
-			"emulator-flow-vaults": [
+			"emulator-flow-yield-vaults": [
 				{
 					"name": "MOET",
 					"args": [
@@ -821,14 +821,14 @@
 				"ERC4626PriceOracles",
 				"ERC4626SinkConnectors",
 				"ERC4626SwapConnectors",
-				"FlowVaultsSchedulerRegistry",
-				"FlowVaultsAutoBalancers",
-				"FlowVaultsScheduler",
-				"FlowVaultsClosedBeta",
-				"FlowVaults",
+				"FlowYieldVaultsSchedulerRegistry",
+				"FlowYieldVaultsAutoBalancers",
+				"FlowYieldVaultsScheduler",
+				"FlowYieldVaultsClosedBeta",
+				"FlowYieldVaults",
 				"UniswapV3SwapConnectors",
 				{
-					"name": "FlowVaultsStrategies",
+					"name": "FlowYieldVaultsStrategies",
 					"args": [
 						{
 							"value": "0x986Cb42b0557159431d48fE0A40073296414d410",
@@ -886,13 +886,13 @@
 					]
 				},
 				"MockSwapper",
-				"FlowVaultsSchedulerRegistry",
-				"FlowVaultsAutoBalancers",
-				"FlowVaultsScheduler",
-				"FlowVaultsClosedBeta",
-				"FlowVaults",
+				"FlowYieldVaultsSchedulerRegistry",
+				"FlowYieldVaultsAutoBalancers",
+				"FlowYieldVaultsScheduler",
+				"FlowYieldVaultsClosedBeta",
+				"FlowYieldVaults",
 				{
-					"name": "FlowVaultsStrategies",
+					"name": "FlowYieldVaultsStrategies",
 					"args": [
 						{
 							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
@@ -939,13 +939,13 @@
 					]
 				},
 				"MockSwapper",
-				"FlowVaultsSchedulerRegistry",
-				"FlowVaultsAutoBalancers",
-				"FlowVaultsScheduler",
-				"FlowVaultsClosedBeta",
-				"FlowVaults",
+				"FlowYieldVaultsSchedulerRegistry",
+				"FlowYieldVaultsAutoBalancers",
+				"FlowYieldVaultsScheduler",
+				"FlowYieldVaultsClosedBeta",
+				"FlowYieldVaults",
 				{
-					"name": "FlowVaultsStrategies",
+					"name": "FlowYieldVaultsStrategies",
 					"args": [
 						{
 							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",

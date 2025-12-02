@@ -6,16 +6,16 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "FlowVaultsStrategies"
-import "FlowVaultsScheduler"
-import "FlowVaultsSchedulerRegistry"
+import "FlowYieldVaultsStrategies"
+import "FlowYieldVaultsScheduler"
+import "FlowYieldVaultsSchedulerRegistry"
 import "FlowTransactionScheduler"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
-access(all) let flowVaultsAccount = Test.getAccount(0x0000000000000009)
+access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@FlowVaultsStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -27,12 +27,12 @@ fun setup() {
     
     deployContracts()
     
-    // Fund FlowVaults account for scheduling fees
-    mintFlow(to: flowVaultsAccount, amount: 1000.0)
+    // Fund FlowYieldVaults account for scheduling fees
+    mintFlow(to: flowYieldVaultsAccount, amount: 1000.0)
 
     // Set mocked token prices
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
-    setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
+    setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
 
     // Mint tokens and set liquidity
     let reserveAmount = 100_000_00.0
@@ -66,10 +66,10 @@ fun setup() {
 
     // Enable Strategy creation
     addStrategyComposer(
-        signer: flowVaultsAccount,
+        signer: flowYieldVaultsAccount,
         strategyIdentifier: strategyIdentifier,
-        composerIdentifier: Type<@FlowVaultsStrategies.TracerStrategyComposer>().identifier,
-        issuerStoragePath: FlowVaultsStrategies.IssuerStoragePath,
+        composerIdentifier: Type<@FlowYieldVaultsStrategies.TracerStrategyComposer>().identifier,
+        issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
         beFailed: false
     )
 
@@ -90,11 +90,11 @@ fun testYieldVaultHasNativeScheduleAfterCreation() {
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 200.0)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
     
     // Create a YieldVault
     let createRes = executeTransaction(
-        "../transactions/flow-vaults/create_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user
     )
@@ -106,7 +106,7 @@ fun testYieldVaultHasNativeScheduleAfterCreation() {
     
     // Verify yield vault is registered and has active schedule (native self-scheduling)
     let hasActive = (executeScript(
-        "../scripts/flow-vaults/has_active_schedule.cdc",
+        "../scripts/flow-yield-vaults/has_active_schedule.cdc",
         [yieldVaultID]
     ).returnValue! as! Bool)
     Test.assert(hasActive, message: "YieldVault should have active native schedule immediately after creation")
@@ -125,10 +125,10 @@ fun testCapabilityReuse() {
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 200.0)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
     
     let createRes = executeTransaction(
-        "../transactions/flow-vaults/create_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user
     )
@@ -138,13 +138,13 @@ fun testCapabilityReuse() {
     let yieldVaultID = yieldVaultIDs[0]
     
     // Check registration
-    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_yield_vault_ids.cdc", [])
+    let regIDsRes = executeScript("../scripts/flow-yield-vaults/get_registered_yield_vault_ids.cdc", [])
     Test.expect(regIDsRes, Test.beSucceeded())
     let regIDs = regIDsRes.returnValue! as! [UInt64]
     Test.assert(regIDs.contains(yieldVaultID), message: "YieldVault should be registered")
     
     // Get wrapper cap (first time)
-    let capRes1 = executeScript("../scripts/flow-vaults/has_wrapper_cap_for_yield_vault.cdc", [yieldVaultID])
+    let capRes1 = executeScript("../scripts/flow-yield-vaults/has_wrapper_cap_for_yield_vault.cdc", [yieldVaultID])
     Test.expect(capRes1, Test.beSucceeded())
     let hasCap1 = capRes1.returnValue! as! Bool
     Test.assert(hasCap1, message: "Should have wrapper cap after creation")
@@ -164,11 +164,11 @@ fun testCloseYieldVaultUnregisters() {
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 400.0)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
     
     // Create a yield vault
     let createRes = executeTransaction(
-        "../transactions/flow-vaults/create_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user
     )
@@ -180,7 +180,7 @@ fun testCloseYieldVaultUnregisters() {
     
     // Verify registered
     let regIDsBefore = (executeScript(
-        "../scripts/flow-vaults/get_registered_yield_vault_ids.cdc",
+        "../scripts/flow-yield-vaults/get_registered_yield_vault_ids.cdc",
         []
     ).returnValue! as! [UInt64])
     Test.assert(regIDsBefore.contains(yieldVaultID), message: "YieldVault should be registered")
@@ -188,7 +188,7 @@ fun testCloseYieldVaultUnregisters() {
     
     // Close the yield vault
     let closeRes = executeTransaction(
-        "../transactions/flow-vaults/close_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/close_yield_vault.cdc",
         [yieldVaultID],
         user
     )
@@ -197,7 +197,7 @@ fun testCloseYieldVaultUnregisters() {
     
     // Verify unregistered
     let regIDsAfter = (executeScript(
-        "../scripts/flow-vaults/get_registered_yield_vault_ids.cdc",
+        "../scripts/flow-yield-vaults/get_registered_yield_vault_ids.cdc",
         []
     ).returnValue! as! [UInt64])
     Test.assert(!regIDsAfter.contains(yieldVaultID), message: "YieldVault should be unregistered after close")
@@ -213,24 +213,24 @@ fun testMultipleUsersMultipleYieldVaults() {
     let user2 = Test.createAccount()
     mintFlow(to: user1, amount: 500.0)
     mintFlow(to: user2, amount: 500.0)
-    grantBeta(flowVaultsAccount, user1)
-    grantBeta(flowVaultsAccount, user2)
+    grantBeta(flowYieldVaultsAccount, user1)
+    grantBeta(flowYieldVaultsAccount, user2)
     
     // User1 creates 2 yield vaults
     executeTransaction(
-        "../transactions/flow-vaults/create_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user1
     )
     executeTransaction(
-        "../transactions/flow-vaults/create_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user1
     )
     
     // User2 creates 1 yield vault
     executeTransaction(
-        "../transactions/flow-vaults/create_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user2
     )
@@ -242,7 +242,7 @@ fun testMultipleUsersMultipleYieldVaults() {
     Test.assert(user2YieldVaults.length >= 1, message: "User2 should have at least 1 yield vault")
     
     // Verify all are registered
-    let regIDsRes = executeScript("../scripts/flow-vaults/get_registered_yield_vault_ids.cdc", [])
+    let regIDsRes = executeScript("../scripts/flow-yield-vaults/get_registered_yield_vault_ids.cdc", [])
     let regIDs = regIDsRes.returnValue! as! [UInt64]
     
     for tid in user1YieldVaults {
@@ -263,11 +263,11 @@ fun testHealthyYieldVaultsSelfSchedule() {
     
     let user = Test.createAccount()
     mintFlow(to: user, amount: 500.0)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
     
     // Create a yield vault
     let createRes = executeTransaction(
-        "../transactions/flow-vaults/create_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user
     )
@@ -285,8 +285,8 @@ fun testHealthyYieldVaultsSelfSchedule() {
     var round = 1
     while round <= 3 {
         // Use LARGE price changes to ensure rebalancing triggers
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5 * UFix64(round))
-        setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2 * UFix64(round))
+        setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5 * UFix64(round))
+        setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2 * UFix64(round))
         Test.moveTime(by: 70.0)
         Test.commitBlock()
         
@@ -304,7 +304,7 @@ fun testHealthyYieldVaultsSelfSchedule() {
     
     // Verify not stuck (healthy yield vault should not be stuck)
     let isStuck = (executeScript(
-        "../scripts/flow-vaults/is_stuck_yield_vault.cdc",
+        "../scripts/flow-yield-vaults/is_stuck_yield_vault.cdc",
         [yieldVaultID]
     ).returnValue! as! Bool)
     Test.assert(!isStuck, message: "Healthy yield vault should not be stuck")
