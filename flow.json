@@ -138,6 +138,7 @@
 			"source": "cadence/contracts/FlowVaultsScheduler.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009",
 				"testnet": "d2580caf2ef07c2f"
 			}
@@ -146,6 +147,7 @@
 			"source": "cadence/contracts/FlowVaultsSchedulerRegistry.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009",
 				"testnet": "d2580caf2ef07c2f"
 			}
