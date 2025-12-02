@@ -10,29 +10,29 @@ flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.7e60
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.dfc20aee650fcbdf.EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95.Vault' 1.0 --network testnet --signer testnet-admin
 
 echo "bridge MOET to EVM"
-flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.426f0458ced60037.MOET.Vault" --compute-limit 9999 --network testnet --signer testnet-flow-alp-deployer
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.426f0458ced60037.MOET.Vault" --compute-limit 9999 --network testnet --signer testnet-flow-credit-market-deployer
 
-# configure FlowALP
+# configure FlowCreditMarket
 #
 # create Pool with MOET as default token
-flow transactions send ./cadence/transactions/flow-alp/pool-factory/create_and_store_pool.cdc 'A.426f0458ced60037.MOET.Vault' --network testnet --signer testnet-flow-alp-deployer
+flow transactions send ./cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc 'A.426f0458ced60037.MOET.Vault' --network testnet --signer testnet-flow-credit-market-deployer
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
-flow transactions send ./cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
     'A.7e60df042a9c0868.FlowToken.Vault' \
     0.8 \
     1.0 \
     1_000_000.0 \
     1_000_000.0 \
     --network testnet \
-    --signer testnet-flow-alp-deployer
+    --signer testnet-flow-credit-market-deployer
 
 echo "swap Flow to MOET"
-flow transactions send ./cadence/transactions/flow-alp/create_position.cdc 100000.0 --network testnet --signer testnet-flow-alp-deployer
+flow transactions send ./cadence/transactions/flow-credit-market/create_position.cdc 100000.0 --network testnet --signer testnet-flow-credit-market-deployer
 
 # TODO:
 # flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/tokens/bridge_tokens_to_any_evm_address.cdc \
 #	"A.426f0458ced60037.MOET.Vault" 100000.0 "0xOWNER" \
-#	--network testnet --signer testnet-flow-alp-deployer
+#	--network testnet --signer testnet-flow-credit-market-deployer
 # create pool
 
 # add liquidity to pool
@@ -45,7 +45,7 @@ flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connec
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/moetTokenVault_0x426f0458ced60037 --network testnet --signer testnet-admin
 #flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/yieldTokenVault_0xd2580caf2ef07c2f --network testnet --signer testnet-admin
 
-flow transactions send ./lib/FlowALP/FlowActions/cadence/transactions/fungible-tokens/setup_generic_vault.cdc 'A.dfc20aee650fcbdf.EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95.Vault' --network testnet --signer testnet-admin
+flow transactions send ./lib/FlowCreditMarket/FlowActions/cadence/transactions/fungible-tokens/setup_generic_vault.cdc 'A.dfc20aee650fcbdf.EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95.Vault' --network testnet --signer testnet-admin
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault --network testnet --signer testnet-admin
 
 # add TracerStrategy as supported Strategy with the ability to initialize when new YieldVaults are created
@@ -67,9 +67,9 @@ flow transactions send ./cadence/transactions/flow-vaults/admin/add_strategy_com
 
 # grant PoolBeta cap
 echo "Grant Protocol Beta access to FlowVaults"
-flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc \
-  --authorizer testnet-flow-alp-deployer,testnet-admin \
-  --proposer testnet-flow-alp-deployer \
+flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-credit-market/pool-management/03_grant_beta.cdc \
+  --authorizer testnet-flow-credit-market-deployer,testnet-admin \
+  --proposer testnet-flow-credit-market-deployer \
   --payer testnet-admin \
   --network testnet
 

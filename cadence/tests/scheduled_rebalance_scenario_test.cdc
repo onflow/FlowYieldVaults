@@ -32,7 +32,7 @@ access(all) var snapshot: UInt64 = 0
 // 5. The Supervisor is for recovery only - picks up yield vaults from pending queue
 //
 // PRICE SEMANTICS:
-// - flowTokenIdentifier (FLOW): The COLLATERAL token deposited into FlowALP
+// - flowTokenIdentifier (FLOW): The COLLATERAL token deposited into FlowCreditMarket
 // - yieldTokenIdentifier (YieldToken): The YIELD-BEARING token the strategy produces
 //
 // TEST ISOLATION:
@@ -63,7 +63,7 @@ fun setup() {
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
 
-    // Setup FlowALP with a Pool
+    // Setup FlowCreditMarket with a Pool
     createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
     addSupportedTokenSimpleInterestCurve(
         signer: protocolAccount,
@@ -76,7 +76,7 @@ fun setup() {
 
     // Open wrapped position
     let openRes = executeTransaction(
-        "../../lib/FlowALP/cadence/tests/transactions/mock-flow-alp-consumer/create_wrapped_position.cdc",
+        "../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
         [reserveAmount/2.0, /storage/flowTokenVault, true],
         protocolAccount
     )

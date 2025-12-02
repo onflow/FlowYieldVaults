@@ -3,15 +3,15 @@ import "FungibleToken"
 import "FlowToken"
 import "DeFiActions"
 import "DeFiActionsUtils"
-import "FlowALP"
+import "FlowCreditMarket"
 import "MOET"
 import "FungibleTokenConnectors"
 
 transaction(amount: UFix64) {
     prepare(signer: auth(BorrowValue) &Account) {
         let poolCap = signer.storage
-            .borrow<&Capability<auth(FlowALP.EParticipant, FlowALP.EPosition) &FlowALP.Pool>>(
-                from: FlowALP.PoolCapStoragePath
+            .borrow<&Capability<auth(FlowCreditMarket.EParticipant, FlowCreditMarket.EPosition) &FlowCreditMarket.Pool>>(
+                from: FlowCreditMarket.PoolCapStoragePath
             ) ?? panic("no Pool capability saved at PoolCapStoragePath")
 
         let pool = poolCap.borrow()

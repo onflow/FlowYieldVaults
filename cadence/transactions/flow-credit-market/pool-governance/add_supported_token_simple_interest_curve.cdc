@@ -1,4 +1,4 @@
-import "FlowALP"
+import "FlowCreditMarket"
 
 /// Adds a token type as supported to the stored pool, reverting if a Pool is not found
 ///
@@ -10,13 +10,13 @@ transaction(
     depositCapacityCap: UFix64
 ) {
     let tokenType: Type
-    let pool: auth(FlowALP.EGovernance) &FlowALP.Pool
+    let pool: auth(FlowCreditMarket.EGovernance) &FlowCreditMarket.Pool
 
     prepare(signer: auth(BorrowValue) &Account) {
         self.tokenType = CompositeType(tokenTypeIdentifier)
             ?? panic("Invalid tokenTypeIdentifier \(tokenTypeIdentifier)")
-        self.pool = signer.storage.borrow<auth(FlowALP.EGovernance) &FlowALP.Pool>(from: FlowALP.PoolStoragePath)
-            ?? panic("Could not borrow reference to Pool from \(FlowALP.PoolStoragePath) - ensure a Pool has been configured")
+        self.pool = signer.storage.borrow<auth(FlowCreditMarket.EGovernance) &FlowCreditMarket.Pool>(from: FlowCreditMarket.PoolStoragePath)
+            ?? panic("Could not borrow reference to Pool from \(FlowCreditMarket.PoolStoragePath) - ensure a Pool has been configured")
     }
 
     execute {
@@ -24,7 +24,7 @@ transaction(
             tokenType: self.tokenType,
             collateralFactor: collateralFactor,
             borrowFactor: borrowFactor,
-            interestCurve: FlowALP.SimpleInterestCurve(),
+            interestCurve: FlowCreditMarket.SimpleInterestCurve(),
             depositRate: depositRate,
             depositCapacityCap: depositCapacityCap
         )
