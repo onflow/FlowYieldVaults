@@ -63,7 +63,7 @@ Mock FungibleToken implementations representing:
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
 |---|---|---|---|
 | FlowActions | 0xd27920b6384e2a78 | DeFiActions | TBD |
-| FlowCreditMarket | 0xd27920b6384e2a78 | FlowCreditMarket | TBD |
+| FlowCreditMarket | 0xd27920b6384e2a78 | FlowALP | TBD |
 | FlowVaults | 0xd27920b6384e2a78 | FlowVaults | TBD |
 | FlowVaultsStrategies | 0xd27920b6384e2a78 | FlowVaultsStrategies | TBD |
 | MOET | 0xd27920b6384e2a78 | MOET | 0x51f5cc5f50afb81e8f23c926080fa38c3024b238 |
@@ -76,7 +76,7 @@ Mock FungibleToken implementations representing:
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
 |---|---|---|---|
 | FlowActions | 0x6d888f175c158410 | DeFiActions | TBD |
-| FlowCreditMarket | 0x6b00ff876c299c61 | FlowCreditMarket | TBD |
+| FlowCreditMarket | 0x6b00ff876c299c61 | FlowALP | TBD |
 | FlowVaults | 0xb1d63873c3cc9f79 | FlowVaults | TBD |
 | FlowVaultsStrategies | 0xb1d63873c3cc9f79 | FlowVaultsStrategies | TBD |
 | MOET | 0x6b00ff876c299c61 | MOET | 0x213979bB8A9A86966999b3AA797C1fcf3B967ae2 |
