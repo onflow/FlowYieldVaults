@@ -35,7 +35,7 @@ access(all) contract FlowYieldVaultsClosedBeta {
 
     /// Per-user badge storage path (under the *contract/deployer* account)
     access(contract) fun _badgePath(_ addr: Address): StoragePath {
-        return StoragePath(identifier: "TY_BetaBadge_".concat(addr.toString()))!
+        return StoragePath(identifier: "FlowYieldVaultsBetaBadge_".concat(addr.toString()))!
     }
 
     /// Ensure the admin-owned badge exists for the user
