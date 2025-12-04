@@ -1,4 +1,4 @@
-import "FlowYieldVaultsScheduler"
+import "FlowYieldVaultsSchedulerV1"
 
 /// Returns information about a scheduled rebalancing transaction for a specific YieldVault.
 ///
@@ -6,11 +6,11 @@ import "FlowYieldVaultsScheduler"
 /// @param yieldVaultID: The ID of the YieldVault to query
 /// @return Information about the scheduled rebalancing, or nil if none exists
 ///
-access(all) fun main(account: Address, yieldVaultID: UInt64): FlowYieldVaultsScheduler.RebalancingScheduleInfo? {
+access(all) fun main(account: Address, yieldVaultID: UInt64): FlowYieldVaultsSchedulerV1.RebalancingScheduleInfo? {
     // Borrow the public capability for the SchedulerManager
     let schedulerManager = getAccount(account)
-        .capabilities.borrow<&FlowYieldVaultsScheduler.SchedulerManager>(
-            FlowYieldVaultsScheduler.SchedulerManagerPublicPath
+        .capabilities.borrow<&FlowYieldVaultsSchedulerV1.SchedulerManager>(
+            FlowYieldVaultsSchedulerV1.SchedulerManagerPublicPath
         )
     if schedulerManager == nil {
         return nil

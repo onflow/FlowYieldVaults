@@ -7,7 +7,7 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "FlowYieldVaultsStrategies"
-import "FlowYieldVaultsScheduler"
+import "FlowYieldVaultsSchedulerV1"
 import "FlowTransactionScheduler"
 import "FlowYieldVaultsSchedulerRegistry"
 import "DeFiActions"
@@ -34,7 +34,7 @@ fun setup() {
     deployContracts()
     
     // Scheduler contracts are deployed as part of deployContracts()
-    log("FlowYieldVaultsScheduler available")
+    log("FlowYieldVaultsSchedulerV1 available")
     
     // Fund FlowYieldVaults account for scheduling fees
     mintFlow(to: flowYieldVaultsAccount, amount: 1000.0)

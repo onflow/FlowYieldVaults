@@ -220,7 +220,7 @@ access(all) fun deployContracts() {
     // Deployment order matters due to imports:
     // 1. FlowYieldVaultsSchedulerRegistry (no FlowYieldVaults dependencies)
     // 2. FlowYieldVaultsAutoBalancers (imports FlowYieldVaultsSchedulerRegistry)
-    // 3. FlowYieldVaultsScheduler (imports FlowYieldVaultsSchedulerRegistry AND FlowYieldVaultsAutoBalancers)
+    // 3. FlowYieldVaultsSchedulerV1 (imports FlowYieldVaultsSchedulerRegistry AND FlowYieldVaultsAutoBalancers)
     err = Test.deployContract(
         name: "FlowYieldVaultsSchedulerRegistry",
         path: "../contracts/FlowYieldVaultsSchedulerRegistry.cdc",
@@ -234,8 +234,8 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FlowYieldVaultsScheduler",
-        path: "../contracts/FlowYieldVaultsScheduler.cdc",
+        name: "FlowYieldVaultsSchedulerV1",
+        path: "../contracts/FlowYieldVaultsSchedulerV1.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())

@@ -1,5 +1,5 @@
 import "FlowTransactionScheduler"
-import "FlowYieldVaultsScheduler"
+import "FlowYieldVaultsSchedulerV1"
 
 /// Estimates the cost of scheduling a rebalancing transaction.
 ///
@@ -31,7 +31,7 @@ access(all) fun main(
             ? FlowTransactionScheduler.Priority.Medium 
             : FlowTransactionScheduler.Priority.Low)
 
-    return FlowYieldVaultsScheduler.estimateSchedulingCost(
+    return FlowYieldVaultsSchedulerV1.estimateSchedulingCost(
         timestamp: timestamp,
         priority: priority,
         executionEffort: executionEffort

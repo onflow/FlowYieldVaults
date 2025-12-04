@@ -4,7 +4,7 @@ import "ViewResolver"
 
 import "FlowYieldVaultsClosedBeta"
 import "FlowYieldVaults"
-import "FlowYieldVaultsScheduler"
+import "FlowYieldVaultsSchedulerV1"
 
 /// Opens a new YieldVault in the FlowYieldVaults platform, funding the YieldVault with the specified Vault and amount
 ///

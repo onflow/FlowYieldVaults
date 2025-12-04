@@ -7,7 +7,7 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "FlowYieldVaultsStrategies"
-import "FlowYieldVaultsScheduler"
+import "FlowYieldVaultsSchedulerV1"
 import "FlowYieldVaultsSchedulerRegistry"
 import "FlowTransactionScheduler"
 
