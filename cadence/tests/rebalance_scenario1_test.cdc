@@ -117,7 +117,7 @@ fun test_RebalanceYieldVaultScenario1() {
 	)
 
 	var yieldVaultIDs = getYieldVaultIDs(address: user.address)
-	var pid  = 1 as UInt64
+	var pid = 2 as UInt64
 	log("[TEST] YieldVault ID: \(yieldVaultIDs![0])")
 	Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
 	Test.assertEqual(1, yieldVaultIDs!.length)
