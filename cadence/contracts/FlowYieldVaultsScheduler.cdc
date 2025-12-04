@@ -177,50 +177,48 @@ access(all) contract FlowYieldVaultsScheduler {
             }
 
             // STEP 3: Self-reschedule for perpetual operation if configured
-            // Only reschedule if there are still registered yield vaults to monitor
             if let interval = recurringInterval {
-                if FlowYieldVaultsSchedulerRegistry.getRegisteredYieldVaultIDs().length > 0 {
-                    let nextTimestamp = getCurrentBlock().timestamp + interval
-                    let supervisorCap = FlowYieldVaultsSchedulerRegistry.getSupervisorCap()
+                let nextTimestamp = getCurrentBlock().timestamp + interval
+                let supervisorCap = FlowYieldVaultsSchedulerRegistry.getSupervisorCap()
+                
+                if supervisorCap != nil && supervisorCap!.check() {
+                    let est = FlowYieldVaultsScheduler.estimateSchedulingCost(
+                        timestamp: nextTimestamp,
+                        priority: priority,
+                        executionEffort: executionEffort
+                    )
+                    let baseFee = est.flowFee ?? FlowYieldVaultsScheduler.MIN_FEE_FALLBACK
+                    let required = baseFee * FlowYieldVaultsScheduler.FEE_MARGIN_MULTIPLIER
                     
-                    if supervisorCap != nil && supervisorCap!.check() {
-                        let est = FlowYieldVaultsScheduler.estimateSchedulingCost(
-                            timestamp: nextTimestamp,
-                            priority: priority,
-                            executionEffort: executionEffort
-                        )
-                        let baseFee = est.flowFee ?? FlowYieldVaultsScheduler.MIN_FEE_FALLBACK
-                        let required = baseFee * FlowYieldVaultsScheduler.FEE_MARGIN_MULTIPLIER
-                        
-                        if let vaultRef = self.feesCap.borrow() {
-                            if vaultRef.balance >= required {
-                                let fees <- vaultRef.withdraw(amount: required) as! @FlowToken.Vault
+                    if let vaultRef = self.feesCap.borrow() {
+                        if vaultRef.balance >= required {
+                            let fees <- vaultRef.withdraw(amount: required) as! @FlowToken.Vault
 
-                                let nextData: {String: AnyStruct} = {
-                                    "priority": priorityRaw,
-                                    "executionEffort": executionEffort,
-                                    "recurringInterval": interval,
-                                    "scanForStuck": scanForStuck
-                                }
-
-                                let selfTxn <- FlowTransactionScheduler.schedule(
-                                    handlerCap: supervisorCap!,
-                                    data: nextData,
-                                    timestamp: nextTimestamp,
-                                    priority: priority,
-                                    executionEffort: executionEffort,
-                                    fees: <-fees
-                                )
-
-                                emit SupervisorRescheduled(
-                                    scheduledTransactionID: selfTxn.id,
-                                    timestamp: nextTimestamp
-                                )
-
-                                destroy selfTxn
+                            let nextData: {String: AnyStruct} = {
+                                "priority": priorityRaw,
+                                "executionEffort": executionEffort,
+                                "recurringInterval": interval,
+                                "scanForStuck": scanForStuck
                             }
+
+                            let selfTxn <- FlowTransactionScheduler.schedule(
+                                handlerCap: supervisorCap!,
+                                data: nextData,
+                                timestamp: nextTimestamp,
+                                priority: priority,
+                                executionEffort: executionEffort,
+                                fees: <-fees
+                            )
+
+                            emit SupervisorRescheduled(
+                                scheduledTransactionID: selfTxn.id,
+                                timestamp: nextTimestamp
+                            )
+
+                            destroy selfTxn
                         }
                     }
+
                 }
             }
         }
