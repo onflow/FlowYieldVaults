@@ -52,6 +52,9 @@ fun setup() {
         depositCapacityCap: 1_000_000.0
     )
 
+    // Set up MOET reserves so that rebalancing can withdraw MOET when needed
+    setupMoetReserves(protocolAccount: protocolAccount, moetAmount: 10_000.0)
+
     // open wrapped position (pushToDrawDownSink)
     // the equivalent of depositing reserves
     let openRes = executeTransaction(
