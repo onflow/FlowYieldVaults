@@ -94,11 +94,13 @@ access(all) contract FlowYieldVaultsScheduler {
     access(all) resource Supervisor: FlowTransactionScheduler.TransactionHandler {
         /// Capability to withdraw FLOW for Supervisor's own scheduling fees
         access(self) let feesCap: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
+        access(self) var _scheduledTransaction: @FlowTransactionScheduler.ScheduledTransaction?
 
         init(
             feesCap: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
         ) {
             self.feesCap = feesCap
+            self._scheduledTransaction <- nil
         }
 
         /* --- TRANSACTION HANDLER --- */
@@ -208,6 +210,15 @@ access(all) contract FlowYieldVaultsScheduler {
             executionEffort: UInt64,
             scanForStuck: Bool
         ) {
+            let ref = &self._scheduledTransaction as &FlowTransactionScheduler.ScheduledTransaction?
+
+            if ref?.status() == FlowTransactionScheduler.Status.Scheduled {
+                // already scheduled - do nothing
+                return
+            }
+            let txn <- self._scheduledTransaction <- nil
+            destroy txn
+
             let nextTimestamp = getCurrentBlock().timestamp + recurringInterval
             let supervisorCap = FlowYieldVaultsSchedulerRegistry.getSupervisorCap()
 
@@ -248,7 +259,7 @@ access(all) contract FlowYieldVaultsScheduler {
                         timestamp: nextTimestamp
                     )
 
-                    destroy selfTxn
+                    self._scheduledTransaction <-! selfTxn
                 }
             }
         }
