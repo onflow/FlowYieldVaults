@@ -352,7 +352,7 @@ fun grantPoolCapToConsumer() {
     let protocolAccount = Test.getAccount(0x0000000000000007)
     let consumerAccount = Test.getAccount(0x0000000000000008)
     // Check pool exists (defensively handle CI ordering). If not, no-op.
-    let existsRes = _executeScript("../scripts/flow-credit-market/pool_exists.cdc", [protocolAccount.address])
+    let existsRes = _executeScript("../../lib/FlowCreditMarket/cadence/scripts/flow-credit-market/pool_exists.cdc", [protocolAccount.address])
     Test.expect(existsRes, Test.beSucceeded())
     if !(existsRes.returnValue as! Bool) {
         return
@@ -371,7 +371,7 @@ fun grantPoolCapToConsumer() {
 access(all)
 fun setupMoetReserves(protocolAccount: Test.TestAccount, moetAmount: UFix64) {
     // Check pool exists
-    let existsRes = _executeScript("../scripts/flow-credit-market/pool_exists.cdc", [protocolAccount.address])
+    let existsRes = _executeScript("../../lib/FlowCreditMarket/cadence/scripts/flow-credit-market/pool_exists.cdc", [protocolAccount.address])
     Test.expect(existsRes, Test.beSucceeded())
     if !(existsRes.returnValue as! Bool) {
         return
