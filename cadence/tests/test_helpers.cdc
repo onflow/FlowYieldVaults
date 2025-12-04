@@ -383,7 +383,7 @@ fun setupMoetReserves(protocolAccount: Test.TestAccount, moetAmount: UFix64) {
     mintMoet(signer: protocolAccount, to: moetProvider.address, amount: moetAmount, beFailed: false)
 
     // Set MOET price to 1.0 (default token, so price should be 1.0)
-    setMockOraclePrice(signer: protocolAccount, forTokenIdentifier: defaultTokenIdentifier, price: 1.0)
+    setMockOraclePrice(signer: protocolAccount, forTokenIdentifier: "A.0000000000000008.MOET.Vault", price: 1.0)
 
     // Grant pool cap to consumer if not already granted
     grantPoolCapToConsumer()
