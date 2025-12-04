@@ -76,6 +76,9 @@ access(all) contract FlowYieldVaultsScheduler {
         timestamp: UFix64
     )
 
+    /// Entitlement to schedule transactions
+    access(all) entitlement Schedule
+
     /* --- RESOURCES --- */
 
     /// Supervisor - The recovery mechanism for stuck AutoBalancers
@@ -91,11 +94,13 @@ access(all) contract FlowYieldVaultsScheduler {
     access(all) resource Supervisor: FlowTransactionScheduler.TransactionHandler {
         /// Capability to withdraw FLOW for Supervisor's own scheduling fees
         access(self) let feesCap: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
+        access(self) var _scheduledTransaction: @FlowTransactionScheduler.ScheduledTransaction?
 
         init(
             feesCap: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
         ) {
             self.feesCap = feesCap
+            self._scheduledTransaction <- nil
         }
 
         /* --- TRANSACTION HANDLER --- */
@@ -177,50 +182,84 @@ access(all) contract FlowYieldVaultsScheduler {
             }
 
             // STEP 3: Self-reschedule for perpetual operation if configured
-            // Only reschedule if there are still registered yield vaults to monitor
             if let interval = recurringInterval {
-                if FlowYieldVaultsSchedulerRegistry.getRegisteredYieldVaultIDs().length > 0 {
-                    let nextTimestamp = getCurrentBlock().timestamp + interval
-                    let supervisorCap = FlowYieldVaultsSchedulerRegistry.getSupervisorCap()
-                    
-                    if supervisorCap != nil && supervisorCap!.check() {
-                        let est = FlowYieldVaultsScheduler.estimateSchedulingCost(
-                            timestamp: nextTimestamp,
-                            priority: priority,
-                            executionEffort: executionEffort
-                        )
-                        let baseFee = est.flowFee ?? FlowYieldVaultsScheduler.MIN_FEE_FALLBACK
-                        let required = baseFee * FlowYieldVaultsScheduler.FEE_MARGIN_MULTIPLIER
-                        
-                        if let vaultRef = self.feesCap.borrow() {
-                            if vaultRef.balance >= required {
-                                let fees <- vaultRef.withdraw(amount: required) as! @FlowToken.Vault
+                self.scheduleNextRecurringExecution(
+                    recurringInterval: interval,
+                    priority: priority,
+                    priorityRaw: priorityRaw,
+                    executionEffort: executionEffort,
+                    scanForStuck: scanForStuck
+                )
+            }
+        }
 
-                                let nextData: {String: AnyStruct} = {
-                                    "priority": priorityRaw,
-                                    "executionEffort": executionEffort,
-                                    "recurringInterval": interval,
-                                    "scanForStuck": scanForStuck
-                                }
+        /// Self-reschedules the Supervisor for perpetual operation.
+        ///
+        /// This function handles the scheduling of the next Supervisor execution,
+        /// including fee estimation, withdrawal, and transaction scheduling.
+        ///
+        /// @param recurringInterval: The interval in seconds until the next execution
+        /// @param priority: The priority level for the scheduled transaction
+        /// @param priorityRaw: The raw priority value (UInt8) for data serialization
+        /// @param executionEffort: The execution effort estimate for the transaction
+        /// @param scanForStuck: Whether to scan for stuck yield vaults in the next execution
+        access(Schedule) fun scheduleNextRecurringExecution(
+            recurringInterval: UFix64,
+            priority: FlowTransactionScheduler.Priority,
+            priorityRaw: UInt8,
+            executionEffort: UInt64,
+            scanForStuck: Bool
+        ) {
+            let ref = &self._scheduledTransaction as &FlowTransactionScheduler.ScheduledTransaction?
 
-                                let selfTxn <- FlowTransactionScheduler.schedule(
-                                    handlerCap: supervisorCap!,
-                                    data: nextData,
-                                    timestamp: nextTimestamp,
-                                    priority: priority,
-                                    executionEffort: executionEffort,
-                                    fees: <-fees
-                                )
+            if ref?.status() == FlowTransactionScheduler.Status.Scheduled {
+                // already scheduled - do nothing
+                return
+            }
+            let txn <- self._scheduledTransaction <- nil
+            destroy txn
 
-                                emit SupervisorRescheduled(
-                                    scheduledTransactionID: selfTxn.id,
-                                    timestamp: nextTimestamp
-                                )
+            let nextTimestamp = getCurrentBlock().timestamp + recurringInterval
+            let supervisorCap = FlowYieldVaultsSchedulerRegistry.getSupervisorCap()
 
-                                destroy selfTxn
-                            }
-                        }
+            if supervisorCap == nil || !supervisorCap!.check() {
+                return
+            }
+
+            let est = FlowYieldVaultsScheduler.estimateSchedulingCost(
+                timestamp: nextTimestamp,
+                priority: priority,
+                executionEffort: executionEffort
+            )
+            let baseFee = est.flowFee ?? FlowYieldVaultsScheduler.MIN_FEE_FALLBACK
+            let required = baseFee * FlowYieldVaultsScheduler.FEE_MARGIN_MULTIPLIER
+
+            if let vaultRef = self.feesCap.borrow() {
+                if vaultRef.balance >= required {
+                    let fees <- vaultRef.withdraw(amount: required) as! @FlowToken.Vault
+
+                    let nextData: {String: AnyStruct} = {
+                        "priority": priorityRaw,
+                        "executionEffort": executionEffort,
+                        "recurringInterval": recurringInterval,
+                        "scanForStuck": scanForStuck
                     }
+
+                    let selfTxn <- FlowTransactionScheduler.schedule(
+                        handlerCap: supervisorCap!,
+                        data: nextData,
+                        timestamp: nextTimestamp,
+                        priority: priority,
+                        executionEffort: executionEffort,
+                        fees: <-fees
+                    )
+
+                    emit SupervisorRescheduled(
+                        scheduledTransactionID: selfTxn.id,
+                        timestamp: nextTimestamp
+                    )
+
+                    self._scheduledTransaction <-! selfTxn
                 }
             }
         }
