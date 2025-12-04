@@ -391,7 +391,7 @@ fun setupMoetReserves(protocolAccount: Test.TestAccount, moetAmount: UFix64) {
     // Create a position with MOET (this will deposit MOET into reserves)
     // Use pushToDrawDownSink: false to avoid rebalancing issues during setup
     let createRes = _executeTransaction(
-        "./transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
+        "../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
         [moetAmount, MOET.VaultStoragePath, false],
         moetProvider
     )
