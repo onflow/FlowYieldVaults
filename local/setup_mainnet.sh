@@ -18,6 +18,9 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboard
 #
 # create Pool with MOET as default token
 flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc 'A.6b00ff876c299c61.MOET.Vault' --network mainnet --signer mainnet-flow-credit-market-deployer
+# update Pool with Band Oracle instead of Mock Oracle
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/update_oracle.cdc --network mainnet --signer mainnet-flow-credit-market-deployer
+
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
 flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
     'A.1654653399040a61.FlowToken.Vault' \
@@ -75,3 +78,17 @@ flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-cr
 # TIDAL_COA=0x$(flow scripts execute ./lib/flow-evm-bridge/cadence/scripts/evm/get_evm_address_string.cdc 0xb1d63873c3cc9f79 --format inline --network mainnet | sed -E 's/"([^"]+)"/\1/')
 # flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/transfer_flow_to_cadence_or_evm.cdc $TIDAL_COA 100.0 --network mainnet --signer mainnet-admin --gas-limit 9999
 #
+#
+# sanity test
+# flow transactions send ./cadence/transactions/flow-yield-vaults/admin/grant_beta.cdc \
+#   --authorizer mainnet-admin,<TEST_USER> \
+#   --proposer <TEST_USER> \
+#   --payer mainnet-admin \
+#   --network mainnet 
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.b1d63873c3cc9f79.FlowYieldVaultsStrategies.mUSDCStrategy \
+#   A.1654653399040a61.FlowToken.Vault \
+#   1.0 \
+#   --signer <TEST_USER> \
+#   --compute-limit 9999 \
+#   --network mainnet
