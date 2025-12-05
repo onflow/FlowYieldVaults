@@ -57,7 +57,7 @@ fun setup() {
     )
 
     // Set up MOET reserves so that rebalancing can withdraw MOET when needed
-    setupMoetReserves(protocolAccount: protocolAccount, moetAmount: 10_000.0)
+    setupMoetReserves(protocolAccount: protocolAccount, moetAmount: reserveAmount/10.0)
 
     // Open wrapped position
     let openRes = executeTransaction(
