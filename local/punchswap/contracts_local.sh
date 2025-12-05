@@ -1,3 +1,5 @@
+set -euo pipefail
+
 echo $(date) > local_deploy.txt
 source .env
 
@@ -29,7 +31,7 @@ echo 'V2_FACTORY: '$V2_FACTORY
 echo 'ETH_NATIVE_CURRENCY_LABEL_BYTES: '$ETH_NATIVE_CURRENCY_LABEL_BYTES
 echo 'DO_BROADCAST: '$DO_BROADCAST
 echo 'BROADCAST_FLAG: '$BROADCAST_FLAG
-echo 'V3_POOL_DEPLOYER: '$V3_POOL_DEPLOYER
+echo 'V3_POOL_DEPLOYER: '${V3_POOL_DEPLOYER:-}
 echo 'TOKEN_DESCRIPTOR: '$TOKEN_DESCRIPTOR
 echo 'POSITION_MANAGER: '$POSITION_MANAGER
 echo 'V3_FACTORY: '$V3_FACTORY
@@ -48,8 +50,8 @@ export SALT=$SALT
 export WETH9=$WETH9
 export V2_FACTORY=$V2_FACTORY
 export ETH_NATIVE_CURRENCY_LABEL_BYTES=$ETH_NATIVE_CURRENCY_LABEL_BYTES
-export V3FACTORY=$V3FACTORY
-export V3_POOL_DEPLOYER=$V3_POOL_DEPLOYER
+export V3_FACTORY=$V3_FACTORY
+export V3_POOL_DEPLOYER=${V3_POOL_DEPLOYER:-}
 export TOKEN_DESCRIPTOR=$TOKEN_DESCRIPTOR
 export POSITION_MANAGER=$POSITION_MANAGER
 export V3_FACTORY=$V3_FACTORY
@@ -69,9 +71,9 @@ echo 'Balance (eth) ['$OWNER']: '$(cast balance $OWNER -e --rpc-url $RPC_URL)
 echo '**********************'
 echo '* BUILDING CONTRACTS *'
 echo '**********************'
-if test "clean" = "$1"; then
+if [ "${1:-}" = "clean" ]; then
     forge clean && forge cache clean all && forge build --force
-else 
+else
     forge build
 fi
 

@@ -6,13 +6,13 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "FlowVaultsStrategies"
+import "FlowYieldVaultsStrategies"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
-access(all) let flowVaultsAccount = Test.getAccount(0x0000000000000009)
+access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@FlowVaultsStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -28,8 +28,8 @@ fun setup() {
 	
 
 	// set mocked token prices
-	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
-	setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
+	setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
+	setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
 
 	// mint tokens & set liquidity in mock swapper contract
 	let reserveAmount = 100_000_00.0
@@ -42,7 +42,7 @@ fun setup() {
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
 
-	// setup FlowALP with a Pool & add FLOW as supported token
+	// setup FlowCreditMarket with a Pool & add FLOW as supported token
 	createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
 	addSupportedTokenSimpleInterestCurve(
 		signer: protocolAccount,
@@ -53,10 +53,13 @@ fun setup() {
 		depositCapacityCap: 1_000_000.0
 	)
 
+    // Set up MOET reserves so that rebalancing can withdraw MOET when needed
+    setupMoetReserves(protocolAccount: protocolAccount, moetAmount: reserveAmount/10.0)
+
 	// open wrapped position (pushToDrawDownSink)
 	// the equivalent of depositing reserves
 	let openRes = executeTransaction(
-		"../../lib/FlowALP/cadence/tests/transactions/mock-flow-alp-consumer/create_wrapped_position.cdc",
+		"../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
 		[reserveAmount/2.0, /storage/flowTokenVault, true],
 		protocolAccount
 	)
@@ -64,20 +67,22 @@ fun setup() {
 
 	// enable mocked Strategy creation
 	addStrategyComposer(
-		signer: flowVaultsAccount,
+		signer: flowYieldVaultsAccount,
 		strategyIdentifier: strategyIdentifier,
-		composerIdentifier: Type<@FlowVaultsStrategies.TracerStrategyComposer>().identifier,
-		issuerStoragePath: FlowVaultsStrategies.IssuerStoragePath,
+		composerIdentifier: Type<@FlowYieldVaultsStrategies.TracerStrategyComposer>().identifier,
+		issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
 		beFailed: false
 	)
 
+	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
+	mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
 
 	snapshot = getCurrentBlockHeight()
 }
 
 access(all) var testSnapshot: UInt64 = 0
 access(all)
-fun test_RebalanceTideScenario1() {
+fun test_RebalanceYieldVaultScenario1() {
 	// Test.reset(to: snapshot)
 
 	let fundingAmount = 1000.0
@@ -101,9 +106,9 @@ fun test_RebalanceTideScenario1() {
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	mintFlow(to: user, amount: fundingAmount)
-    grantBeta(flowVaultsAccount, user)
+    grantBeta(flowYieldVaultsAccount, user)
 
-	createTide(
+	createYieldVault(
 		signer: user,
 		strategyIdentifier: strategyIdentifier,
 		vaultIdentifier: flowTokenIdentifier,
@@ -111,17 +116,17 @@ fun test_RebalanceTideScenario1() {
 		beFailed: false
 	)
 
-	var tideIDs = getTideIDs(address: user.address)
-	var pid  = 1 as UInt64
-	log("[TEST] Tide ID: \(tideIDs![0])")
-	Test.assert(tideIDs != nil, message: "Expected user's Tide IDs to be non-nil but encountered nil")
-	Test.assertEqual(1, tideIDs!.length)
+	var yieldVaultIDs = getYieldVaultIDs(address: user.address)
+	var pid = 2 as UInt64
+	log("[TEST] YieldVault ID: \(yieldVaultIDs![0])")
+	Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
+	Test.assertEqual(1, yieldVaultIDs!.length)
 
-	var tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+	var yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-	log("[TEST] Initial tide balance: \(tideBalance ?? 0.0)")
+	log("[TEST] Initial yield vault balance: \(yieldVaultBalance ?? 0.0)")
 
-	rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: true, beFailed: false)
+	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
 	testSnapshot = getCurrentBlockHeight()
@@ -130,36 +135,36 @@ fun test_RebalanceTideScenario1() {
 		if (getCurrentBlockHeight() > testSnapshot) {
 			Test.reset(to: testSnapshot)
 		}
-		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-		log("[TEST] Tide balance before flow price \(flowPrice) \(tideBalance ?? 0.0)")
+		log("[TEST] YieldVault balance before flow price \(flowPrice) \(yieldVaultBalance ?? 0.0)")
 
-		setMockOraclePrice(signer: flowVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPrice)
+		setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPrice)
 
-		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-		log("[TEST] Tide balance before flow price \(flowPrice) rebalance: \(tideBalance ?? 0.0)")
+		log("[TEST] YieldVault balance before flow price \(flowPrice) rebalance: \(yieldVaultBalance ?? 0.0)")
 
 		// Get yield token balance before rebalance
-		let yieldTokensBefore = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0
-		let currentValueBefore = getAutoBalancerCurrentValue(id: tideIDs![0]) ?? 0.0
+		let yieldTokensBefore = getAutoBalancerBalance(id: yieldVaultIDs![0]) ?? 0.0
+		let currentValueBefore = getAutoBalancerCurrentValue(id: yieldVaultIDs![0]) ?? 0.0
 		
-		rebalanceTide(signer: flowVaultsAccount, id: tideIDs![0], force: false, beFailed: false)
+		rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: false, beFailed: false)
 		rebalancePosition(signer: protocolAccount, pid: pid, force: false, beFailed: false)
 
-		tideBalance = getTideBalance(address: user.address, tideID: tideIDs![0])
+		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-		log("[TEST] Tide balance after flow before \(flowPrice): \(tideBalance ?? 0.0)")
+		log("[TEST] YieldVault balance after flow before \(flowPrice): \(yieldVaultBalance ?? 0.0)")
 		
 		// Get yield token balance after rebalance
-		let yieldTokensAfter = getAutoBalancerBalance(id: tideIDs![0]) ?? 0.0
-		let currentValueAfter = getAutoBalancerCurrentValue(id: tideIDs![0]) ?? 0.0
+		let yieldTokensAfter = getAutoBalancerBalance(id: yieldVaultIDs![0]) ?? 0.0
+		let currentValueAfter = getAutoBalancerCurrentValue(id: yieldVaultIDs![0]) ?? 0.0
 		
 		// Get expected yield tokens from Google sheet calculations
 		let expectedYieldTokens = expectedYieldTokenValues[flowPrice] ?? 0.0
 		
 		log("\n=== SCENARIO 1 DETAILS for Flow Price \(flowPrice) ===")
-		log("Tide Balance:          \(tideBalance ?? 0.0)")
+		log("YieldVault Balance:          \(yieldVaultBalance ?? 0.0)")
 		log("Yield Tokens Before:   \(yieldTokensBefore)")
 		log("Yield Tokens After:    \(yieldTokensAfter)")
 		log("Expected Yield Tokens: \(expectedYieldTokens)")
@@ -179,7 +184,7 @@ fun test_RebalanceTideScenario1() {
 		log("=============================================\n")
 	}
 
-	closeTide(signer: user, id: tideIDs![0], beFailed: false)
+	closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
 
 	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	log("[TEST] flow balance after \(flowBalanceAfter)")

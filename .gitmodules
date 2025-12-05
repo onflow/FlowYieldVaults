@@ -13,9 +13,6 @@
 [submodule "solidity/lib/openzeppelin-contracts"]
 	path = solidity/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
-[submodule "lib/FlowALP"]
-	path = lib/FlowALP
-	url = git@github.com:onflow/FlowALP.git
 [submodule "lib/flow-vaults-evm-integration"]
 	path = lib/flow-vaults-evm-integration
 	url = git@github.com:onflow/flow-vaults-evm-integration.git
@@ -25,3 +22,6 @@
 [submodule "solidity/lib/v2-periphery"]
 	path = solidity/lib/v2-periphery
 	url = https://github.com/uniswap/v2-periphery
+[submodule "lib/FlowCreditMarket"]
+	path = lib/FlowCreditMarket
+	url = git@github.com:onflow/FlowCreditMarket.git

@@ -1,5 +1,6 @@
 # local
 .DS_Store
+**/.DS_Store
 .pr-drafts/
 .vscode/
 
@@ -10,7 +11,7 @@
 !local/emulator-account.pkey
 !local/evm-gateway.pkey
 !local/test-user.pkey
-!local/emulator-tidal.pkey
+!local/emulator-flow-yield-vaults.pkey
 imports/
 coverage.lcov
 coverage.json
@@ -20,3 +21,6 @@ solidity/out/
 broadcast
 cache
 db
+
+# logs
+run_logs/*.log
