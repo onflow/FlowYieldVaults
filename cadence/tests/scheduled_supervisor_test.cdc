@@ -7,7 +7,7 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "FlowYieldVaultsStrategies"
-import "FlowYieldVaultsScheduler"
+import "FlowYieldVaultsSchedulerV1"
 import "FlowTransactionScheduler"
 import "DeFiActions"
 import "FlowYieldVaultsSchedulerRegistry"
@@ -59,6 +59,9 @@ fun setup() {
         depositRate: 1_000_000.0,
         depositCapacityCap: 1_000_000.0
     )
+
+    // Set up MOET reserves so that rebalancing can withdraw MOET when needed
+    setupMoetReserves(protocolAccount: protocolAccount, moetAmount: reserveAmount/10.0)
 
     // Wrapped Position
     let openRes = executeTransaction(
@@ -453,7 +456,7 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
     log("Pending queue size: ".concat(pendingCount.toString()))
     Test.assertEqual(0, pendingCount)
 
-    // Supervisor is automatically configured when FlowYieldVaultsScheduler is deployed (in init)
+    // Supervisor is automatically configured when FlowYieldVaultsSchedulerV1 is deployed (in init)
     Test.commitBlock()
     
     // Schedule Supervisor
@@ -472,7 +475,7 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
     Test.commitBlock()
 
     // 7. Verify Supervisor ran but found nothing to recover (healthy yield vault)
-    let recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsScheduler.YieldVaultRecovered>())
+    let recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
     log("YieldVaultRecovered events: ".concat(recoveredEvents.length.toString()))
     
     // Healthy yield vaults don't need recovery
@@ -635,7 +638,7 @@ fun testInsufficientFundsAndRecovery() {
 
     // ========================================
     // STEP 2: Setup Supervisor (scheduling functionality is built into Supervisor)
-    // Supervisor is automatically configured when FlowYieldVaultsScheduler is deployed (in init)
+    // Supervisor is automatically configured when FlowYieldVaultsSchedulerV1 is deployed (in init)
     log("\n--- Supervisor already configured at deploy time ---")
 
     // ========================================
@@ -804,12 +807,12 @@ fun testInsufficientFundsAndRecovery() {
     Test.commitBlock()
 
     // Check for StuckYieldVaultDetected events
-    let stuckDetectedEvents = Test.eventsOfType(Type<FlowYieldVaultsScheduler.StuckYieldVaultDetected>())
+    let stuckDetectedEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.StuckYieldVaultDetected>())
     log("StuckYieldVaultDetected events: ".concat(stuckDetectedEvents.length.toString()))
     Test.assert(stuckDetectedEvents.length >= 5, message: "Supervisor should detect all 5 stuck yield vaults")
 
     // Check for YieldVaultRecovered events (Supervisor uses Schedule capability to recover)
-    let recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsScheduler.YieldVaultRecovered>())
+    let recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
     log("YieldVaultRecovered events: ".concat(recoveredEvents.length.toString()))
     Test.assert(recoveredEvents.length >= 5, message: "Supervisor should recover all 5 yield vaults")
 

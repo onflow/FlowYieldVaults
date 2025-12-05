@@ -1,5 +1,5 @@
 import "FlowTransactionScheduler"
-import "FlowYieldVaultsScheduler"
+import "FlowYieldVaultsSchedulerV1"
 
 /// Returns the current configuration of the Flow Transaction Scheduler.
 ///
@@ -13,6 +13,6 @@ import "FlowYieldVaultsScheduler"
 /// @return The scheduler configuration
 ///
 access(all) fun main(): {FlowTransactionScheduler.SchedulerConfig} {
-    return FlowYieldVaultsScheduler.getSchedulerConfig()
+    return FlowYieldVaultsSchedulerV1.getSchedulerConfig()
 }
 

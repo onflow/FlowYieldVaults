@@ -25,7 +25,7 @@ import "FlowYieldVaultsAutoBalancers"
 /// - Uses Schedule capability to directly call AutoBalancer.scheduleNextRebalance()
 /// - Query and estimation functions for scripts
 ///
-access(all) contract FlowYieldVaultsScheduler {
+access(all) contract FlowYieldVaultsSchedulerV1 {
 
     /* --- CONSTANTS --- */
 
@@ -124,8 +124,8 @@ access(all) contract FlowYieldVaultsScheduler {
         /// }
         access(FlowTransactionScheduler.Execute) fun executeTransaction(id: UInt64, data: AnyStruct?) {
             let cfg = data as? {String: AnyStruct} ?? {}
-            let priorityRaw = cfg["priority"] as? UInt8 ?? FlowYieldVaultsScheduler.DEFAULT_PRIORITY
-            let executionEffort = cfg["executionEffort"] as? UInt64 ?? FlowYieldVaultsScheduler.DEFAULT_EXECUTION_EFFORT
+            let priorityRaw = cfg["priority"] as? UInt8 ?? FlowYieldVaultsSchedulerV1.DEFAULT_PRIORITY
+            let executionEffort = cfg["executionEffort"] as? UInt64 ?? FlowYieldVaultsSchedulerV1.DEFAULT_EXECUTION_EFFORT
             let recurringInterval = cfg["recurringInterval"] as? UFix64
             let scanForStuck = cfg["scanForStuck"] as? Bool ?? true
 
@@ -226,13 +226,13 @@ access(all) contract FlowYieldVaultsScheduler {
                 return
             }
 
-            let est = FlowYieldVaultsScheduler.estimateSchedulingCost(
+            let est = FlowYieldVaultsSchedulerV1.estimateSchedulingCost(
                 timestamp: nextTimestamp,
                 priority: priority,
                 executionEffort: executionEffort
             )
-            let baseFee = est.flowFee ?? FlowYieldVaultsScheduler.MIN_FEE_FALLBACK
-            let required = baseFee * FlowYieldVaultsScheduler.FEE_MARGIN_MULTIPLIER
+            let baseFee = est.flowFee ?? FlowYieldVaultsSchedulerV1.MIN_FEE_FALLBACK
+            let required = baseFee * FlowYieldVaultsSchedulerV1.FEE_MARGIN_MULTIPLIER
 
             if let vaultRef = self.feesCap.borrow() {
                 if vaultRef.balance >= required {

@@ -92,4 +92,5 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/tra
 #   A.7e60df042a9c0868.FlowToken.Vault \
 #   100.0 \
 #   --signer <TEST_USER> \
-#   --compute-limit 9999
+#   --compute-limit 9999 \
+#   --network testnet

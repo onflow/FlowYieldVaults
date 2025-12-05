@@ -220,7 +220,7 @@ access(all) fun deployContracts() {
     // Deployment order matters due to imports:
     // 1. FlowYieldVaultsSchedulerRegistry (no FlowYieldVaults dependencies)
     // 2. FlowYieldVaultsAutoBalancers (imports FlowYieldVaultsSchedulerRegistry)
-    // 3. FlowYieldVaultsScheduler (imports FlowYieldVaultsSchedulerRegistry AND FlowYieldVaultsAutoBalancers)
+    // 3. FlowYieldVaultsSchedulerV1 (imports FlowYieldVaultsSchedulerRegistry AND FlowYieldVaultsAutoBalancers)
     err = Test.deployContract(
         name: "FlowYieldVaultsSchedulerRegistry",
         path: "../contracts/FlowYieldVaultsSchedulerRegistry.cdc",
@@ -234,8 +234,8 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FlowYieldVaultsScheduler",
-        path: "../contracts/FlowYieldVaultsScheduler.cdc",
+        name: "FlowYieldVaultsSchedulerV1",
+        path: "../contracts/FlowYieldVaultsSchedulerV1.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -343,6 +343,59 @@ fun setupFlowCreditMarket(signer: Test.TestAccount) {
         [],
         signer
     )
+}
+
+// Grants the Pool capability with EParticipant and EPosition entitlements to the MockFlowCreditMarketConsumer account (0x8)
+// Must be called AFTER the pool is created and stored, otherwise publishing will fail the capability check.
+access(all)
+fun grantPoolCapToConsumer() {
+    let protocolAccount = Test.getAccount(0x0000000000000007)
+    let consumerAccount = Test.getAccount(0x0000000000000008)
+    // Check pool exists (defensively handle CI ordering). If not, no-op.
+    let existsRes = _executeScript("../../lib/FlowCreditMarket/cadence/scripts/flow-credit-market/pool_exists.cdc", [protocolAccount.address])
+    Test.expect(existsRes, Test.beSucceeded())
+    if !(existsRes.returnValue as! Bool) {
+        return
+    }
+
+    // Use in-repo grant transaction that issues EParticipant+EPosition and saves to PoolCapStoragePath
+    let grantRes = grantBeta(protocolAccount, consumerAccount)
+    Test.expect(grantRes, Test.beSucceeded())
+}
+
+/* --- Reserve Setup Helpers --- */
+
+// Sets up MOET reserves in the pool by creating a position and depositing MOET
+// This ensures that MOET reserves exist for tests that need to withdraw MOET during rebalancing
+// Must be called AFTER the pool is created and stored
+access(all)
+fun setupMoetReserves(protocolAccount: Test.TestAccount, moetAmount: UFix64) {
+    // Check pool exists
+    let existsRes = _executeScript("../../lib/FlowCreditMarket/cadence/scripts/flow-credit-market/pool_exists.cdc", [protocolAccount.address])
+    Test.expect(existsRes, Test.beSucceeded())
+    if !(existsRes.returnValue as! Bool) {
+        return
+    }
+
+    // Create a test account for the MOET position
+    let moetProvider = Test.createAccount()
+    setupMoetVault(moetProvider, beFailed: false)
+    mintMoet(signer: protocolAccount, to: moetProvider.address, amount: moetAmount, beFailed: false)
+
+    // Set MOET price to 1.0 (default token, so price should be 1.0)
+    setMockOraclePrice(signer: protocolAccount, forTokenIdentifier: "A.0000000000000008.MOET.Vault", price: 1.0)
+
+    // Grant pool cap to consumer if not already granted
+    grantPoolCapToConsumer()
+
+    // Create a position with MOET (this will deposit MOET into reserves)
+    // Use pushToDrawDownSink: false to avoid rebalancing issues during setup
+    let createRes = _executeTransaction(
+        "../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
+        [moetAmount, MOET.VaultStoragePath, false],
+        moetProvider
+    )
+    Test.expect(createRes, Test.beSucceeded())
 }
 
 /* --- Script helpers */

@@ -1,4 +1,4 @@
-import "FlowYieldVaultsScheduler"
+import "FlowYieldVaultsSchedulerV1"
 
 /// Returns the IDs of all YieldVaults that have scheduled rebalancing transactions.
 ///
@@ -8,8 +8,8 @@ import "FlowYieldVaultsScheduler"
 access(all) fun main(account: Address): [UInt64] {
     // Borrow the public capability for the SchedulerManager
     let schedulerManager = getAccount(account)
-        .capabilities.borrow<&FlowYieldVaultsScheduler.SchedulerManager>(
-            FlowYieldVaultsScheduler.SchedulerManagerPublicPath
+        .capabilities.borrow<&FlowYieldVaultsSchedulerV1.SchedulerManager>(
+            FlowYieldVaultsSchedulerV1.SchedulerManagerPublicPath
         )
     
     if schedulerManager == nil {

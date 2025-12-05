@@ -1,4 +1,4 @@
-import "FlowYieldVaultsScheduler"
+import "FlowYieldVaultsSchedulerV1"
 import "FlowTransactionScheduler"
 import "FlowToken"
 import "FungibleToken"
@@ -29,9 +29,9 @@ transaction(
 
     prepare(signer: auth(BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
         // Obtain the global Supervisor capability from the scheduler. This is
-        // configured by calling FlowYieldVaultsScheduler.ensureSupervisorConfigured()
+        // configured by calling FlowYieldVaultsSchedulerV1.ensureSupervisorConfigured()
         // (typically via the setup_supervisor.cdc transaction).
-        self.handlerCap = FlowYieldVaultsScheduler.getSupervisorCap()
+        self.handlerCap = FlowYieldVaultsSchedulerV1.getSupervisorCap()
             ?? panic("Supervisor not configured")
 
         let vaultRef = signer.storage

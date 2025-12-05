@@ -134,8 +134,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowYieldVaultsScheduler": {
-			"source": "cadence/contracts/FlowYieldVaultsScheduler.cdc",
+		"FlowYieldVaultsSchedulerV1": {
+			"source": "cadence/contracts/FlowYieldVaultsSchedulerV1.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -729,14 +729,6 @@
 				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
-		"mainnet-uniswapV3-connectors-deployer": {
-			"address": "a7825d405ac89518",
-			"key": {
-				"type": "google-kms",
-				"hashAlgorithm": "SHA2_256",
-				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
-			}
-		},
 		"mock-incrementfi": {
 			"address": "f3fcd2c1a78f5eee",
 			"key": {
@@ -794,6 +786,7 @@
 				"SwapConnectors",
 				"DummyConnectors",
 				"FlowCreditMarket",
+				"MockFlowCreditMarketConsumer",
 				{
 					"name": "YieldToken",
 					"args": [
@@ -823,7 +816,7 @@
 				"ERC4626SwapConnectors",
 				"FlowYieldVaultsSchedulerRegistry",
 				"FlowYieldVaultsAutoBalancers",
-				"FlowYieldVaultsScheduler",
+				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
 				"UniswapV3SwapConnectors",
@@ -888,7 +881,7 @@
 				"MockSwapper",
 				"FlowYieldVaultsSchedulerRegistry",
 				"FlowYieldVaultsAutoBalancers",
-				"FlowYieldVaultsScheduler",
+				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
 				{
@@ -907,17 +900,50 @@
 							"type": "String"
 						},
 						{
-							"value": "0xYIELDTOKEN_ERC4626",
+							"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
 							"type": "String"
+						},
+						{
+							"value": [
+								{
+									"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
+									"type": "String"
+								},
+								{
+									"value": "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2",
+									"type": "String"
+								},
+								{
+									"value": "0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED",
+									"type": "String"
+								},
+								{
+									"value": "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e",
+									"type": "String"
+								}
+							],
+							"type": "Array"
+						},
+						{
+							"value": [
+								{
+									"value": "100",
+									"type": "UInt32"
+								},
+								{
+									"value": "100",
+									"type": "UInt32"
+								},
+								{
+									"value": "3000",
+									"type": "UInt32"
+								}
+							],
+							"type": "Array"
 						}
 					]
 				}
-			],
-			"mainnet-uniswapV3-connectors-deployer": [
-				"EVMAbiHelpers",
-				"UniswapV3SwapConnectors"
-			]
-		},
+			]		},
 		"testnet": {
 			"testnet-admin": [
 				{
@@ -941,7 +967,7 @@
 				"MockSwapper",
 				"FlowYieldVaultsSchedulerRegistry",
 				"FlowYieldVaultsAutoBalancers",
-				"FlowYieldVaultsScheduler",
+				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
 				{
