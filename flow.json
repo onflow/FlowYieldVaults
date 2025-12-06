@@ -786,7 +786,6 @@
 				"SwapConnectors",
 				"DummyConnectors",
 				"FlowCreditMarket",
-				"MockFlowCreditMarketConsumer",
 				{
 					"name": "YieldToken",
 					"args": [

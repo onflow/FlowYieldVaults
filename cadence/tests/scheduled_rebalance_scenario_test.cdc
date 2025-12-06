@@ -74,9 +74,6 @@ fun setup() {
         depositCapacityCap: 1_000_000.0
     )
 
-    // Set up MOET reserves so that rebalancing can withdraw MOET when needed
-    setupMoetReserves(protocolAccount: protocolAccount, moetAmount: reserveAmount/10.0)
-
     // Open wrapped position
     let openRes = executeTransaction(
         "../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",

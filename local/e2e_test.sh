@@ -25,20 +25,6 @@ run_txn "Grant YieldVault Beta access to test user" \
   --proposer test-user \
   --payer emulator-flow-yield-vaults
 
-run_txn "Setup MOET on Protocol" \
-	./lib/FlowCreditMarket/cadence/transactions/moet/setup_vault.cdc \
-	--signer emulator-flow-yield-vaults
-
-run_txn "Mint MOET for Protocol" \
-	./lib/FlowCreditMarket/cadence/transactions/moet/mint_moet.cdc \
-	0x045a1763c93006ca 10000.0 \
-	--signer emulator-flow-yield-vaults
-
-run_txn "Create wrapped position" \
-	./lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc \
-	10000.0 /storage/moetTokenVault_0x045a1763c93006ca false \
-	--signer emulator-flow-yield-vaults
-
 run_txn "Transfer Flow tokens" \
   ./cadence/transactions/flow-token/transfer_flow.cdc \
   0x179b6b1cb6755e31 1000.0
