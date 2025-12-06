@@ -36,7 +36,7 @@ run_txn "Mint MOET for Protocol" \
 
 run_txn "Create wrapped position" \
 	./lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc \
-	10000.0 /storage/moetTokenVault_0x045a1763c93006ca false \
+	10000.0 /storage/moetTokenVault_045a1763c93006ca false \
 	--signer emulator-flow-yield-vaults
 
 run_txn "Transfer Flow tokens" \
