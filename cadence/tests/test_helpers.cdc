@@ -8,6 +8,7 @@ import "EVMAbiHelpers"
 import "FlowCreditMarket"
 
 access(all) let serviceAccount = Test.serviceAccount()
+access(all) let bridgeAccount = Test.getAccount(0x0000000000000007)
 
 // FlowVaultsTideOperations deployment address (set during deployContracts)
 access(all) var flowVaultsTideOperationsAddress: String = ""
@@ -954,7 +955,7 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
     Test.expect(erc721DeployerDeploymentResult, Test.beSucceeded())
     // Assign contract addresses
     var allEvts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    
+
     // Filter to only deployment events (those with non-empty contractAddress)
     // and get the last 5 deployment events (the most recent ones)
     var deploymentEvts: [EVM.TransactionExecuted] = []
@@ -966,7 +967,7 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
         }
         idx = idx + 1
     }
-    
+
     // Get the last 5 deployment events (the ones we just created)
     Test.assert(deploymentEvts.length >= 5, message: "Expected at least 5 deployment events, found ".concat(deploymentEvts.length.toString()))
     var evts: [AnyStruct] = []
@@ -977,7 +978,7 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
         evts.append(deploymentEvts[idx])
         idx = idx + 1
     }
-    
+
     let registryAddressHex = getEVMAddressHexFromEvents(evts, idx: 2)
     let erc20DeployerAddressHex = getEVMAddressHexFromEvents(evts, idx: 3)
     let erc721DeployerAddressHex = getEVMAddressHexFromEvents(evts, idx: 4)
@@ -1242,9 +1243,10 @@ access(all) let flowVaultsRequestsBytecode = "60806040523480156200001157600080fd
 
 access(all)
 fun deployFlowVaultsRequests(_ signer: Test.TestAccount, _ coaAddress: String): String {
-    return evmDeploy(signer, bytecode: flowVaultsRequestsBytecode, args: [coaAddress])
+    return evmDeploy(signer, flowVaultsRequestsBytecode, [coaAddress])
 }
 
+access(all)
 fun evmDeploy(_ deployer: Test.TestAccount, _ bytecode: String, _ args: [String]): String {
     let argsBytecode = EVM.encodeABI(args)
     let bytecodeWithArgs = String.encodeHex(bytecode.decodeHex().concat(argsBytecode))
@@ -1289,7 +1291,7 @@ fun setupUniswapV2(_ signer: Test.TestAccount, feeToSetter: String, wflowAddress
 access(all)
 fun setupPunchswap(deployer: Test.TestAccount, wflowAddress: String): {String: String} {
     log("deploy PunchswapV3Factory")
-    let punchswapV3FactoryAddress = evmDeploy(        
+    let punchswapV3FactoryAddress = evmDeploy(
         deployer,
         punchswapV3FactoryBytecode,
         []
@@ -1305,12 +1307,12 @@ fun setupPunchswap(deployer: Test.TestAccount, wflowAddress: String): {String: S
     log("NFTDescriptor address \(nftDescriptorAddress)")
 
     log("deploy NFTPositionDescriptor")
-    let nftPositionDescriptorAddress = evmDeploy(        
+    let nftPositionDescriptorAddress = evmDeploy(
         deployer,
         nftPositionDescriptorBytecodeChunks[0]
             .concat(nftDescriptorAddress)
             .concat(nftPositionDescriptorBytecodeChunks[2]),
-        args: [wflowAddress,"WFLOW"]
+        [wflowAddress,"WFLOW"]
     )
     log("NFTPositionDescriptor address \(nftPositionDescriptorAddress)")
 
