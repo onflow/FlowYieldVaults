@@ -380,7 +380,7 @@ fun setupMoetReserves(protocolAccount: Test.TestAccount, moetAmount: UFix64) {
     // Create a test account for the MOET position
     let moetProvider = Test.createAccount()
     setupMoetVault(moetProvider, beFailed: false)
-    mintMoet(signer: protocolAccount, to: moetProvider.address, amount: 1000000.0, beFailed: false)
+    mintMoet(signer: protocolAccount, to: moetProvider.address, amount: moetAmount, beFailed: false)
 
     // Set MOET price to 1.0 (default token, so price should be 1.0)
     setMockOraclePrice(signer: protocolAccount, forTokenIdentifier: "A.0000000000000008.MOET.Vault", price: 1.0)
@@ -392,7 +392,7 @@ fun setupMoetReserves(protocolAccount: Test.TestAccount, moetAmount: UFix64) {
     // Use pushToDrawDownSink: false to avoid rebalancing issues during setup
     let createRes = _executeTransaction(
         "../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
-        [1000000.0, MOET.VaultStoragePath, false],
+        [moetAmount, MOET.VaultStoragePath, false],
         moetProvider
     )
     Test.expect(createRes, Test.beSucceeded())
