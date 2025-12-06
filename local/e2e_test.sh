@@ -29,7 +29,7 @@ run_txn "Setup MOET on Protocol" \
 	./lib/FlowCreditMarket/cadence/transactions/moet/setup_vault.cdc \
 	--signer emulator-flow-yield-vaults
 
-run_txn "Mint MOET for Protocol" \
+run_txn "Mint MOET for Protocol"
 	../lib/FlowCreditMarket/cadence/transactions/moet/mint_moet.cdc \
 	0x045a1763c93006ca 10000.0 \
 	--signer emulator-flow-yield-vaults
