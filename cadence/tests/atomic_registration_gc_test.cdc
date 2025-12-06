@@ -51,7 +51,7 @@ access(all) fun setup() {
     )
 
     // Set up MOET reserves so that rebalancing can withdraw MOET when needed
-    setupMoetReserves(protocolAccount: protocolAccount, moetAmount: reserveAmount/10.0)
+    setupMoetReserves(protocolAccount: protocolAccount, moetAmount: 10_000.0)
 
     // Open a wrapped FlowCreditMarket position so strategies have an underlying position to work with.
     let openRes = executeTransaction(
