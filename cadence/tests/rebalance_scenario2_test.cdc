@@ -139,9 +139,6 @@ fun setup() {
 		depositCapacityCap: 1_000_000.0
 	)
 
-    // Set up MOET reserves so that rebalancing can withdraw MOET when needed
-    setupMoetReserves(protocolAccount: protocolAccount, moetAmount: reserveAmount/10.0)
-
 	// open wrapped position (pushToDrawDownSink)
 	// the equivalent of depositing reserves
 	let openRes = executeTransaction(
@@ -198,7 +195,7 @@ fun test_RebalanceYieldVaultScenario2() {
 	)
 
 	var yieldVaultIDs = getYieldVaultIDs(address: user.address)
-	var pid = 2 as UInt64
+	var pid  = 1 as UInt64
 	log("[TEST] YieldVault ID: \(yieldVaultIDs![0])")
 	Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
 	Test.assertEqual(1, yieldVaultIDs!.length)
