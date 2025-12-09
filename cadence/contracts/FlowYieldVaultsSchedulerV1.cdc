@@ -47,6 +47,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
     /// Default lookahead seconds for scheduling first execution
     access(all) let DEFAULT_LOOKAHEAD_SECS: UFix64
 
+
     /* --- PATHS --- */
 
     /// Storage path for the Supervisor resource
@@ -95,12 +96,14 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
         /// Capability to withdraw FLOW for Supervisor's own scheduling fees
         access(self) let feesCap: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
         access(self) var _scheduledTransaction: @FlowTransactionScheduler.ScheduledTransaction?
+        access(contract) var selfSchedulingFeeEstimate: UFix64
 
         init(
             feesCap: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
         ) {
             self.feesCap = feesCap
             self._scheduledTransaction <- nil
+            self.selfSchedulingFeeEstimate = FlowYieldVaultsSchedulerV1.MIN_FEE_FALLBACK
         }
 
         /* --- TRANSACTION HANDLER --- */
@@ -193,6 +196,11 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
             }
         }
 
+        /// Sets the estimated cost of scheduling a transaction at a given timestamp
+        access(Schedule) fun setSelfSchedulingCostEstimate(estimate: UFix64) {
+            self.selfSchedulingFeeEstimate = estimate
+        }
+
         /// Self-reschedules the Supervisor for perpetual operation.
         ///
         /// This function handles the scheduling of the next Supervisor execution,
@@ -226,13 +234,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
                 return
             }
 
-            let est = FlowYieldVaultsSchedulerV1.estimateSchedulingCost(
-                timestamp: nextTimestamp,
-                priority: priority,
-                executionEffort: executionEffort
-            )
-            let baseFee = est.flowFee ?? FlowYieldVaultsSchedulerV1.MIN_FEE_FALLBACK
-            let required = baseFee * FlowYieldVaultsSchedulerV1.FEE_MARGIN_MULTIPLIER
+            let required = self.selfSchedulingFeeEstimate * FlowYieldVaultsSchedulerV1.FEE_MARGIN_MULTIPLIER
 
             if let vaultRef = self.feesCap.borrow() {
                 if vaultRef.balance >= required {
@@ -341,8 +343,8 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
     init() {
         // Initialize constants
         self.DEFAULT_RECURRING_INTERVAL = 60.0  // 60 seconds
-        self.DEFAULT_PRIORITY = 1  // Medium
-        self.DEFAULT_EXECUTION_EFFORT = 800
+        self.DEFAULT_PRIORITY = FlowTransactionScheduler.Priority.Low.rawValue
+        self.DEFAULT_EXECUTION_EFFORT = 400
         self.MIN_FEE_FALLBACK = 0.00005
         self.FEE_MARGIN_MULTIPLIER = 1.2
         self.DEFAULT_LOOKAHEAD_SECS = 10.0
