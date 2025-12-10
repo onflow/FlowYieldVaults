@@ -61,11 +61,18 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
     --network testnet \
     --signer testnet-admin
 
+flow transactions send ../cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+	'A.7e60df042a9c0868.FlowToken.Vault' \
+	"0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95" \
+	'["0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95", "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"]' \
+	'[3000]' \
+	--network testnet \
+	--signer testnet-admin
 
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
-	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategies.mUSDCStrategy' \
-	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategies.mUSDCStrategyComposer' \
-	/storage/FlowYieldVaultsStrategyComposerIssuer_0xd2580caf2ef07c2f \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1.mUSDFStrategy' \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1.mUSDFStrategyComposer' \
+	/storage/FlowYieldVaultsStrategyV1ComposerIssuer_0xd2580caf2ef07c2f \
 	--network testnet \
 	--signer testnet-admin
 
