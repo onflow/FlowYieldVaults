@@ -215,9 +215,9 @@ access(all) contract FlowYieldVaultsStrategiesV1 {
             //             - MOET -> UNDERLYING (UniV3 Swapper)
             //             - UNDERLYING -> YIELD (ERC4626Swapper)
             let moetToYieldAMMSwapper = UniswapV3SwapConnectors.Swapper(
-                    factoryAddress: self.univ3FactoryEVMAddress,
-                    routerAddress: self.univ3RouterEVMAddress,
-                    quoterAddress: self.univ3QuoterEVMAddress,
+                    factoryAddress: FlowYieldVaultsStrategiesV1.univ3FactoryEVMAddress,
+                    routerAddress: FlowYieldVaultsStrategiesV1.univ3RouterEVMAddress,
+                    quoterAddress: FlowYieldVaultsStrategiesV1.univ3QuoterEVMAddress,
                     tokenPath: [moetTokenEVMAddress, yieldTokenEVMAddress],
                     feePath: [100],
                     inVault: moetTokenType,
@@ -227,9 +227,9 @@ access(all) contract FlowYieldVaultsStrategiesV1 {
                 )
             // Swap MOET -> UNDERLYING via AMM
             let moetToUnderlyingAssetSwapper = UniswapV3SwapConnectors.Swapper(
-                    factoryAddress: self.univ3FactoryEVMAddress,
-                    routerAddress: self.univ3RouterEVMAddress,
-                    quoterAddress: self.univ3QuoterEVMAddress,
+                    factoryAddress: FlowYieldVaultsStrategiesV1.univ3FactoryEVMAddress,
+                    routerAddress: FlowYieldVaultsStrategiesV1.univ3RouterEVMAddress,
+                    quoterAddress: FlowYieldVaultsStrategiesV1.univ3QuoterEVMAddress,
                     tokenPath: [moetTokenEVMAddress, underlying4626AssetEVMAddress],
                     feePath: [100],
                     inVault: moetTokenType,
@@ -261,9 +261,9 @@ access(all) contract FlowYieldVaultsStrategiesV1 {
             // YIELD -> MOET
             // - Targets the MOET <-> YIELD pool as the only route since withdraws from the ERC4626 Vault are async
             let yieldToMOETSwapper = UniswapV3SwapConnectors.Swapper(
-                    factoryAddress: self.univ3FactoryEVMAddress,
-                    routerAddress: self.univ3RouterEVMAddress,
-                    quoterAddress: self.univ3QuoterEVMAddress,
+                    factoryAddress: FlowYieldVaultsStrategiesV1.univ3FactoryEVMAddress,
+                    routerAddress: FlowYieldVaultsStrategiesV1.univ3RouterEVMAddress,
+                    quoterAddress: FlowYieldVaultsStrategiesV1.univ3QuoterEVMAddress,
                     tokenPath: [yieldTokenEVMAddress, moetTokenEVMAddress],
                     feePath: [100],
                     inVault: yieldTokenType,
@@ -314,9 +314,9 @@ access(all) contract FlowYieldVaultsStrategiesV1 {
             assert(uniV3FeePath.length > 0, message: "Invalid Uniswap V3 fee path length of \(uniV3FeePath.length)")
             // initialize the swapper used for recollateralization of the lending position as YIELD increases in value
             let yieldToFlowSwapper = UniswapV3SwapConnectors.Swapper(
-                    factoryAddress: self.univ3FactoryEVMAddress,
-                    routerAddress: univ3RouterEVMAddress,
-                    quoterAddress: univ3QuoterEVMAddress,
+                    factoryAddress: FlowYieldVaultsStrategiesV1.univ3FactoryEVMAddress,
+                    routerAddress: FlowYieldVaultsStrategiesV1.univ3RouterEVMAddress,
+                    quoterAddress: FlowYieldVaultsStrategiesV1.univ3QuoterEVMAddress,
                     tokenPath: uniV3AddressPath,
                     feePath: uniV3FeePath,
                     inVault: yieldTokenType,
@@ -359,9 +359,6 @@ access(all) contract FlowYieldVaultsStrategiesV1 {
         }
 
         return {
-            "univ3FactoryEVMAddress": self.univ3FactoryEVMAddress,
-            "univ3RouterEVMAddress": self.univ3RouterEVMAddress,
-            "univ3QuoterEVMAddress": self.univ3QuoterEVMAddress,
             "yieldTokenEVMAddress":  yieldTokenEVMAddress,
             "yieldToCollateralUniV3AddressPaths": {
                 // we’ll store with the collateral vault type as key later
