@@ -57,11 +57,21 @@ flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connec
 flow transactions send ./lib/FlowCreditMarket/FlowActions/cadence/transactions/fungible-tokens/setup_generic_vault.cdc 'A.1e4aa0b87d10b141.EVMVMBridgedToken_c52e820d2d6207d18667a97e2c6ac22eb26e803c.Vault' --network mainnet --signer mainnet-admin
 # flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault --network mainnet --signer mainnet-admin
 #
+
+flow transactions send ../cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+	'A.1654653399040a61.FlowToken.Vault' \
+	"0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c" \
+	'["0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c","0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED","0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"]' \
+	'[100,3000]' \
+	--network mainnet \
+	--signer mainnet-admin
+
+#
 # add TracerStrategy as supported Strategy with the ability to initialize when new YieldVaults are created
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
-    'A.b1d63873c3cc9f79.FlowYieldVaultsStrategies.mUSDCStrategy' \
-    'A.b1d63873c3cc9f79.FlowYieldVaultsStrategies.mUSDCStrategyComposer' \
-    /storage/FlowYieldVaultsStrategyComposerIssuer_0xb1d63873c3cc9f79 \
+    'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV1.mUSDFStrategy' \
+    'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV1.mUSDFStrategyComposer' \
+    /storage/FlowYieldVaultsStrategyV1ComposerIssuer_0xb1d63873c3cc9f79 \
     --network mainnet \
     --signer mainnet-admin
 

@@ -322,6 +322,17 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
 
+    err = Test.deployContract(
+        name: "FlowYieldVaultsStrategiesV1",
+        path: "../contracts/FlowYieldVaultsStrategiesV1.cdc",
+        arguments: [
+            "0x986Cb42b0557159431d48fE0A40073296414d410",
+            "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+            "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C"
+        ]
+    )
+
+    Test.expect(err, Test.beNil())
     // Mocked Strategy
     err = Test.deployContract(
         name: "MockStrategy",
