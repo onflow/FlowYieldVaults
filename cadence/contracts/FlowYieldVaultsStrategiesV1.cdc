@@ -565,7 +565,7 @@ access(all) contract FlowYieldVaultsStrategiesV1 {
         let configs: {Type: {Type: {Type: {String: AnyStruct}}}} = {
                 Type<@mUSDFStrategyComposer>(): {
                     Type<@mUSDFStrategy>(): {}
-                },
+                }
             }
         self.account.storage.save(<-create StrategyComposerIssuer(configs: configs), to: self.IssuerStoragePath)
 
