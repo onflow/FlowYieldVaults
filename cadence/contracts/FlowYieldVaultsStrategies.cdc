@@ -533,36 +533,6 @@ access(all) contract FlowYieldVaultsStrategies {
 
     access(all) entitlement Configure
 
-    access(self)
-    fun makeCollateralConfig(
-        yieldTokenEVMAddress: EVM.EVMAddress,
-        univ3FactoryEVMAddress: EVM.EVMAddress,
-        univ3RouterEVMAddress: EVM.EVMAddress,
-        univ3QuoterEVMAddress: EVM.EVMAddress,
-        yieldToCollateralAddressPath: [EVM.EVMAddress],
-        yieldToCollateralFeePath: [UInt32]
-    ): {String: AnyStruct} {
-        pre {
-            yieldToCollateralAddressPath.length > 1:
-                "Invalid Uniswap V3 swap path length"
-            yieldToCollateralFeePath.length == yieldToCollateralAddressPath.length - 1:
-                "Uniswap V3 fee path length must be path length - 1"
-            yieldToCollateralAddressPath[0].equals(yieldTokenEVMAddress):
-                "UniswapV3 swap path must start with yield token"
-        }
-
-        return {
-            "univ3FactoryEVMAddress": univ3FactoryEVMAddress,
-            "univ3RouterEVMAddress": univ3RouterEVMAddress,
-            "univ3QuoterEVMAddress": univ3QuoterEVMAddress,
-            "yieldTokenEVMAddress":  yieldTokenEVMAddress,
-            "yieldToCollateralUniV3AddressPaths": {
-                // we’ll store with the collateral vault type as key later
-            } as {Type: [EVM.EVMAddress]},
-            "yieldToCollateralUniV3FeePaths": {
-            } as {Type: [UInt32]}
-        }
-    }
     /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
     /// may utilize resource consumption (i.e. account storage). Since TracerStrategy creation consumes account storage
     /// via configured AutoBalancers
