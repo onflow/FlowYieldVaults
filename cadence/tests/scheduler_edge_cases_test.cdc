@@ -287,7 +287,7 @@ fun testHealthyYieldVaultsSelfSchedule() {
         // Use LARGE price changes to ensure rebalancing triggers
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5 * UFix64(round))
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2 * UFix64(round))
-        Test.moveTime(by: 70.0)
+        Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
         Test.commitBlock()
         
         let newBalance = getAutoBalancerBalance(id: yieldVaultID) ?? 0.0
