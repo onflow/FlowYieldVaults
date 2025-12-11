@@ -152,7 +152,7 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"DLStrategies": {
+		"PMStrategies": {
 			"source": "cadence/contracts/Strategies.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",

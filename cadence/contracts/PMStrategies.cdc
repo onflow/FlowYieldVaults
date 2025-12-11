@@ -24,7 +24,7 @@ import "FlowEVMBridge"
 // live oracles
 import "ERC4626PriceOracles"
 
-/// DLStrategies
+/// PMStrategies
 ///
 /// This contract defines Strategies used in the FlowYieldVaults platform.
 ///
@@ -35,7 +35,7 @@ import "ERC4626PriceOracles"
 /// A StrategyComposer is tasked with the creation of a supported Strategy. It's within the stacking of DeFiActions
 /// connectors that the true power of the components lies.
 ///
-access(all) contract DLStrategies {
+access(all) contract PMStrategies {
 
     access(all) let univ3FactoryEVMAddress: EVM.EVMAddress
     access(all) let univ3RouterEVMAddress: EVM.EVMAddress
@@ -169,7 +169,7 @@ access(all) contract DLStrategies {
                 )
 
             // Create recurring config for automatic rebalancing
-            let recurringConfig = DLStrategies._createRecurringConfig(withID: uniqueID)
+            let recurringConfig = PMStrategies._createRecurringConfig(withID: uniqueID)
 
             // configure and AutoBalancer for this stack with native recurring scheduling
             let autoBalancer = FlowYieldVaultsAutoBalancers._initNewAutoBalancer(
@@ -196,22 +196,22 @@ access(all) contract DLStrategies {
             //     - MultiSwapper aggregates across two sub-swappers
             //         - WFLOW -> YIELD (UniV3 Swapper)
             let wflowToYieldAMMSwapper = UniswapV3SwapConnectors.Swapper(
-                    factoryAddress: DLStrategies.univ3FactoryEVMAddress,
-                    routerAddress: DLStrategies.univ3RouterEVMAddress,
-                    quoterAddress: DLStrategies.univ3QuoterEVMAddress,
+                    factoryAddress: PMStrategies.univ3FactoryEVMAddress,
+                    routerAddress: PMStrategies.univ3RouterEVMAddress,
+                    quoterAddress: PMStrategies.univ3QuoterEVMAddress,
                     tokenPath: [wflowTokenEVMAddress, yieldTokenEVMAddress],
                     feePath: [3000],
                     inVault: flowTokenType,
                     outVault: yieldTokenType,
-                    coaCapability: DLStrategies._getCOACapability(),
+                    coaCapability: PMStrategies._getCOACapability(),
                     uniqueID: uniqueID
                 )
             // Swap UNDERLYING -> YIELD via ERC4626 Vault
             let wflowTo4626Swapper = ERC4626SwapConnectors.Swapper(
                     asset: flowTokenType,
                     vault: yieldTokenEVMAddress,
-                    coa: DLStrategies._getCOACapability(),
-                    feeSource: DLStrategies._createFeeSource(withID: uniqueID),
+                    coa: PMStrategies._getCOACapability(),
+                    feeSource: PMStrategies._createFeeSource(withID: uniqueID),
                     uniqueID: uniqueID
                 )
             // Finally, add the two WFLOW -> YIELD swappers into an aggregate MultiSwapper
@@ -225,14 +225,14 @@ access(all) contract DLStrategies {
             // YIELD -> WFLOW 
             // - Targets the WFLOW <-> YIELD pool as the only route since withdraws from the ERC4626 Vault are async
             let yieldToWFLOWSwapper = UniswapV3SwapConnectors.Swapper(
-                    factoryAddress: DLStrategies.univ3FactoryEVMAddress,
-                    routerAddress: DLStrategies.univ3RouterEVMAddress,
-                    quoterAddress: DLStrategies.univ3QuoterEVMAddress,
+                    factoryAddress: PMStrategies.univ3FactoryEVMAddress,
+                    routerAddress: PMStrategies.univ3RouterEVMAddress,
+                    quoterAddress: PMStrategies.univ3QuoterEVMAddress,
                     tokenPath: [yieldTokenEVMAddress, wflowTokenEVMAddress],
                     feePath: [3000],
                     inVault: yieldTokenType,
                     outVault: flowTokenType,
-                    coaCapability: DLStrategies._getCOACapability(),
+                    coaCapability: PMStrategies._getCOACapability(),
                     uniqueID: uniqueID
                 )
 
@@ -374,7 +374,7 @@ access(all) contract DLStrategies {
             }
 
             // Base struct with shared addresses
-            var base = DLStrategies.makeCollateralConfig(
+            var base = PMStrategies.makeCollateralConfig(
                 yieldTokenEVMAddress: yieldTokenEVMAddress,
                 yieldToCollateralAddressPath: yieldToCollateralAddressPath,
                 yieldToCollateralFeePath: yieldToCollateralFeePath
@@ -473,7 +473,7 @@ access(all) contract DLStrategies {
         self.univ3FactoryEVMAddress = EVM.addressFromString(univ3FactoryEVMAddress)
         self.univ3RouterEVMAddress = EVM.addressFromString(univ3RouterEVMAddress)
         self.univ3QuoterEVMAddress = EVM.addressFromString(univ3QuoterEVMAddress)
-        self.IssuerStoragePath = StoragePath(identifier: "DLStrategiesComposerIssuer_\(self.account.address)")!
+        self.IssuerStoragePath = StoragePath(identifier: "PMStrategiesComposerIssuer_\(self.account.address)")!
 
         let configs: {Type: {Type: {Type: {String: AnyStruct}}}} = {
                 Type<@syWFLOWvStrategyComposer>(): {
