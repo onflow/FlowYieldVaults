@@ -27,6 +27,13 @@ fun _executeTransaction(_ path: String, _ args: [AnyStruct], _ signer: Test.Test
 }
 
 access(all)
+fun getCurrentBlockTimestamp(): UFix64 {
+    let res = _executeScript("./scripts/get_current_block_timestamp.cdc", [])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! UFix64
+}
+
+access(all)
 fun grantProtocolBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
     let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
     let betaTxn = Test.Transaction(

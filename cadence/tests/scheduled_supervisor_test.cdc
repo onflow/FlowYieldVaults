@@ -125,7 +125,7 @@ fun testAutoRegisterAndSupervisor() {
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.8)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5)
     
-    Test.moveTime(by: 75.0)
+    Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
     Test.commitBlock()
 
     // 4. Verify native execution occurred
@@ -179,7 +179,7 @@ fun testMultiYieldVaultNativeScheduling() {
     
     // Wait for native execution
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5)
-    Test.moveTime(by: 75.0)
+    Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
     Test.commitBlock()
     
     // Verify all executed via native scheduling
@@ -234,7 +234,7 @@ fun testMultiYieldVaultIndependentExecution() {
         // Use VERY LARGE price changes to ensure rebalancing triggers regardless of previous state
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 3.0 * UFix64(round))
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 2.5 * UFix64(round))
-        Test.moveTime(by: 70.0)
+        Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
         Test.commitBlock()
         
         let newBalance = getAutoBalancerBalance(id: trackedYieldVaultID) ?? 0.0
@@ -354,7 +354,7 @@ fun testPaginationStress() {
         // Use LARGE price changes to ensure rebalancing triggers regardless of previous state
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0 * UFix64(round))
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5 * UFix64(round))
-        Test.moveTime(by: 70.0)
+        Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
         Test.commitBlock()
         
         // Verify sample balances changed
@@ -439,7 +439,7 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
 
     // 3. Wait for some native executions
     log("Step 3: Waiting for native execution...")
-    Test.moveTime(by: 70.0)
+    Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
     Test.commitBlock()
     
     let execEventsBefore = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
@@ -457,9 +457,9 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
     Test.commitBlock()
     
     // Schedule Supervisor
-    let scheduledTime = getCurrentBlock().timestamp + 2000.0
+    let scheduledTime = getCurrentBlockTimestamp() + (60.0 * 60.0 * 30.0)
     let schedSupRes = executeTransaction(
-        "../transactions/flow-yield-vaults/schedule_supervisor.cdc",
+        "../transactions/flow-yield-vaults/admin/schedule_supervisor.cdc",
         [scheduledTime, UInt8(1), UInt64(800), 0.05, 30.0, true, 10.0, false],
         flowYieldVaultsAccount
     )
@@ -468,7 +468,7 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
 
     // 6. Advance time to let Supervisor run
     log("Step 6: Waiting for Supervisor to run...")
-    Test.moveTime(by: 2100.0)
+    Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
     Test.commitBlock()
 
     // 7. Verify Supervisor ran but found nothing to recover (healthy yield vault)
@@ -481,7 +481,7 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
 
     // 8. Verify yield vault continues executing
     log("Step 7: Verifying yield vault continues executing...")
-    Test.moveTime(by: 70.0)
+    Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
     Test.commitBlock()
 
     let execEventsAfter = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
@@ -545,7 +545,7 @@ fun testStuckYieldVaultDetectionLogic() {
 
     // 2. Let it execute
     log("Step 2: Waiting for execution...")
-    Test.moveTime(by: 70.0)
+    Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
     Test.commitBlock()
     
     let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
@@ -657,7 +657,7 @@ fun testInsufficientFundsAndRecovery() {
         // Use LARGE price changes to ensure rebalancing triggers regardless of previous state
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5 * UFix64(round))
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2 * UFix64(round))
-        Test.moveTime(by: 70.0)
+        Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
         Test.commitBlock()
         
         // Verify all 5 yield vaults changed balance
@@ -717,7 +717,7 @@ fun testInsufficientFundsAndRecovery() {
     log("\n--- STEP 5: Waiting for failures (6 rounds) ---")
     var waitRound = 0
     while waitRound < 6 {
-        Test.moveTime(by: 70.0)
+        Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
         Test.commitBlock()
         waitRound = waitRound + 1
     }
@@ -781,15 +781,15 @@ fun testInsufficientFundsAndRecovery() {
     Test.commitBlock()
     
     // Get FRESH timestamp after block commit
-    let currentTs = getCurrentBlock().timestamp
+    let currentTs = getCurrentBlockTimestamp()
     log("Current timestamp: ".concat(currentTs.toString()))
     
     // Use VERY large offset (10000s) to ensure it's always in the future
-    let restartTime = currentTs + 10000.0
+    let restartTime = currentTs + (60.0 * 60.0 * 30.0)
     log("Scheduling Supervisor at: ".concat(restartTime.toString()))
     
     let schedSupRes = executeTransaction(
-        "../transactions/flow-yield-vaults/schedule_supervisor.cdc",
+        "../transactions/flow-yield-vaults/admin/schedule_supervisor.cdc",
         [restartTime, UInt8(1), UInt64(5000), 0.5, 60.0, true, 30.0, true],  // Higher execution effort (5000) for recovering 5 yield vaults
         flowYieldVaultsAccount
     )
@@ -800,7 +800,7 @@ fun testInsufficientFundsAndRecovery() {
     // STEP 9: Let Supervisor run and recover stuck yield vaults
     // ========================================
     log("\n--- STEP 9: Letting Supervisor run and recover ---")
-    Test.moveTime(by: 11000.0)  // Move past the 10000s scheduled time
+    Test.moveTime(by: Fix64(restartTime - getCurrentBlockTimestamp() + 100.0))  // Move past the 10000s scheduled time
     Test.commitBlock()
 
     // Check for StuckYieldVaultDetected events
@@ -833,7 +833,7 @@ fun testInsufficientFundsAndRecovery() {
         // Use LARGE price changes to ensure rebalancing triggers
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 5.0 * UFix64(round))
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 4.0 * UFix64(round))
-        Test.moveTime(by: 70.0)
+        Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
         Test.commitBlock()
         
         let newBalance = getAutoBalancerBalance(id: trackedYieldVaultID) ?? 0.0
@@ -912,11 +912,11 @@ fun testInsufficientFundsAndRecovery() {
     log("========================================")
 }
 
-access(all)
-fun main() {
-    setup()
-    testAutoRegisterAndSupervisor()
-    testMultiYieldVaultNativeScheduling()
-    testStuckYieldVaultDetectionLogic()
-    testInsufficientFundsAndRecovery()
-}
+// access(all)
+// fun main() {
+//     setup()
+//     testAutoRegisterAndSupervisor()
+//     testMultiYieldVaultNativeScheduling()
+//     testStuckYieldVaultDetectionLogic()
+//     testInsufficientFundsAndRecovery()
+// }
