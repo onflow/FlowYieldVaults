@@ -42,6 +42,7 @@ access(all) contract PMStrategies {
     access(all) var univ3QuoterEVMAddress: EVM.EVMAddress
 
     access(all) var yieldTokenEVMAddress: EVM.EVMAddress
+    access(all) var swapFeeTier: UInt32
 
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let IssuerStoragePath: StoragePath
@@ -190,7 +191,7 @@ access(all) contract PMStrategies {
                     routerAddress: PMStrategies.univ3RouterEVMAddress,
                     quoterAddress: PMStrategies.univ3QuoterEVMAddress,
                     tokenPath: [wflowTokenEVMAddress, PMStrategies.yieldTokenEVMAddress],
-                    feePath: [3000],
+                    feePath: [PMStrategies.swapFeeTier],
                     inVault: flowTokenType,
                     outVault: yieldTokenType,
                     coaCapability: PMStrategies._getCOACapability(),
@@ -219,7 +220,7 @@ access(all) contract PMStrategies {
                     routerAddress: PMStrategies.univ3RouterEVMAddress,
                     quoterAddress: PMStrategies.univ3QuoterEVMAddress,
                     tokenPath: [PMStrategies.yieldTokenEVMAddress, wflowTokenEVMAddress],
-                    feePath: [3000],
+                    feePath: [PMStrategies.swapFeeTier],
                     inVault: yieldTokenType,
                     outVault: flowTokenType,
                     coaCapability: PMStrategies._getCOACapability(),
@@ -356,12 +357,14 @@ access(all) contract PMStrategies {
         univ3FactoryEVMAddress: String,
         univ3RouterEVMAddress: String,
         univ3QuoterEVMAddress: String,
-        yieldTokenEVMAddress: String
+        yieldTokenEVMAddress: String,
+        swapFeeTier: UInt32
     ) {
         self.univ3FactoryEVMAddress = EVM.addressFromString(univ3FactoryEVMAddress)
         self.univ3RouterEVMAddress = EVM.addressFromString(univ3RouterEVMAddress)
         self.univ3QuoterEVMAddress = EVM.addressFromString(univ3QuoterEVMAddress)
         self.yieldTokenEVMAddress = EVM.addressFromString(yieldTokenEVMAddress)
+        self.swapFeeTier = EVM.addressFromString(swapFeeTier)
 
         self.IssuerStoragePath = StoragePath(identifier: "PMStrategiesComposerIssuer_\(self.account.address)")!
 
