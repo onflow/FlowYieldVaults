@@ -161,17 +161,10 @@ access(all) contract DLStrategies {
             let yieldTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: yieldTokenEVMAddress)
                 ?? panic("Could not retrieve the VM Bridge associated Type for the yield token address \(yieldTokenEVMAddress.toString())")
 
-            // assign underlying asset EVM address & type - assumed to be stablecoin for the strategy
-            let underlying4626AssetEVMAddress = ERC4626Utils.underlyingAssetEVMAddress(
-                    vault: yieldTokenEVMAddress
-                ) ?? panic("Could not get the underlying asset's EVM address for ERC4626Vault \(yieldTokenEVMAddress.toString())")
-            let underlying4626AssetType = FlowEVMBridgeConfig.getTypeAssociated(with: underlying4626AssetEVMAddress)
-                ?? panic("Could not retrieve the VM Bridge associated Type for the ERC4626 underlying asset \(underlying4626AssetEVMAddress.toString())")
-
             // create the oracle for the assets to be held in the AutoBalancer retrieving the NAV of the 4626 vault
             let yieldTokenOracle = ERC4626PriceOracles.PriceOracle(
                     vault: yieldTokenEVMAddress,
-                    asset: underlying4626AssetType,
+                    asset: flowTokenType,
                     uniqueID: uniqueID
                 )
 
@@ -207,7 +200,7 @@ access(all) contract DLStrategies {
                     routerAddress: DLStrategies.univ3RouterEVMAddress,
                     quoterAddress: DLStrategies.univ3QuoterEVMAddress,
                     tokenPath: [wflowTokenEVMAddress, yieldTokenEVMAddress],
-                    feePath: [100],
+                    feePath: [3000],
                     inVault: flowTokenType,
                     outVault: yieldTokenType,
                     coaCapability: DLStrategies._getCOACapability(),
@@ -215,7 +208,7 @@ access(all) contract DLStrategies {
                 )
             // Swap UNDERLYING -> YIELD via ERC4626 Vault
             let wflowTo4626Swapper = ERC4626SwapConnectors.Swapper(
-                    asset: underlying4626AssetType,
+                    asset: flowTokenType,
                     vault: yieldTokenEVMAddress,
                     coa: DLStrategies._getCOACapability(),
                     feeSource: DLStrategies._createFeeSource(withID: uniqueID),
@@ -236,7 +229,7 @@ access(all) contract DLStrategies {
                     routerAddress: DLStrategies.univ3RouterEVMAddress,
                     quoterAddress: DLStrategies.univ3QuoterEVMAddress,
                     tokenPath: [yieldTokenEVMAddress, wflowTokenEVMAddress],
-                    feePath: [100],
+                    feePath: [3000],
                     inVault: yieldTokenType,
                     outVault: flowTokenType,
                     coaCapability: DLStrategies._getCOACapability(),
@@ -249,34 +242,6 @@ access(all) contract DLStrategies {
             let abaSwapSink = SwapConnectors.SwapSink(swapper: wflowToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
             // Swaps YIELD & provides swapped WFLOW, sourcing YIELD from the AutoBalancer
             let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToWFLOWSwapper, source: abaSource, uniqueID: uniqueID)
-
-            // init YieldToken -> Collateral Swapper
-            //
-            // get UniswapV3 path configs
-            let collateralUniV3AddressPathConfig = collateralConfig["yieldToCollateralUniV3AddressPaths"] as? {Type: [EVM.EVMAddress]}
-                ?? panic("Could not find UniswapV3 address paths config when creating Strategy \(type.identifier) with collateral \(flowTokenType.identifier)")
-            let uniV3AddressPath = collateralUniV3AddressPathConfig[flowTokenType]
-                ?? panic("Could not find UniswapV3 address path for collateral type \(flowTokenType.identifier)")
-            assert(uniV3AddressPath.length > 1, message: "Invalid Uniswap V3 swap path length of \(uniV3AddressPath.length)")
-            assert(uniV3AddressPath[0].equals(yieldTokenEVMAddress),
-                message: "UniswapV3 swap path does not match - expected path[0] to be \(yieldTokenEVMAddress.toString()) but found \(uniV3AddressPath[0].toString())") 
-            let collateralUniV3FeePathConfig = collateralConfig["yieldToCollateralUniV3FeePaths"] as? {Type: [UInt32]}
-                ?? panic("Could not find UniswapV3 fee paths config when creating Strategy \(type.identifier) with collateral \(flowTokenType.identifier)")
-            let uniV3FeePath = collateralUniV3FeePathConfig[flowTokenType]
-                ?? panic("Could not find UniswapV3 fee path for collateral type \(flowTokenType.identifier)")
-            assert(uniV3FeePath.length > 0, message: "Invalid Uniswap V3 fee path length of \(uniV3FeePath.length)")
-            // initialize the swapper used for recollateralization of the lending position as YIELD increases in value
-            let yieldToFlowSwapper = UniswapV3SwapConnectors.Swapper(
-                    factoryAddress: DLStrategies.univ3FactoryEVMAddress,
-                    routerAddress: DLStrategies.univ3RouterEVMAddress,
-                    quoterAddress: DLStrategies.univ3QuoterEVMAddress,
-                    tokenPath: uniV3AddressPath,
-                    feePath: uniV3FeePath,
-                    inVault: yieldTokenType,
-                    outVault: flowTokenType,
-                    coaCapability: DLStrategies._getCOACapability(),
-                    uniqueID: uniqueID
-                )
 
             // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value, recollateralizing
             // the position
