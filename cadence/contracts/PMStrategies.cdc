@@ -277,16 +277,16 @@ access(all) contract PMStrategies {
             }
         }
         access(Configure)
-        fun updateEVMAddressesRaw(
-            factory: EVM.EVMAddress,
-            router: EVM.EVMAddress,
-            quoter: EVM.EVMAddress,
-            yieldToken: EVM.EVMAddress
+        fun updateEVMAddresses(
+            factory: String,
+            router: String,
+            quoter: String,
+            yieldToken: String
         ) {
-            PMStrategies.univ3FactoryEVMAddress = factory
-            PMStrategies.univ3RouterEVMAddress  = router
-            PMStrategies.univ3QuoterEVMAddress  = quoter
-            PMStrategies.yieldTokenEVMAddress   = yieldToken
+            PMStrategies.univ3FactoryEVMAddress = EVM.addressFromString(factory)
+            PMStrategies.univ3RouterEVMAddress  = EVM.addressFromString(router)
+            PMStrategies.univ3QuoterEVMAddress  = EVM.addressFromString(quoter)
+            PMStrategies.yieldTokenEVMAddress   = EVM.addressFromString(yieldToken)
         }
     }
 
