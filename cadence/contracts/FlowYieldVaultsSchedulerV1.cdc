@@ -405,7 +405,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
 
     init() {
         // Initialize constants
-        self.DEFAULT_RECURRING_INTERVAL = 60.0  // 60 seconds
+        self.DEFAULT_RECURRING_INTERVAL = 60.0 * 10.0  // 5 minutes
         self.DEFAULT_PRIORITY = 1  // Medium
         self.DEFAULT_EXECUTION_EFFORT = 800
         self.MIN_FEE_FALLBACK = 0.00005
