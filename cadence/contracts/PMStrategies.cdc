@@ -37,9 +37,11 @@ import "ERC4626PriceOracles"
 ///
 access(all) contract PMStrategies {
 
-    access(all) let univ3FactoryEVMAddress: EVM.EVMAddress
-    access(all) let univ3RouterEVMAddress: EVM.EVMAddress
-    access(all) let univ3QuoterEVMAddress: EVM.EVMAddress
+    access(all) var univ3FactoryEVMAddress: EVM.EVMAddress
+    access(all) var univ3RouterEVMAddress: EVM.EVMAddress
+    access(all) var univ3QuoterEVMAddress: EVM.EVMAddress
+
+    access(all) var yieldTokenEVMAddress: EVM.EVMAddress
 
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let IssuerStoragePath: StoragePath
@@ -111,20 +113,13 @@ access(all) contract PMStrategies {
 
     /// This StrategyComposer builds a syWFLOWvStrategy
     access(all) resource syWFLOWvStrategyComposer : FlowYieldVaults.StrategyComposer {
-        /// { Strategy Type: { Collateral Type: { String: AnyStruct } } }
-        access(self) let config: {Type: {Type: {String: AnyStruct}}}
-
-        init(_ config: {Type: {Type: {String: AnyStruct}}}) {
-            self.config = config
-        }
+        init() {}
 
         /// Returns the Types of Strategies composed by this StrategyComposer
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
-            let composed: {Type: Bool} = {}
-            for t in self.config.keys {
-                composed[t] = true
+            return { 
+                Type<@syWFLOWvStrategy>(): true
             }
-            return composed
         }
 
         /// Returns the Vault types which can be used to initialize a given Strategy
@@ -149,21 +144,16 @@ access(all) contract PMStrategies {
             withFunds: @{FungibleToken.Vault}
         ): @{FlowYieldVaults.Strategy} {
             let flowTokenType = Type<@FlowToken.Vault>()
-            let strategyConfig = self.config[type]
-                ?? panic("Could not find a config for Strategy \(type.identifier) initialized with \(flowTokenType.identifier)")
-            let collateralConfig = strategyConfig[flowTokenType]
-                ?? panic("Could not find config for collateral \(flowTokenType.identifier) when creating Strategy \(type.identifier)")
 
             // assign token types & associated EVM Addresses
             let wflowTokenEVMAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: flowTokenType)
                 ?? panic("Token Vault type \(flowTokenType.identifier) has not yet been registered with the VMbridge")
-            let yieldTokenEVMAddress = collateralConfig["yieldTokenEVMAddress"] as? EVM.EVMAddress ?? panic("Could not find \"yieldTokenEVMAddress\" in config")
-            let yieldTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: yieldTokenEVMAddress)
-                ?? panic("Could not retrieve the VM Bridge associated Type for the yield token address \(yieldTokenEVMAddress.toString())")
+            let yieldTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: PMStrategies.yieldTokenEVMAddress)
+                ?? panic("Could not retrieve the VM Bridge associated Type for the yield token address \(PMStrategies.yieldTokenEVMAddress.toString())")
 
             // create the oracle for the assets to be held in the AutoBalancer retrieving the NAV of the 4626 vault
             let yieldTokenOracle = ERC4626PriceOracles.PriceOracle(
-                    vault: yieldTokenEVMAddress,
+                    vault: PMStrategies.yieldTokenEVMAddress,
                     asset: flowTokenType,
                     uniqueID: uniqueID
                 )
@@ -199,7 +189,7 @@ access(all) contract PMStrategies {
                     factoryAddress: PMStrategies.univ3FactoryEVMAddress,
                     routerAddress: PMStrategies.univ3RouterEVMAddress,
                     quoterAddress: PMStrategies.univ3QuoterEVMAddress,
-                    tokenPath: [wflowTokenEVMAddress, yieldTokenEVMAddress],
+                    tokenPath: [wflowTokenEVMAddress, PMStrategies.yieldTokenEVMAddress],
                     feePath: [3000],
                     inVault: flowTokenType,
                     outVault: yieldTokenType,
@@ -209,7 +199,7 @@ access(all) contract PMStrategies {
             // Swap UNDERLYING -> YIELD via ERC4626 Vault
             let wflowTo4626Swapper = ERC4626SwapConnectors.Swapper(
                     asset: flowTokenType,
-                    vault: yieldTokenEVMAddress,
+                    vault: PMStrategies.yieldTokenEVMAddress,
                     coa: PMStrategies._getCOACapability(),
                     feeSource: PMStrategies._createFeeSource(withID: uniqueID),
                     uniqueID: uniqueID
@@ -228,7 +218,7 @@ access(all) contract PMStrategies {
                     factoryAddress: PMStrategies.univ3FactoryEVMAddress,
                     routerAddress: PMStrategies.univ3RouterEVMAddress,
                     quoterAddress: PMStrategies.univ3QuoterEVMAddress,
-                    tokenPath: [yieldTokenEVMAddress, wflowTokenEVMAddress],
+                    tokenPath: [PMStrategies.yieldTokenEVMAddress, wflowTokenEVMAddress],
                     feePath: [3000],
                     inVault: yieldTokenType,
                     outVault: flowTokenType,
@@ -263,40 +253,11 @@ access(all) contract PMStrategies {
 
     access(all) entitlement Configure
 
-    access(self)
-    fun makeCollateralConfig(
-        yieldTokenEVMAddress: EVM.EVMAddress,
-        yieldToCollateralAddressPath: [EVM.EVMAddress],
-        yieldToCollateralFeePath: [UInt32]
-    ): {String: AnyStruct} {
-        pre {
-            yieldToCollateralAddressPath.length > 1:
-                "Invalid Uniswap V3 swap path length"
-            yieldToCollateralFeePath.length == yieldToCollateralAddressPath.length - 1:
-                "Uniswap V3 fee path length must be path length - 1"
-            yieldToCollateralAddressPath[0].equals(yieldTokenEVMAddress):
-                "UniswapV3 swap path must start with yield token"
-        }
-
-        return {
-            "yieldTokenEVMAddress":  yieldTokenEVMAddress,
-            "yieldToCollateralUniV3AddressPaths": {
-                // we’ll store with the collateral vault type as key later
-            } as {Type: [EVM.EVMAddress]},
-            "yieldToCollateralUniV3FeePaths": {
-            } as {Type: [UInt32]}
-        }
-    }
     /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
     /// may utilize resource consumption (i.e. account storage). Since Strategy creation consumes account storage
     /// via configured AutoBalancers
     access(all) resource StrategyComposerIssuer : FlowYieldVaults.StrategyComposerIssuer {
-        /// { StrategyComposer Type: { Strategy Type: { Collateral Type: { String: AnyStruct } } } }
-        access(all) let configs: {Type: {Type: {Type: {String: AnyStruct}}}}
-
-        init(configs: {Type: {Type: {Type: {String: AnyStruct}}}}) {
-            self.configs = configs
-        }
+        init() {}
 
         access(all) view fun getSupportedComposers(): {Type: Bool} {
             return { 
@@ -307,99 +268,25 @@ access(all) contract PMStrategies {
             pre {
                 self.getSupportedComposers()[type] == true:
                 "Unsupported StrategyComposer \(type.identifier) requested"
-                (&self.configs[type] as &{Type: {Type: {String: AnyStruct}}}?) != nil:
-                "Could not find config for StrategyComposer \(type.identifier)"
             }
             switch type {
             case Type<@syWFLOWvStrategyComposer>():
-                return <- create syWFLOWvStrategyComposer(self.configs[type]!)
+                return <- create syWFLOWvStrategyComposer()
             default:
                 panic("Unsupported StrategyComposer \(type.identifier) requested")
             }
         }
-
         access(Configure)
-        fun upsertConfigFor(
-            composer: Type,
-            config: {Type: {Type: {String: AnyStruct}}}
+        fun updateEVMAddressesRaw(
+            factory: EVM.EVMAddress,
+            router: EVM.EVMAddress,
+            quoter: EVM.EVMAddress,
+            yieldToken: EVM.EVMAddress
         ) {
-            pre {
-                self.getSupportedComposers()[composer] == true:
-                    "Unsupported StrategyComposer Type \(composer.identifier)"
-            }
-
-            // Validate keys
-            for stratType in config.keys {
-                assert(stratType.isSubtype(of: Type<@{FlowYieldVaults.Strategy}>()),
-                    message: "Invalid config key \(stratType.identifier) - not a FlowYieldVaults.Strategy Type")
-                for flowTokenType in config[stratType]!.keys {
-                    assert(flowTokenType.isSubtype(of: Type<@{FungibleToken.Vault}>()),
-                        message: "Invalid config key at config[\(stratType.identifier)] - \(flowTokenType.identifier) is not a FungibleToken.Vault")
-                }
-            }
-
-            // Merge instead of overwrite
-            let existingComposerConfig = self.configs[composer] ?? {}
-            var mergedComposerConfig: {Type: {Type: {String: AnyStruct}}} = existingComposerConfig
-
-            for stratType in config.keys {
-                let newPerCollateral = config[stratType]!
-                let existingPerCollateral = mergedComposerConfig[stratType] ?? {}
-                var mergedPerCollateral: {Type: {String: AnyStruct}} = existingPerCollateral
-
-                for flowTokenType in newPerCollateral.keys {
-                    mergedPerCollateral[flowTokenType] = newPerCollateral[flowTokenType]!
-                }
-                mergedComposerConfig[stratType] = mergedPerCollateral
-            }
-
-            self.configs[composer] = mergedComposerConfig
-        }
-
-        access(Configure) fun addOrUpdateCollateralConfig(
-            composer: Type,
-            strategyType: Type,
-            collateralVaultType: Type,
-            yieldTokenEVMAddress: EVM.EVMAddress,
-            yieldToCollateralAddressPath: [EVM.EVMAddress],
-            yieldToCollateralFeePath: [UInt32]
-        ) {
-            pre {
-                self.getSupportedComposers()[composer] == true:
-                    "Unsupported StrategyComposer Type \(composer.identifier)"
-                strategyType.isSubtype(of: Type<@{FlowYieldVaults.Strategy}>()):
-                    "Strategy type \(strategyType.identifier) is not a FlowYieldVaults.Strategy"
-                collateralVaultType.isSubtype(of: Type<@{FungibleToken.Vault}>()):
-                    "Collateral type \(collateralVaultType.identifier) is not a FungibleToken.Vault"
-            }
-
-            // Base struct with shared addresses
-            var base = PMStrategies.makeCollateralConfig(
-                yieldTokenEVMAddress: yieldTokenEVMAddress,
-                yieldToCollateralAddressPath: yieldToCollateralAddressPath,
-                yieldToCollateralFeePath: yieldToCollateralFeePath
-            )
-
-            // Plug in the type-keyed maps
-            let addressPaths = {
-                collateralVaultType: yieldToCollateralAddressPath
-            } as {Type: [EVM.EVMAddress]}
-
-            let feePaths = {
-                collateralVaultType: yieldToCollateralFeePath
-            } as {Type: [UInt32]}
-
-            base["yieldToCollateralUniV3AddressPaths"] = addressPaths
-            base["yieldToCollateralUniV3FeePaths"] = feePaths
-
-            // Wrap into the nested config expected by upsertConfigFor
-            let singleCollateralConfig: {Type: {Type: {String: AnyStruct}}} = {
-                strategyType: {
-                    collateralVaultType: base
-                }
-            }
-
-            self.upsertConfigFor(composer: composer, config: singleCollateralConfig)
+            PMStrategies.univ3FactoryEVMAddress = factory
+            PMStrategies.univ3RouterEVMAddress  = router
+            PMStrategies.univ3QuoterEVMAddress  = quoter
+            PMStrategies.yieldTokenEVMAddress   = yieldToken
         }
     }
 
@@ -469,18 +356,16 @@ access(all) contract PMStrategies {
         univ3FactoryEVMAddress: String,
         univ3RouterEVMAddress: String,
         univ3QuoterEVMAddress: String,
+        yieldTokenEVMAddress: String
     ) {
         self.univ3FactoryEVMAddress = EVM.addressFromString(univ3FactoryEVMAddress)
         self.univ3RouterEVMAddress = EVM.addressFromString(univ3RouterEVMAddress)
         self.univ3QuoterEVMAddress = EVM.addressFromString(univ3QuoterEVMAddress)
+        self.yieldTokenEVMAddress = EVM.addressFromString(yieldTokenEVMAddress)
+
         self.IssuerStoragePath = StoragePath(identifier: "PMStrategiesComposerIssuer_\(self.account.address)")!
 
-        let configs: {Type: {Type: {Type: {String: AnyStruct}}}} = {
-                Type<@syWFLOWvStrategyComposer>(): {
-                    Type<@syWFLOWvStrategy>(): {}
-                }
-            }
-        self.account.storage.save(<-create StrategyComposerIssuer(configs: configs), to: self.IssuerStoragePath)
+        self.account.storage.save(<-create StrategyComposerIssuer(), to: self.IssuerStoragePath)
 
         // TODO: this is temporary until we have a better way to pass user's COAs to inner connectors
         // create a COA in this account
