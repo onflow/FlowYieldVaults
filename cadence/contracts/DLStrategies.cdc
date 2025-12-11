@@ -45,13 +45,24 @@ access(all) contract DLStrategies {
     access(all) let IssuerStoragePath: StoragePath
 
     /// This strategy uses syWFLOWv vaults
-    access(all) resource syWFLOWvFStrategy : FlowYieldVaults.Strategy, DeFiActions.IdentifiableResource {
+    access(all) resource syWFLOWvStrategy : FlowYieldVaults.Strategy, DeFiActions.IdentifiableResource {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
 
-        init(id: DeFiActions.UniqueIdentifier) {
+        /// User-facing deposit connector
+        access(self) var sink: {DeFiActions.Sink}
+        /// User-facing withdrawal connector
+        access(self) var source: {DeFiActions.Source}
+
+        init(
+            id: DeFiActions.UniqueIdentifier,
+            sink: {DeFiActions.Sink},
+            source: {DeFiActions.Source}
+        ) {
             self.uniqueID = id
+            self.sink = sink
+            self.source = source
         }
 
         // Inherited from FlowYieldVaults.Strategy default implementation
@@ -118,7 +129,7 @@ access(all) contract DLStrategies {
 
         /// Returns the Vault types which can be used to initialize a given Strategy
         access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
-            return forStrategy == Type<@FlowToken.Vault>()
+            return { Type<@FlowToken.Vault>(): true }
         }
 
         /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the
@@ -135,7 +146,7 @@ access(all) contract DLStrategies {
         access(all) fun createStrategy(
             _ type: Type,
             uniqueID: DeFiActions.UniqueIdentifier,
-            withFunds: @{FlowToken.Vault}
+            withFunds: @{FungibleToken.Vault}
         ): @{FlowYieldVaults.Strategy} {
             let flowTokenType = Type<@FlowToken.Vault>()
             let strategyConfig = self.config[type]
@@ -266,20 +277,21 @@ access(all) contract DLStrategies {
                     coaCapability: DLStrategies._getCOACapability(),
                     uniqueID: uniqueID
                 )
-            let syWFLOWvSink = SwapConnectors.SinkVault()
-            // allows for YIELD to be deposited to the Position as the collateral basis
-            let positionSwapSink = SwapConnectors.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
-
-            // @TODO 
 
             // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value, recollateralizing
             // the position
-            autoBalancer.setSink(syWFLOWvSink, updateSinkID: true)
+            autoBalancer.setSink(abaSwapSink, updateSinkID: true)
+            abaSwapSink.depositCapacity(from: &withFunds as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
+
+            assert(withFunds.balance == 0.0, message: "Vault should be empty after depositing")
+            destroy withFunds 
 
             // Use the same uniqueID passed to createStrategy so Strategy.burnCallback
             // calls _cleanupAutoBalancer with the correct ID
             return <-create syWFLOWvStrategy(
-                id: uniqueID
+                id: uniqueID,
+                sink: abaSwapSink,
+                source: abaSwapSource
             )
         }
     }

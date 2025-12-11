@@ -152,6 +152,13 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
+		"DLStrategies": {
+			"source": "cadence/contracts/Strategies.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
+			}
+		},
 		"FlowYieldVaultsStrategies": {
 			"source": "cadence/contracts/FlowYieldVaultsStrategies.cdc",
 			"aliases": {
