@@ -988,6 +988,10 @@
 						{
 							"value": "0xCBf9a7753F9D2d0e8141ebB36d99f87AcEf98597",
 							"type": "String"
+						},
+						{
+							"value": "100",
+							"type": "UInt32"
 						}
 					]
 				}

@@ -282,12 +282,14 @@ access(all) contract PMStrategies {
             factory: String,
             router: String,
             quoter: String,
-            yieldToken: String
+            yieldToken: String,
+            swapFeeTier: UInt32
         ) {
             PMStrategies.univ3FactoryEVMAddress = EVM.addressFromString(factory)
             PMStrategies.univ3RouterEVMAddress  = EVM.addressFromString(router)
             PMStrategies.univ3QuoterEVMAddress  = EVM.addressFromString(quoter)
             PMStrategies.yieldTokenEVMAddress   = EVM.addressFromString(yieldToken)
+            PMStrategies.swapFeeTier = swapFeeTier
         }
     }
 
@@ -364,7 +366,7 @@ access(all) contract PMStrategies {
         self.univ3RouterEVMAddress = EVM.addressFromString(univ3RouterEVMAddress)
         self.univ3QuoterEVMAddress = EVM.addressFromString(univ3QuoterEVMAddress)
         self.yieldTokenEVMAddress = EVM.addressFromString(yieldTokenEVMAddress)
-        self.swapFeeTier = EVM.addressFromString(swapFeeTier)
+        self.swapFeeTier = swapFeeTier
 
         self.IssuerStoragePath = StoragePath(identifier: "PMStrategiesComposerIssuer_\(self.account.address)")!
 
