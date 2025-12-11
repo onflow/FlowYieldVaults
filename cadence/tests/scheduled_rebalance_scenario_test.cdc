@@ -183,7 +183,7 @@ fun testSingleAutoBalancerThreeExecutions() {
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.2)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.1)
     
-    Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
     
     let events1 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
@@ -200,7 +200,7 @@ fun testSingleAutoBalancerThreeExecutions() {
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.3)
     
-    Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
     
     let events2 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
@@ -217,7 +217,7 @@ fun testSingleAutoBalancerThreeExecutions() {
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.8)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5)
     
-    Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
     
     let events3 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
@@ -288,7 +288,7 @@ fun testThreeYieldVaultsNineExecutions() {
     log("\n--- ROUND 1 ---")
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.3)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2)
-    Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
     
     let events1 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
@@ -308,7 +308,7 @@ fun testThreeYieldVaultsNineExecutions() {
     log("\n--- ROUND 2 ---")
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.6)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.4)
-    Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
     
     let events2 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
@@ -328,7 +328,7 @@ fun testThreeYieldVaultsNineExecutions() {
     log("\n--- ROUND 3 ---")
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.6)
-    Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
     
     let events3 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
@@ -408,7 +408,7 @@ fun testFiveYieldVaultsContinueWithoutSupervisor() {
         // Use significant price changes to ensure rebalancing triggers
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.3))
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0 + (UFix64(round) * 0.2))
-        Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
+        Test.moveTime(by: 60.0 * 10.0 + 10.0)
         Test.commitBlock()
         
         // Verify all 5 yield vaults changed balance
@@ -437,7 +437,7 @@ fun testFiveYieldVaultsContinueWithoutSupervisor() {
         // Use significantly different prices for second set of rounds
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0 + (UFix64(round) * 0.3))
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5 + (UFix64(round) * 0.2))
-        Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
+        Test.moveTime(by: 60.0 * 10.0 + 10.0)
         Test.commitBlock()
         
         // Verify all 5 yield vaults changed balance
@@ -521,7 +521,7 @@ fun testFailedYieldVaultCannotRecoverWithoutSupervisor() {
         // Use significant price changes to ensure rebalancing triggers
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0 + (UFix64(round) * 0.3))
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0 + (UFix64(round) * 0.2))
-        Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
+        Test.moveTime(by: 60.0 * 10.0 + 10.0)
         Test.commitBlock()
         
         // Verify all 3 yield vaults changed balance
@@ -570,7 +570,7 @@ fun testFailedYieldVaultCannotRecoverWithoutSupervisor() {
     log("\nStep 4: Waiting for pre-scheduled transactions to execute...")
     round = 0
     while round < 3 {
-        Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
+        Test.moveTime(by: 60.0 * 10.0 + 10.0)
         Test.commitBlock()
         round = round + 1
     }
@@ -578,7 +578,7 @@ fun testFailedYieldVaultCannotRecoverWithoutSupervisor() {
     // After yield vaults execute, they try to reschedule but fail due to insufficient funds
     // Now wait at least one MORE interval (60s) so they become overdue
     log("\nStep 4b: Waiting for yield vaults to become overdue (no active schedules)...")
-    Test.moveTime(by: 2.0 * (60.0 * 60.0 * 30.0 + 100.0))  // Wait 2 intervals to ensure all yield vaults are past their next expected time
+    Test.moveTime(by: 2.0 * (60.0 * 10.0 + 10.0))  // Wait 2 intervals to ensure all yield vaults are past their next expected time
     Test.commitBlock()
     
     let eventsAfterDrain = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
@@ -607,7 +607,7 @@ fun testFailedYieldVaultCannotRecoverWithoutSupervisor() {
     log("\nStep 6: Waiting more (stuck yield vaults should stay stuck without Supervisor)...")
     round = 0
     while round < 3 {
-        Test.moveTime(by: 60.0 * 60.0 * 30.0 + 100.0)
+        Test.moveTime(by: 60.0 * 10.0 + 10.0)
         Test.commitBlock()
         round = round + 1
     }

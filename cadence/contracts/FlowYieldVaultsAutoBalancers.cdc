@@ -62,7 +62,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
                 return true
             }
         }
-        return false;
+        return false
     }
 
     /// Checks if an AutoBalancer is overdue for execution.
