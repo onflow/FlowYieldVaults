@@ -58,9 +58,6 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /// Stored as a dictionary for O(1) add/remove; iteration gives the pending set
     access(self) var pendingQueue: {UInt64: Bool}
 
-    /// Global Supervisor capability (used for self-rescheduling)
-    access(self) var supervisorCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>?
-
     /* --- ACCOUNT-LEVEL FUNCTIONS --- */
 
     /// Register a YieldVault and store its handler and schedule capabilities (idempotent)
@@ -105,8 +102,14 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     }
 
     /// Set global Supervisor capability (used for self-rescheduling)
-    access(account) fun setSupervisorCap(cap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>) {
-        self.supervisorCap = cap
+    access(account)
+    fun setSupervisorCap(cap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>) {
+        let storedCapPath = /storage/FlowYieldVaultsSupervisorCapability
+        let old = self.account.storage
+            .load<Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>>(
+                from: storedCapPath
+            )
+        self.account.storage.save(cap,to: storedCapPath)
     }
 
     /* --- VIEW FUNCTIONS --- */
@@ -115,6 +118,11 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /// WARNING: This can be expensive for large registries - prefer getPendingYieldVaultIDs for Supervisor operations
     access(all) view fun getRegisteredYieldVaultIDs(): [UInt64] {
         return self.yieldVaultRegistry.keys
+    }
+
+    /// Get the number of currently registered yield vaults
+    access(all) view fun getRegisteredCount(): Int {
+        return self.yieldVaultRegistry.length
     }
 
     /// Get handler capability for a YieldVault (AutoBalancer capability) - account restricted for internal use
@@ -171,8 +179,12 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
 
     /// Get global Supervisor capability, if set
     /// NOTE: Access restricted - only used internally by the scheduler
-    access(account) view fun getSupervisorCap(): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? {
-        return self.supervisorCap
+    access(account)
+    view fun getSupervisorCap(): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? {
+        return self.account.storage
+            .copy<Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>>(
+                from: /storage/FlowYieldVaultsSupervisorCapability
+            )
     }
 
     init() {
@@ -181,7 +193,6 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         self.handlerCaps = {}
         self.scheduleCaps = {}
         self.pendingQueue = {}
-        self.supervisorCap = nil
     }
 }
 

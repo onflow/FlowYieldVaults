@@ -216,7 +216,7 @@ access(all) contract FlowYieldVaultsStrategies {
             // init YieldToken -> FLOW Swapper
             let yieldToFlowSwapper = MockSwapper.Swapper(
                 inVault: yieldTokenType,
-                outVault: collateralType, 
+                outVault: collateralType,
                 uniqueID: uniqueID
             )
             // allows for YieldToken to be deposited to the Position
@@ -336,6 +336,7 @@ access(all) contract FlowYieldVaultsStrategies {
         }
 
         /// Composes a Strategy of the given type with the provided funds
+        /// TODO: Open up for multiple collateral types
         access(all) fun createStrategy(
             _ type: Type,
             uniqueID: DeFiActions.UniqueIdentifier,
@@ -496,7 +497,7 @@ access(all) contract FlowYieldVaultsStrategies {
                 ?? panic("Could not find UniswapV3 address path for collateral type \(collateralType.identifier)")
             assert(uniV3AddressPath.length > 1, message: "Invalid Uniswap V3 swap path length of \(uniV3AddressPath.length)")
             assert(uniV3AddressPath[0].equals(yieldTokenEVMAddress),
-                message: "UniswapV3 swap path does not match - expected path[0] to be \(yieldTokenEVMAddress.toString()) but found \(uniV3AddressPath[0].toString())") 
+                message: "UniswapV3 swap path does not match - expected path[0] to be \(yieldTokenEVMAddress.toString()) but found \(uniV3AddressPath[0].toString())")
             let collateralUniV3FeePathConfig = collateralConfig["yieldToCollateralUniV3FeePaths"] as? {Type: [UInt32]}
                 ?? panic("Could not find UniswapV3 fee paths config when creating Strategy \(type.identifier) with collateral \(collateralType.identifier)")
             let uniV3FeePath = collateralUniV3FeePathConfig[collateralType]
@@ -545,7 +546,7 @@ access(all) contract FlowYieldVaultsStrategies {
         }
 
         access(all) view fun getSupportedComposers(): {Type: Bool} {
-            return { 
+            return {
                 Type<@mUSDCStrategyComposer>(): true,
                 Type<@TracerStrategyComposer>(): true
             }
@@ -617,11 +618,11 @@ access(all) contract FlowYieldVaultsStrategies {
     fun _createRecurringConfig(withID: DeFiActions.UniqueIdentifier?): DeFiActions.AutoBalancerRecurringConfig {
         // Create txnFunder that can provide/accept FLOW for scheduling fees
         let txnFunder = self._createTxnFunder(withID: withID)
-        
+
         return DeFiActions.AutoBalancerRecurringConfig(
-            interval: 60,  // Rebalance every 60 seconds
+            interval: 60 * 10,  // Rebalance every 10 minutes
             priority: FlowTransactionScheduler.Priority.Medium,
-            executionEffort: 800,
+            executionEffort: 999,
             forceRebalance: false,
             txnFunder: txnFunder
         )

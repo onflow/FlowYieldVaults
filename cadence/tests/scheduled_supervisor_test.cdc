@@ -27,13 +27,13 @@ access(all) var snapshot: UInt64 = 0
 access(all)
 fun setup() {
     log("🚀 Setting up Supervisor integration test...")
-    
+
     deployContracts()
-    
+
     // Fund FlowYieldVaults account BEFORE any YieldVaults are created, as registerYieldVault
     // now atomically schedules the first execution which requires FLOW for fees
     mintFlow(to: flowYieldVaultsAccount, amount: 1000.0)
-    
+
     // Mock Oracle
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
@@ -76,14 +76,14 @@ fun setup() {
         issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
         beFailed: false
     )
-    
+
     // Capture snapshot for test isolation
     snapshot = getCurrentBlockHeight()
     log("✅ Setup complete. Snapshot at block: ".concat(snapshot.toString()))
 }
 
 /// Test: Auto-Register and Native Scheduling
-/// 
+///
 /// NEW ARCHITECTURE:
 /// - AutoBalancers self-schedule via native FlowTransactionScheduler
 /// - The Supervisor is for recovery only (detects stuck yield vaults and seeds them)
@@ -92,7 +92,7 @@ fun setup() {
 access(all)
 fun testAutoRegisterAndSupervisor() {
     log("\n Testing Auto-Register + Native Scheduling...")
-    
+
     let user = Test.createAccount()
     mintFlow(to: user, amount: 1000.0)
     grantBeta(flowYieldVaultsAccount, user)
@@ -105,7 +105,7 @@ fun testAutoRegisterAndSupervisor() {
         user
     )
     Test.expect(createYieldVaultRes, Test.beSucceeded())
-    
+
     let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
     let yieldVaultID = yieldVaultIDs[0]
     log("YieldVault created: ".concat(yieldVaultID.toString()))
@@ -124,18 +124,18 @@ fun testAutoRegisterAndSupervisor() {
     log("Step 2: Wait for native execution...")
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.8)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5)
-    
-    Test.moveTime(by: 75.0)
+
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
 
     // 4. Verify native execution occurred
     let schedulerExecEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     Test.assert(schedulerExecEvents.length > 0, message: "Should have FlowTransactionScheduler.Executed event")
-    
+
     let rebalancedEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
     log("Scheduler.Executed events: ".concat(schedulerExecEvents.length.toString()))
     log("DeFiActions.Rebalanced events: ".concat(rebalancedEvents.length.toString()))
-    
+
     log("PASS: Auto-Register + Native Scheduling")
 }
 
@@ -149,11 +149,11 @@ fun testAutoRegisterAndSupervisor() {
 access(all)
 fun testMultiYieldVaultNativeScheduling() {
     log("\n Testing Multiple YieldVaults Native Scheduling...")
-    
+
     let user = Test.createAccount()
     mintFlow(to: user, amount: 1000.0)
     grantBeta(flowYieldVaultsAccount, user)
-    
+
     // Create 3 yield vaults (each auto-schedules via native mechanism)
     var i = 0
     while i < 3 {
@@ -165,7 +165,7 @@ fun testMultiYieldVaultNativeScheduling() {
         Test.expect(res, Test.beSucceeded())
         i = i + 1
     }
-    
+
     let allYieldVaults = getYieldVaultIDs(address: user.address)!
     log("Created ".concat(allYieldVaults.length.toString()).concat(" yield vaults"))
 
@@ -176,17 +176,17 @@ fun testMultiYieldVaultNativeScheduling() {
         Test.assert(regIDs.contains(tid), message: "YieldVault should be registered")
     }
     log("All yield vaults registered")
-    
+
     // Wait for native execution
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5)
-    Test.moveTime(by: 75.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
-    
+
     // Verify all executed via native scheduling
     let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     Test.assert(execEvents.length >= 3, message: "Should have at least 3 executions (one per yield vault)")
     log("Executions: ".concat(execEvents.length.toString()))
-    
+
     log("PASS: Multiple YieldVaults Native Scheduling")
 }
 
@@ -194,7 +194,7 @@ fun testMultiYieldVaultNativeScheduling() {
 // testSingleAutoBalancerThreeExecutions in scheduled_rebalance_scenario_test.cdc
 
 /// Test: Multiple yield vaults execute independently via native scheduling
-/// 
+///
 /// NEW ARCHITECTURE:
 /// - Each AutoBalancer self-schedules via native mechanism
 /// - No Supervisor needed for normal execution
@@ -219,7 +219,7 @@ fun testMultiYieldVaultIndependentExecution() {
         Test.expect(res, Test.beSucceeded())
         i = i + 1
     }
-    
+
     let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
     log("Created ".concat(yieldVaultIDs.length.toString()).concat(" yield vaults"))
 
@@ -234,27 +234,27 @@ fun testMultiYieldVaultIndependentExecution() {
         // Use VERY LARGE price changes to ensure rebalancing triggers regardless of previous state
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 3.0 * UFix64(round))
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 2.5 * UFix64(round))
-        Test.moveTime(by: 70.0)
+        Test.moveTime(by: 60.0 * 10.0 + 10.0)
         Test.commitBlock()
-        
+
         let newBalance = getAutoBalancerBalance(id: trackedYieldVaultID) ?? 0.0
         log("Round ".concat(round.toString()).concat(": Balance ").concat(prevBalance.toString()).concat(" -> ").concat(newBalance.toString()))
         Test.assert(newBalance != prevBalance, message: "Balance should change after round ".concat(round.toString()).concat(" (was: ").concat(prevBalance.toString()).concat(", now: ").concat(newBalance.toString()).concat(")"))
         prevBalance = newBalance
-        
+
         round = round + 1
     }
 
     // Count executions
     let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("Total executions: ".concat(execEvents.length.toString()))
-    
+
     // 3 yield vaults x 3 rounds = 9 minimum executions
     Test.assert(
         execEvents.length >= 9,
         message: "Expected at least 9 executions but found ".concat(execEvents.length.toString())
     )
-    
+
     log("PASS: Multiple yield vaults executed independently with verified balance changes")
 }
 
@@ -287,10 +287,10 @@ fun testPaginationStress() {
     let numYieldVaults = fullBatches * maxBatchSize + partialBatch  // 18 yield vaults
     let minExecutionsPerYieldVault = 3
     let minTotalExecutions = numYieldVaults * minExecutionsPerYieldVault  // 54 minimum (18 x 3)
-    
+
     log("\n Testing pagination with ".concat(numYieldVaults.toString()).concat(" yield vaults (").concat(fullBatches.toString()).concat("x MAX_BATCH_SIZE + ").concat(partialBatch.toString()).concat(")..."))
     log("Expecting at least ".concat(minTotalExecutions.toString()).concat(" total executions (").concat(minExecutionsPerYieldVault.toString()).concat(" per yield vault)"))
-    
+
     let user = Test.createAccount()
     mintFlow(to: user, amount: 10000.0)  // For 3 rounds of 18 yield vaults
     grantBeta(flowYieldVaultsAccount, user)
@@ -308,27 +308,27 @@ fun testPaginationStress() {
         Test.expect(res, Test.beSucceeded())
         i = i + 1
     }
-    
+
     let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
     log("Created ".concat(yieldVaultIDs.length.toString()).concat(" yield vaults"))
     Test.assertEqual(numYieldVaults, yieldVaultIDs.length)
-    
+
     // Check registry state - all yield vaults should be registered
     let regIDsRes = executeScript("../scripts/flow-yield-vaults/get_registered_yield_vault_ids.cdc", [])
     let regIDs = regIDsRes.returnValue! as! [UInt64]
     log("Registered yield vaults: ".concat(regIDs.length.toString()))
-    
+
     Test.assert(
         regIDs.length >= numYieldVaults,
         message: "Expected at least ".concat(numYieldVaults.toString()).concat(" registered yield vaults, got ").concat(regIDs.length.toString())
     )
-    
+
     // Verify pagination works on pending queue (should be empty since all self-schedule)
     let pendingCountRes = executeScript("../scripts/flow-yield-vaults/get_pending_count.cdc", [])
     let pendingCount = pendingCountRes.returnValue! as! Int
     log("Pending queue size (should be 0 since all self-schedule): ".concat(pendingCount.toString()))
     Test.assertEqual(0, pendingCount)
-    
+
     // Test paginated access - request each page up to MAX_BATCH_SIZE
     var page = 0
     while page <= fullBatches {
@@ -337,7 +337,7 @@ fun testPaginationStress() {
         log("Page ".concat(page.toString()).concat(" of pending queue: ").concat(pageData.length.toString()).concat(" yield vaults"))
         page = page + 1
     }
-    
+
     // Track balance for first 3 yield vaults (sample) to verify rebalancing
     var sampleBalances: [UFix64] = []
     var sampleIdx = 0
@@ -346,7 +346,7 @@ fun testPaginationStress() {
         sampleIdx = sampleIdx + 1
     }
     log("Initial sample balances (first 3 yield vaults): T0=".concat(sampleBalances[0].toString()).concat(", T1=").concat(sampleBalances[1].toString()).concat(", T2=").concat(sampleBalances[2].toString()))
-    
+
     // Execute 3 rounds - verify each yield vault executes at least 3 times with balance verification
     log("\n--- Executing 3 rounds ---")
     var round = 1
@@ -354,9 +354,9 @@ fun testPaginationStress() {
         // Use LARGE price changes to ensure rebalancing triggers regardless of previous state
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0 * UFix64(round))
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5 * UFix64(round))
-        Test.moveTime(by: 70.0)
+        Test.moveTime(by: 60.0 * 10.0 + 10.0)
         Test.commitBlock()
-        
+
         // Verify sample balances changed
         sampleIdx = 0
         while sampleIdx < 3 {
@@ -365,22 +365,22 @@ fun testPaginationStress() {
             sampleBalances[sampleIdx] = newBal
             sampleIdx = sampleIdx + 1
         }
-        
+
         let roundEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
         let expectedMinEvents = numYieldVaults * round
         log("Round ".concat(round.toString()).concat(": ").concat(roundEvents.length.toString()).concat(" total executions (expected >= ").concat(expectedMinEvents.toString()).concat("), sample balances verified"))
-        
+
         Test.assert(
             roundEvents.length >= expectedMinEvents,
             message: "Round ".concat(round.toString()).concat(": Expected at least ").concat(expectedMinEvents.toString()).concat(" executions, got ").concat(roundEvents.length.toString())
         )
         round = round + 1
     }
-    
+
     // Final verification
     let finalEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("\nFinal total executions: ".concat(finalEvents.length.toString()))
-    
+
     Test.assert(
         finalEvents.length >= minTotalExecutions,
         message: "Expected at least ".concat(minTotalExecutions.toString()).concat(" total executions (").concat(numYieldVaults.toString()).concat(" yield vaults x ").concat(minExecutionsPerYieldVault.toString()).concat(" rounds), got ").concat(finalEvents.length.toString())
@@ -424,7 +424,7 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
         user
     )
     Test.expect(createRes, Test.beSucceeded())
-    
+
     let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
     let yieldVaultID = yieldVaultIDs[0]
     log("YieldVault created: ".concat(yieldVaultID.toString()))
@@ -439,9 +439,9 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
 
     // 3. Wait for some native executions
     log("Step 3: Waiting for native execution...")
-    Test.moveTime(by: 70.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
-    
+
     let execEventsBefore = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("Executions so far: ".concat(execEventsBefore.length.toString()))
     Test.assert(execEventsBefore.length >= 1, message: "YieldVault should have executed at least once")
@@ -455,11 +455,11 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
 
     // Supervisor is automatically configured when FlowYieldVaultsSchedulerV1 is deployed (in init)
     Test.commitBlock()
-    
+
     // Schedule Supervisor
-    let scheduledTime = getCurrentBlock().timestamp + 2000.0
+    let scheduledTime = getCurrentBlockTimestamp() + (60.0 * 10.0)
     let schedSupRes = executeTransaction(
-        "../transactions/flow-yield-vaults/schedule_supervisor.cdc",
+        "../transactions/flow-yield-vaults/admin/schedule_supervisor.cdc",
         [scheduledTime, UInt8(1), UInt64(800), 0.05, 30.0, true, 10.0, false],
         flowYieldVaultsAccount
     )
@@ -468,25 +468,25 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
 
     // 6. Advance time to let Supervisor run
     log("Step 6: Waiting for Supervisor to run...")
-    Test.moveTime(by: 2100.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
 
     // 7. Verify Supervisor ran but found nothing to recover (healthy yield vault)
     let recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
     log("YieldVaultRecovered events: ".concat(recoveredEvents.length.toString()))
-    
+
     // Healthy yield vaults don't need recovery
     // Note: recoveredEvents might be > 0 if there were stuck yield vaults from previous tests
     // The key verification is that our yield vault continues to execute
 
     // 8. Verify yield vault continues executing
     log("Step 7: Verifying yield vault continues executing...")
-    Test.moveTime(by: 70.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
 
     let execEventsAfter = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("Total executions: ".concat(execEventsAfter.length.toString()))
-    
+
     // Verification: We should have more executions (yield vault continued normally)
     Test.assert(
         execEventsAfter.length > execEventsBefore.length,
@@ -498,7 +498,7 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
     let finalPending = finalPendingRes.returnValue! as! Int
     log("Final pending queue size: ".concat(finalPending.toString()))
     Test.assertEqual(0, finalPending)
-    
+
     log("PASS: Supervisor runs without disrupting healthy yield vaults")
 }
 
@@ -523,7 +523,7 @@ access(all)
 fun testStuckYieldVaultDetectionLogic() {
     // Reset to snapshot for test isolation
     Test.reset(to: snapshot)
-    
+
     log("\n Testing stuck yield vault detection logic...")
 
     let user = Test.createAccount()
@@ -538,16 +538,16 @@ fun testStuckYieldVaultDetectionLogic() {
         user
     )
     Test.expect(createRes, Test.beSucceeded())
-    
+
     let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
     let yieldVaultID = yieldVaultIDs[0]
     log("YieldVault created: ".concat(yieldVaultID.toString()))
 
     // 2. Let it execute
     log("Step 2: Waiting for execution...")
-    Test.moveTime(by: 70.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
-    
+
     let execEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("Executions: ".concat(execEvents.length.toString()))
     Test.assert(execEvents.length >= 1, message: "YieldVault should have executed")
@@ -578,7 +578,7 @@ fun testStuckYieldVaultDetectionLogic() {
 }
 
 /// COMPREHENSIVE TEST: Insufficient Funds -> Failure -> Recovery
-/// 
+///
 /// This test validates the COMPLETE failure and recovery cycle:
 /// 1. Create 5 yield vaults (matches MAX_BATCH_SIZE)
 /// 2. Let them execute 3 rounds each (30+ executions)
@@ -594,7 +594,7 @@ access(all)
 fun testInsufficientFundsAndRecovery() {
     // Reset to snapshot for isolation - this test needs a clean slate
     Test.reset(to: snapshot)
-    
+
     log("\n========================================")
     log("TEST: Comprehensive Insufficient Funds -> Recovery")
     log("========================================")
@@ -628,7 +628,7 @@ fun testInsufficientFundsAndRecovery() {
         Test.expect(res, Test.beSucceeded())
         i = i + 1
     }
-    
+
     let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
     Test.assertEqual(5, yieldVaultIDs.length)
     log("Created ".concat(yieldVaultIDs.length.toString()).concat(" yield vaults"))
@@ -642,7 +642,7 @@ fun testInsufficientFundsAndRecovery() {
     // STEP 3: Let yield vaults execute 3 rounds (and Supervisor run) with balance verification
     // ========================================
     log("\n--- STEP 3: Running 3 rounds (5 yield vaults x 3 = 15 expected executions) ---")
-    
+
     // Track initial balances for all 5 yield vaults
     var prevBalances: [UFix64] = []
     var idx = 0
@@ -651,15 +651,15 @@ fun testInsufficientFundsAndRecovery() {
         idx = idx + 1
     }
     log("Initial balances tracked for 5 yield vaults")
-    
+
     var round = 1
     while round <= 3 {
         // Use LARGE price changes to ensure rebalancing triggers regardless of previous state
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5 * UFix64(round))
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2 * UFix64(round))
-        Test.moveTime(by: 70.0)
+        Test.moveTime(by: 60.0 * 10.0 + 10.0)
         Test.commitBlock()
-        
+
         // Verify all 5 yield vaults changed balance
         idx = 0
         while idx < 5 {
@@ -675,7 +675,7 @@ fun testInsufficientFundsAndRecovery() {
     let execEventsBeforeDrain = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     log("Executions before drain: ".concat(execEventsBeforeDrain.length.toString()))
     Test.assert(execEventsBeforeDrain.length >= 15, message: "Should have at least 15 executions (5 yield vaults x 3 rounds)")
-    
+
     // Verify yield vaults are registered
     let registeredCount = (executeScript(
         "../scripts/flow-yield-vaults/get_registered_yield_vault_count.cdc",
@@ -693,7 +693,7 @@ fun testInsufficientFundsAndRecovery() {
         [flowYieldVaultsAccount.address]
     ).returnValue! as! UFix64)
     log("Balance before drain: ".concat(balanceBeforeDrain.toString()))
-    
+
     // Drain ALL FLOW (leave minimal amount)
     if balanceBeforeDrain > 0.01 {
         let drainRes = executeTransaction(
@@ -717,7 +717,7 @@ fun testInsufficientFundsAndRecovery() {
     log("\n--- STEP 5: Waiting for failures (6 rounds) ---")
     var waitRound = 0
     while waitRound < 6 {
-        Test.moveTime(by: 70.0)
+        Test.moveTime(by: 60.0 * 10.0 + 10.0)
         Test.commitBlock()
         waitRound = waitRound + 1
     }
@@ -762,7 +762,7 @@ fun testInsufficientFundsAndRecovery() {
     // ========================================
     log("\n--- STEP 7: Refunding FlowYieldVaults account ---")
     mintFlow(to: flowYieldVaultsAccount, amount: 200.0)
-    
+
     let balanceAfterRefund = (executeScript(
         "../scripts/flow-yield-vaults/get_flow_balance.cdc",
         [flowYieldVaultsAccount.address]
@@ -774,22 +774,22 @@ fun testInsufficientFundsAndRecovery() {
     // STEP 8: START Supervisor (first time scheduling)
     // ========================================
     log("\n--- STEP 8: Starting Supervisor (post-refund) ---")
-    
+
     // Process any pending blocks first
     Test.commitBlock()
     Test.moveTime(by: 1.0)
     Test.commitBlock()
-    
+
     // Get FRESH timestamp after block commit
-    let currentTs = getCurrentBlock().timestamp
+    let currentTs = getCurrentBlockTimestamp()
     log("Current timestamp: ".concat(currentTs.toString()))
-    
+
     // Use VERY large offset (10000s) to ensure it's always in the future
-    let restartTime = currentTs + 10000.0
+    let restartTime = currentTs + (60.0 * 10.0)
     log("Scheduling Supervisor at: ".concat(restartTime.toString()))
-    
+
     let schedSupRes = executeTransaction(
-        "../transactions/flow-yield-vaults/schedule_supervisor.cdc",
+        "../transactions/flow-yield-vaults/admin/schedule_supervisor.cdc",
         [restartTime, UInt8(1), UInt64(5000), 0.5, 60.0, true, 30.0, true],  // Higher execution effort (5000) for recovering 5 yield vaults
         flowYieldVaultsAccount
     )
@@ -800,7 +800,7 @@ fun testInsufficientFundsAndRecovery() {
     // STEP 9: Let Supervisor run and recover stuck yield vaults
     // ========================================
     log("\n--- STEP 9: Letting Supervisor run and recover ---")
-    Test.moveTime(by: 11000.0)  // Move past the 10000s scheduled time
+    Test.moveTime(by: Fix64(restartTime - getCurrentBlockTimestamp() + 100.0))  // Move past the 10000s scheduled time
     Test.commitBlock()
 
     // Check for StuckYieldVaultDetected events
@@ -822,25 +822,25 @@ fun testInsufficientFundsAndRecovery() {
     log("\n--- STEP 10: Running 3+ rounds to verify yield vaults resumed self-scheduling ---")
     // After Supervisor seeds, yield vaults should resume self-scheduling and continue perpetually.
     // We run 4 rounds to ensure each yield vault executes at least 3 times after recovery.
-    
+
     // Track balance for first yield vault to verify rebalancing actually happens
     let trackedYieldVaultID = yieldVaultIDs[0]
     var prevBalance = getAutoBalancerBalance(id: trackedYieldVaultID) ?? 0.0
     log("Balance before recovery rounds (yield vault ".concat(trackedYieldVaultID.toString()).concat("): ").concat(prevBalance.toString()))
-    
+
     round = 1
     while round <= 4 {
         // Use LARGE price changes to ensure rebalancing triggers
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 5.0 * UFix64(round))
         setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 4.0 * UFix64(round))
-        Test.moveTime(by: 70.0)
+        Test.moveTime(by: 60.0 * 10.0 + 10.0)
         Test.commitBlock()
-        
+
         let newBalance = getAutoBalancerBalance(id: trackedYieldVaultID) ?? 0.0
         log("Recovery round ".concat(round.toString()).concat(": Balance ").concat(prevBalance.toString()).concat(" -> ").concat(newBalance.toString()))
         Test.assert(newBalance != prevBalance, message: "Balance should change after recovery round ".concat(round.toString()))
         prevBalance = newBalance
-        
+
         round = round + 1
     }
 
@@ -848,7 +848,7 @@ fun testInsufficientFundsAndRecovery() {
     let newExecutions = execEventsFinal.length - execCountBeforeRecovery
     log("Final total executions: ".concat(execEventsFinal.length.toString()))
     log("New executions after recovery: ".concat(newExecutions.toString()))
-    
+
     // After Supervisor seeds 5 yield vaults:
     // - 1 Supervisor execution
     // - 10 initial seeded executions (1 per yield vault)
@@ -910,13 +910,4 @@ fun testInsufficientFundsAndRecovery() {
     log("- All yield vaults resumed self-scheduling and are healthy")
     log("- All ".concat(activeScheduleCount.toString()).concat(" yield vaults have active schedules"))
     log("========================================")
-}
-
-access(all)
-fun main() {
-    setup()
-    testAutoRegisterAndSupervisor()
-    testMultiYieldVaultNativeScheduling()
-    testStuckYieldVaultDetectionLogic()
-    testInsufficientFundsAndRecovery()
 }

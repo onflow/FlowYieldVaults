@@ -58,10 +58,8 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         
         let txnIDs = autoBalancer!.getScheduledTransactionIDs()
         for txnID in txnIDs {
-            if let txnRef = autoBalancer!.borrowScheduledTransaction(id: txnID) {
-                if txnRef.status() == FlowTransactionScheduler.Status.Scheduled {
-                    return true
-                }
+            if autoBalancer!.borrowScheduledTransaction(id: txnID)?.status() == FlowTransactionScheduler.Status.Scheduled {
+                return true
             }
         }
         return false

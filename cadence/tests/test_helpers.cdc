@@ -27,6 +27,13 @@ fun _executeTransaction(_ path: String, _ args: [AnyStruct], _ signer: Test.Test
 }
 
 access(all)
+fun getCurrentBlockTimestamp(): UFix64 {
+    let res = _executeScript("./scripts/get_current_block_timestamp.cdc", [])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! UFix64
+}
+
+access(all)
 fun grantProtocolBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
     let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
     let betaTxn = Test.Transaction(
@@ -544,12 +551,6 @@ fun rebalanceYieldVault(signer: Test.TestAccount, id: UInt64, force: Bool, beFai
     let res = _executeTransaction("../transactions/flow-yield-vaults/admin/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
-
-// access(all)
-// fun rebalancePosition(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
-//     let res = _executeTransaction("../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-management/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
-//     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
-// }
 
 /* --- Event helpers --- */
 

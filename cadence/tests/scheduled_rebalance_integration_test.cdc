@@ -148,7 +148,7 @@ fun testNativeScheduledRebalancing() {
     
     // Step 5: Wait for automatic execution by emulator FVM
     log("Step 4: Waiting for automatic execution...")
-    Test.moveTime(by: 70.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
     
     // Step 6: Check for execution events
@@ -216,7 +216,7 @@ fun testMultipleExecutionsWithPriceChanges() {
     log("Step 2: First execution...")
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2)
-    Test.moveTime(by: 70.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
     
     let execEvents1 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
@@ -228,7 +228,7 @@ fun testMultipleExecutionsWithPriceChanges() {
     log("Step 3: Second execution...")
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.5)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 2.0)
-    Test.moveTime(by: 70.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
     
     let execEvents2 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
@@ -240,7 +240,7 @@ fun testMultipleExecutionsWithPriceChanges() {
     log("Step 4: Third execution...")
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 4.0)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 3.0)
-    Test.moveTime(by: 70.0)
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
     Test.commitBlock()
     
     let execEvents3 = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
@@ -255,13 +255,4 @@ fun testMultipleExecutionsWithPriceChanges() {
     )
     
     log("PASS: Multiple executions with price changes and verified balance changes")
-}
-
-// Main test runner
-// Note: getAutoBalancerBalance helper is in test_helpers.cdc
-access(all)
-fun main() {
-    setup()
-    testNativeScheduledRebalancing()
-    testMultipleExecutionsWithPriceChanges()
 }
