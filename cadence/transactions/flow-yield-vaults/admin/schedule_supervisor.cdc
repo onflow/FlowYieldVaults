@@ -27,12 +27,12 @@ transaction(
     let payment: @FlowToken.Vault
     let handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
 
-    prepare(signer: auth(BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
+    prepare(signer: auth(BorrowValue, CopyValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
         // Obtain the global Supervisor capability from the scheduler. This is
         // configured by calling FlowYieldVaultsSchedulerV1.ensureSupervisorConfigured()
         // (typically via the setup_supervisor.cdc transaction).
-        self.handlerCap = FlowYieldVaultsSchedulerV1.getSupervisorCap()
-            ?? panic("Supervisor not configured")
+        self.handlerCap = signer.storage.copy<Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>>(from: /storage/FlowYieldVaultsSupervisorCapability)
+            ?? panic("Could not copy FlowYieldVaultsSupervisorCapability")
 
         let vaultRef = signer.storage
             .borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)
