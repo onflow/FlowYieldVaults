@@ -27,7 +27,7 @@ import "FlowYieldVaultsAutoBalancers"
 ///
 access(all) contract FlowYieldVaultsSchedulerV1 {
 
-    /* --- CONSTANTS --- */
+    /* --- FIELDS --- */
 
     /// Default recurring interval in seconds (used when not specified)
     access(all) var DEFAULT_RECURRING_INTERVAL: UFix64
