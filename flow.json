@@ -134,8 +134,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowYieldVaultsSchedulerV1": {
-			"source": "cadence/contracts/FlowYieldVaultsSchedulerV1.cdc",
+		"FlowYieldVaultsSchedulerRegistry": {
+			"source": "cadence/contracts/FlowYieldVaultsSchedulerRegistry.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -143,8 +143,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowYieldVaultsSchedulerRegistry": {
-			"source": "cadence/contracts/FlowYieldVaultsSchedulerRegistry.cdc",
+		"FlowYieldVaultsSchedulerV1": {
+			"source": "cadence/contracts/FlowYieldVaultsSchedulerV1.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -209,6 +209,13 @@
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
 				"testnet": "d2580caf2ef07c2f"
+			}
+		},
+		"PMStrategies": {
+			"source": "cadence/contracts/PMStrategies.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
 			}
 		},
 		"SwapConnectors": {
@@ -847,6 +854,27 @@
 							"type": "Array"
 						}
 					]
+				},
+				{
+					"name": "PMStrategies",
+					"args": [
+						{
+							"value": "0x0000000000000000000000000000000000000000",
+							"type": "String"
+						},
+						{
+							"value": "0x0000000000000000000000000000000000000000",
+							"type": "String"
+						},
+						{
+							"value": "0x0000000000000000000000000000000000000000",
+							"type": "String"
+						},
+						{
+							"value": "0x0000000000000000000000000000000000000000",
+							"type": "String"
+						}
+					]
 				}
 			],
 			"mock-incrementfi": [
@@ -941,8 +969,34 @@
 							"type": "Array"
 						}
 					]
+				},
+				{
+					"name": "PMStrategies",
+					"args": [
+						{
+							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+							"type": "String"
+						},
+						{
+							"value": "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+							"type": "String"
+						},
+						{
+							"value": "0x370A8DF17742867a44e56223EC20D82092242C85",
+							"type": "String"
+						},
+						{
+							"value": "0xCBf9a7753F9D2d0e8141ebB36d99f87AcEf98597",
+							"type": "String"
+						},
+						{
+							"value": "100",
+							"type": "UInt32"
+						}
+					]
 				}
-			]		},
+			]
+		},
 		"testnet": {
 			"testnet-admin": [
 				{

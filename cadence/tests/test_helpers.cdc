@@ -329,6 +329,21 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
 
+    // FLOW looping strategy
+    err = Test.deployContract(
+        name: "PMStrategies",
+        path: "../contracts/PMStrategies.cdc",
+        arguments: [
+            "0x0000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000",
+            "0x0000000000000000000000000000000000000000",
+            100 as UInt32
+        ]
+    )
+
+    Test.expect(err, Test.beNil())
+
     // Mocked Strategy
     err = Test.deployContract(
         name: "MockStrategy",
