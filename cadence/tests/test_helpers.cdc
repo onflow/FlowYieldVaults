@@ -537,12 +537,6 @@ fun rebalanceYieldVault(signer: Test.TestAccount, id: UInt64, force: Bool, beFai
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
-// access(all)
-// fun rebalancePosition(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
-//     let res = _executeTransaction("../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-management/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
-//     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
-// }
-
 /* --- Event helpers --- */
 
 access(all)

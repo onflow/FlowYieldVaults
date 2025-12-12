@@ -256,12 +256,3 @@ fun testMultipleExecutionsWithPriceChanges() {
     
     log("PASS: Multiple executions with price changes and verified balance changes")
 }
-
-// Main test runner
-// Note: getAutoBalancerBalance helper is in test_helpers.cdc
-access(all)
-fun main() {
-    setup()
-    testNativeScheduledRebalancing()
-    testMultipleExecutionsWithPriceChanges()
-}

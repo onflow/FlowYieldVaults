@@ -637,14 +637,3 @@ fun testFailedYieldVaultCannotRecoverWithoutSupervisor() {
     
     log("PASS: Failed yield vaults cannot recover without Supervisor")
 }
-
-// Main test runner
-access(all)
-fun main() {
-    setup()
-    testRegistryReceivesYieldVaultRegistrationAtInit()
-    testSingleAutoBalancerThreeExecutions()
-    testThreeYieldVaultsNineExecutions()
-    testFiveYieldVaultsContinueWithoutSupervisor()
-    testFailedYieldVaultCannotRecoverWithoutSupervisor()
-}

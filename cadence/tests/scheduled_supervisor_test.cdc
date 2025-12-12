@@ -911,12 +911,3 @@ fun testInsufficientFundsAndRecovery() {
     log("- All ".concat(activeScheduleCount.toString()).concat(" yield vaults have active schedules"))
     log("========================================")
 }
-
-// access(all)
-// fun main() {
-//     setup()
-//     testAutoRegisterAndSupervisor()
-//     testMultiYieldVaultNativeScheduling()
-//     testStuckYieldVaultDetectionLogic()
-//     testInsufficientFundsAndRecovery()
-// }
