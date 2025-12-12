@@ -22,7 +22,7 @@ transaction(
     let oldSupervisor: @FlowYieldVaultsSchedulerV1.Supervisor?
     let newSupervisor: auth(FlowYieldVaultsSchedulerV1.Schedule) &FlowYieldVaultsSchedulerV1.Supervisor
 
-    prepare(signer: auth(LoadValue, StorageCapabilities) &Account) {
+    prepare(signer: auth(BorrowValue, LoadValue, StorageCapabilities) &Account) {
         // remove the stored Capability used for internal recurring execution
         let supervisorCap = signer.storage
             .load<Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>>(
