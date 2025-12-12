@@ -76,10 +76,7 @@ access(all) contract PMStrategies {
         }
         /// Returns the amount available for withdrawal via the inner Source
         access(all) fun availableBalance(ofToken: Type): UFix64 {
-            return FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: self.id()!)?.currentValue()! ?? 0.0 
-            // @TODO: debug this call, why univ3 SwapSource returns wrong number
-            //  with 100 FLOW it returns ~53 FLOW in balance
-            // return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
+            return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
