@@ -18,26 +18,32 @@ access(all) struct PositionDetails {
     access(all) let positionId: UInt64?
     access(all) let collateralTokenIdentifier: String
     access(all) let collateralBalance: UFix64
+    access(all) let yieldTokenIdentifier: String?
     access(all) let yieldTokenBalance: UFix64
     access(all) let debtTokenIdentifier: String?
     access(all) let debtBalance: UFix64?
+    access(all) let positionHealth: UFix128?
 
     init(
         yieldVaultId: UInt64,
         positionId: UInt64?,
         collateralTokenIdentifier: String,
         collateralBalance: UFix64,
+        yieldTokenIdentifier: String?,
         yieldTokenBalance: UFix64,
         debtTokenIdentifier: String?,
-        debtBalance: UFix64?
+        debtBalance: UFix64?,
+        positionHealth: UFix128?
     ) {
         self.yieldVaultId = yieldVaultId
         self.positionId = positionId
         self.collateralTokenIdentifier = collateralTokenIdentifier
         self.collateralBalance = collateralBalance
+        self.yieldTokenIdentifier = yieldTokenIdentifier
         self.yieldTokenBalance = yieldTokenBalance
         self.debtTokenIdentifier = debtTokenIdentifier
         self.debtBalance = debtBalance
+        self.positionHealth = positionHealth
     }
 }
 
@@ -79,8 +85,9 @@ fun main(
             .concat(" elements but positionIds has ").concat(positionIds!.length.toString()).concat(" elements"))
     }
 
-    // Check if we can fetch debt info (need both positionIds and debtTokenIdentifier)
-    let canFetchDebt = positionIds != nil && debtTokenIdentifier != nil
+    // Check if we have position IDs (needed for health) and debt token (needed for debt balance)
+    let hasPositionIds = positionIds != nil
+    let canFetchDebt = hasPositionIds && debtTokenIdentifier != nil
 
     // Borrow the user's YieldVaultManager
     let yieldVaultManager = getAccount(address).capabilities.borrow<&FlowYieldVaults.YieldVaultManager>(
@@ -91,11 +98,11 @@ fun main(
         panic("No YieldVaultManager found at address ".concat(address.toString()))
     }
 
-    // Borrow FlowCreditMarket Pool if we need debt info
+    // Borrow FlowCreditMarket Pool if we have position IDs (for health and/or debt info)
     var pool: &FlowCreditMarket.Pool? = nil
     var debtType: Type? = nil
     
-    if canFetchDebt {
+    if hasPositionIds {
         let poolAddress = Type<@FlowCreditMarket.Pool>().address!
         pool = getAccount(poolAddress).capabilities.borrow<&FlowCreditMarket.Pool>(
             FlowCreditMarket.PoolPublicPath
@@ -103,42 +110,64 @@ fun main(
         if pool == nil {
             panic("Could not borrow FlowCreditMarket Pool")
         }
-        debtType = CompositeType(debtTokenIdentifier!)
-        if debtType == nil {
-            panic("Invalid debtTokenIdentifier: ".concat(debtTokenIdentifier!))
+        
+        // Only parse debt type if debtTokenIdentifier is provided
+        if debtTokenIdentifier != nil {
+            debtType = CompositeType(debtTokenIdentifier!)
+            if debtType == nil {
+                panic("Invalid debtTokenIdentifier: ".concat(debtTokenIdentifier!))
+            }
         }
     }
 
     let positions: [PositionDetails] = []
 
     for i, yieldVaultId in yieldVaultIds {
-        // Get YieldVault data
+        // Get YieldVault data for supported types
         let yieldVault = yieldVaultManager!.borrowYieldVault(id: yieldVaultId)
         if yieldVault == nil {
             panic("YieldVault with ID ".concat(yieldVaultId.toString()).concat(" not found for address ").concat(address.toString()))
         }
 
-        // Collateral info from YieldVault
+        // Get collateral type from YieldVault's supported types
         let supportedTypes = yieldVault!.getSupportedVaultTypes()
         let collateralType = supportedTypes.keys[0]
         let collateralTokenIdentifier = collateralType.identifier
-        let collateralBalance = yieldVault!.getYieldVaultBalance()
 
-        // Yield token balance from AutoBalancer
+        // Yield token info from AutoBalancer
         let autoBalancer = FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: yieldVaultId)
+        var yieldTokenIdentifier: String? = nil
         var yieldTokenBalance: UFix64 = 0.0
 
         if autoBalancer != nil {
+            yieldTokenIdentifier = autoBalancer!.vaultType().identifier
             yieldTokenBalance = autoBalancer!.vaultBalance()
         }
 
-        // Debt info (if available)
+        // Position info, health, collateral, and debt (from FlowCreditMarket)
         var positionId: UInt64? = nil
+        var collateralBalance: UFix64 = 0.0
         var debtBalance: UFix64? = nil
+        var positionHealth: UFix128? = nil
 
-        if canFetchDebt {
+        if hasPositionIds {
             positionId = positionIds![i]
-            debtBalance = pool!.availableBalance(pid: positionId!, type: debtType!, pullFromTopUpSource: false)
+            
+            // Get position health
+            positionHealth = pool!.positionHealth(pid: positionId!)
+            
+            // Get position details for collateral and debt balances
+            let positionDetails = pool!.getPositionDetails(pid: positionId!)
+            for balance in positionDetails.balances {
+                // Credit direction = collateral (deposited)
+                if balance.vaultType == collateralType && balance.direction == FlowCreditMarket.BalanceDirection.Credit {
+                    collateralBalance = balance.balance
+                }
+                // Debit direction = debt (borrowed)
+                if canFetchDebt && balance.vaultType == debtType! && balance.direction == FlowCreditMarket.BalanceDirection.Debit {
+                    debtBalance = balance.balance
+                }
+            }
         }
 
         positions.append(PositionDetails(
@@ -146,9 +175,11 @@ fun main(
             positionId: positionId,
             collateralTokenIdentifier: collateralTokenIdentifier,
             collateralBalance: collateralBalance,
+            yieldTokenIdentifier: yieldTokenIdentifier,
             yieldTokenBalance: yieldTokenBalance,
             debtTokenIdentifier: debtTokenIdentifier,
-            debtBalance: debtBalance
+            debtBalance: debtBalance,
+            positionHealth: positionHealth
         ))
     }
 
