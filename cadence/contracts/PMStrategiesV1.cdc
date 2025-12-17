@@ -1,6 +1,5 @@
 // standards
 import "FungibleToken"
-import "FlowToken"
 import "EVM"
 // DeFiActions
 import "DeFiActionsUtils"
@@ -14,13 +13,8 @@ import "ERC4626Utils"
 // FlowYieldVaults platform
 import "FlowYieldVaults"
 import "FlowYieldVaultsAutoBalancers"
-// scheduler
-import "FlowTransactionScheduler"
-import "FlowYieldVaultsSchedulerRegistry"
 // vm bridge
 import "FlowEVMBridgeConfig"
-import "FlowEVMBridgeUtils"
-import "FlowEVMBridge"
 // live oracles
 import "ERC4626PriceOracles"
 
@@ -426,24 +420,6 @@ access(all) contract PMStrategiesV1 {
         }
         let vaultCap = self.account.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: capPath)
             ?? panic("Could not find fee source Capability at \(capPath)")
-        return FungibleTokenConnectors.VaultSinkAndSource(
-            min: nil,
-            max: nil,
-            vault: vaultCap,
-            uniqueID: withID
-        )
-    }
-
-    /// Creates a Sink+Source for the AutoBalancer to use for scheduling fees
-    access(self)
-    fun _createTxnFunder(withID: DeFiActions.UniqueIdentifier?): {DeFiActions.Sink, DeFiActions.Source} {
-        let capPath = /storage/autoBalancerTxnFunder
-        if self.account.storage.type(at: capPath) == nil {
-            let cap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(/storage/flowTokenVault)
-            self.account.storage.save(cap, to: capPath)
-        }
-        let vaultCap = self.account.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: capPath)
-            ?? panic("Could not find txnFunder Capability at \(capPath)")
         return FungibleTokenConnectors.VaultSinkAndSource(
             min: nil,
             max: nil,
