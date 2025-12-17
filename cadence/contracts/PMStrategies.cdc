@@ -44,11 +44,80 @@ access(all) contract PMStrategies {
     access(all) var yieldTokenEVMAddress: EVM.EVMAddress
     access(all) var swapFeeTier: UInt32
 
+    // tauUSDF strategy configuration
+    access(all) var tauUsdfYieldTokenEVMAddress: EVM.EVMAddress
+    access(all) var tauUsdfSwapFeeTier: UInt32
+
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let IssuerStoragePath: StoragePath
 
     /// This strategy uses syWFLOWv vaults
     access(all) resource syWFLOWvStrategy : FlowYieldVaults.Strategy, DeFiActions.IdentifiableResource {
+        /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
+        /// specific Identifier to associated connectors on construction
+        access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
+
+        /// User-facing deposit connector
+        access(self) var sink: {DeFiActions.Sink}
+        /// User-facing withdrawal connector
+        access(self) var source: {DeFiActions.Source}
+
+        init(
+            id: DeFiActions.UniqueIdentifier,
+            sink: {DeFiActions.Sink},
+            source: {DeFiActions.Source}
+        ) {
+            self.uniqueID = id
+            self.sink = sink
+            self.source = source
+        }
+
+        // Inherited from FlowYieldVaults.Strategy default implementation
+        // access(all) view fun isSupportedCollateralType(_ type: Type): Bool
+
+        access(all) view fun getSupportedCollateralTypes(): {Type: Bool} {
+            return { self.sink.getSinkType(): true }
+        }
+        /// Returns the amount available for withdrawal via the inner Source
+        access(all) fun availableBalance(ofToken: Type): UFix64 {
+            return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
+        }
+        /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
+        access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
+            self.sink.depositCapacity(from: from)
+        }
+        /// Withdraws up to the max amount, returning the withdrawn Vault. If the requested token type is unsupported,
+        /// an empty Vault is returned.
+        access(FungibleToken.Withdraw) fun withdraw(maxAmount: UFix64, ofToken: Type): @{FungibleToken.Vault} {
+            if ofToken != self.source.getSourceType() {
+                return <- DeFiActionsUtils.getEmptyVault(ofToken)
+            }
+            return <- self.source.withdrawAvailable(maxAmount: maxAmount)
+        }
+        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
+        access(contract) fun burnCallback() {
+            FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
+        }
+        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
+            return DeFiActions.ComponentInfo(
+                type: self.getType(),
+                id: self.id(),
+                innerComponents: [
+                    self.sink.getComponentInfo(),
+                    self.source.getComponentInfo()
+                ]
+            )
+        }
+        access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
+            return self.uniqueID
+        }
+        access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) {
+            self.uniqueID = id
+        }
+    }
+
+    /// This strategy uses tauUSDF vaults (Tau Labs USDF Vault)
+    access(all) resource tauUSDFvStrategy : FlowYieldVaults.Strategy, DeFiActions.IdentifiableResource {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
@@ -252,6 +321,155 @@ access(all) contract PMStrategies {
         }
     }
 
+    /// This StrategyComposer builds a tauUSDFvStrategy (Tau Labs USDF Vault)
+    access(all) resource tauUSDFvStrategyComposer : FlowYieldVaults.StrategyComposer {
+        init() {}
+
+        /// Returns the Types of Strategies composed by this StrategyComposer
+        access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
+            return {
+                Type<@tauUSDFvStrategy>(): true
+            }
+        }
+
+        /// Returns the Vault types which can be used to initialize a given Strategy
+        access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
+            // Get the underlying asset type (USDF) from the tauUSDF ERC4626 vault
+            let underlyingAssetEVMAddress = ERC4626Utils.underlyingAssetEVMAddress(
+                    vault: PMStrategies.tauUsdfYieldTokenEVMAddress
+                ) ?? panic("Could not get underlying asset EVM address for tauUSDF vault")
+            let underlyingAssetType = FlowEVMBridgeConfig.getTypeAssociated(with: underlyingAssetEVMAddress)
+                ?? panic("Could not retrieve the VM Bridge associated Type for the underlying asset \(underlyingAssetEVMAddress.toString())")
+            return { underlyingAssetType: true }
+        }
+
+        /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the
+        /// provided Vault type
+        access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
+            let supportedInitVaults = self.getSupportedInitializationVaults(forStrategy: forStrategy)
+            if supportedInitVaults[initializedWith] == true {
+                return { initializedWith: true }
+            }
+            return {}
+        }
+
+        /// Composes a Strategy of the given type with the provided funds
+        access(all) fun createStrategy(
+            _ type: Type,
+            uniqueID: DeFiActions.UniqueIdentifier,
+            withFunds: @{FungibleToken.Vault}
+        ): @{FlowYieldVaults.Strategy} {
+            // Get the underlying asset type (USDF) from the tauUSDF ERC4626 vault
+            let underlyingAssetEVMAddress = ERC4626Utils.underlyingAssetEVMAddress(
+                    vault: PMStrategies.tauUsdfYieldTokenEVMAddress
+                ) ?? panic("Could not get underlying asset EVM address for tauUSDF vault")
+            let underlyingAssetType = FlowEVMBridgeConfig.getTypeAssociated(with: underlyingAssetEVMAddress)
+                ?? panic("Could not retrieve the VM Bridge associated Type for the underlying asset \(underlyingAssetEVMAddress.toString())")
+
+            // assign yield token type from the tauUSDF ERC4626 vault address
+            let yieldTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: PMStrategies.tauUsdfYieldTokenEVMAddress)
+                ?? panic("Could not retrieve the VM Bridge associated Type for the tauUSDF yield token address \(PMStrategies.tauUsdfYieldTokenEVMAddress.toString())")
+
+            // create the oracle for the assets to be held in the AutoBalancer retrieving the NAV of the 4626 vault
+            let yieldTokenOracle = ERC4626PriceOracles.PriceOracle(
+                    vault: PMStrategies.tauUsdfYieldTokenEVMAddress,
+                    asset: underlyingAssetType,
+                    uniqueID: uniqueID
+                )
+
+            // Create recurring config for automatic rebalancing
+            let recurringConfig = PMStrategies._createRecurringConfig(withID: uniqueID)
+
+            // configure and AutoBalancer for this stack with native recurring scheduling
+            let autoBalancer = FlowYieldVaultsAutoBalancers._initNewAutoBalancer(
+                    oracle: yieldTokenOracle,       // used to determine value of deposits & when to rebalance
+                    vaultType: yieldTokenType,      // the type of Vault held by the AutoBalancer
+                    lowerThreshold: 0.95,           // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
+                    upperThreshold: 1.05,           // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
+                    rebalanceSink: nil,             // nil on init - will be set once a PositionSink is available
+                    rebalanceSource: nil,           // nil on init - not set for Strategy
+                    recurringConfig: recurringConfig, // enables native AutoBalancer self-scheduling
+                    uniqueID: uniqueID              // identifies AutoBalancer as part of this Strategy
+                )
+            // enables deposits of YieldToken to the AutoBalancer
+            let abaSink = autoBalancer.createBalancerSink() ?? panic("Could not retrieve Sink from AutoBalancer with id \(uniqueID.id)")
+            // enables withdrawals of YieldToken from the AutoBalancer
+            let abaSource = autoBalancer.createBalancerSource() ?? panic("Could not retrieve Source from AutoBalancer with id \(uniqueID.id)")
+
+            // create USDF <-> tauUSDF swappers
+            //
+            // USDF -> tauUSDF - USDF can swap to YieldToken via two primary routes
+            // - via AMM swap pairing USDF <-> tauUSDF
+            // - via 4626 vault, depositing USDF directly to the tauUSDF vault
+            // USDF -> tauUSDF high-level Swapper then contains
+            //     - MultiSwapper aggregates across two sub-swappers
+            //         - USDF -> tauUSDF (UniV3 Swapper)
+            let usdfToYieldAMMSwapper = UniswapV3SwapConnectors.Swapper(
+                    factoryAddress: PMStrategies.univ3FactoryEVMAddress,
+                    routerAddress: PMStrategies.univ3RouterEVMAddress,
+                    quoterAddress: PMStrategies.univ3QuoterEVMAddress,
+                    tokenPath: [underlyingAssetEVMAddress, PMStrategies.tauUsdfYieldTokenEVMAddress],
+                    feePath: [PMStrategies.tauUsdfSwapFeeTier],
+                    inVault: underlyingAssetType,
+                    outVault: yieldTokenType,
+                    coaCapability: PMStrategies._getCOACapability(),
+                    uniqueID: uniqueID
+                )
+            // Swap USDF -> tauUSDF via ERC4626 Vault deposit
+            let usdfTo4626Swapper = ERC4626SwapConnectors.Swapper(
+                    asset: underlyingAssetType,
+                    vault: PMStrategies.tauUsdfYieldTokenEVMAddress,
+                    coa: PMStrategies._getCOACapability(),
+                    feeSource: PMStrategies._createFeeSource(withID: uniqueID),
+                    uniqueID: uniqueID
+                )
+            // Finally, add the two USDF -> tauUSDF swappers into an aggregate MultiSwapper
+            let usdfToYieldSwapper = SwapConnectors.MultiSwapper(
+                    inVault: underlyingAssetType,
+                    outVault: yieldTokenType,
+                    swappers: [usdfToYieldAMMSwapper, usdfTo4626Swapper],
+                    uniqueID: uniqueID
+                )
+
+            // tauUSDF -> USDF
+            // - Targets the USDF <-> tauUSDF pool as the only route since withdraws from the ERC4626 Vault are async
+            let yieldToUsdfSwapper = UniswapV3SwapConnectors.Swapper(
+                    factoryAddress: PMStrategies.univ3FactoryEVMAddress,
+                    routerAddress: PMStrategies.univ3RouterEVMAddress,
+                    quoterAddress: PMStrategies.univ3QuoterEVMAddress,
+                    tokenPath: [PMStrategies.tauUsdfYieldTokenEVMAddress, underlyingAssetEVMAddress],
+                    feePath: [PMStrategies.tauUsdfSwapFeeTier],
+                    inVault: yieldTokenType,
+                    outVault: underlyingAssetType,
+                    coaCapability: PMStrategies._getCOACapability(),
+                    uniqueID: uniqueID
+                )
+
+            // init SwapSink directing swapped funds to AutoBalancer
+            //
+            // Swaps provided USDF to tauUSDF & deposits to the AutoBalancer
+            let abaSwapSink = SwapConnectors.SwapSink(swapper: usdfToYieldSwapper, sink: abaSink, uniqueID: uniqueID)
+            // Swaps tauUSDF & provides swapped USDF, sourcing tauUSDF from the AutoBalancer
+            let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToUsdfSwapper, source: abaSource, uniqueID: uniqueID)
+
+            // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value, recollateralizing
+            // the position
+            autoBalancer.setSink(abaSwapSink, updateSinkID: true)
+            abaSwapSink.depositCapacity(from: &withFunds as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
+
+            assert(withFunds.balance == 0.0, message: "Vault should be empty after depositing")
+            destroy withFunds
+
+            // Use the same uniqueID passed to createStrategy so Strategy.burnCallback
+            // calls _cleanupAutoBalancer with the correct ID
+            return <-create tauUSDFvStrategy(
+                id: uniqueID,
+                sink: abaSwapSink,
+                source: abaSwapSource
+            )
+        }
+    }
+
     access(all) entitlement Configure
 
     /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
@@ -262,7 +480,8 @@ access(all) contract PMStrategies {
 
         access(all) view fun getSupportedComposers(): {Type: Bool} {
             return { 
-                Type<@syWFLOWvStrategyComposer>(): true
+                Type<@syWFLOWvStrategyComposer>(): true,
+                Type<@tauUSDFvStrategyComposer>(): true
             }
         }
         access(all) fun issueComposer(_ type: Type): @{FlowYieldVaults.StrategyComposer} {
@@ -273,6 +492,8 @@ access(all) contract PMStrategies {
             switch type {
             case Type<@syWFLOWvStrategyComposer>():
                 return <- create syWFLOWvStrategyComposer()
+            case Type<@tauUSDFvStrategyComposer>():
+                return <- create tauUSDFvStrategyComposer()
             default:
                 panic("Unsupported StrategyComposer \(type.identifier) requested")
             }
@@ -290,6 +511,14 @@ access(all) contract PMStrategies {
             PMStrategies.univ3QuoterEVMAddress  = EVM.addressFromString(quoter)
             PMStrategies.yieldTokenEVMAddress   = EVM.addressFromString(yieldToken)
             PMStrategies.swapFeeTier = swapFeeTier
+        }
+        access(Configure)
+        fun updateTauUsdfEVMAddresses(
+            yieldToken: String,
+            swapFeeTier: UInt32
+        ) {
+            PMStrategies.tauUsdfYieldTokenEVMAddress = EVM.addressFromString(yieldToken)
+            PMStrategies.tauUsdfSwapFeeTier = swapFeeTier
         }
     }
 
@@ -360,13 +589,17 @@ access(all) contract PMStrategies {
         univ3RouterEVMAddress: String,
         univ3QuoterEVMAddress: String,
         yieldTokenEVMAddress: String,
-        swapFeeTier: UInt32
+        swapFeeTier: UInt32,
+        tauUsdfYieldTokenEVMAddress: String,
+        tauUsdfSwapFeeTier: UInt32
     ) {
         self.univ3FactoryEVMAddress = EVM.addressFromString(univ3FactoryEVMAddress)
         self.univ3RouterEVMAddress = EVM.addressFromString(univ3RouterEVMAddress)
         self.univ3QuoterEVMAddress = EVM.addressFromString(univ3QuoterEVMAddress)
         self.yieldTokenEVMAddress = EVM.addressFromString(yieldTokenEVMAddress)
         self.swapFeeTier = swapFeeTier
+        self.tauUsdfYieldTokenEVMAddress = EVM.addressFromString(tauUsdfYieldTokenEVMAddress)
+        self.tauUsdfSwapFeeTier = tauUsdfSwapFeeTier
 
         self.IssuerStoragePath = StoragePath(identifier: "PMStrategiesComposerIssuer_\(self.account.address)")!
 

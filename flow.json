@@ -873,6 +873,18 @@
 						{
 							"value": "0x0000000000000000000000000000000000000000",
 							"type": "String"
+						},
+						{
+							"value": "0",
+							"type": "UInt32"
+						},
+						{
+							"value": "0x0000000000000000000000000000000000000000",
+							"type": "String"
+						},
+						{
+							"value": "0",
+							"type": "UInt32"
 						}
 					]
 				}
@@ -987,6 +999,14 @@
 						},
 						{
 							"value": "0xCBf9a7753F9D2d0e8141ebB36d99f87AcEf98597",
+							"type": "String"
+						},
+						{
+							"value": "100",
+							"type": "UInt32"
+						},
+						{
+							"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
 							"type": "String"
 						},
 						{
