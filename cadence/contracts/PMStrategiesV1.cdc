@@ -323,9 +323,6 @@ access(all) contract PMStrategiesV1 {
             // Swaps YieldToken & provides swapped Collateral, sourcing YieldToken from the AutoBalancer
             let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToCollateralSwapper, source: abaSource, uniqueID: uniqueID)
 
-            // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value, recollateralizing
-            // the position
-            autoBalancer.setSink(abaSwapSink, updateSinkID: true)
             abaSwapSink.depositCapacity(from: &withFunds as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
 
             assert(withFunds.balance == 0.0, message: "Vault should be empty after depositing")
