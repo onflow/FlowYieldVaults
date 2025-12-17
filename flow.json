@@ -211,8 +211,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"PMStrategies": {
-			"source": "cadence/contracts/PMStrategies.cdc",
+		"PMStrategiesV1": {
+			"source": "cadence/contracts/PMStrategiesV1.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009"
@@ -856,12 +856,8 @@
 					]
 				},
 				{
-					"name": "PMStrategies",
+					"name": "PMStrategiesV1",
 					"args": [
-						{
-							"value": "0x0000000000000000000000000000000000000000",
-							"type": "String"
-						},
 						{
 							"value": "0x0000000000000000000000000000000000000000",
 							"type": "String"
@@ -971,7 +967,7 @@
 					]
 				},
 				{
-					"name": "PMStrategies",
+					"name": "PMStrategiesV1",
 					"args": [
 						{
 							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
@@ -984,14 +980,6 @@
 						{
 							"value": "0x370A8DF17742867a44e56223EC20D82092242C85",
 							"type": "String"
-						},
-						{
-							"value": "0xCBf9a7753F9D2d0e8141ebB36d99f87AcEf98597",
-							"type": "String"
-						},
-						{
-							"value": "100",
-							"type": "UInt32"
 						}
 					]
 				}
