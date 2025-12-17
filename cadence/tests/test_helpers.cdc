@@ -331,7 +331,7 @@ access(all) fun deployContracts() {
 
     // FLOW looping strategy
     err = Test.deployContract(
-        name: "PMStrategies",
+        name: "PMStrategiesV1",
         path: "../contracts/PMStrategiesV1.cdc",
         arguments: [
             "0x0000000000000000000000000000000000000000",
