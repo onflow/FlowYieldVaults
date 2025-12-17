@@ -32,7 +32,7 @@ transaction(
         )
         let priority = FlowTransactionScheduler.Priority(rawValue: priorityRaw)
             ?? panic("Invalid priority: \(priorityRaw) - must be 0=High, 1=Medium, 2=Low")
-        for id in FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDs() {
+        for id in FlowYieldVaultsSchedulerRegistry.getRegisteredYieldVaultIDs() {
             let path = FlowYieldVaultsAutoBalancers.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
             if let ab = signer.storage.borrow<auth(DeFiActions.Identify, DeFiActions.Configure) &DeFiActions.AutoBalancer>(from: path) {
                 DeFiActions.alignID(
