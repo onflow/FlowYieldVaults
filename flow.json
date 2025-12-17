@@ -211,8 +211,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"PMStrategies": {
-			"source": "cadence/contracts/PMStrategies.cdc",
+		"PMStrategiesV1": {
+			"source": "cadence/contracts/PMStrategiesV1.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009"
@@ -856,7 +856,7 @@
 					]
 				},
 				{
-					"name": "PMStrategies",
+					"name": "PMStrategiesV1",
 					"args": [
 						{
 							"value": "0x0000000000000000000000000000000000000000",
@@ -967,7 +967,7 @@
 					]
 				},
 				{
-					"name": "PMStrategies",
+					"name": "PMStrategiesV1",
 					"args": [
 						{
 							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",

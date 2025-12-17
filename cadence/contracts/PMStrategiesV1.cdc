@@ -24,7 +24,7 @@ import "FlowEVMBridge"
 // live oracles
 import "ERC4626PriceOracles"
 
-/// PMStrategies
+/// PMStrategiesV1
 ///
 /// This contract defines Strategies used in the FlowYieldVaults platform.
 ///
@@ -35,7 +35,7 @@ import "ERC4626PriceOracles"
 /// A StrategyComposer is tasked with the creation of a supported Strategy. It's within the stacking of DeFiActions
 /// connectors that the true power of the components lies.
 ///
-access(all) contract PMStrategies {
+access(all) contract PMStrategiesV1 {
 
     access(all) let univ3FactoryEVMAddress: EVM.EVMAddress
     access(all) let univ3RouterEVMAddress: EVM.EVMAddress
@@ -251,7 +251,7 @@ access(all) contract PMStrategies {
                 )
 
             // Create recurring config for automatic rebalancing
-            let recurringConfig = PMStrategies._createRecurringConfig(withID: uniqueID)
+            let recurringConfig = PMStrategiesV1._createRecurringConfig(withID: uniqueID)
 
             // configure and AutoBalancer for this stack with native recurring scheduling
             let autoBalancer = FlowYieldVaultsAutoBalancers._initNewAutoBalancer(
@@ -279,22 +279,22 @@ access(all) contract PMStrategies {
             //         - Collateral -> YieldToken (UniV3 Swapper)
             //         - Collateral -> YieldToken (ERC4626 Swapper)
             let collateralToYieldAMMSwapper = UniswapV3SwapConnectors.Swapper(
-                    factoryAddress: PMStrategies.univ3FactoryEVMAddress,
-                    routerAddress: PMStrategies.univ3RouterEVMAddress,
-                    quoterAddress: PMStrategies.univ3QuoterEVMAddress,
+                    factoryAddress: PMStrategiesV1.univ3FactoryEVMAddress,
+                    routerAddress: PMStrategiesV1.univ3RouterEVMAddress,
+                    quoterAddress: PMStrategiesV1.univ3QuoterEVMAddress,
                     tokenPath: [underlyingAssetEVMAddress, yieldTokenEVMAddress],
                     feePath: [swapFeeTier],
                     inVault: collateralType,
                     outVault: yieldTokenType,
-                    coaCapability: PMStrategies._getCOACapability(),
+                    coaCapability: PMStrategiesV1._getCOACapability(),
                     uniqueID: uniqueID
                 )
             // Swap Collateral -> YieldToken via ERC4626 Vault
             let collateralTo4626Swapper = ERC4626SwapConnectors.Swapper(
                     asset: collateralType,
                     vault: yieldTokenEVMAddress,
-                    coa: PMStrategies._getCOACapability(),
-                    feeSource: PMStrategies._createFeeSource(withID: uniqueID),
+                    coa: PMStrategiesV1._getCOACapability(),
+                    feeSource: PMStrategiesV1._createFeeSource(withID: uniqueID),
                     uniqueID: uniqueID
                 )
             // Finally, add the two Collateral -> YieldToken swappers into an aggregate MultiSwapper
@@ -308,14 +308,14 @@ access(all) contract PMStrategies {
             // YieldToken -> Collateral
             // - Targets the Collateral <-> YieldToken pool as the only route since withdraws from the ERC4626 Vault are async
             let yieldToCollateralSwapper = UniswapV3SwapConnectors.Swapper(
-                    factoryAddress: PMStrategies.univ3FactoryEVMAddress,
-                    routerAddress: PMStrategies.univ3RouterEVMAddress,
-                    quoterAddress: PMStrategies.univ3QuoterEVMAddress,
+                    factoryAddress: PMStrategiesV1.univ3FactoryEVMAddress,
+                    routerAddress: PMStrategiesV1.univ3RouterEVMAddress,
+                    quoterAddress: PMStrategiesV1.univ3QuoterEVMAddress,
                     tokenPath: [yieldTokenEVMAddress, underlyingAssetEVMAddress],
                     feePath: [swapFeeTier],
                     inVault: yieldTokenType,
                     outVault: collateralType,
-                    coaCapability: PMStrategies._getCOACapability(),
+                    coaCapability: PMStrategiesV1._getCOACapability(),
                     uniqueID: uniqueID
                 )
 
@@ -482,7 +482,7 @@ access(all) contract PMStrategies {
         self.univ3FactoryEVMAddress = EVM.addressFromString(univ3FactoryEVMAddress)
         self.univ3RouterEVMAddress = EVM.addressFromString(univ3RouterEVMAddress)
         self.univ3QuoterEVMAddress = EVM.addressFromString(univ3QuoterEVMAddress)
-        self.IssuerStoragePath = StoragePath(identifier: "PMStrategiesComposerIssuer_\(self.account.address)")!
+        self.IssuerStoragePath = StoragePath(identifier: "PMStrategiesV1ComposerIssuer_\(self.account.address)")!
         self.config = {}
 
         // Start with empty configs - strategy configs are added via upsertConfigFor admin transactions
