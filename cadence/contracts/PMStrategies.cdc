@@ -477,11 +477,7 @@ access(all) contract PMStrategies {
     init(
         univ3FactoryEVMAddress: String,
         univ3RouterEVMAddress: String,
-        univ3QuoterEVMAddress: String,
-        syWflowYieldTokenEVMAddress: String,
-        syWflowSwapFeeTier: UInt32,
-        tauUsdfYieldTokenEVMAddress: String,
-        tauUsdfSwapFeeTier: UInt32
+        univ3QuoterEVMAddress: String
     ) {
         self.univ3FactoryEVMAddress = EVM.addressFromString(univ3FactoryEVMAddress)
         self.univ3RouterEVMAddress = EVM.addressFromString(univ3RouterEVMAddress)
@@ -489,41 +485,9 @@ access(all) contract PMStrategies {
         self.IssuerStoragePath = StoragePath(identifier: "PMStrategiesComposerIssuer_\(self.account.address)")!
         self.config = {}
 
-        let flowTokenType = Type<@FlowToken.Vault>()
-        let zeroAddress = EVM.addressFromString("0x0000000000000000000000000000000000000000")
-        let syWflowYieldTokenAddr = EVM.addressFromString(syWflowYieldTokenEVMAddress)
-        let tauUsdfYieldTokenAddr = EVM.addressFromString(tauUsdfYieldTokenEVMAddress)
-
-        // Skip config building for zero addresses (emulator placeholder) to avoid ERC4626Utils calls on invalid addresses
-        var syWflowCollateralConfig: {Type: {String: AnyStruct}} = {}
-        if !syWflowYieldTokenAddr.equals(zeroAddress) {
-            syWflowCollateralConfig = {
-                flowTokenType: {
-                    "yieldTokenEVMAddress": syWflowYieldTokenAddr,
-                    "swapFeeTier": syWflowSwapFeeTier
-                }
-            }
-        }
-
-        var tauUsdfCollateralConfig: {Type: {String: AnyStruct}} = {}
-        if !tauUsdfYieldTokenAddr.equals(zeroAddress) {
-            let usdfEVMAddress = ERC4626Utils.underlyingAssetEVMAddress(vault: tauUsdfYieldTokenAddr)
-                ?? panic("Could not get underlying asset EVM address for tauUSDF vault")
-            let usdfType = FlowEVMBridgeConfig.getTypeAssociated(with: usdfEVMAddress)
-                ?? panic("Could not retrieve the VM Bridge associated Type for USDF \(usdfEVMAddress.toString())")
-            tauUsdfCollateralConfig = {
-                usdfType: {
-                    "yieldTokenEVMAddress": tauUsdfYieldTokenAddr,
-                    "swapFeeTier": tauUsdfSwapFeeTier
-                }
-            }
-        }
-
+        // Start with empty configs - strategy configs are added via upsertConfigFor admin transactions
         let configs: {Type: {Type: {Type: {String: AnyStruct}}}} = {
-                Type<@ERC4626VaultStrategyComposer>(): {
-                    Type<@syWFLOWvStrategy>(): syWflowCollateralConfig,
-                    Type<@tauUSDFvStrategy>(): tauUsdfCollateralConfig
-                }
+                Type<@ERC4626VaultStrategyComposer>(): {}
             }
         self.account.storage.save(<-create StrategyComposerIssuer(configs: configs), to: self.IssuerStoragePath)
 
