@@ -159,10 +159,7 @@ access(all) contract PMStrategies {
                     uniqueID: uniqueID
                 )
 
-            // Create recurring config for automatic rebalancing
-            let recurringConfig = PMStrategies._createRecurringConfig(withID: uniqueID)
-
-            // configure and AutoBalancer for this stack with native recurring scheduling
+            // configure and AutoBalancer for this stack
             let autoBalancer = FlowYieldVaultsAutoBalancers._initNewAutoBalancer(
                     oracle: yieldTokenOracle,       // used to determine value of deposits & when to rebalance
                     vaultType: yieldTokenType,      // the type of Vault held by the AutoBalancer
@@ -170,7 +167,7 @@ access(all) contract PMStrategies {
                     upperThreshold: 1.05,           // set AutoBalancer to push to rebalanceSink when balance is 5% below value of deposits
                     rebalanceSink: nil,             // nil on init - will be set once a PositionSink is available
                     rebalanceSource: nil,           // nil on init - not set for Strategy
-                    recurringConfig: recurringConfig, // enables native AutoBalancer self-scheduling
+                    recurringConfig: nil,           // disables native AutoBalancer self-scheduling, no rebalancing required after init
                     uniqueID: uniqueID              // identifies AutoBalancer as part of this Strategy
                 )
             // enables deposits of YieldToken to the AutoBalancer
@@ -318,22 +315,6 @@ access(all) contract PMStrategies {
             max: nil,
             vault: vaultCap,
             uniqueID: withID
-        )
-    }
-
-    /// Creates an AutoBalancerRecurringConfig for scheduled rebalancing.
-    /// The txnFunder uses the contract's FlowToken vault to pay for scheduling fees.
-    access(self)
-    fun _createRecurringConfig(withID: DeFiActions.UniqueIdentifier?): DeFiActions.AutoBalancerRecurringConfig {
-        // Create txnFunder that can provide/accept FLOW for scheduling fees
-        let txnFunder = self._createTxnFunder(withID: withID)
-        
-        return DeFiActions.AutoBalancerRecurringConfig(
-            interval: 60,  // Rebalance every 60 seconds
-            priority: FlowTransactionScheduler.Priority.Medium,
-            executionEffort: 800,
-            forceRebalance: false,
-            txnFunder: txnFunder
         )
     }
 
