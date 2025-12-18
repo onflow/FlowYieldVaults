@@ -457,10 +457,10 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
     Test.commitBlock()
 
     // Schedule Supervisor
-    let scheduledTime = getCurrentBlockTimestamp() + (60.0 * 10.0)
+    let interval = 60.0 * 10.0
     let schedSupRes = executeTransaction(
         "../transactions/flow-yield-vaults/admin/schedule_supervisor.cdc",
-        [scheduledTime, UInt8(1), UInt64(800), 0.05, 30.0, true, 10.0, false],
+        [interval, UInt8(1), UInt64(800), true], // interval, priority, execution effort, scan for stuck
         flowYieldVaultsAccount
     )
     Test.expect(schedSupRes, Test.beSucceeded())
@@ -785,12 +785,13 @@ fun testInsufficientFundsAndRecovery() {
     log("Current timestamp: ".concat(currentTs.toString()))
 
     // Use VERY large offset (10000s) to ensure it's always in the future
-    let restartTime = currentTs + (60.0 * 10.0)
+    let interval = 60.0 * 10.0
+    let restartTime = currentTs + interval
     log("Scheduling Supervisor at: ".concat(restartTime.toString()))
 
     let schedSupRes = executeTransaction(
         "../transactions/flow-yield-vaults/admin/schedule_supervisor.cdc",
-        [restartTime, UInt8(1), UInt64(5000), 0.5, 60.0, true, 30.0, true],  // Higher execution effort (5000) for recovering 5 yield vaults
+        [interval, UInt8(1), UInt64(5000), true],  // interval, priority, execution effort, scan for stuck
         flowYieldVaultsAccount
     )
     Test.expect(schedSupRes, Test.beSucceeded())
