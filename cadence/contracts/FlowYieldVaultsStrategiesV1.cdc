@@ -1,6 +1,5 @@
 // standards
 import "FungibleToken"
-import "FlowToken"
 import "EVM"
 // DeFiActions
 import "DeFiActionsUtils"
@@ -21,7 +20,6 @@ import "FlowYieldVaultsAutoBalancers"
 import "FlowTransactionScheduler"
 import "FlowYieldVaultsSchedulerRegistry"
 // tokens
-import "YieldToken"
 import "MOET"
 // vm bridge
 import "FlowEVMBridgeConfig"
@@ -46,6 +44,8 @@ access(all) contract FlowYieldVaultsStrategiesV1 {
     access(all) let univ3FactoryEVMAddress: EVM.EVMAddress
     access(all) let univ3RouterEVMAddress: EVM.EVMAddress
     access(all) let univ3QuoterEVMAddress: EVM.EVMAddress
+
+    access(all) let config: AnyStruct
 
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let IssuerStoragePath: StoragePath
@@ -313,7 +313,7 @@ access(all) contract FlowYieldVaultsStrategiesV1 {
                 ?? panic("Could not find UniswapV3 fee path for collateral type \(collateralType.identifier)")
             assert(uniV3FeePath.length > 0, message: "Invalid Uniswap V3 fee path length of \(uniV3FeePath.length)")
             // initialize the swapper used for recollateralization of the lending position as YIELD increases in value
-            let yieldToFlowSwapper = UniswapV3SwapConnectors.Swapper(
+            let yieldToCollateralSwapper = UniswapV3SwapConnectors.Swapper(
                     factoryAddress: FlowYieldVaultsStrategiesV1.univ3FactoryEVMAddress,
                     routerAddress: FlowYieldVaultsStrategiesV1.univ3RouterEVMAddress,
                     quoterAddress: FlowYieldVaultsStrategiesV1.univ3QuoterEVMAddress,
@@ -554,6 +554,7 @@ access(all) contract FlowYieldVaultsStrategiesV1 {
         self.univ3RouterEVMAddress = EVM.addressFromString(univ3RouterEVMAddress)
         self.univ3QuoterEVMAddress = EVM.addressFromString(univ3QuoterEVMAddress)
         self.IssuerStoragePath = StoragePath(identifier: "FlowYieldVaultsStrategyV1ComposerIssuer_\(self.account.address)")!
+        self.config = {}
 
         let moetType = Type<@MOET.Vault>()
         let moetEVMAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: Type<@MOET.Vault>())
