@@ -177,12 +177,14 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         // Register yield vault in registry for global mapping of live yield vault IDs
         FlowYieldVaultsSchedulerRegistry.register(yieldVaultID: uniqueID.id, handlerCap: handlerCap, scheduleCap: scheduleCap)
 
-        // Start the native AutoBalancer self-scheduling chain
+        // Start the native AutoBalancer self-scheduling chain if recurringConfig was provided
         // This schedules the first rebalance; subsequent ones are scheduled automatically
         // by the AutoBalancer after each execution (via recurringConfig)
-        let scheduleError = autoBalancerRef.scheduleNextRebalance(whileExecuting: nil)
-        if scheduleError != nil {
-            panic("Failed to schedule first rebalance for AutoBalancer \(uniqueID.id): ".concat(scheduleError!))
+        if recurringConfig != nil {
+            let scheduleError = autoBalancerRef.scheduleNextRebalance(whileExecuting: nil)
+            if scheduleError != nil {
+                panic("Failed to schedule first rebalance for AutoBalancer \(uniqueID.id): ".concat(scheduleError!))
+            }
         }
 
         return autoBalancerRef

@@ -65,6 +65,37 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
     --network mainnet \
     --signer mainnet-admin
 
+# configure PMStrategies strategy configs
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert-pm-strategy-config.cdc \
+    'A.b1d63873c3cc9f79.PMStrategiesV1.syWFLOWvStrategy' \
+    'A.1654653399040a61.FlowToken.Vault' \
+    '0xCBf9a7753F9D2d0e8141ebB36d99f87AcEf98597' \
+    100 \
+    --network mainnet \
+    --signer mainnet-admin
+
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert-pm-strategy-config.cdc \
+    'A.b1d63873c3cc9f79.PMStrategiesV1.tauUSDFvStrategy' \
+    'A.1e4aa0b87d10b141.EVMVMBridgedToken_2aabea2058b5ac2d339b163c6ab6f2b6d53aabed.Vault' \
+    '0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c' \
+    100 \
+    --network mainnet \
+    --signer mainnet-admin
+
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
+    'A.b1d63873c3cc9f79.PMStrategiesV1.syWFLOWvStrategy' \
+    'A.b1d63873c3cc9f79.PMStrategiesV1.ERC4626VaultStrategyComposer' \
+    /storage/PMStrategiesV1ComposerIssuer_0xb1d63873c3cc9f79 \
+    --network mainnet \
+    --signer mainnet-admin
+
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
+    'A.b1d63873c3cc9f79.PMStrategiesV1.tauUSDFvStrategy' \
+    'A.b1d63873c3cc9f79.PMStrategiesV1.ERC4626VaultStrategyComposer' \
+    /storage/PMStrategiesV1ComposerIssuer_0xb1d63873c3cc9f79 \
+    --network mainnet \
+    --signer mainnet-admin
+
 # grant PoolBeta cap
 echo "Grant Protocol Beta access to FlowYieldVaults"
 flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-credit-market/pool-management/03_grant_beta.cdc \
@@ -85,8 +116,21 @@ flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-cr
 #   --proposer <TEST_USER> \
 #   --payer mainnet-admin \
 #   --network mainnet 
+
+# test FlowYieldVault strategy
+
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
 #   A.b1d63873c3cc9f79.FlowYieldVaultsStrategies.mUSDCStrategy \
+#   A.1654653399040a61.FlowToken.Vault \
+#   1.0 \
+#   --signer <TEST_USER> \
+#   --compute-limit 9999 \
+#   --network mainnet
+#
+
+# test PEAK MONEY strategy
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.b1d63873c3cc9f79.PMStrategiesV1.syWFLOWvStrategy \
 #   A.1654653399040a61.FlowToken.Vault \
 #   1.0 \
 #   --signer <TEST_USER> \
