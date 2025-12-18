@@ -36,7 +36,9 @@ transaction(
             let path = FlowYieldVaultsAutoBalancers.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
             if let ab = signer.storage.borrow<auth(DeFiActions.Identify, DeFiActions.Configure) &DeFiActions.AutoBalancer>(from: path) {
                 // autobalancer is not configured as recurring, skip
-                if ab.getRecurringConfig() == nil { continue; }
+                if ab.getRecurringConfig() == nil {
+                    continue
+                }
                 DeFiActions.alignID(
                     toUpdate: &txnFunder as auth(DeFiActions.Extend) &{DeFiActions.IdentifiableStruct},
                     with: ab
