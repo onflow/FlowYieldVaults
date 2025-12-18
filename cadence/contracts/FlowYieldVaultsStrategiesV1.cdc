@@ -325,7 +325,7 @@ access(all) contract FlowYieldVaultsStrategiesV1 {
                     uniqueID: uniqueID
                 )
             // allows for YIELD to be deposited to the Position as the collateral basis
-            let positionSwapSink = SwapConnectors.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
+            let positionSwapSink = SwapConnectors.SwapSink(swapper: yieldToCollateralSwapper, sink: positionSink, uniqueID: uniqueID)
 
             // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value, recollateralizing
             // the position
@@ -554,7 +554,7 @@ access(all) contract FlowYieldVaultsStrategiesV1 {
         self.univ3RouterEVMAddress = EVM.addressFromString(univ3RouterEVMAddress)
         self.univ3QuoterEVMAddress = EVM.addressFromString(univ3QuoterEVMAddress)
         self.IssuerStoragePath = StoragePath(identifier: "FlowYieldVaultsStrategyV1ComposerIssuer_\(self.account.address)")!
-        self.config = {}
+        self.config = {} as AnyStruct
 
         let moetType = Type<@MOET.Vault>()
         let moetEVMAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: Type<@MOET.Vault>())
