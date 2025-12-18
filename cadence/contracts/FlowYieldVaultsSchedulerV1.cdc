@@ -27,25 +27,22 @@ import "FlowYieldVaultsAutoBalancers"
 ///
 access(all) contract FlowYieldVaultsSchedulerV1 {
 
-    /* --- CONSTANTS --- */
+    /* --- FIELDS --- */
 
     /// Default recurring interval in seconds (used when not specified)
-    access(all) let DEFAULT_RECURRING_INTERVAL: UFix64
+    access(all) var DEFAULT_RECURRING_INTERVAL: UFix64
 
     /// Default priority for recurring schedules
-    access(all) let DEFAULT_PRIORITY: UInt8  // 1 = Medium
+    access(all) var DEFAULT_PRIORITY: UInt8  // 1 = Medium
 
     /// Default execution effort for scheduled transactions
-    access(all) let DEFAULT_EXECUTION_EFFORT: UInt64
+    access(all) var DEFAULT_EXECUTION_EFFORT: UInt64
 
     /// Minimum fee fallback when estimation returns nil
-    access(all) let MIN_FEE_FALLBACK: UFix64
+    access(all) var MIN_FEE_FALLBACK: UFix64
 
     /// Fee margin multiplier to add buffer to estimated fees (1.2 = 20% buffer)
-    access(all) let FEE_MARGIN_MULTIPLIER: UFix64
-
-    /// Default lookahead seconds for scheduling first execution
-    access(all) let DEFAULT_LOOKAHEAD_SECS: UFix64
+    access(all) var FEE_MARGIN_MULTIPLIER: UFix64
 
     /* --- PATHS --- */
 
@@ -81,6 +78,8 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
 
     /* --- RESOURCES --- */
 
+    access(all) entitlement Configure
+
     /// Supervisor - The recovery mechanism for stuck AutoBalancers
     ///
     /// The Supervisor:
@@ -94,6 +93,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
     access(all) resource Supervisor: FlowTransactionScheduler.TransactionHandler {
         /// Capability to withdraw FLOW for Supervisor's own scheduling fees
         access(self) let feesCap: Capability<auth(FungibleToken.Withdraw) &FlowToken.Vault>
+        /// Internally managed scheduled transaction for Supervisor self-rescheduling
         access(self) var _scheduledTransaction: @FlowTransactionScheduler.ScheduledTransaction?
 
         init(
@@ -101,6 +101,47 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
         ) {
             self.feesCap = feesCap
             self._scheduledTransaction <- nil
+        }
+
+        /// Returns the ID of the internally managed scheduled transaction, or nil if not scheduled
+        ///
+        /// @return UInt64?: The ID of the internally managed scheduled transaction, or nil if not scheduled
+        access(all) view fun getScheduledTransactionID(): UInt64? {
+            return self._scheduledTransaction?.id
+        }
+
+        /* --- CONFIGURE FUNCTIONS --- */
+
+        /// Sets the default recurring interval for Supervisor self-rescheduling
+        /// @param interval: The interval to set
+        access(Configure) fun setDefaultRecurringInterval(_ interval: UFix64) {
+            FlowYieldVaultsSchedulerV1.DEFAULT_RECURRING_INTERVAL = interval
+        }
+
+        /// Sets the default execution effort for Supervisor self-rescheduling
+        /// @param effort: The execution effort to set
+        access(Configure) fun setDefaultExecutionEffort(_ effort: UInt64) {
+            FlowYieldVaultsSchedulerV1.DEFAULT_EXECUTION_EFFORT = effort
+        }
+
+        /// Sets the default minimum fee fallback for Supervisor self-rescheduling
+        /// @param fallback: The minimum fee fallback to set
+        access(Configure) fun setDefaultMinFeeFallback(_ fallback: UFix64) {
+            FlowYieldVaultsSchedulerV1.MIN_FEE_FALLBACK = fallback
+        }
+
+        /// Sets the default fee margin multiplier for Supervisor self-rescheduling
+        /// TODO: Determine if this field is even necessary
+        /// @param marginMultiplier: The margin multiplier to set
+        access(Configure) fun setDefaultFeeMarginMultiplier(_ marginMultiplier: UFix64) {
+            FlowYieldVaultsSchedulerV1.FEE_MARGIN_MULTIPLIER = marginMultiplier
+        }
+
+        /// Sets the default priority for Supervisor self-rescheduling
+        ///
+        /// @param priority: The priority to set
+        access(Configure) fun setDefaultPriority(_ priority: FlowTransactionScheduler.Priority) {
+            FlowYieldVaultsSchedulerV1.DEFAULT_PRIORITY = priority.rawValue
         }
 
         /* --- TRANSACTION HANDLER --- */
@@ -134,6 +175,8 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
 
             // STEP 1: State-based detection - scan for stuck yield vaults
             if scanForStuck {
+                // TODO: add pagination - this will inevitably fails and at minimum creates inconsistent execution
+                //      effort between runs
                 let registeredYieldVaults = FlowYieldVaultsSchedulerRegistry.getRegisteredYieldVaultIDs()
                 var scanned = 0
                 for yieldVaultID in registeredYieldVaults {
@@ -143,6 +186,8 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
                     scanned = scanned + 1
                     
                     // Skip if already in pending queue
+                    // TODO: This is extremely inefficient - accessing from mapping is preferrable to iterating over
+                    //      an array
                     if FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDs().contains(yieldVaultID) {
                         continue
                     }
@@ -263,9 +308,34 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
                 }
             }
         }
+
+        /// Cancels the scheduled transaction if it is scheduled.
+        ///
+        /// @param refundReceiver: The receiver of the refunded vault, or nil to deposit to the internal feesCap
+        ///
+        /// @return @FlowToken.Vault?: The refunded vault, or nil if a scheduled transaction is not found
+        access(Schedule) fun cancelScheduledTransaction(refundReceiver: &{FungibleToken.Vault}?): @FlowToken.Vault? {
+            // nothing to cancel - nil or not scheduled
+            if self._scheduledTransaction == nil
+                || self._scheduledTransaction?.status() != FlowTransactionScheduler.Status.Scheduled {
+                return nil
+            }
+            // cancel the scheduled transaction & deposit refund to receiver if provided
+            let txnID = self.getScheduledTransactionID()!
+            let txn <- self._scheduledTransaction <- nil
+            let refund <- FlowTransactionScheduler.cancel(scheduledTx: <-txn!)
+            if let receiver = refundReceiver {
+                receiver.deposit(from: <-refund)
+            } else {
+                let feeReceiver = self.feesCap.borrow()
+                    ?? panic("Could not borrow fees receiver to deposit refund of \(refund.balance) FLOW when cancelling scheduled transaction id \(txnID)")
+                feeReceiver.deposit(from: <-refund)
+            }
+            return nil
+        }
     }
 
-    /* --- PRIVATE FUNCTIONS (access(self)) --- */
+    /* --- PRIVATE FUNCTIONS --- */
 
     /// Creates a Supervisor handler.
     access(self) fun createSupervisor(): @Supervisor {
@@ -274,12 +344,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
         return <- create Supervisor(feesCap: feesCap)
     }
 
-    /* --- PUBLIC FUNCTIONS (access(all)) --- */
-
-    /// Returns the Supervisor capability for scheduling
-    access(all) view fun getSupervisorCap(): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>? {
-        return FlowYieldVaultsSchedulerRegistry.getSupervisorCap()
-    }
+    /* --- PUBLIC FUNCTIONS --- */
 
     /// Estimates the cost of scheduling a transaction at a given timestamp
     access(all) fun estimateSchedulingCost(
@@ -294,8 +359,6 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
             executionEffort: executionEffort
         )
     }
-
-    /* --- ACCOUNT FUNCTIONS --- */
 
     /// Ensures the Supervisor is configured and registered.
     /// Creates Supervisor if not exists, issues capability, and registers with Registry.
@@ -320,6 +383,8 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
         FlowYieldVaultsSchedulerRegistry.setSupervisorCap(cap: cap)
     }
 
+    /* --- ACCOUNT FUNCTIONS --- */
+
     /// Borrows the Supervisor reference (account-restricted for internal use)
     access(account) fun borrowSupervisor(): &Supervisor? {
         return self.account.storage.borrow<&Supervisor>(from: self.SupervisorStoragePath)
@@ -340,12 +405,11 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
 
     init() {
         // Initialize constants
-        self.DEFAULT_RECURRING_INTERVAL = 60.0  // 60 seconds
+        self.DEFAULT_RECURRING_INTERVAL = 60.0 * 10.0  // 10 minutes
         self.DEFAULT_PRIORITY = 1  // Medium
         self.DEFAULT_EXECUTION_EFFORT = 800
         self.MIN_FEE_FALLBACK = 0.00005
-        self.FEE_MARGIN_MULTIPLIER = 1.2
-        self.DEFAULT_LOOKAHEAD_SECS = 10.0
+        self.FEE_MARGIN_MULTIPLIER = 1.0
 
         // Initialize paths
         self.SupervisorStoragePath = /storage/FlowYieldVaultsSupervisor
