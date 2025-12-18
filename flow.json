@@ -134,8 +134,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowYieldVaultsSchedulerV1": {
-			"source": "cadence/contracts/FlowYieldVaultsSchedulerV1.cdc",
+		"FlowYieldVaultsSchedulerRegistry": {
+			"source": "cadence/contracts/FlowYieldVaultsSchedulerRegistry.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -143,8 +143,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowYieldVaultsSchedulerRegistry": {
-			"source": "cadence/contracts/FlowYieldVaultsSchedulerRegistry.cdc",
+		"FlowYieldVaultsSchedulerV1": {
+			"source": "cadence/contracts/FlowYieldVaultsSchedulerV1.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
