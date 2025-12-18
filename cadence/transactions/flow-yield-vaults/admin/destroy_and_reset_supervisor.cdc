@@ -8,10 +8,10 @@ import "FungibleToken"
 /// transactions internally managed by the Supervisor. After removing old Supervisor, it schedules a new one for 
 /// recurring execution. Configurable via arguments; sensible defaults if omitted.
 ///
-/// - recurringInterval: seconds between runs (e.g., 60.0)
-/// - priorityRaw: The raw priority value (UInt8) for data serialization (0=High, 1=Medium, 2=Low)
-/// - executionEffort: The execution effort estimate for the transaction (1-9999)
-/// - scanForStuck: Whether to scan for stuck yield vaults in the next execution
+/// @param recurringInterval: seconds between runs (e.g., 60.0)
+/// @param priorityRaw: The raw priority value (UInt8) for data serialization (0=High, 1=Medium, 2=Low)
+/// @param executionEffort: The execution effort estimate for the transaction (1-9999)
+/// @param scanForStuck: Whether to scan for stuck yield vaults in the next execution
 transaction(
     recurringInterval: UFix64,
     priorityRaw: UInt8,
@@ -51,8 +51,7 @@ transaction(
         Burner.burn(<-self.oldSupervisor)
         self.newSupervisor.scheduleNextRecurringExecution(
             recurringInterval: recurringInterval,
-            priority: FlowTransactionScheduler.Priority.Medium,
-            priorityRaw: priorityRaw,
+            priority: FlowTransactionScheduler.Priority(rawValue: priorityRaw)!,
             executionEffort: executionEffort,
             scanForStuck: scanForStuck
         )

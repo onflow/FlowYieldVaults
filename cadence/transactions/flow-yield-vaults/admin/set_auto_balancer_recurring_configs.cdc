@@ -6,7 +6,7 @@ import "FlowTransactionScheduler"
 import "FlowYieldVaultsAutoBalancers"
 import "FlowYieldVaultsSchedulerRegistry"
 
-/// Sets the recurring config for all AutoBalancers tied to registered yVaults.
+/// Sets the recurring config for all AutoBalancers tied to registered yVaults that already been configured as recurring
 /// NOTE: This transaction is intended for beta-level use only. Iteration in `prepare` will fail with enough yVaults.
 ///
 /// @param interval: The interval at which to rebalance (in seconds)
@@ -35,6 +35,8 @@ transaction(
         for id in FlowYieldVaultsSchedulerRegistry.getRegisteredYieldVaultIDs() {
             let path = FlowYieldVaultsAutoBalancers.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
             if let ab = signer.storage.borrow<auth(DeFiActions.Identify, DeFiActions.Configure) &DeFiActions.AutoBalancer>(from: path) {
+                // autobalancer is not configured as recurring, skip
+                if ab.getRecurringConfig() == nil { continue; }
                 DeFiActions.alignID(
                     toUpdate: &txnFunder as auth(DeFiActions.Extend) &{DeFiActions.IdentifiableStruct},
                     with: ab
