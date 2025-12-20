@@ -51,9 +51,9 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
 
 
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
-    'A.045a1763c93006ca.FlowYieldVaultsStrategiesV1.USDFStrategy' \
-    'A.045a1763c93006ca.FlowYieldVaultsStrategiesV1.USDFStrategyComposer' \
-    /storage/FlowYieldVaultsStrategyV1ComposerIssuer_0x045a1763c93006ca \
+    'A.045a1763c93006ca.FlowYieldVaultsStrategiesV1_1.USDFStrategy' \
+    'A.045a1763c93006ca.FlowYieldVaultsStrategiesV1_1.USDFStrategyComposer' \
+    /storage/FlowYieldVaultsStrategyV1_1ComposerIssuer_0x045a1763c93006ca \
     --signer emulator-flow-yield-vaults
 
 # grant PoolBeta cap

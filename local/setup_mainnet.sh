@@ -69,9 +69,9 @@ flow transactions send ../cadence/transactions/flow-yield-vaults/admin/upsert_mu
 #
 # add TracerStrategy as supported Strategy with the ability to initialize when new YieldVaults are created
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
-    'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV1.mUSDFStrategy' \
-    'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV1.mUSDFStrategyComposer' \
-    /storage/FlowYieldVaultsStrategyV1ComposerIssuer_0xb1d63873c3cc9f79 \
+    'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy' \
+    'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV1_1.mUSDFStrategyComposer' \
+    /storage/FlowYieldVaultsStrategyV1_1ComposerIssuer_0xb1d63873c3cc9f79 \
     --network mainnet \
     --signer mainnet-admin
 
