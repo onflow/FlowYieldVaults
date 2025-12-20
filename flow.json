@@ -220,6 +220,13 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
+		"PMStrategiesV1": {
+			"source": "cadence/contracts/PMStrategiesV1.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"testing": "0000000000000009"
+			}
+		},
 		"SwapConnectors": {
 			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
 			"aliases": {
@@ -881,6 +888,23 @@
 						},
 						{
 							"value": "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C",
+              "type": "String"
+            }
+          ]
+        },
+        {
+					"name": "PMStrategiesV1",
+					"args": [
+						{
+							"value": "0x0000000000000000000000000000000000000000",
+							"type": "String"
+						},
+						{
+							"value": "0x0000000000000000000000000000000000000000",
+							"type": "String"
+						},
+						{
+							"value": "0x0000000000000000000000000000000000000000",
 							"type": "String"
 						}
 					]
@@ -981,6 +1005,23 @@
 				},
 				{
 					"name": "FlowYieldVaultsStrategiesV1_1",
+					"args": [
+						{
+							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+							"type": "String"
+						},
+						{
+							"value": "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+							"type": "String"
+						},
+						{
+							"value": "0x370A8DF17742867a44e56223EC20D82092242C85",
+							"type": "String"
+						}
+					]
+				},
+        {
+					"name": "PMStrategiesV1",
 					"args": [
 						{
 							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",

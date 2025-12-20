@@ -231,7 +231,6 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
                 self.scheduleNextRecurringExecution(
                     recurringInterval: interval,
                     priority: priority,
-                    priorityRaw: priorityRaw,
                     executionEffort: executionEffort,
                     scanForStuck: scanForStuck
                 )
@@ -245,13 +244,11 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
         ///
         /// @param recurringInterval: The interval in seconds until the next execution
         /// @param priority: The priority level for the scheduled transaction
-        /// @param priorityRaw: The raw priority value (UInt8) for data serialization
         /// @param executionEffort: The execution effort estimate for the transaction
         /// @param scanForStuck: Whether to scan for stuck yield vaults in the next execution
         access(Schedule) fun scheduleNextRecurringExecution(
             recurringInterval: UFix64,
             priority: FlowTransactionScheduler.Priority,
-            priorityRaw: UInt8,
             executionEffort: UInt64,
             scanForStuck: Bool
         ) {
@@ -284,7 +281,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
                     let fees <- vaultRef.withdraw(amount: required) as! @FlowToken.Vault
 
                     let nextData: {String: AnyStruct} = {
-                        "priority": priorityRaw,
+                        "priority": priority.rawValue,
                         "executionEffort": executionEffort,
                         "recurringInterval": recurringInterval,
                         "scanForStuck": scanForStuck
