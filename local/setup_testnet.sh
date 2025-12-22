@@ -143,7 +143,7 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/tra
 #
 # Flow
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
-#   A.d2580caf2ef07c2f.FlowYieldVaultsStrategies.mUSDCStrategy \
+#   A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy \
 #   A.7e60df042a9c0868.FlowToken.Vault \
 #   100.0 \
 #   --signer <TEST_USER> \
@@ -152,13 +152,13 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/tra
 #
 #
 # WBTC (BTCf)
-flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
-  A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy \
-  A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault \
-  0.00001 \
-  --signer alex \
-  --compute-limit 9999 \
-  --network testnet
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy \
+#   A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault \
+#   0.00001 \
+#   --signer <TEST_USER> \
+#   --compute-limit 9999 \
+#   --network testnet
 #
 # WETH (ETHf)
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \

@@ -58,10 +58,31 @@ flow transactions send ./lib/FlowCreditMarket/FlowActions/cadence/transactions/f
 # flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault --network mainnet --signer mainnet-admin
 #
 
+
+# Setup UniV3 path tauUSDFv -> USDF -> WFLOW
 flow transactions send ../cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
 	'A.1654653399040a61.FlowToken.Vault' \
 	"0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c" \
 	'["0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c","0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED","0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"]' \
+	'[100,3000]' \
+	--network mainnet \
+	--signer mainnet-admin
+
+
+# Setup UniV3 path tauUSDFv -> USDF -> WBTC
+flow transactions send ../cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+	'A.0x1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault' \
+	"0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c" \
+	'["0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c","0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED","0x717DAE2BaF7656BE9a9B01deE31d571a9d4c9579"]' \
+	'[100,3000]' \
+	--network mainnet \
+	--signer mainnet-admin
+
+# Setup UniV3 path tauUSDFv -> USDF -> WETH
+flow transactions send ../cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+	'A.0x1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault' \
+	"0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c" \
+	'["0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c","0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED","0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590"]' \
 	'[100,3000]' \
 	--network mainnet \
 	--signer mainnet-admin
