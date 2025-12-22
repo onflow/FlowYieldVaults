@@ -708,17 +708,6 @@
 		"testnet": "access.devnet.nodes.onflow.org:9000"
 	},
 	"accounts": {
-		"alex": {
-			"address": "106d71dfc4beabb0",
-			"key": {
-				"type": "hex",
-				"index": 0,
-				"signatureAlgorithm": "ECDSA_secP256",
-				"signatureAlgorithm": "ECDSA_secp256k1",
-				"hashAlgorithm": "SHA2_256",
-				"privateKey": "fe32cb43d3d214c2122202b94d2be0affa8f4ab995181f72ab8fd2fa5f4fde95"
-			}
-		},
 		"emulator-account": {
 			"address": "f8d6e0586b0a20c7",
 			"key": {
