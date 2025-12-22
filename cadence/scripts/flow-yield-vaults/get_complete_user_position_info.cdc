@@ -241,7 +241,9 @@ fun main(address: Address): CompleteUserSummary {
                 // Since we can't directly map yield vault IDs to position IDs, we'll try sequential IDs
                 // This assumes positions are created in order (0, 1, 2, ...)
                 let positionIndex = UInt64(positions.length)  // Use the current position index
-                actualHealth = pool.positionHealth(pid: positionIndex)
+                let healthUInt128 = pool.positionHealth(pid: positionIndex)
+                // Scale factor: 10^18 = 1e18, but split to avoid UFix64 overflow
+                actualHealth = UFix64(healthUInt128 / 1000000000000000000)
             }
             
             let estimatedHealth = actualHealth
