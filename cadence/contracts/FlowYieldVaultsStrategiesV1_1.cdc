@@ -407,15 +407,12 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             strategy: Type,
             collateral: Type
         ): Bool {
-            let composerConfig = self.configs[composer]!
-            if composerConfig == nil {
-                return false
+            if let composerConfig = self.configs[composer] {
+                if let strategyConfig = composerConfig[strategy] {
+                    return strategyConfig[collateral] != nil
+                }
             }
-            let strategyConfig = composerConfig[strategy]!
-            if strategyConfig == nil {
-                return false
-            }
-            return strategyConfig![collateral] != nil
+            return false
         }
 
         access(all) view fun getSupportedComposers(): {Type: Bool} {
