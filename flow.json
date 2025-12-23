@@ -737,6 +737,14 @@
 				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
+		"mainnet-band-oracle-connectors": {
+			"address": "e36ef556b8b5d955",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/flow-foundation-admin/locations/global/keyRings/defi-actions/cryptoKeys/mainnet-defi-actions/cryptoKeyVersions/1"
+			}
+		},
 		"mainnet-flow-credit-market-deployer": {
 			"address": "6b00ff876c299c61",
 			"key": {

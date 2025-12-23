@@ -31,6 +31,32 @@ flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-m
     --network mainnet \
     --signer mainnet-flow-credit-market-deployer
 
+# add WBTC to band oracle
+cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "BTC" "A.dfc20aee650fcbdf.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault" --network testnet --signer mainnet-band-oracle-connectors && cd ../../..
+
+# add WETH to band oracle
+cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "ETH" "A.dfc20aee650fcbdf.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault" --network testnet --signer mainnet-band-oracle-connectors && cd ../../..
+
+# add WBTC as supported token
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+    'A.dfc20aee650fcbdf.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault' \
+    0.8 \
+    1.0 \
+    1_000_000.0 \
+    1_000_000.0 \
+    --network mainnet \
+    --signer mainnet-flow-credit-market-deployer
+
+# add WETH as supported token
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+    'A.dfc20aee650fcbdf.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault' \
+    0.8 \
+    1.0 \
+    1_000_000.0 \
+    1_000_000.0 \
+    --network mainnet \
+    --signer mainnet-flow-credit-market-deployer
+
 # TODO 
 # swap
 # echo "swap Flow to MOET"
@@ -60,7 +86,7 @@ flow transactions send ./lib/FlowCreditMarket/FlowActions/cadence/transactions/f
 
 
 # Setup UniV3 path tauUSDFv -> USDF -> WFLOW
-flow transactions send ../cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
 	'A.1654653399040a61.FlowToken.Vault' \
 	"0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c" \
 	'["0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c","0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED","0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"]' \
@@ -70,7 +96,7 @@ flow transactions send ../cadence/transactions/flow-yield-vaults/admin/upsert_mu
 
 
 # Setup UniV3 path tauUSDFv -> USDF -> WBTC
-flow transactions send ../cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
 	'A.0x1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault' \
 	"0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c" \
 	'["0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c","0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED","0x717DAE2BaF7656BE9a9B01deE31d571a9d4c9579"]' \
@@ -79,7 +105,7 @@ flow transactions send ../cadence/transactions/flow-yield-vaults/admin/upsert_mu
 	--signer mainnet-admin
 
 # Setup UniV3 path tauUSDFv -> USDF -> WETH
-flow transactions send ../cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
 	'A.0x1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault' \
 	"0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c" \
 	'["0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c","0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED","0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590"]' \
