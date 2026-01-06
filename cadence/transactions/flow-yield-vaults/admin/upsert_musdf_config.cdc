@@ -40,9 +40,6 @@ transaction(
         let composerType = Type<@FlowYieldVaultsStrategiesV1_1.mUSDFStrategyComposer>()
         let strategyType = Type<@FlowYieldVaultsStrategiesV1_1.mUSDFStrategy>()
 
-        //issuer.purgeConfig()
-
-        // === FLOW collateral ===
         if swapPath.length > 0 {
             issuer.addOrUpdateCollateralConfig(
                 composer: composerType,
