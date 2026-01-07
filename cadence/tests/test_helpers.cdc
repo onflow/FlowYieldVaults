@@ -338,6 +338,8 @@ access(all) fun deployContracts() {
             "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C"
         ]
     )
+
+    Test.expect(err, Test.beNil())
     // FLOW looping strategy
     err = Test.deployContract(
         name: "PMStrategiesV1",
