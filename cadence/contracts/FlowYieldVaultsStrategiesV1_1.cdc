@@ -135,6 +135,53 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         }
     }
 
+    access(all) struct TokenBundle {
+        access(all) let moetTokenType: Type
+        access(all) let moetTokenEVMAddress: EVM.EVMAddress
+
+        access(all) let yieldTokenType: Type
+        access(all) let yieldTokenEVMAddress: EVM.EVMAddress
+
+        access(all) let underlying4626AssetType: Type
+        access(all) let underlying4626AssetEVMAddress: EVM.EVMAddress
+
+        init(
+            moetTokenType: Type,
+            moetTokenEVMAddress: EVM.EVMAddress,
+            yieldTokenType: Type,
+            yieldTokenEVMAddress: EVM.EVMAddress,
+            underlying4626AssetType: Type,
+            underlying4626AssetEVMAddress: EVM.EVMAddress
+        ) {
+            self.moetTokenType = moetTokenType
+            self.moetTokenEVMAddress = moetTokenEVMAddress
+            self.yieldTokenType = yieldTokenType
+            self.yieldTokenEVMAddress = yieldTokenEVMAddress
+            self.underlying4626AssetType = underlying4626AssetType
+            self.underlying4626AssetEVMAddress = underlying4626AssetEVMAddress
+        }
+    }
+
+    /// Returned bundle for stored AutoBalancer interactions (reference + caps)
+    access(all) struct AutoBalancerIO {
+        access(all) let autoBalancer:
+            auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw)
+            &DeFiActions.AutoBalancer
+
+        access(all) let sink: {DeFiActions.Sink}
+        access(all) let source: {DeFiActions.Source}
+
+        init(
+            autoBalancer: auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw) &DeFiActions.AutoBalancer,
+            sink: {DeFiActions.Sink},
+            source: {DeFiActions.Source}
+        ) {
+            self.sink = sink
+            self.source = source
+            self.autoBalancer = autoBalancer
+        }
+    }
+
     /// This StrategyComposer builds a mUSDFStrategy
     access(all) resource mUSDFStrategyComposer : FlowYieldVaults.StrategyComposer {
         /// { Strategy Type: { Collateral Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig } }
@@ -289,20 +336,9 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
                 )
         }
 
-        access(self) struct TokenBundle {
-            access(self) let moetTokenType: Type
-            access(self) let moetTokenEVMAddress: EVM.EVMAddress
-
-            access(self) let yieldTokenType: Type
-            access(self) let yieldTokenEVMAddress: EVM.EVMAddress
-
-            access(self) let underlying4626AssetType: Type
-            access(self) let underlying4626AssetEVMAddress: EVM.EVMAddress
-        }
-
         access(self) fun _resolveTokenBundle(
             collateralConfig: FlowYieldVaultsStrategiesV1_1.CollateralConfig
-        ): TokenBundle {
+        ): FlowYieldVaultsStrategiesV1_1.TokenBundle {
             // MOET
             let moetTokenType = Type<@MOET.Vault>()
             let moetTokenEVMAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: moetTokenType)
@@ -325,7 +361,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
                     "Could not retrieve the VM Bridge associated Type for the ERC4626 underlying asset \(underlying4626AssetEVMAddress.toString())"
                 )
 
-            return TokenBundle(
+            return FlowYieldVaultsStrategiesV1_1.TokenBundle(
                 moetTokenType: moetTokenType,
                 moetTokenEVMAddress: moetTokenEVMAddress,
                 yieldTokenType: yieldTokenType,
@@ -368,7 +404,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         }
 
         access(self) fun _createMoetToYieldSwapper(
-            tokens: TokenBundle,
+            tokens: FlowYieldVaultsStrategiesV1_1.TokenBundle,
             uniqueID: DeFiActions.UniqueIdentifier
         ): SwapConnectors.MultiSwapper {
             // Direct MOET -> YIELD via AMM
@@ -411,22 +447,12 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             )
         }
 
-        /// Returned bundle for stored AutoBalancer interactions (reference + caps)
-        access(self) struct AutoBalancerIO {
-            access(self) let autoBalancer:
-                auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw)
-                &DeFiActions.AutoBalancer
-
-            access(self) let sink: Capability<&{DeFiActions.Sink}>
-            access(self) let source: Capability<&{DeFiActions.Source}>
-        }
-
         access(self) fun _initAutoBalancerAndIO(
             oracle: {DeFiActions.PriceOracle},
             yieldTokenType: Type,
             recurringConfig: DeFiActions.AutoBalancerRecurringConfig?,
             uniqueID: DeFiActions.UniqueIdentifier
-        ): AutoBalancerIO {
+        ): FlowYieldVaultsStrategiesV1_1.AutoBalancerIO {
             // NOTE: This stores the AutoBalancer in FlowYieldVaultsAutoBalancers storage and returns an authorized ref.
             let autoBalancerRef =
                 FlowYieldVaultsAutoBalancers._initNewAutoBalancer(
@@ -445,7 +471,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             let source = autoBalancerRef.createBalancerSource()
                 ?? panic("Could not retrieve Source from AutoBalancer with id \(uniqueID.id)")
 
-            return AutoBalancerIO(
+            return FlowYieldVaultsStrategiesV1_1.AutoBalancerIO(
                 autoBalancer: autoBalancerRef,
                 sink: sink,
                 source: source
@@ -454,8 +480,8 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
 
         access(self) fun _openCreditPosition(
             funds: @{FungibleToken.Vault},
-            issuanceSink: Capability<&{DeFiActions.Sink}>,
-            repaymentSource: Capability<&{DeFiActions.Source}>
+            issuanceSink: {DeFiActions.Sink},
+            repaymentSource: {DeFiActions.Source}
         ): FlowCreditMarket.Position {
             let poolCap = FlowYieldVaultsStrategiesV1_1.account.storage.copy<
                 Capability<auth(FlowCreditMarket.EParticipant, FlowCreditMarket.EPosition) &FlowCreditMarket.Pool>
