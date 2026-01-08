@@ -469,6 +469,29 @@ fun addSupportedTokenSimpleInterestCurve(
 }
 
 access(all)
+fun setPoolMockOracle(signer: Test.TestAccount) {
+    let res = _executeTransaction(
+        "./transactions/set_mock_oracle.cdc",
+        [],
+        signer
+    )
+    Test.expect(res, Test.beSucceeded())
+}
+
+/// Updates the BandOracle with the provided symbol prices
+/// @param symbolsRates: Mapping of symbols (e.g. "FLOW") to prices where price = USD rate * 1e9
+///                      Example: {"FLOW": 1_000_000_000} sets FLOW to $1.00
+access(all)
+fun updateBandOracleData(signer: Test.TestAccount, symbolsRates: {String: UInt64}) {
+    let res = _executeTransaction(
+        "../../lib/FlowCreditMarket/FlowActions/cadence/tests/transactions/band-oracle/update_data.cdc",
+        [symbolsRates],
+        signer
+    )
+    Test.expect(res, Test.beSucceeded())
+}
+
+access(all)
 fun rebalancePosition(signer: Test.TestAccount, pid: UInt64, force: Bool, beFailed: Bool) {
     let rebalanceRes = _executeTransaction(
         "../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-management/rebalance_position.cdc",
