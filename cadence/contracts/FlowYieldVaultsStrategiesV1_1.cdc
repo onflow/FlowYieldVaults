@@ -13,18 +13,14 @@ import "ERC4626Utils"
 // Lending protocol
 import "FlowCreditMarket"
 // FlowYieldVaults platform
-import "FlowYieldVaultsClosedBeta"
 import "FlowYieldVaults"
 import "FlowYieldVaultsAutoBalancers"
 // scheduler
 import "FlowTransactionScheduler"
-import "FlowYieldVaultsSchedulerRegistry"
 // tokens
 import "MOET"
 // vm bridge
 import "FlowEVMBridgeConfig"
-import "FlowEVMBridgeUtils"
-import "FlowEVMBridge"
 // live oracles
 import "ERC4626PriceOracles"
 
@@ -528,12 +524,6 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
                 uniqueID: uniqueID
             )
         }
-    }
-
-    access(all) fun createIssuer(
-        configs: {Type: {Type: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}}}
-    ): @StrategyComposerIssuer {
-        return <- create StrategyComposerIssuer(configs: configs)
     }
 
     access(all) entitlement Configure

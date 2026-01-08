@@ -15,7 +15,7 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboard
 # configure FlowCreditMarket
 #
 # add MOET - USD association on Band Oracle
-cd ./libs/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "USD" "A.426f0458ced60037.MOET.Vault" --network testnet --signer testnet-band-oracle-connectors
+cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "USD" "A.426f0458ced60037.MOET.Vault" --network testnet --signer testnet-band-oracle-connectors
 
 # create Pool with MOET as default token with Mock Oracle
 flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc 'A.426f0458ced60037.MOET.Vault' --network testnet --signer testnet-flow-credit-market-deployer

@@ -32,10 +32,10 @@ flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-m
     --signer mainnet-flow-credit-market-deployer
 
 # add WBTC to band oracle
-cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "BTC" "A.dfc20aee650fcbdf.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault" --network testnet --signer mainnet-band-oracle-connectors && cd ../../..
+cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "BTC" "A.dfc20aee650fcbdf.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault" --network mainnet --signer mainnet-band-oracle-connectors && cd ../../..
 
 # add WETH to band oracle
-cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "ETH" "A.dfc20aee650fcbdf.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault" --network testnet --signer mainnet-band-oracle-connectors && cd ../../..
+cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "ETH" "A.dfc20aee650fcbdf.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault" --network mainnet --signer mainnet-band-oracle-connectors && cd ../../..
 
 # add WBTC as supported token
 flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
@@ -97,7 +97,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mus
 
 # Setup UniV3 path tauUSDFv -> USDF -> WBTC
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
-	'A.0x1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault' \
+	'A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault' \
 	"0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c" \
 	'["0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c","0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED","0x717DAE2BaF7656BE9a9B01deE31d571a9d4c9579"]' \
 	'[100,3000]' \
@@ -106,7 +106,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mus
 
 # Setup UniV3 path tauUSDFv -> USDF -> WETH
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
-	'A.0x1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault' \
+	'A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault' \
 	"0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c" \
 	'["0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c","0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED","0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590"]' \
 	'[100,3000]' \
@@ -114,7 +114,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mus
 	--signer mainnet-admin
 
 #
-# add TracerStrategy as supported Strategy with the ability to initialize when new YieldVaults are created
+# add mUSDFStrategy as supported Strategy with the ability to initialize when new YieldVaults are created
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy' \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV1_1.mUSDFStrategyComposer' \
