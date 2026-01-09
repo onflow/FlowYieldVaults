@@ -184,7 +184,8 @@
             "aliases": {
                 "emulator": "045a1763c93006ca",
                 "testing": "0000000000000008",
-                "testnet": "d2580caf2ef07c2f"
+                "testnet": "d2580caf2ef07c2f",
+                "mainnet": "b1d63873c3cc9f79"
             }
         },
         "MockOracle": {
