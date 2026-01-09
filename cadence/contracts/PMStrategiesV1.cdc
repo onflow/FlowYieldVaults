@@ -171,7 +171,7 @@ access(all) contract PMStrategiesV1 {
         }
     }
 
-    /// This strategy uses tauUSDF vaults (Tau Labs USDF Vault)
+    /// This strategy uses FUSDEV vaults (Flow USD Expeditionary Vault)
     access(all) resource FUSDEVStrategy : FlowYieldVaults.Strategy, DeFiActions.IdentifiableResource {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
