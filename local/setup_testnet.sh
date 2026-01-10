@@ -109,3 +109,13 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/tra
 #   --signer <TEST_USER> \
 #   --compute-limit 9999 \
 #   --network testnet
+#
+# PYUSD0
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.d2580caf2ef07c2f.PMStrategiesV1.FUSDEVStrategy \
+#   A.dfc20aee650fcbdf.EVMVMBridgedToken_d7d43ab7b365f0d0789ae83f4385fa710ffdc98f.Vault \
+#   100.0 \
+#   --compute-limit 9999 \
+#   --network testnet \
+#   --signer <TEST_USER>
+#
