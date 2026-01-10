@@ -144,6 +144,8 @@ flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-cr
 #
 
 # test PEAK MONEY strategy
+#
+# WFLOW
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
 #   A.b1d63873c3cc9f79.PMStrategiesV1.syWFLOWvStrategy \
 #   A.1654653399040a61.FlowToken.Vault \
@@ -151,3 +153,13 @@ flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-cr
 #   --signer <TEST_USER> \
 #   --compute-limit 9999 \
 #   --network mainnet
+#
+# PYUSD0
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.b1d63873c3cc9f79.PMStrategiesV1.FUSDEVStrategy \
+#   A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault \
+#   1.0 \
+#   --compute-limit 9999 \
+#   --network mainnet \
+#   --signer <TEST_USER>
+#
