@@ -573,7 +573,13 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             return false
         }
 
-        access(all) view fun isSupportedComposer(_ type: Type): Bool {
+        access(all) view fun getSupportedComposers(): {Type: Bool} {
+            return { 
+                Type<@mUSDFStrategyComposer>(): true
+            }
+        }
+
+        access(self) view fun isSupportedComposer(_ type: Type): Bool {
             return type == Type<@mUSDFStrategyComposer>()
         }
         access(all) fun issueComposer(_ type: Type): @{FlowYieldVaults.StrategyComposer} {
