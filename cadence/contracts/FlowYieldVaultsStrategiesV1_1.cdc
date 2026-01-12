@@ -665,7 +665,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         access(Configure) fun purgeConfig() {
             self.configs = {
                 Type<@mUSDFStrategyComposer>(): {
-                    Type<@mUSDFStrategy>(): {} as {type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}
+                    Type<@mUSDFStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}
                 }
             }
         }
@@ -749,9 +749,9 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             panic("Could not find EVM address for \(moetType.identifier) - ensure the asset is onboarded to the VM Bridge")
         }
 
-        let configs: {Type: {Type: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}}} = {
+        let configs = {
                 Type<@mUSDFStrategyComposer>(): {
-                    Type<@mUSDFStrategy>(): {}
+                    Type<@mUSDFStrategy>(): ({} as {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig})
                 }
             }
         self.account.storage.save(<-create StrategyComposerIssuer(configs: configs), to: self.IssuerStoragePath)
