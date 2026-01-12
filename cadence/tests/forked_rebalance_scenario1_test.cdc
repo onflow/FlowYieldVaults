@@ -51,31 +51,13 @@ fun setup() {
 	// testnet/mainnet pool uses BandOracle
     // set all prices to 1.0 for testing
     let symbolPrices: {String: UFix64}   = { 
-        "1INCH": 1.0, 
-        "AAVE": 1.0, 
-        "ADA": 1.0, 
-        "ATOM": 1.0, 
-        "AVAX": 1.0, 
-        "BAT": 1.0, 
-        "BNB": 1.0, 
-        "BTC": 1.0, 
-        "CAKE": 1.0, 
-        "CRV": 1.0, 
-        "DAI": 1.0, 
-        "DOGE": 1.0, 
-        "DOT": 1.0, 
-        "DYDX": 1.0, 
         "ETH": 1.0, 
         "FLOW": 1.0, 
-        "LINK": 1.0, 
-        "LTC": 1.0, 
-        "OP": 1.0, 
-        "POL": 1.0, 
         "PYUSD": 1.0, 
-        "S": 1.0, 
-        "SHIB": 1.0, 
-        "SOL": 1.0, 
-        "SUSHI": 1.0
+        "USDC": 1.0,
+        "USDT": 1.0,
+        "WBTC": 1.0,
+        "USD": 1.0
     }
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: symbolPrices)
 
