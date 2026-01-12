@@ -565,27 +565,22 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             strategy: Type,
             collateral: Type
         ): Bool {
-            let composerConfig = self.configs[composer] ?? nil
-            if composerConfig == nil {
-                return false
+            if let composerConfig = self.configs[composer] {
+                if let strategyConfig = composerConfig[strategy] {
+                    return strategyConfig[collateral] != nil
+                }
             }
-            let strategyConfig = composerConfig![strategy] ?? nil
-            if strategyConfig == nil {
-                return false
-            }
-            return strategyConfig![collateral] != nil
+            return false
         }
 
-        access(all) view fun getSupportedComposers(): {Type: Bool} {
-            return { 
-                Type<@mUSDFStrategyComposer>(): true
-            }
+        access(all) view fun isSupportedComposer(_ type: Type): Bool {
+            return type == Type<mUSDFStrategyComposer>()
         }
         access(all) fun issueComposer(_ type: Type): @{FlowYieldVaults.StrategyComposer} {
             pre {
-                self.getSupportedComposers()[type] == true:
+                self.isSupportedComposer(type) == true:
                 "Unsupported StrategyComposer \(type.identifier) requested"
-                (&self.configs[type] as &{Type: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}}?) != nil:
+                self.configs[type] != nil:
                 "Could not find config for StrategyComposer \(type.identifier)"
             }
             switch type {
@@ -602,7 +597,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             config: {Type: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}}
         ) {
             pre {
-                self.getSupportedComposers()[composer] == true:
+                self.isSupportedComposer(composer) == true:
                     "Unsupported StrategyComposer Type \(composer.identifier)"
             }
 
@@ -618,7 +613,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
 
             // Merge instead of overwrite
             let existingComposerConfig = self.configs[composer] ?? {}
-            var mergedComposerConfig: {Type: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}} = existingComposerConfig
+            var mergedComposerConfig = existingComposerConfig
 
             for stratType in config.keys {
                 let newPerCollateral = config[stratType]!
@@ -643,7 +638,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             yieldToCollateralFeePath: [UInt32]
         ) {
             pre {
-                self.getSupportedComposers()[composer] == true:
+                self.isSupportedComposer(composer) == true:
                     "Unsupported StrategyComposer Type \(composer.identifier)"
                 strategyType.isSubtype(of: Type<@{FlowYieldVaults.Strategy}>()):
                     "Strategy type \(strategyType.identifier) is not a FlowYieldVaults.Strategy"
@@ -659,7 +654,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             )
 
             // Wrap into the nested config expected by upsertConfigFor
-            let singleCollateralConfig: {Type: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}} = {
+            let singleCollateralConfig = {
                 strategyType: {
                     collateralVaultType: base
                 }
@@ -670,9 +665,9 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         access(Configure) fun purgeConfig() {
             self.configs = {
                 Type<@mUSDFStrategyComposer>(): {
-                    Type<@mUSDFStrategy>(): {}
+                    Type<@mUSDFStrategy>(): {} as {type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}
                 }
-            } as {Type: {Type: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}}}
+            }
         }
     }
 
@@ -750,8 +745,9 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         self.config = {}
 
         let moetType = Type<@MOET.Vault>()
-        let moetEVMAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: Type<@MOET.Vault>())
-            ?? panic("Could not find EVM address for \(moetType.identifier) - ensure the asset is onboarded to the VM Bridge")
+        if FlowEVMBridgeConfig.getEVMAddressAssociated(with: Type<@MOET.Vault>()) == nil {
+            panic("Could not find EVM address for \(moetType.identifier) - ensure the asset is onboarded to the VM Bridge")
+        }
 
         let configs: {Type: {Type: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}}} = {
                 Type<@mUSDFStrategyComposer>(): {
