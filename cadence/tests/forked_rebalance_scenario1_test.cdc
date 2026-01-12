@@ -1,4 +1,4 @@
-#test_fork(network: "mainnet", height: nil)
+#test_fork(network: "testnet", height: nil)
 
 import Test
 import BlockchainHelpers
@@ -25,14 +25,20 @@ import "FlowCreditMarket"
 
 
 // check (and update) flow.json for correct addresses
-access(all) let flowYieldVaultsAccount = Test.getAccount(0xb1d63873c3cc9f79)
-access(all) let yieldTokenAccount = Test.getAccount(0xb1d63873c3cc9f79)
-access(all) let flowCreditMarketAccount = Test.getAccount(0x6b00ff876c299c61)
-access(all) let bandOracleAccount = Test.getAccount(0x6801a6222ebf784a)
+// testnet addresses
+access(all) let flowYieldVaultsAccount = Test.getAccount(0xd2580caf2ef07c2f)
+access(all) let yieldTokenAccount = Test.getAccount(0xd2580caf2ef07c2f)
+access(all) let flowCreditMarketAccount = Test.getAccount(0x426f0458ced60037)
+access(all) let bandOracleAccount = Test.getAccount(0x9fb6606c300b5051)
 
-access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.TracerStrategy>().identifier
+// mainnet addresses
+// access(all) let flowYieldVaultsAccount = Test.getAccount(0xb1d63873c3cc9f79)
+// access(all) let yieldTokenAccount = Test.getAccount(0xb1d63873c3cc9f79)
+// access(all) let flowCreditMarketAccount = Test.getAccount(0x6b00ff876c299c61)
+// access(all) let bandOracleAccount = Test.getAccount(0x6801a6222ebf784a)
+
+access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.mUSDCStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
-access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
 access(all) let collateralFactor = 0.8
@@ -42,54 +48,63 @@ access(all) var snapshot: UInt64 = 0
 
 access(all)
 fun setup() {
-	// testnet/mainnet pool uses BandOracle, so we need to set MockOracle
-	// TODO: control live oracles? should be possible with BandOracle but unlikely with ERC4626PriceOracles
-	setPoolMockOracle(signer: flowCreditMarketAccount)
-
-    // set mocked token prices
-	setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
-	setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
+	// testnet/mainnet pool uses BandOracle
+    // set all prices to 1.0 for testing
+    let symbolPrices: {String: UFix64}   = { 
+        "1INCH": 1.0, 
+        "AAVE": 1.0, 
+        "ADA": 1.0, 
+        "ATOM": 1.0, 
+        "AVAX": 1.0, 
+        "BAT": 1.0, 
+        "BNB": 1.0, 
+        "BTC": 1.0, 
+        "CAKE": 1.0, 
+        "CRV": 1.0, 
+        "DAI": 1.0, 
+        "DOGE": 1.0, 
+        "DOT": 1.0, 
+        "DYDX": 1.0, 
+        "ETH": 1.0, 
+        "FLOW": 1.0, 
+        "LINK": 1.0, 
+        "LTC": 1.0, 
+        "OP": 1.0, 
+        "POL": 1.0, 
+        "PYUSD": 1.0, 
+        "S": 1.0, 
+        "SHIB": 1.0, 
+        "SOL": 1.0, 
+        "SUSHI": 1.0
+    }
+    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: symbolPrices)
 
 	let reserveAmount = 100_000_00.0
-    // make sure we have enough tokens
 	mintFlow(to: flowCreditMarketAccount, amount: reserveAmount)
 	mintMoet(signer: flowCreditMarketAccount, to: flowCreditMarketAccount.address, amount: reserveAmount, beFailed: false)
-	mintYield(signer: yieldTokenAccount, to: flowYieldVaultsAccount.address, amount: reserveAmount, beFailed: false)
-    // set up liquidity
-	setMockSwapperLiquidityConnector(signer: flowYieldVaultsAccount, vaultStoragePath: MOET.VaultStoragePath)
-	setMockSwapperLiquidityConnector(signer: flowYieldVaultsAccount, vaultStoragePath: YieldToken.VaultStoragePath)
-	setMockSwapperLiquidityConnector(signer: flowYieldVaultsAccount, vaultStoragePath: /storage/flowTokenVault)
+    // TODO: mint evm yield token?
 
     // on mainnet, we don't use MockFlowCreditMarketConsumer
     // the pool already has MOET liquidity
     // the following code would be necessary for testnet
-	// var err = Test.deployContract(
-    //     name: "MockFlowCreditMarketConsumer",
-    //     path: "../../lib/FlowCreditMarket/cadence/contracts/mocks/MockFlowCreditMarketConsumer.cdc",
-    //     arguments: []
-    // )
-    // Test.expect(err, Test.beNil())
+	var err = Test.deployContract(
+        name: "MockFlowCreditMarketConsumer",
+        path: "../../lib/FlowCreditMarket/cadence/contracts/mocks/MockFlowCreditMarketConsumer.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
 
-	// open wrapped position (pushToDrawDownSink)
+    // open wrapped position (pushToDrawDownSink)
 	// the equivalent of depositing reserves - this provides MOET liquidity to the pool
-	// let openRes = executeTransaction(
-	// 	"../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
-	// 	[reserveAmount/2.0, /storage/flowTokenVault, true],
-	// 	flowCreditMarketAccount
-	// )
-	// Test.expect(openRes, Test.beSucceeded())
-
-	// enable mocked Strategy creation, this autobalancer uses mocked oracle
-	addStrategyComposer(
-		signer: flowYieldVaultsAccount,
-		strategyIdentifier: strategyIdentifier,
-		composerIdentifier: Type<@FlowYieldVaultsStrategies.TracerStrategyComposer>().identifier,
-		issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
-		beFailed: false
+	let openRes = executeTransaction(
+		"../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
+		[reserveAmount/2.0, /storage/flowTokenVault, true],
+		flowCreditMarketAccount
 	)
+	Test.expect(openRes, Test.beSucceeded())
 
-	// // Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
-	mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
+	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
+	mintFlow(to: flowYieldVaultsAccount, amount: reserveAmount)
 }
 
 access(all) var testSnapshot: UInt64 = 0
@@ -152,7 +167,7 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 
 		log("[TEST] YieldVault balance before flow price \(flowPrice) \(yieldVaultBalance ?? 0.0)")
 
-		setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: flowPrice)
+		setBandOraclePrice(signer: bandOracleAccount, symbol: "FLOW", price: flowPrice)
 
 		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
