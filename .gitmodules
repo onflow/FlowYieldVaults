@@ -22,6 +22,3 @@
 [submodule "lib/FlowCreditMarket"]
 	path = lib/FlowCreditMarket
 	url = git@github.com:onflow/FlowCreditMarket.git
-[submodule "lib/FlowYieldVaultsEVM"]
-	path = lib/FlowYieldVaultsEVM
-	url = git@github.com:onflow/FlowYieldVaultsEVM.git
