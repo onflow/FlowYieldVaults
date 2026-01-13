@@ -121,6 +121,21 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
 	--network testnet \
 	--signer testnet-admin
 
+# PYUSD0 Vault
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert-pm-strategy-config.cdc \
+	'A.d2580caf2ef07c2f.PMStrategiesV1.FUSDEVStrategy' \
+	'A.dfc20aee650fcbdf.EVMVMBridgedToken_d7d43ab7b365f0d0789ae83f4385fa710ffdc98f.Vault' \
+	'0x61b44D19486EE492449E83C1201581C754e9e1E1' \
+	100 \
+	--network testnet \
+	--signer testnet-admin
+
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
+	'A.d2580caf2ef07c2f.PMStrategiesV1.FUSDEVStrategy' \
+	'A.d2580caf2ef07c2f.PMStrategiesV1.ERC4626VaultStrategyComposer' \
+	/storage/PMStrategiesV1ComposerIssuer_0xd2580caf2ef07c2f \
+	--network testnet \
+	--signer testnet-admin
 
 # grant PoolBeta cap
 echo "Grant Protocol Beta access to FlowYieldVaults"
@@ -168,3 +183,13 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/tra
 #   --signer <TEST_USER> \
 #   --compute-limit 9999 \
 #   --network testnet
+#
+# PYUSD0
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.d2580caf2ef07c2f.PMStrategiesV1.FUSDEVStrategy \
+#   A.dfc20aee650fcbdf.EVMVMBridgedToken_d7d43ab7b365f0d0789ae83f4385fa710ffdc98f.Vault \
+#   100.0 \
+#   --compute-limit 9999 \
+#   --network testnet \
+#   --signer <TEST_USER>
+#

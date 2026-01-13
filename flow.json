@@ -1121,6 +1121,23 @@
 							"type": "String"
 						}
 					]
+				},
+        {
+					"name": "PMStrategiesV1",
+					"args": [
+						{
+							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+							"type": "String"
+						},
+						{
+							"value": "0x2Db6468229F6fB1a77d248Dbb1c386760C257804",
+							"type": "String"
+						},
+						{
+							"value": "0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c",
+							"type": "String"
+						}
+					]
 				}
 			]
 		}

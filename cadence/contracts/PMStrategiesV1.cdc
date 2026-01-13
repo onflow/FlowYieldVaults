@@ -171,7 +171,72 @@ access(all) contract PMStrategiesV1 {
         }
     }
 
-    /// StrategyComposer for ERC4626 vault strategies (e.g., syWFLOWvStrategy, tauUSDFvStrategy).
+    /// This strategy uses FUSDEV vaults (Flow USD Expeditionary Vault)
+    access(all) resource FUSDEVStrategy : FlowYieldVaults.Strategy, DeFiActions.IdentifiableResource {
+        /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
+        /// specific Identifier to associated connectors on construction
+        access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
+
+        /// User-facing deposit connector
+        access(self) var sink: {DeFiActions.Sink}
+        /// User-facing withdrawal connector
+        access(self) var source: {DeFiActions.Source}
+
+        init(
+            id: DeFiActions.UniqueIdentifier,
+            sink: {DeFiActions.Sink},
+            source: {DeFiActions.Source}
+        ) {
+            self.uniqueID = id
+            self.sink = sink
+            self.source = source
+        }
+
+        // Inherited from FlowYieldVaults.Strategy default implementation
+        // access(all) view fun isSupportedCollateralType(_ type: Type): Bool
+
+        access(all) view fun getSupportedCollateralTypes(): {Type: Bool} {
+            return { self.sink.getSinkType(): true }
+        }
+        /// Returns the amount available for withdrawal via the inner Source
+        access(all) fun availableBalance(ofToken: Type): UFix64 {
+            return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
+        }
+        /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
+        access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
+            self.sink.depositCapacity(from: from)
+        }
+        /// Withdraws up to the max amount, returning the withdrawn Vault. If the requested token type is unsupported,
+        /// an empty Vault is returned.
+        access(FungibleToken.Withdraw) fun withdraw(maxAmount: UFix64, ofToken: Type): @{FungibleToken.Vault} {
+            if ofToken != self.source.getSourceType() {
+                return <- DeFiActionsUtils.getEmptyVault(ofToken)
+            }
+            return <- self.source.withdrawAvailable(maxAmount: maxAmount)
+        }
+        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
+        access(contract) fun burnCallback() {
+            FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
+        }
+        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
+            return DeFiActions.ComponentInfo(
+                type: self.getType(),
+                id: self.id(),
+                innerComponents: [
+                    self.sink.getComponentInfo(),
+                    self.source.getComponentInfo()
+                ]
+            )
+        }
+        access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
+            return self.uniqueID
+        }
+        access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) {
+            self.uniqueID = id
+        }
+    }
+
+    /// StrategyComposer for ERC4626 vault strategies (e.g., syWFLOWvStrategy, tauUSDFvStrategy, FUSDEVStrategy).
     access(all) resource ERC4626VaultStrategyComposer : FlowYieldVaults.StrategyComposer {
         /// { Strategy Type: { Collateral Type: { String: AnyStruct } } }
         access(self) let config: {Type: {Type: {String: AnyStruct}}}
@@ -329,6 +394,8 @@ access(all) contract PMStrategiesV1 {
                 return <-create syWFLOWvStrategy(id: uniqueID, sink: abaSwapSink, source: abaSwapSource)
             case Type<@tauUSDFvStrategy>():
                 return <-create tauUSDFvStrategy(id: uniqueID, sink: abaSwapSink, source: abaSwapSource)
+            case Type<@FUSDEVStrategy>():
+                return <-create FUSDEVStrategy(id: uniqueID, sink: abaSwapSink, source: abaSwapSource)
             default:
                 panic("Unsupported strategy type \(type.identifier)")
             }
