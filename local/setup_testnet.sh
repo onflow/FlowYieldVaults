@@ -171,18 +171,18 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/tra
 #   A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy \
 #   A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault \
 #   0.00001 \
-#   --signer <TEST_USER> \
 #   --compute-limit 9999 \
-#   --network testnet
+#   --network testnet \
+#   --signer <TEST_USER>
 #
 # WETH (ETHf)
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
 #   A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy \
 #   A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault \
 #   0.001 \
-#   --signer <TEST_USER> \
 #   --compute-limit 9999 \
-#   --network testnet
+#   --network testnet \
+#   --signer <TEST_USER>
 #
 # PYUSD0
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
