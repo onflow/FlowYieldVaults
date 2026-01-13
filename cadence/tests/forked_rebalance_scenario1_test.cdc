@@ -44,10 +44,21 @@ access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 access(all) let collateralFactor = 0.8
 access(all) let targetHealthFactor = 1.3
 
+// mUSDC vault address on testnet (yieldTokenEVMAddress from FlowYieldVaultsStrategies)
+access(all) let mUSDCVaultAddress = "0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95"
+
 access(all) var snapshot: UInt64 = 0
 
 access(all)
 fun setup() {
+	// Deploy mock ERC4626PriceOracles contract to override the real one
+	var err = Test.deployContract(
+        name: "ERC4626PriceOracles",
+        path: "../contracts/mocks/MockERC4626PriceOracles.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
 	// testnet/mainnet pool uses BandOracle
     // set all prices to 1.0 for testing
     let symbolPrices: {String: UFix64}   = { 
@@ -69,7 +80,7 @@ fun setup() {
     // on mainnet, we don't use MockFlowCreditMarketConsumer
     // the pool already has MOET liquidity
     // the following code would be necessary for testnet
-	var err = Test.deployContract(
+	err = Test.deployContract(
         name: "MockFlowCreditMarketConsumer",
         path: "../../lib/FlowCreditMarket/cadence/contracts/mocks/MockFlowCreditMarketConsumer.cdc",
         arguments: []
@@ -90,6 +101,23 @@ fun setup() {
 }
 
 access(all) var testSnapshot: UInt64 = 0
+
+/// Helper function to set mock ERC4626 vault price for testing
+///
+/// @param vaultAddress The EVM address of the vault (as a hex string)
+/// @param price The mock price (nil to clear the mock)
+///
+access(all)
+fun setMockERC4626VaultPrice(vaultAddress: String, price: UFix64?) {
+    let oracleAccount = Test.getAccount(Type<ERC4626PriceOracles>().address!)
+    let result = executeTransaction(
+        "transactions/set_mock_erc4626_vault_data.cdc",
+        [vaultAddress, price],
+        oracleAccount
+    )
+    Test.expect(result, Test.beSucceeded())
+}
+
 access(all)
 fun test_ForkedRebalanceYieldVaultScenario1() {
 	let fundingAmount = 1000.0
@@ -114,6 +142,13 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	mintFlow(to: user, amount: fundingAmount)
     grantBeta(flowYieldVaultsAccount, user)
+
+	// Set initial mock vault price before creating the yield vault
+	// Need to mock BOTH oracles:
+	// - ERC4626PriceOracles: used by AutoBalancer for rebalancing decisions
+	// - BandOracle: used by FlowCreditMarket to value YieldToken collateral
+	setMockERC4626VaultPrice(vaultAddress: mUSDCVaultAddress, price: 0.5)
+	setBandOraclePrice(signer: bandOracleAccount, symbol: "YieldToken", price: 0.5)
 
 	createYieldVault(
 		signer: user,
@@ -149,7 +184,12 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 
 		log("[TEST] YieldVault balance before flow price \(flowPrice) \(yieldVaultBalance ?? 0.0)")
 
-		setBandOraclePrice(signer: bandOracleAccount, symbol: "FLOW", price: flowPrice)
+		// Mock BOTH oracles
+		// NOTE: @jribbink - I am not totally sure what these values should be set to
+		// ERC4626PriceOracles: AutoBalancer uses this for rebalancing decisions
+		setMockERC4626VaultPrice(vaultAddress: mUSDCVaultAddress, price: flowPrice)
+		// BandOracle: FlowCreditMarket uses this to value YieldToken collateral
+		setBandOraclePrice(signer: bandOracleAccount, symbol: "YieldToken", price: flowPrice)
 
 		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
