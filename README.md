@@ -173,6 +173,10 @@ transaction close_yield_vault(id: UInt64)
 
 The `local/setup_emulator.sh` script provides emulator configuration for local development and testing.
 
+### Submodules
+
+Run `./local/init_submodules.sh` once after cloning to initialize submodules while skipping FlowYieldVaultsEVM’s nested submodules and avoid the circular fetch. After that, you can run the other setup scripts normally.
+
 ### Flow Configuration
 
 `flow.json` contains network configurations and contract deployment settings. It is created and managed with the [Flow CLI](https://developers.flow.com/build/tools/flow-cli).
