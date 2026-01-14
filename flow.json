@@ -184,8 +184,7 @@
             "aliases": {
                 "emulator": "045a1763c93006ca",
                 "testing": "0000000000000008",
-                "testnet": "d2580caf2ef07c2f",
-                "mainnet": "b1d63873c3cc9f79"
+                "testnet": "d2580caf2ef07c2f"
             }
         },
         "MockOracle": {
@@ -193,8 +192,7 @@
             "aliases": {
                 "emulator": "045a1763c93006ca",
                 "testing": "0000000000000009",
-                "testnet": "d2580caf2ef07c2f",
-                "mainnet": "b1d63873c3cc9f79"
+                "testnet": "d2580caf2ef07c2f"
             }
         },
         "MockStrategy": {
@@ -210,8 +208,7 @@
             "aliases": {
                 "emulator": "045a1763c93006ca",
                 "testing": "0000000000000009",
-                "testnet": "d2580caf2ef07c2f",
-                "mainnet": "b1d63873c3cc9f79"
+                "testnet": "d2580caf2ef07c2f"
             }
         },
         "PMStrategiesV1": {
@@ -308,7 +305,7 @@
         },
         "EVM": {
             "source": "mainnet://e467b9dd11fa00df.EVM",
-            "hash": "7a97fcde26ab4edf223338c43887acb19d8d75b19118e4b60970605bb82f22af",
+            "hash": "2a4782c7459dc5b72c034f67c8dd1beac6bb9b29104772a3e6eb6850718bb3b4",
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "e467b9dd11fa00df",
@@ -473,7 +470,7 @@
         },
         "FlowTransactionSchedulerUtils": {
             "source": "mainnet://e467b9dd11fa00df.FlowTransactionSchedulerUtils",
-            "hash": "429ed886472cd65def9e5ab1dd20079b0dcfb23095d18d54077767ac3316a8ce",
+            "hash": "b5d6f06dd43e4cee907e08a5bc46df0bb9c2338d806d9d253789aee4c4ac01ad",
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "e467b9dd11fa00df",
@@ -601,8 +598,7 @@
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
-                "testing": "0000000000000001",
-                "testnet": "dfc20aee650fcbdf"
+                "testing": "0000000000000001"
             }
         },
         "SerializeMetadata": {
@@ -611,7 +607,6 @@
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
-                "testnet": "dfc20aee650fcbdf",
                 "testing": "0000000000000001"
             }
         },
@@ -1056,6 +1051,23 @@
                                 }
                             ],
                             "type": "Array"
+                        }
+                    ]
+                },
+                {
+                    "name": "PMStrategiesV1",
+                    "args": [
+                        {
+                            "value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+                            "type": "String"
+                        },
+                        {
+                            "value": "0x2Db6468229F6fB1a77d248Dbb1c386760C257804",
+                            "type": "String"
+                        },
+                        {
+                            "value": "0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c",
+                            "type": "String"
                         }
                     ]
                 }
