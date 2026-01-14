@@ -349,8 +349,14 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
         priority: FlowTransactionScheduler.Priority,
         executionEffort: UInt64
     ): FlowTransactionScheduler.EstimatedScheduledTransaction {
+        let maximumSizeData: {String: AnyStruct} = {
+            "priority": priority.rawValue,
+            "executionEffort": executionEffort,
+            "recurringInterval": UFix64.max,
+            "scanForStuck": true
+        }
         return FlowTransactionScheduler.estimate(
-            data: nil,
+            data: maximumSizeData,
             timestamp: timestamp,
             priority: priority,
             executionEffort: executionEffort
