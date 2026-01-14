@@ -1,4 +1,4 @@
-#test_fork(network: "testnet", height: nil)
+#test_fork(network: "mainnet", height: nil)
 
 import Test
 import BlockchainHelpers
@@ -26,16 +26,16 @@ import "FlowCreditMarket"
 
 // check (and update) flow.json for correct addresses
 // testnet addresses
-access(all) let flowYieldVaultsAccount = Test.getAccount(0xd2580caf2ef07c2f)
-access(all) let yieldTokenAccount = Test.getAccount(0xd2580caf2ef07c2f)
-access(all) let flowCreditMarketAccount = Test.getAccount(0x426f0458ced60037)
-access(all) let bandOracleAccount = Test.getAccount(0x9fb6606c300b5051)
+// access(all) let flowYieldVaultsAccount = Test.getAccount(0xd2580caf2ef07c2f)
+// access(all) let yieldTokenAccount = Test.getAccount(0xd2580caf2ef07c2f)
+// access(all) let flowCreditMarketAccount = Test.getAccount(0x426f0458ced60037)
+// access(all) let bandOracleAccount = Test.getAccount(0x9fb6606c300b5051)
 
 // mainnet addresses
-// access(all) let flowYieldVaultsAccount = Test.getAccount(0xb1d63873c3cc9f79)
-// access(all) let yieldTokenAccount = Test.getAccount(0xb1d63873c3cc9f79)
-// access(all) let flowCreditMarketAccount = Test.getAccount(0x6b00ff876c299c61)
-// access(all) let bandOracleAccount = Test.getAccount(0x6801a6222ebf784a)
+access(all) let flowYieldVaultsAccount = Test.getAccount(0xb1d63873c3cc9f79)
+access(all) let yieldTokenAccount = Test.getAccount(0xb1d63873c3cc9f79)
+access(all) let flowCreditMarketAccount = Test.getAccount(0x6b00ff876c299c61)
+access(all) let bandOracleAccount = Test.getAccount(0x6801a6222ebf784a)
 
 access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.mUSDCStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
@@ -69,21 +69,21 @@ fun setup() {
     // on mainnet, we don't use MockFlowCreditMarketConsumer
     // the pool already has MOET liquidity
     // the following code would be necessary for testnet
-	var err = Test.deployContract(
-        name: "MockFlowCreditMarketConsumer",
-        path: "../../lib/FlowCreditMarket/cadence/contracts/mocks/MockFlowCreditMarketConsumer.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
+	// var err = Test.deployContract(
+    //     name: "MockFlowCreditMarketConsumer",
+    //     path: "../../lib/FlowCreditMarket/cadence/contracts/mocks/MockFlowCreditMarketConsumer.cdc",
+    //     arguments: []
+    // )
+    // Test.expect(err, Test.beNil())
 
-    // open wrapped position (pushToDrawDownSink)
-	// the equivalent of depositing reserves - this provides MOET liquidity to the pool
-	let openRes = executeTransaction(
-		"../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
-		[reserveAmount/2.0, /storage/flowTokenVault, true],
-		flowCreditMarketAccount
-	)
-	Test.expect(openRes, Test.beSucceeded())
+    // // open wrapped position (pushToDrawDownSink)
+	// // the equivalent of depositing reserves - this provides MOET liquidity to the pool
+	// let openRes = executeTransaction(
+	// 	"../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
+	// 	[reserveAmount/2.0, /storage/flowTokenVault, true],
+	// 	flowCreditMarketAccount
+	// )
+	// Test.expect(openRes, Test.beSucceeded())
 
 	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
 	mintFlow(to: flowYieldVaultsAccount, amount: reserveAmount)
