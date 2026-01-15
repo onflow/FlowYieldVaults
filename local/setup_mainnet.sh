@@ -37,33 +37,56 @@ cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transa
 # add WETH to band oracle
 cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "ETH" "A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault" --network mainnet --signer mainnet-band-oracle-connectors && cd ../../..
 
-# add WBTC as supported token
-flow transactions send ../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_kink_curve.cdc \
+# WBTC simple curve
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault' \
     0.8 \
     1.0 \
-    0.8 \
-    0.0 \
-    0.04 \
-    0.4 \
     1_000_000.0 \
     1_000_000.0 \
     --network mainnet \
     --signer mainnet-flow-credit-market-deployer
 
-# add WETH as supported token
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_kink_curve.cdc \
+# WETH simple curve
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault' \
     0.8 \
     1.0 \
-    0.8 \
-    0.0 \
-    0.04 \
-    0.4 \
     1_000_000.0 \
     1_000_000.0 \
     --network mainnet \
     --signer mainnet-flow-credit-market-deployer
+
+# kink interest curve setup
+# enable when FCM_V1 is deployed
+#
+# # add WBTC as supported token
+# flow transactions send ../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_kink_curve.cdc \
+#     'A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault' \
+#     0.8 \
+#     1.0 \
+#     0.8 \
+#     0.0 \
+#     0.04 \
+#     0.4 \
+#     1_000_000.0 \
+#     1_000_000.0 \
+#     --network mainnet \
+#     --signer mainnet-flow-credit-market-deployer
+#
+# # add WETH as supported token
+# flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_kink_curve.cdc \
+#     'A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault' \
+#     0.8 \
+#     1.0 \
+#     0.8 \
+#     0.0 \
+#     0.04 \
+#     0.4 \
+#     1_000_000.0 \
+#     1_000_000.0 \
+#     --network mainnet \
+#     --signer mainnet-flow-credit-market-deployer
 
 # TODO 
 # swap
@@ -207,7 +230,26 @@ flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-cr
 #   --network mainnet \
 #   --signer <TEST_USER>
 #
-
+#
+# WBTC (BTCf)
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy \
+#   A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault \
+#   0.0000001 \
+#   --compute-limit 9999 \
+#   --network mainnet \
+#   --signer <TEST_USER>
+#
+# WETH (ETHf)
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy \
+#   A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault \
+#   0.00001 \
+#   --compute-limit 9999 \
+#   --network mainnet \
+#   --signer <TEST_USER>
+#
+#
 # test PEAK MONEY strategy
 #
 # WFLOW
