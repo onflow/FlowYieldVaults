@@ -161,6 +161,15 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
+		"FlowYieldVaultsStrategiesV1_1": {
+			"source": "cadence/contracts/FlowYieldVaultsStrategiesV1_1.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
+				"testing": "0000000000000009",
+				"testnet": "d2580caf2ef07c2f"
+			}
+		},
 		"FungibleTokenConnectors": {
 			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
@@ -305,7 +314,7 @@
 		},
 		"EVM": {
 			"source": "mainnet://e467b9dd11fa00df.EVM",
-			"hash": "2a4782c7459dc5b72c034f67c8dd1beac6bb9b29104772a3e6eb6850718bb3b4",
+			"hash": "c77a07a7eac28b1470b148204d6f2e3527d931b2d2df341618ab888201316a0b",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "e467b9dd11fa00df",
@@ -470,7 +479,7 @@
 		},
 		"FlowTransactionSchedulerUtils": {
 			"source": "mainnet://e467b9dd11fa00df.FlowTransactionSchedulerUtils",
-			"hash": "b5d6f06dd43e4cee907e08a5bc46df0bb9c2338d806d9d253789aee4c4ac01ad",
+			"hash": "429ed886472cd65def9e5ab1dd20079b0dcfb23095d18d54077767ac3316a8ce",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "e467b9dd11fa00df",
@@ -728,6 +737,14 @@
 				"resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
+		"mainnet-band-oracle-connectors": {
+			"address": "e36ef556b8b5d955",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/flow-foundation-admin/locations/global/keyRings/defi-actions/cryptoKeys/mainnet-defi-actions/cryptoKeyVersions/1"
+			}
+		},
 		"mainnet-flow-credit-market-deployer": {
 			"address": "6b00ff876c299c61",
 			"key": {
@@ -856,6 +873,23 @@
 					]
 				},
 				{
+					"name": "FlowYieldVaultsStrategiesV1_1",
+					"args": [
+						{
+							"value": "0x986Cb42b0557159431d48fE0A40073296414d410",
+							"type": "String"
+						},
+						{
+							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+							"type": "String"
+						},
+						{
+							"value": "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C",
+							"type": "String"
+						}
+					]
+				},
+				{
 					"name": "PMStrategiesV1",
 					"args": [
 						{
@@ -967,6 +1001,23 @@
 					]
 				},
 				{
+					"name": "FlowYieldVaultsStrategiesV1_1",
+					"args": [
+						{
+							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+							"type": "String"
+						},
+						{
+							"value": "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+							"type": "String"
+						},
+						{
+							"value": "0x370A8DF17742867a44e56223EC20D82092242C85",
+							"type": "String"
+						}
+					]
+				},
+				{
 					"name": "PMStrategiesV1",
 					"args": [
 						{
@@ -1051,6 +1102,23 @@
 								}
 							],
 							"type": "Array"
+						}
+					]
+				},
+				{
+					"name": "FlowYieldVaultsStrategiesV1_1",
+					"args": [
+						{
+							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+							"type": "String"
+						},
+						{
+							"value": "0x2Db6468229F6fB1a77d248Dbb1c386760C257804",
+							"type": "String"
+						},
+						{
+							"value": "0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c",
+							"type": "String"
 						}
 					]
 				},

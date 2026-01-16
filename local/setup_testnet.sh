@@ -15,8 +15,8 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboard
 # configure FlowCreditMarket
 #
 # add MOET - USD association on Band Oracle
-flow transactions send ../lib/FlowCreditMarket/FlowActions/cadence/transactions/band-oracle-connector/add_symbol.cdc "USD" "A.426f0458ced60037.MOET.Vault"
-#
+cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "USD" "A.426f0458ced60037.MOET.Vault" --network testnet --signer testnet-band-oracle-connectors
+
 # create Pool with MOET as default token with Mock Oracle
 flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc 'A.426f0458ced60037.MOET.Vault' --network testnet --signer testnet-flow-credit-market-deployer
 # update Pool with Band Oracle instead of Mock Oracle
@@ -24,6 +24,32 @@ flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-m
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
 flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
     'A.7e60df042a9c0868.FlowToken.Vault' \
+    0.8 \
+    1.0 \
+    1_000_000.0 \
+    1_000_000.0 \
+    --network testnet \
+    --signer testnet-flow-credit-market-deployer
+
+# add WBTC to band oracle
+cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "BTC" "A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault" --network testnet --signer testnet-band-oracle-connectors && cd ../../..
+
+# add WETH to band oracle
+cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "ETH" "A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault" --network testnet --signer testnet-band-oracle-connectors && cd ../../..
+
+# add WBTC as supported token
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+    'A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault' \
+    0.8 \
+    1.0 \
+    1_000_000.0 \
+    1_000_000.0 \
+    --network testnet \
+    --signer testnet-flow-credit-market-deployer
+
+# add WETH as supported token
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+    'A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault' \
     0.8 \
     1.0 \
     1_000_000.0 \
@@ -50,6 +76,7 @@ flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connec
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/moetTokenVault_0x426f0458ced60037 --network testnet --signer testnet-admin
 #flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/yieldTokenVault_0xd2580caf2ef07c2f --network testnet --signer testnet-admin
 
+# setup yield token vault
 flow transactions send ./lib/FlowCreditMarket/FlowActions/cadence/transactions/fungible-tokens/setup_generic_vault.cdc 'A.dfc20aee650fcbdf.EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95.Vault' --network testnet --signer testnet-admin
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault --network testnet --signer testnet-admin
 
@@ -61,11 +88,36 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
     --network testnet \
     --signer testnet-admin
 
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+	'A.7e60df042a9c0868.FlowToken.Vault' \
+	"0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95" \
+	'["0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95", "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"]' \
+	'[3000]' \
+	--network testnet \
+	--signer testnet-admin
+
+# WETH univ3 path and fees
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+	'A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault' \
+	"0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95" \
+	'["0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95","0x02d3575e2516a515E9B91a52b294Edc80DC7987c", "0x059A77239daFa770977DD9f1E98632C3E4559848"]' \
+	'[3000,3000]' \
+	--network testnet \
+	--signer testnet-admin
+
+# WBTC univ3 path and fees
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+	'A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault' \
+	"0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95" \
+	'["0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95","0x02d3575e2516a515E9B91a52b294Edc80DC7987c","0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6"]' \
+	'[3000,3000]' \
+	--network testnet \
+	--signer testnet-admin
 
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
-	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategies.mUSDCStrategy' \
-	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategies.mUSDCStrategyComposer' \
-	/storage/FlowYieldVaultsStrategyComposerIssuer_0xd2580caf2ef07c2f \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy' \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategyComposer' \
+	/storage/FlowYieldVaultsStrategyV1_1ComposerIssuer_0xd2580caf2ef07c2f \
 	--network testnet \
 	--signer testnet-admin
 
@@ -102,13 +154,35 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/tra
 #   --proposer <TEST_USER> \
 #   --payer testnet-admin \
 #   --network testnet 
+#
+#
+# Flow
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
-#   A.d2580caf2ef07c2f.FlowYieldVaultsStrategies.mUSDCStrategy \
+#   A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy \
 #   A.7e60df042a9c0868.FlowToken.Vault \
 #   100.0 \
 #   --signer <TEST_USER> \
 #   --compute-limit 9999 \
 #   --network testnet
+#
+#
+# WBTC (BTCf)
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy \
+#   A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault \
+#   0.00001 \
+#   --compute-limit 9999 \
+#   --network testnet \
+#   --signer <TEST_USER>
+#
+# WETH (ETHf)
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy \
+#   A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault \
+#   0.001 \
+#   --compute-limit 9999 \
+#   --network testnet \
+#   --signer <TEST_USER>
 #
 # PYUSD0
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
