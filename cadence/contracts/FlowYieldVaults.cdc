@@ -255,10 +255,6 @@ access(all) contract FlowYieldVaults {
         access(all) fun getYieldVaultBalance(): UFix64 {
             return self._borrowStrategy().availableBalance(ofToken: self.vaultType)
         }
-        /// Returns the strategy type identifier for this YieldVault
-        access(all) view fun getStrategyType(): String {
-            return self.strategy.getType().identifier
-        }
         /// Burner.Burnable conformance - emits the BurnedYieldVault event when burned
         access(contract) fun burnCallback() {
             emit BurnedYieldVault(
