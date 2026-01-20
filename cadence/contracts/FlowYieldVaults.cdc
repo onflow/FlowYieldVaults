@@ -265,6 +265,10 @@ access(all) contract FlowYieldVaults {
         access(all) view fun isSupportedVaultType(type: Type): Bool {
             return self.getSupportedVaultTypes()[type] ?? false
         }
+        /// Returns the Type of the Strategy encapsulated by this YieldVault
+        access(all) view fun getStrategyType(): Type? {
+            return self.strategy?.getType()
+        }
         /// Withdraws the requested amount from the Strategy
         access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @{FungibleToken.Vault} {
             post {
