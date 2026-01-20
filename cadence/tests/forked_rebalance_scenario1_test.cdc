@@ -36,6 +36,7 @@ access(all) let flowYieldVaultsAccount = Test.getAccount(0xb1d63873c3cc9f79)
 access(all) let yieldTokenAccount = Test.getAccount(0xb1d63873c3cc9f79)
 access(all) let flowCreditMarketAccount = Test.getAccount(0x6b00ff876c299c61)
 access(all) let bandOracleAccount = Test.getAccount(0x6801a6222ebf784a)
+access(all) let whaleFlowAccount = Test.getAccount(0x92674150c9213fc9)
 
 access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.mUSDCStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
@@ -62,7 +63,11 @@ fun setup() {
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: symbolPrices)
 
 	let reserveAmount = 100_000_00.0
-	mintFlow(to: flowCreditMarketAccount, amount: reserveAmount)
+    // service account does not have enough flow to "mint"
+	// var mintFlowResult = mintFlow(to: flowCreditMarketAccount, amount: reserveAmount)
+    // Test.expect(mintFlowResult, Test.beSucceeded())
+    transferFlow(signer: whaleFlowAccount, recipient: flowCreditMarketAccount.address, amount: reserveAmount)
+
 	mintMoet(signer: flowCreditMarketAccount, to: flowCreditMarketAccount.address, amount: reserveAmount, beFailed: false)
     // TODO: mint evm yield token?
 
@@ -86,7 +91,11 @@ fun setup() {
 	// Test.expect(openRes, Test.beSucceeded())
 
 	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
-	mintFlow(to: flowYieldVaultsAccount, amount: reserveAmount)
+    // service account does not have enough flow to "mint"
+	// mintFlowResult = mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
+    // Test.expect(mintFlowResult, Test.beSucceeded())
+    transferFlow(signer: whaleFlowAccount, recipient: flowYieldVaultsAccount.address, amount: 100.0)
+
 }
 
 access(all) var testSnapshot: UInt64 = 0
@@ -112,7 +121,11 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
-	mintFlow(to: user, amount: fundingAmount)
+    // service account does not have enough flow to "mint"
+	// let mintFlowResult =The code snippet `mintFlow(to: user, amount: fundingAmount)` is a function call that mints a specified amount of a token (in this case, Flow tokens) to a specific user account.
+    // mintFlow(to: user, amount: fundingAmount)
+    // Test.expect(mintFlowResult, Test.beSucceeded())
+    transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
     grantBeta(flowYieldVaultsAccount, user)
 
 	createYieldVault(
