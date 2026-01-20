@@ -44,6 +44,18 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
     /storage/FlowYieldVaultsStrategyComposerIssuer_0x045a1763c93006ca \
     --signer emulator-flow-yield-vaults
 
+# flow transactions send ../cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+# 	"A.0ae53cb6e3f42a79.FlowToken.Vault" \
+# 	<yield token>
+
+
+
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
+    'A.045a1763c93006ca.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy' \
+    'A.045a1763c93006ca.FlowYieldVaultsStrategiesV1_1.mUSDFStrategyComposer' \
+    /storage/FlowYieldVaultsStrategyV1_1ComposerIssuer_0x045a1763c93006ca \
+    --signer emulator-flow-yield-vaults
+
 # grant PoolBeta cap
 echo "Grant Protocol Beta access to FlowYieldVaults"
 flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-credit-market/pool-management/03_grant_beta.cdc \
