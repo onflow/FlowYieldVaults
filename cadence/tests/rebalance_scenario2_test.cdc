@@ -277,7 +277,42 @@ fun test_RebalanceYieldVaultScenario2() {
 		)
 	}
 
+	let positionDetailsBeforeClose = getPositionDetails(pid: pid, beFailed: false)
+	let yieldTokenSupplyBeforeClose = YieldToken.totalSupply
+
 	closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
+
+	// Assert AutoBalancer cleanup didn't burn non-zero YieldToken on close.
+	Test.assert(
+		YieldToken.totalSupply == yieldTokenSupplyBeforeClose,
+		message: "Expected YieldToken.totalSupply unchanged on close, but changed from \(yieldTokenSupplyBeforeClose) to \(YieldToken.totalSupply)"
+	)
+
+	// Log relative diff per balance after close: 100 * (pre - post) / pre
+	let positionDetailsAfterClose = getPositionDetails(pid: pid, beFailed: false)
+	for balance in positionDetailsAfterClose.balances {
+		var preCloseBalance: UFix64 = 0.0
+		for pre in positionDetailsBeforeClose.balances {
+			// Use the largest pre-close balance for the same token type as a denominator. This is more robust than
+			// matching on direction, since residuals after close can flip direction due to rounding.
+			if pre.vaultType == balance.vaultType && pre.balance > preCloseBalance {
+				preCloseBalance = pre.balance
+			}
+		}
+
+		if preCloseBalance > 0.0 {
+			let pre128 = UFix128(preCloseBalance)
+			let post128 = UFix128(balance.balance)
+			let deltaSign = post128 <= pre128 ? "+" : "-"
+			let deltaRatio: UFix128 = post128 <= pre128
+				? (pre128 - post128) / pre128
+				: (post128 - pre128) / pre128
+			let deltaPercent: UFix128 = deltaRatio * (100.0 as UFix128)
+			log("[TEST] Post-close relative diff: pre \(preCloseBalance) -> post \(balance.balance) for \(balance.vaultType.identifier) direction=\(balance.direction.rawValue) (\(deltaSign)\(deltaPercent)%)")
+		} else {
+			log("[TEST] Post-close relative diff: pre \(preCloseBalance) -> post \(balance.balance) for \(balance.vaultType.identifier) direction=\(balance.direction.rawValue)")
+		}
+	}
 
 	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	log("[TEST] flow balance after \(flowBalanceAfter)")
@@ -287,4 +322,3 @@ fun test_RebalanceYieldVaultScenario2() {
 		message: "Expected user's Flow balance after rebalance to be more than zero but got \(flowBalanceAfter)"
 	)
 }
-
