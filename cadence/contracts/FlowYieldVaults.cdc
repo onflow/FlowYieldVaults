@@ -24,11 +24,44 @@ access(all) contract FlowYieldVaults {
 
     /* --- EVENTS --- */
 
-    access(all) event CreatedYieldVault(id: UInt64, uuid: UInt64, strategyType: String, tokenType: String, initialAmount: UFix64, creator: Address?)
-    access(all) event DepositedToYieldVault(id: UInt64, tokenType: String, amount: UFix64, owner: Address?, fromUUID: UInt64)
-    access(all) event WithdrawnFromYieldVault(id: UInt64, tokenType: String, amount: UFix64, owner: Address?, toUUID: UInt64)
-    access(all) event AddedToManager(id: UInt64, owner: Address?, managerUUID: UInt64, tokenType: String)
-    access(all) event BurnedYieldVault(id: UInt64, strategyType: String, tokenType: String, remainingBalance: UFix64)
+    access(all) event CreatedYieldVault(
+        id: UInt64,
+        uuid: UInt64,
+        strategyType: String,
+        tokenType: String,
+        initialAmount: UFix64,
+        creator: Address?
+    )
+    access(all) event DepositedToYieldVault(
+        id: UInt64,
+        strategyType: String,
+        tokenType: String,
+        amount: UFix64,
+        owner: Address?,
+        fromUUID: UInt64
+    )
+    access(all) event WithdrawnFromYieldVault(
+        id: UInt64,
+        strategyType: String,
+        tokenType: String,
+        amount: UFix64,
+        owner: Address?,
+        toUUID: UInt64
+    )
+    access(all) event AddedToManager(
+        id: UInt64,
+        strategyType: String,
+        owner: Address?,
+        managerUUID: UInt64,
+        tokenType: String
+    )
+    access(all) event BurnedYieldVault(
+        id: UInt64,
+        strategyType: String,
+        tokenType: String,
+        remainingBalance: UFix64,
+        owner: Address?
+    )
 
     /* --- CONSTRUCTS --- */
 
@@ -226,9 +259,10 @@ access(all) contract FlowYieldVaults {
         access(contract) fun burnCallback() {
             emit BurnedYieldVault(
                 id: self.uniqueID.id,
-                strategyType: self.strategy.getType().identifier,
+                strategyType: self.getStrategyType(),
                 tokenType: self.getType().identifier,
-                remainingBalance: self.getYieldVaultBalance()
+                remainingBalance: self.getYieldVaultBalance(),
+                owner: self.owner?.address
             )
             let _strategy <- self.strategy <- nil
             // Force unwrap to ensure burnCallback is called on the Strategy
@@ -249,7 +283,14 @@ access(all) contract FlowYieldVaults {
                 "Deposited vault of type \(from.getType().identifier) is not supported by this YieldVault"
             }
             let amount = from.balance
-            emit DepositedToYieldVault(id: self.uniqueID.id, tokenType: from.getType().identifier, amount: from.balance, owner: self.owner?.address, fromUUID: from.uuid)
+            emit DepositedToYieldVault(
+                id: self.uniqueID.id,
+                strategyType: self.getStrategyType(),
+                tokenType: from.getType().identifier,
+                amount: from.balance,
+                owner: self.owner?.address,
+                fromUUID: from.uuid
+            )
             self._borrowStrategy().deposit(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
             assert(
                 from.balance == 0.0,
@@ -265,6 +306,10 @@ access(all) contract FlowYieldVaults {
         access(all) view fun isSupportedVaultType(type: Type): Bool {
             return self.getSupportedVaultTypes()[type] ?? false
         }
+        /// Returns the strategy type identifier for this YieldVault
+        access(all) view fun getStrategyType(): String {
+            return self.strategy.getType().identifier
+        }
         /// Withdraws the requested amount from the Strategy
         access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @{FungibleToken.Vault} {
             post {
@@ -279,7 +324,14 @@ access(all) contract FlowYieldVaults {
 
             let res <- self._borrowStrategy().withdraw(maxAmount: amount, ofToken: self.vaultType)
 
-            emit WithdrawnFromYieldVault(id: self.uniqueID.id, tokenType: res.getType().identifier, amount: amount, owner: self.owner?.address, toUUID: res.uuid)
+            emit WithdrawnFromYieldVault(
+                id: self.uniqueID.id,
+                strategyType: self.getStrategyType(),
+                tokenType: res.getType().identifier,
+                amount: amount,
+                owner: self.owner?.address,
+                toUUID: res.uuid
+            )
 
             return <- res
         }
@@ -358,7 +410,13 @@ access(all) contract FlowYieldVaults {
                 FlowYieldVaultsClosedBeta.validateBeta(self.owner?.address!, betaRef):
                 "Invalid Beta Ref"
             }
-            emit AddedToManager(id: yieldVault.uniqueID.id, owner: self.owner?.address, managerUUID: self.uuid, tokenType: yieldVault.getType().identifier)
+            emit AddedToManager(
+                id: yieldVault.uniqueID.id,
+                strategyType: yieldVault.getStrategyType(),
+                owner: self.owner?.address,
+                managerUUID: self.uuid,
+                tokenType: yieldVault.getType().identifier
+            )
             self.yieldVaults[yieldVault.uniqueID.id] <-! yieldVault
         }
         /// Deposits additional funds to the specified YieldVault, reverting if none exists with the provided ID
