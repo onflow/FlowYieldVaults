@@ -8,7 +8,13 @@ import "FlowYieldVaultsStrategiesV1_1"
 /// - Must be signed by the account that deployed FlowYieldVaultsStrategies
 /// - You can omit some collaterals by passing empty arrays and guarding in prepare{}
 transaction(
+    // e.g. "A.0x...FlowYieldVaultsStrategiesV1_1.mUSDFStrategy"
+    strategyTypeIdentifier: String,
+
+    // collateral vault type (e.g. "A.0x...FlowToken.Vault")
     tokenTypeIdentifier: String,
+
+    // yield token (EVM) address
     yieldTokenEVMAddress: String,
 
     // collateral path/fees: [YIELD, ..., <COLLATERAL>]
@@ -17,6 +23,8 @@ transaction(
 ) {
 
     prepare(acct: auth(Storage, Capabilities, BorrowValue) &Account) {
+        let strategyType = CompositeType(strategyTypeIdentifier)
+            ?? panic("Invalid strategyTypeIdentifier \(strategyTypeIdentifier)")
         let tokenType = CompositeType(tokenTypeIdentifier)
             ?? panic("Invalid tokenTypeIdentifier \(tokenTypeIdentifier)")
         // This tx must run on the same account that stores the issuer
@@ -38,7 +46,6 @@ transaction(
         }
 
         let composerType = Type<@FlowYieldVaultsStrategiesV1_1.mUSDFStrategyComposer>()
-        let strategyType = Type<@FlowYieldVaultsStrategiesV1_1.mUSDFStrategy>()
 
         if swapPath.length > 0 {
             issuer.addOrUpdateCollateralConfig(
