@@ -161,6 +161,15 @@
                 "testnet": "d2580caf2ef07c2f"
             }
         },
+        "FlowYieldVaultsStrategiesV1_1": {
+            "source": "cadence/contracts/FlowYieldVaultsStrategiesV1_1.cdc",
+            "aliases": {
+                "emulator": "045a1763c93006ca",
+                "mainnet": "b1d63873c3cc9f79",
+                "testing": "0000000000000009",
+                "testnet": "d2580caf2ef07c2f"
+            }
+        },
         "FungibleTokenConnectors": {
             "source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
             "aliases": {
@@ -184,15 +193,13 @@
             "aliases": {
                 "emulator": "045a1763c93006ca",
                 "testing": "0000000000000008",
-                "testnet": "d2580caf2ef07c2f",
-                "mainnet": "6b00ff876c299c61"
+                "testnet": "d2580caf2ef07c2f"
             }
         },
         "MockOracle": {
             "source": "cadence/contracts/mocks/MockOracle.cdc",
             "aliases": {
                 "emulator": "045a1763c93006ca",
-                "mainnet": "b1d63873c3cc9f79",
                 "testing": "0000000000000009",
                 "testnet": "d2580caf2ef07c2f"
             }
@@ -209,7 +216,6 @@
             "source": "cadence/contracts/mocks/MockSwapper.cdc",
             "aliases": {
                 "emulator": "045a1763c93006ca",
-                "mainnet": "b1d63873c3cc9f79",
                 "testing": "0000000000000009",
                 "testnet": "d2580caf2ef07c2f"
             }
@@ -253,7 +259,6 @@
         "ArrayUtils": {
             "source": "mainnet://1e4aa0b87d10b141.ArrayUtils",
             "hash": "e70ddc2f0c7c72158a3f6c68de3a131e1f49e2908ad83eac0308f9e2953957d5",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -263,7 +268,6 @@
         "BandOracle": {
             "source": "mainnet://6801a6222ebf784a.BandOracle",
             "hash": "ababa195ef50b63d71520022aa2468656a9703b924c0f5228cfaa51a71db094d",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "045a1763c93006ca",
                 "mainnet": "6801a6222ebf784a",
@@ -274,7 +278,6 @@
         "Burner": {
             "source": "mainnet://f233dcee88fe0abe.Burner",
             "hash": "71af18e227984cd434a3ad00bb2f3618b76482842bae920ee55662c37c8bf331",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "f233dcee88fe0abe",
@@ -284,7 +287,6 @@
         "CrossVMMetadataViews": {
             "source": "mainnet://1d7e57aa55817448.CrossVMMetadataViews",
             "hash": "7e79b77b87c750de5b126ebd6fca517c2b905ac7f01c0428e9f3f82838c7f524",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1d7e57aa55817448",
@@ -294,7 +296,6 @@
         "CrossVMNFT": {
             "source": "mainnet://1e4aa0b87d10b141.CrossVMNFT",
             "hash": "8fe69f487164caffedab68b52a584fa7aa4d54a0061f4f211998c73a619fbea5",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -304,7 +305,6 @@
         "CrossVMToken": {
             "source": "mainnet://1e4aa0b87d10b141.CrossVMToken",
             "hash": "9f055ad902e7de5619a2b0f2dc91826ac9c4f007afcd6df9f5b8229c0ca94531",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -312,80 +312,18 @@
                 "testnet": "dfc20aee650fcbdf"
             }
         },
-        "DeFiActions": {
-            "source": "mainnet://6d888f175c158410.DeFiActions",
-            "hash": "64404731e3384f8d41ae1b312c46d5e50b7da77b5ae40ce6d42a354bbc83569b",
-            "block_height": 138886179,
-            "aliases": {}
-        },
-        "DeFiActionsUtils": {
-            "source": "mainnet://6d888f175c158410.DeFiActionsUtils",
-            "hash": "f3ee7f02ec7373742172f08302471f7b16c44fc0e8deba1efeb50b4367610224",
-            "block_height": 138886179,
-            "aliases": {}
-        },
-        "ERC4626PriceOracles": {
-            "source": "mainnet://04f5ae6bef48c1fc.ERC4626PriceOracles",
-            "hash": "a5127c0eb22c9ba79c53409513c1392d6e89dc0f7ad44ace06f56d93eef30714",
-            "block_height": 138886179,
-            "aliases": {}
-        },
-        "ERC4626SinkConnectors": {
-            "source": "mainnet://04f5ae6bef48c1fc.ERC4626SinkConnectors",
-            "hash": "d1d2a5539364b0cff50c75524e6d6396deda0729e93a07560c742e44458ab425",
-            "block_height": 138886179,
-            "aliases": {}
-        },
-        "ERC4626SwapConnectors": {
-            "source": "mainnet://04f5ae6bef48c1fc.ERC4626SwapConnectors",
-            "hash": "ef32f2a4aa98ea1ba6c71660887cd0d11278943eeb5f3231cc0a2baee8231eba",
-            "block_height": 138886179,
-            "aliases": {}
-        },
-        "ERC4626Utils": {
-            "source": "mainnet://04f5ae6bef48c1fc.ERC4626Utils",
-            "hash": "7d9cf545308240b2398a9b8274a2755efa67f49e6358e44f0ae34502ea417ca7",
-            "block_height": 138886179,
-            "aliases": {}
-        },
         "EVM": {
             "source": "mainnet://e467b9dd11fa00df.EVM",
-            "hash": "960b0c7df7ee536956af196fba8c8d5dd4f7a89a4ecc61467e31287c4617b0dd",
-            "block_height": 138886139,
+            "hash": "c77a07a7eac28b1470b148204d6f2e3527d931b2d2df341618ab888201316a0b",
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "e467b9dd11fa00df",
                 "testnet": "8c5303eaa26202d6"
             }
         },
-        "EVMAbiHelpers": {
-            "source": "mainnet://a7825d405ac89518.EVMAbiHelpers",
-            "hash": "eac566b430f69b652b6b3f7518022c0bbb3ae2d977b6b7da04bd26e0e4c96e77",
-            "block_height": 138886179,
-            "aliases": {}
-        },
-        "EVMTokenConnectors": {
-            "source": "mainnet://1a771b21fcceadc2.EVMTokenConnectors",
-            "hash": "7b0d3ef5a46456e995073e5aa0e019dbed87ad63f588075b938c4ed3e587639a",
-            "block_height": 138886179,
-            "aliases": {}
-        },
-        "FlowCreditMarket": {
-            "source": "mainnet://6b00ff876c299c61.FlowCreditMarket",
-            "hash": "4cb4ef5a825e6ada9b96d36f006d70d60a5aafcd6342a1a0ab63c678009addd1",
-            "block_height": 138886179,
-            "aliases": {}
-        },
-        "FlowCreditMarketMath": {
-            "source": "mainnet://6b00ff876c299c61.FlowCreditMarketMath",
-            "hash": "1a4094a4a85a1cc1cce6b25fd6c0c74de64917113eb3b923b023ff893178bdaa",
-            "block_height": 138886179,
-            "aliases": {}
-        },
         "FlowEVMBridge": {
             "source": "mainnet://1e4aa0b87d10b141.FlowEVMBridge",
             "hash": "9cd0f897b19c0394e9042225e5758d6ae529a0cce19b19ae05bde8e0f14aa10b",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -396,7 +334,6 @@
         "FlowEVMBridgeAccessor": {
             "source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeAccessor",
             "hash": "888ba0aab5e961924c47b819f4a9f410449c39745e0d3eab20738bf10ef2ed0f",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -407,7 +344,6 @@
         "FlowEVMBridgeConfig": {
             "source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeConfig",
             "hash": "3c09f74467f22dac7bc02b2fdf462213b2f8ddfb513cd890ad0c2a7016507be3",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -418,7 +354,6 @@
         "FlowEVMBridgeCustomAssociationTypes": {
             "source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeCustomAssociationTypes",
             "hash": "4651183c3f04f8c5faaa35106b3ab66060ce9868590adb33f3be1900c12ea196",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -429,7 +364,6 @@
         "FlowEVMBridgeCustomAssociations": {
             "source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeCustomAssociations",
             "hash": "14d1f4ddd347f45d331e543830b94701e1aa1513c56d55c0019c7fac46d8a572",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -440,7 +374,6 @@
         "FlowEVMBridgeHandlerInterfaces": {
             "source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeHandlerInterfaces",
             "hash": "e32154f2a556e53328a0fce75f1e98b57eefd2a8cb626e803b7d39d452691444",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -451,7 +384,6 @@
         "FlowEVMBridgeHandlers": {
             "source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeHandlers",
             "hash": "7e8adff1dca0ea1d2e361c17de9eca020f82cabc00a52679078752bf85adb004",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -462,7 +394,6 @@
         "FlowEVMBridgeNFTEscrow": {
             "source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeNFTEscrow",
             "hash": "30257592838edfd4b72700f43bf0326f6903e879f82ac5ca549561d9863c6fe6",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -473,7 +404,6 @@
         "FlowEVMBridgeResolver": {
             "source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeResolver",
             "hash": "c1ac18e92828616771df5ff5d6de87866f2742ca4ce196601c11e977e4f63bb3",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -484,7 +414,6 @@
         "FlowEVMBridgeTemplates": {
             "source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeTemplates",
             "hash": "78b8115eb0ef2be4583acbe655f0c5128c39712084ec23ce47820ea154141898",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -495,7 +424,6 @@
         "FlowEVMBridgeTokenEscrow": {
             "source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeTokenEscrow",
             "hash": "49df9c8e5d0dd45abd5bf94376d3b9045299b3c2a5ba6caf48092c916362358d",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -506,7 +434,6 @@
         "FlowEVMBridgeUtils": {
             "source": "mainnet://1e4aa0b87d10b141.FlowEVMBridgeUtils",
             "hash": "634ed6dde03eb8f027368aa7861889ce1f5099160903493a7a39a86c9afea14b",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -517,7 +444,6 @@
         "FlowFees": {
             "source": "mainnet://f919ee77447b7497.FlowFees",
             "hash": "341cc0f3cc847d6b787c390133f6a5e6c867c111784f09c5c0083c47f2f1df64",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "e5a8b7f23e8b548f",
                 "mainnet": "f919ee77447b7497",
@@ -527,7 +453,6 @@
         "FlowStorageFees": {
             "source": "mainnet://e467b9dd11fa00df.FlowStorageFees",
             "hash": "a92c26fb2ea59725441fa703aa4cd811e0fc56ac73d649a8e12c1e72b67a8473",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "e467b9dd11fa00df",
@@ -537,7 +462,6 @@
         "FlowToken": {
             "source": "mainnet://1654653399040a61.FlowToken",
             "hash": "f82389e2412624ffa439836b00b42e6605b0c00802a4e485bc95b8930a7eac38",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "0ae53cb6e3f42a79",
                 "mainnet": "1654653399040a61",
@@ -546,8 +470,7 @@
         },
         "FlowTransactionScheduler": {
             "source": "mainnet://e467b9dd11fa00df.FlowTransactionScheduler",
-            "hash": "23157cf7d70534e45b0ab729133232d0ffb3cdae52661df1744747cb1f8c0495",
-            "block_height": 138886139,
+            "hash": "c701f26f6a8e993b2573ec8700142f61c9ca936b199af8cc75dee7d9b19c9e95",
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "e467b9dd11fa00df",
@@ -556,67 +479,25 @@
         },
         "FlowTransactionSchedulerUtils": {
             "source": "mainnet://e467b9dd11fa00df.FlowTransactionSchedulerUtils",
-            "hash": "71a1febab6b9ba76abec36dab1e61b1c377e44fbe627e5fac649deb71b727877",
-            "block_height": 138886139,
+            "hash": "429ed886472cd65def9e5ab1dd20079b0dcfb23095d18d54077767ac3316a8ce",
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "e467b9dd11fa00df",
                 "testnet": "8c5303eaa26202d6"
             }
         },
-        "FlowYieldVaults": {
-            "source": "mainnet://b1d63873c3cc9f79.FlowYieldVaults",
-            "hash": "191825dfb710b4bd5f833c234e5e6ba44ed1613cc97f060020435c0546183deb",
-            "block_height": 138886179,
-            "aliases": {}
-        },
-        "FlowYieldVaultsAutoBalancers": {
-            "source": "mainnet://b1d63873c3cc9f79.FlowYieldVaultsAutoBalancers",
-            "hash": "724410e64631fd6c48f8dfed6ef88b81102a1e9938b6220ff83c663da3e8551c",
-            "block_height": 138886179,
-            "aliases": {}
-        },
-        "FlowYieldVaultsClosedBeta": {
-            "source": "mainnet://b1d63873c3cc9f79.FlowYieldVaultsClosedBeta",
-            "hash": "74b3bd64023539d31963169d1968393cbaa6d230f7a93b62d2b5d1dc099eaedb",
-            "block_height": 138886179,
-            "aliases": {}
-        },
-        "FlowYieldVaultsSchedulerRegistry": {
-            "source": "mainnet://b1d63873c3cc9f79.FlowYieldVaultsSchedulerRegistry",
-            "hash": "17b9e9da01dfd418359cbe80a788967a7ec9f5ad20232e5bb15e3125b907930d",
-            "block_height": 138886179,
-            "aliases": {}
-        },
-        "FlowYieldVaultsStrategiesV1_1": {
-            "source": "mainnet://b1d63873c3cc9f79.FlowYieldVaultsStrategiesV1_1",
-            "hash": "9401c1ca36da27c2c7aeb26a7b70e053b19f590e5a3a364df60b4ad0a37af425",
-            "block_height": 138975225,
-            "aliases": {
-                "mainnet": "b1d63873c3cc9f79",
-                "testnet": "d2580caf2ef07c2f"
-            }
-        },
         "FungibleToken": {
             "source": "mainnet://f233dcee88fe0abe.FungibleToken",
             "hash": "4b74edfe7d7ddfa70b703c14aa731a0b2e7ce016ce54d998bfd861ada4d240f6",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "ee82856bf20e2aa6",
                 "mainnet": "f233dcee88fe0abe",
                 "testnet": "9a0766d93b6608b7"
             }
         },
-        "FungibleTokenConnectors": {
-            "source": "mainnet://0c237e1265caa7a3.FungibleTokenConnectors",
-            "hash": "6a962e36d5ad90ed8fbf531486e6159421debc8b0f90cc6e8ccd51e42ddb444b",
-            "block_height": 138886179,
-            "aliases": {}
-        },
         "FungibleTokenMetadataViews": {
             "source": "mainnet://f233dcee88fe0abe.FungibleTokenMetadataViews",
             "hash": "70477f80fd7678466c224507e9689f68f72a9e697128d5ea54d19961ec856b3c",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "ee82856bf20e2aa6",
                 "mainnet": "f233dcee88fe0abe",
@@ -626,7 +507,6 @@
         "IBridgePermissions": {
             "source": "mainnet://1e4aa0b87d10b141.IBridgePermissions",
             "hash": "431a51a6cca87773596f79832520b19499fe614297eaef347e49383f2ae809af",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -636,7 +516,6 @@
         "ICrossVM": {
             "source": "mainnet://1e4aa0b87d10b141.ICrossVM",
             "hash": "b95c36eef516da7cd4d2f507cd48288cc16b1d6605ff03b6fcd18161ff2d82e7",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -647,7 +526,6 @@
         "ICrossVMAsset": {
             "source": "mainnet://1e4aa0b87d10b141.ICrossVMAsset",
             "hash": "d9c7b2bd9fdcc454180c33b3509a5a060a7fe4bd49bce38818f22fd08acb8ba0",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -658,7 +536,6 @@
         "IEVMBridgeNFTMinter": {
             "source": "mainnet://1e4aa0b87d10b141.IEVMBridgeNFTMinter",
             "hash": "e2ad15c495ad7fbf4ab744bccaf8c4334dfb843b50f09e9681ce9a5067dbf049",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -669,7 +546,6 @@
         "IEVMBridgeTokenMinter": {
             "source": "mainnet://1e4aa0b87d10b141.IEVMBridgeTokenMinter",
             "hash": "0ef39c6cb476f0eea2c835900b6a5a83c1ed5f4dbaaeb29cb68ad52c355a40e6",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -680,7 +556,6 @@
         "IFlowEVMNFTBridge": {
             "source": "mainnet://1e4aa0b87d10b141.IFlowEVMNFTBridge",
             "hash": "2d495e896510a10bbc7307739aca9341633cac4c7fe7dad32488a81f90a39dd9",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -691,7 +566,6 @@
         "IFlowEVMTokenBridge": {
             "source": "mainnet://1e4aa0b87d10b141.IFlowEVMTokenBridge",
             "hash": "87f7d752da8446e73acd3bf4aa17fe5c279d9641b7976c56561af01bc5240ea4",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -699,16 +573,9 @@
                 "testnet": "dfc20aee650fcbdf"
             }
         },
-        "MOET": {
-            "source": "mainnet://6b00ff876c299c61.MOET",
-            "hash": "0ced52610f27f6656a6b81bcbc4a707d4e4e8711cf7f45aaad59c872405443a2",
-            "block_height": 138886179,
-            "aliases": {}
-        },
         "MetadataViews": {
             "source": "mainnet://1d7e57aa55817448.MetadataViews",
             "hash": "b290b7906d901882b4b62e596225fb2f10defb5eaaab4a09368f3aee0e9c18b1",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1d7e57aa55817448",
@@ -718,7 +585,6 @@
         "NonFungibleToken": {
             "source": "mainnet://1d7e57aa55817448.NonFungibleToken",
             "hash": "a258de1abddcdb50afc929e74aca87161d0083588f6abf2b369672e64cf4a403",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1d7e57aa55817448",
@@ -728,7 +594,6 @@
         "ScopedFTProviders": {
             "source": "mainnet://1e4aa0b87d10b141.ScopedFTProviders",
             "hash": "77213f9588ec9862d07c4706689424ad7c1d8f043d5970d96bf18764bb936fc3",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -739,29 +604,24 @@
         "Serialize": {
             "source": "mainnet://1e4aa0b87d10b141.Serialize",
             "hash": "064bb0d7b6c24ee1ed370cbbe9e0cda2a4e0955247de5e3e81f2f3a8a8cabfb7",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
-                "testing": "0000000000000001",
-                "testnet": "dfc20aee650fcbdf"
+                "testing": "0000000000000001"
             }
         },
         "SerializeMetadata": {
             "source": "mainnet://1e4aa0b87d10b141.SerializeMetadata",
             "hash": "e9f84ea07e29cae05ee0d9264596eb281c291fc1090a10ce3de1a042b4d671da",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
-                "testing": "0000000000000001",
-                "testnet": "dfc20aee650fcbdf"
+                "testing": "0000000000000001"
             }
         },
         "StableSwapFactory": {
             "source": "mainnet://b063c16cac85dbd1.StableSwapFactory",
             "hash": "a63b57a5cc91085016abc34c1b49622b385a8f976ac2ba0e646f7a3f780d344e",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f3fcd2c1a78f5eee",
                 "mainnet": "b063c16cac85dbd1",
@@ -771,7 +631,6 @@
         "StringUtils": {
             "source": "mainnet://1e4aa0b87d10b141.StringUtils",
             "hash": "28ac1a744ac7fb97253cba007a520a9ec1c2e14458d1bd1add1424fa19282c03",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1e4aa0b87d10b141",
@@ -781,23 +640,15 @@
         "SwapConfig": {
             "source": "mainnet://b78ef7afa52ff906.SwapConfig",
             "hash": "111f3caa0ab506bed100225a1481f77687f6ac8493d97e49f149fa26a174ef99",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f3fcd2c1a78f5eee",
                 "mainnet": "b78ef7afa52ff906",
                 "testing": "0000000000000007"
             }
         },
-        "SwapConnectors": {
-            "source": "mainnet://e1a479f0cb911df9.SwapConnectors",
-            "hash": "174f7283637da097bec6d322f9449a5c68e94ce10288150f9bac3f0b87c3e9bb",
-            "block_height": 138886179,
-            "aliases": {}
-        },
         "SwapError": {
             "source": "mainnet://b78ef7afa52ff906.SwapError",
             "hash": "7d13a652a1308af387513e35c08b4f9a7389a927bddf08431687a846e4c67f21",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f3fcd2c1a78f5eee",
                 "mainnet": "b78ef7afa52ff906",
@@ -807,7 +658,6 @@
         "SwapFactory": {
             "source": "mainnet://b063c16cac85dbd1.SwapFactory",
             "hash": "deea03edbb49877c8c72276e1911cf87bdba4052ae9c3ac54c0d4ac62f3ef511",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f3fcd2c1a78f5eee",
                 "mainnet": "b063c16cac85dbd1",
@@ -817,7 +667,6 @@
         "SwapInterfaces": {
             "source": "mainnet://b78ef7afa52ff906.SwapInterfaces",
             "hash": "e559dff4d914fa12fff7ba482f30d3c575dc3d31587833fd628763d1a4ee96b2",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f3fcd2c1a78f5eee",
                 "mainnet": "b78ef7afa52ff906",
@@ -827,7 +676,6 @@
         "SwapRouter": {
             "source": "mainnet://a6850776a94e6551.SwapRouter",
             "hash": "c0365c01978ca32af94602bfddd0796cfe6375e60a05b927b5de539e608baec5",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f3fcd2c1a78f5eee",
                 "mainnet": "a6850776a94e6551",
@@ -837,23 +685,15 @@
         "USDCFlow": {
             "source": "mainnet://f1ab99c82dee3526.USDCFlow",
             "hash": "da7c21064dc73c06499f0b652caea447233465b49787605ce0f679beca48dee7",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "f1ab99c82dee3526",
                 "testing": "0000000000000007"
             }
         },
-        "UniswapV3SwapConnectors": {
-            "source": "mainnet://a7825d405ac89518.UniswapV3SwapConnectors",
-            "hash": "64280d304a5c42412592f0974b5b03316946747d2a9fe044bca769a0ab3e06ad",
-            "block_height": 138886179,
-            "aliases": {}
-        },
         "ViewResolver": {
             "source": "mainnet://1d7e57aa55817448.ViewResolver",
             "hash": "374a1994046bac9f6228b4843cb32393ef40554df9bd9907a702d098a2987bde",
-            "block_height": 138886139,
             "aliases": {
                 "emulator": "f8d6e0586b0a20c7",
                 "mainnet": "1d7e57aa55817448",
@@ -895,6 +735,14 @@
                 "type": "google-kms",
                 "hashAlgorithm": "SHA2_256",
                 "resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+            }
+        },
+        "mainnet-band-oracle-connectors": {
+            "address": "e36ef556b8b5d955",
+            "key": {
+                "type": "google-kms",
+                "hashAlgorithm": "SHA2_256",
+                "resourceID": "projects/flow-foundation-admin/locations/global/keyRings/defi-actions/cryptoKeys/mainnet-defi-actions/cryptoKeyVersions/1"
             }
         },
         "mainnet-flow-credit-market-deployer": {
@@ -1025,6 +873,23 @@
                     ]
                 },
                 {
+                    "name": "FlowYieldVaultsStrategiesV1_1",
+                    "args": [
+                        {
+                            "value": "0x986Cb42b0557159431d48fE0A40073296414d410",
+                            "type": "String"
+                        },
+                        {
+                            "value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+                            "type": "String"
+                        },
+                        {
+                            "value": "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C",
+                            "type": "String"
+                        }
+                    ]
+                },
+                {
                     "name": "PMStrategiesV1",
                     "args": [
                         {
@@ -1136,6 +1001,23 @@
                     ]
                 },
                 {
+                    "name": "FlowYieldVaultsStrategiesV1_1",
+                    "args": [
+                        {
+                            "value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+                            "type": "String"
+                        },
+                        {
+                            "value": "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+                            "type": "String"
+                        },
+                        {
+                            "value": "0x370A8DF17742867a44e56223EC20D82092242C85",
+                            "type": "String"
+                        }
+                    ]
+                },
+                {
                     "name": "PMStrategiesV1",
                     "args": [
                         {
@@ -1220,6 +1102,23 @@
                                 }
                             ],
                             "type": "Array"
+                        }
+                    ]
+                },
+                {
+                    "name": "FlowYieldVaultsStrategiesV1_1",
+                    "args": [
+                        {
+                            "value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+                            "type": "String"
+                        },
+                        {
+                            "value": "0x2Db6468229F6fB1a77d248Dbb1c386760C257804",
+                            "type": "String"
+                        },
+                        {
+                            "value": "0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c",
+                            "type": "String"
                         }
                     ]
                 },
