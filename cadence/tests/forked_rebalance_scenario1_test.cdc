@@ -197,6 +197,12 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 		log("Precision Difference:  \(precisionSign)\(precisionDiff)")
 		let percentDiff = expectedYieldTokens > 0.0 ? (precisionDiff / expectedYieldTokens) * 100.0 : 0.0
 		log("Percent Difference:    \(precisionSign)\(percentDiff)%")
+        
+        // check if percent difference is within tolerance
+        let percentToleranceCheck = equalAmounts(a: percentDiff, b: 0.0, tolerance: forkedPercentTolerance)
+        Test.assert(percentToleranceCheck, message: "Percent difference \(percentDiff)% is not within tolerance \(forkedPercentTolerance)%")
+        log("Percent difference \(percentDiff)% is within tolerance \(forkedPercentTolerance)%")
+
 		let yieldChange = yieldTokensAfter > yieldTokensBefore ? yieldTokensAfter - yieldTokensBefore : yieldTokensBefore - yieldTokensAfter
 		let yieldSign = yieldTokensAfter > yieldTokensBefore ? "+" : "-"
 		log("Yield Token Change:    \(yieldSign)\(yieldChange)")

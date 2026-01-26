@@ -9,6 +9,9 @@ import "FlowCreditMarket"
 access(all) let serviceAccount = Test.serviceAccount()
 
 /* --- Test execution helpers --- */
+// tolerance for forked tests
+access(all) 
+let forkedPercentTolerance = 0.05
 
 access(all)
 fun _executeScript(_ path: String, _ args: [AnyStruct]): Test.ScriptResult {
