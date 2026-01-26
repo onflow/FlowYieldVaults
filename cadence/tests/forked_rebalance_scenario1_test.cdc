@@ -1,4 +1,5 @@
-#test_fork(network: "mainnet", height: nil)
+// this height guarantees enough liquidity for the test
+#test_fork(network: "mainnet", height: 140164761)
 
 import Test
 import BlockchainHelpers
@@ -20,7 +21,7 @@ import "MockSwapper"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "FlowYieldVaultsStrategies"
+import "FlowYieldVaultsStrategiesV1_1"
 import "FlowCreditMarket"
 
 
@@ -38,7 +39,7 @@ access(all) let flowCreditMarketAccount = Test.getAccount(0x6b00ff876c299c61)
 access(all) let bandOracleAccount = Test.getAccount(0x6801a6222ebf784a)
 access(all) let whaleFlowAccount = Test.getAccount(0x92674150c9213fc9)
 
-access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.mUSDCStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategiesV1_1.FUSDEVStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
