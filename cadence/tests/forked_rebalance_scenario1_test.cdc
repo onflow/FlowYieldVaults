@@ -58,7 +58,7 @@ fun setup() {
         "USDC": 1.0,
         "USDT": 1.0,
         "WBTC": 1.0,
-        "USD": 1.0
+        "USDF": 1.0
     }
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: symbolPrices)
 
@@ -99,8 +99,71 @@ fun setup() {
 }
 
 access(all) var testSnapshot: UInt64 = 0
+
+// Token addresses (mainnet) - from flow.json FlowYieldVaultsStrategies deployment
+access(all) let yieldTokenAddress = "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c"  // tauUSDF
+access(all) let intermediateToken1 = "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2"  // MOET
+access(all) let univ3PositionManagerAddress = "0xf7F20a346E3097C7d38afDDA65c7C802950195C7"
+
+/// Helper to add liquidity to Pool 1 before running the rebalance test
+access(all)
+fun addLiquidityToPool1() {
+    log("=== Adding Liquidity to Pool 1 ===")
+    
+    let vmBridgeAccount = Test.getAccount(0x1e4aa0b87d10b141)
+    let flowYieldVaultsCOA = getCOA(flowYieldVaultsAccount.address)
+    let vmBridgeCOA = getCOA(vmBridgeAccount.address)
+    
+    // Token addresses (sorted: token0 < token1)
+    let token0 = intermediateToken1  // 0x213979...
+    let token1 = yieldTokenAddress   // 0xc52E82...
+    
+    // Transfer Token1 from VM Bridge to FlowYieldVaults
+    if vmBridgeCOA != nil && flowYieldVaultsCOA != nil {
+        let vmBridgeT1Balance = getERC20Balance(tokenAddressHex: token1, ownerAddressHex: vmBridgeCOA!) ?? 0
+        if vmBridgeT1Balance > 0 {
+            // Transfer all Token1 to FlowYieldVaults
+            transferERC20FromCOA(
+                signer: vmBridgeAccount,
+                tokenAddressHex: token1,
+                recipientAddressHex: flowYieldVaultsCOA!,
+                amount: vmBridgeT1Balance,
+                beFailed: false
+            )
+        }
+        
+        // Get actual balances
+        let t0Balance = getERC20Balance(tokenAddressHex: token0, ownerAddressHex: flowYieldVaultsCOA!) ?? 0
+        let t1Balance = getERC20Balance(tokenAddressHex: token1, ownerAddressHex: flowYieldVaultsCOA!) ?? 0
+        
+        log("Token0 balance: \(t0Balance)")
+        log("Token1 balance: \(t1Balance)")
+        
+        if t0Balance > 0 && t1Balance > 0 {
+            // Mint liquidity using all available tokens
+            addUniV3Liquidity(
+                signer: flowYieldVaultsAccount,
+                nftManagerAddressHex: univ3PositionManagerAddress,
+                token0Hex: token0,
+                token1Hex: token1,
+                fee: 100,
+                tickLower: -887220,
+                tickUpper: 887220,
+                amount0Desired: t0Balance,
+                amount1Desired: t1Balance,
+                beFailed: false
+            )
+            log("Liquidity minted successfully")
+        }
+    }
+    log("=== Liquidity Addition Complete ===")
+}
+
 access(all)
 fun test_ForkedRebalanceYieldVaultScenario1() {
+    // First, add liquidity to Pool 1 to enable swaps
+    addLiquidityToPool1()
+    
 	let fundingAmount = 1000.0
 
 	let user = Test.createAccount()

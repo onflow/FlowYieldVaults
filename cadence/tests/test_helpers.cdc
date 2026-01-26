@@ -934,3 +934,72 @@ fun setupPunchswap(deployer: Test.TestAccount, wflowAddress: String): {String: S
         punchswapV3FactoryAddress: punchswapV3FactoryAddress
     }
 }
+
+// ============================================================================
+// EVM Token Transfer Helpers
+// ============================================================================
+access(all)
+fun transferERC20FromCOA(
+    signer: Test.TestAccount,
+    tokenAddressHex: String,
+    recipientAddressHex: String,
+    amount: UInt256,
+    beFailed: Bool
+) {
+    let res = _executeTransaction(
+        "./transactions/evm_transfer_from_coa.cdc",
+        [tokenAddressHex, recipientAddressHex, amount],
+        signer
+    )
+    if beFailed {
+        Test.expect(res, Test.beFailed())
+    } else {
+        Test.expect(res, Test.beSucceeded())
+    }
+}
+
+/// Gets the ERC-20 balance of an EVM address.
+access(all)
+fun getERC20Balance(tokenAddressHex: String, ownerAddressHex: String): UInt256? {
+    let res = _executeScript(
+        "./scripts/get_erc20_balance.cdc",
+        [tokenAddressHex, ownerAddressHex]
+    )
+    if res.status == Test.ResultStatus.succeeded {
+        return res.returnValue as? UInt256
+    }
+    return nil
+}
+
+/// add liquidity to a uniswap v3 pool
+access(all)
+fun addUniV3Liquidity(
+    signer: Test.TestAccount,
+    nftManagerAddressHex: String,
+    token0Hex: String,
+    token1Hex: String,
+    fee: UInt32,
+    tickLower: Int32,
+    tickUpper: Int32,
+    amount0Desired: UInt256,
+    amount1Desired: UInt256,
+    beFailed: Bool
+) {
+    let res = _executeTransaction(
+        "./transactions/add_univ3_liquidity.cdc",
+        [
+            nftManagerAddressHex,
+            token0Hex,
+            token1Hex,
+            fee,
+            tickLower,
+            tickUpper,
+            amount0Desired,
+            amount1Desired,
+            UInt256(0),  // amount0Min (0 for simplicity in tests)
+            UInt256(0)   // amount1Min (0 for simplicity in tests)
+        ],
+        signer
+    )
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
