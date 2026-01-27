@@ -5,11 +5,8 @@ access(all) contract FlowYieldVaultsClosedBeta {
 
     access(all) resource BetaBadge {
         access(all) let assignedTo: Address
-        init(_ addr: Address) {
-            self.assignedTo = addr
-        }
-        access(all) view fun getOwner(): Address {
-            return self.assignedTo
+        init(assignedTo: Address) {
+            self.assignedTo = assignedTo
         }
     }
 
@@ -22,7 +19,7 @@ access(all) contract FlowYieldVaultsClosedBeta {
         access(all) let capID: UInt64
         access(all) let isRevoked: Bool
 
-        init(_ capID: UInt64, _ isRevoked: Bool) {
+        init(capID: UInt64, isRevoked: Bool) {
             self.capID = capID
             self.isRevoked = isRevoked
         }
@@ -35,31 +32,30 @@ access(all) contract FlowYieldVaultsClosedBeta {
 
     /// Per-user badge storage path (under the *contract/deployer* account)
     access(contract) fun _badgePath(_ addr: Address): StoragePath {
-        return StoragePath(identifier: "FlowYieldVaultsBetaBadge_".concat(addr.toString()))!
+        return StoragePath(identifier: "FlowYieldVaultsBetaBadge_\(addr)")!
     }
 
     /// Ensure the admin-owned badge exists for the user
     access(contract) fun _ensureBadge(_ addr: Address) {
-        let p = self._badgePath(addr)
-        if self.account.storage.type(at: p) == nil {
-            self.account.storage.save(<-create BetaBadge(addr), to: p)
+        let path = self._badgePath(addr)
+        if self.account.storage.type(at: path) == nil {
+            self.account.storage.save(<-create BetaBadge(assignedTo: addr), to: path)
         }
     }
 
     access(contract) fun _destroyBadge(_ addr: Address) {
-        let p = self._badgePath(addr)
-        if let badge <- self.account.storage.load<@BetaBadge>(from: p) {
+        let path = self._badgePath(addr)
+        if let badge <- self.account.storage.load<@BetaBadge>(from: path) {
             destroy badge
         }
     }
 
     /// Issue a capability from the contract/deployer account and record its ID
     access(contract) fun _issueBadgeCap(_ addr: Address): Capability<auth(Beta) &BetaBadge> {
-        let p = self._badgePath(addr)
-        let cap: Capability<auth(Beta) &BetaBadge> =
-            self.account.capabilities.storage.issue<auth(Beta) &BetaBadge>(p)
+        let path = self._badgePath(addr)
+        let cap = self.account.capabilities.storage.issue<auth(Beta) &BetaBadge>(path)
 
-        self.issuedCapIDs[addr] = AccessInfo(cap.id, false)
+        self.issuedCapIDs[addr] = AccessInfo(capID: cap.id, isRevoked: false)
 
         if let ctrl = self.account.capabilities.storage.getController(byCapabilityID: cap.id) {
             ctrl.setTag("flowyieldvaults-beta")
@@ -75,7 +71,7 @@ access(all) contract FlowYieldVaultsClosedBeta {
         let ctrl = self.account.capabilities.storage.getController(byCapabilityID: info.capID)
             ?? panic("Missing controller for recorded cap ID")
         ctrl.delete()
-        self.issuedCapIDs[addr] = AccessInfo(info.capID, true)
+        self.issuedCapIDs[addr] = AccessInfo(capID: info.capID, isRevoked: true)
         self._destroyBadge(addr)
         emit BetaRevoked(addr: addr, capID: info.capID)
     }
@@ -96,7 +92,6 @@ access(all) contract FlowYieldVaultsClosedBeta {
     access(all) view fun getBetaCapID(_ addr: Address): UInt64? {
         if let info = self.issuedCapIDs[addr] {
             if info.isRevoked {
-                assert(info.isRevoked, message: "Beta access revoked") 
                 return nil
             }
             return info.capID
@@ -109,14 +104,14 @@ access(all) contract FlowYieldVaultsClosedBeta {
             assert(addr == nil, message: "Address is required for Beta verification") 
             return false
         }
-        let recordedID: UInt64? = self.getBetaCapID(addr!); 
+        let recordedID = self.getBetaCapID(addr!); 
         if recordedID == nil {
             assert(recordedID == nil, message: "No Beta access") 
             return false
         }
 
-        if betaRef.getOwner() != addr {
-            assert(betaRef.getOwner() != addr, message: "BetaBadge may only be used by its assigned owner") 
+        if betaRef.assignedTo != addr {
+            assert(betaRef.assignedTo != addr, message: "BetaBadge may only be used by its assigned owner") 
             return false
         }
 

@@ -439,7 +439,7 @@ access(all) contract FlowYieldVaults {
     /// Creates a YieldVaultManager used to create and manage YieldVaults
     access(all) fun createYieldVaultManager(betaRef: auth(FlowYieldVaultsClosedBeta.Beta) &FlowYieldVaultsClosedBeta.BetaBadge): @ YieldVaultManager {
         pre {
-            FlowYieldVaultsClosedBeta.validateBeta(betaRef.getOwner(), betaRef):
+            FlowYieldVaultsClosedBeta.validateBeta(betaRef.assignedTo, betaRef):
             "Invalid Beta Ref"
         }
         return <-create YieldVaultManager()
