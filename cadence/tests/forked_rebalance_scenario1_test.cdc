@@ -26,12 +26,6 @@ import "FlowCreditMarket"
 
 
 // check (and update) flow.json for correct addresses
-// testnet addresses
-// access(all) let flowYieldVaultsAccount = Test.getAccount(0xd2580caf2ef07c2f)
-// access(all) let yieldTokenAccount = Test.getAccount(0xd2580caf2ef07c2f)
-// access(all) let flowCreditMarketAccount = Test.getAccount(0x426f0458ced60037)
-// access(all) let bandOracleAccount = Test.getAccount(0x9fb6606c300b5051)
-
 // mainnet addresses
 access(all) let flowYieldVaultsAccount = Test.getAccount(0xb1d63873c3cc9f79)
 access(all) let yieldTokenAccount = Test.getAccount(0xb1d63873c3cc9f79)
@@ -50,16 +44,9 @@ access(all) var snapshot: UInt64 = 0
 
 access(all)
 fun setup() {
-	// testnet/mainnet pool uses BandOracle
-    // set all prices to 1.0 for testing
+    // BandOracle is only used for FLOW price for FCM collateral
     let symbolPrices: {String: UFix64}   = { 
-        "ETH": 1.0, 
-        "FLOW": 1.0, 
-        "PYUSD": 1.0, 
-        "USDC": 1.0,
-        "USDT": 1.0,
-        "WBTC": 1.0,
-        "USD": 1.0
+        "FLOW": 1.0
     }
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: symbolPrices)
 
@@ -70,33 +57,12 @@ fun setup() {
     transferFlow(signer: whaleFlowAccount, recipient: flowCreditMarketAccount.address, amount: reserveAmount)
 
 	mintMoet(signer: flowCreditMarketAccount, to: flowCreditMarketAccount.address, amount: reserveAmount, beFailed: false)
-    // TODO: mint evm yield token?
-
-    // on mainnet, we don't use MockFlowCreditMarketConsumer
-    // the pool already has MOET liquidity
-    // the following code would be necessary for testnet
-	// var err = Test.deployContract(
-    //     name: "MockFlowCreditMarketConsumer",
-    //     path: "../../lib/FlowCreditMarket/cadence/contracts/mocks/MockFlowCreditMarketConsumer.cdc",
-    //     arguments: []
-    // )
-    // Test.expect(err, Test.beNil())
-
-    // // open wrapped position (pushToDrawDownSink)
-	// // the equivalent of depositing reserves - this provides MOET liquidity to the pool
-	// let openRes = executeTransaction(
-	// 	"../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
-	// 	[reserveAmount/2.0, /storage/flowTokenVault, true],
-	// 	flowCreditMarketAccount
-	// )
-	// Test.expect(openRes, Test.beSucceeded())
 
 	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
     // service account does not have enough flow to "mint"
 	// mintFlowResult = mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
     // Test.expect(mintFlowResult, Test.beSucceeded())
     transferFlow(signer: whaleFlowAccount, recipient: flowYieldVaultsAccount.address, amount: 100.0)
-
 }
 
 access(all) var testSnapshot: UInt64 = 0
