@@ -6,21 +6,11 @@ import BlockchainHelpers
 
 import "test_helpers.cdc"
 
-// standards
-import "EVM"
 // FlowYieldVaults platform
 import "FlowYieldVaults"
-// vm bridge
-import "FlowEVMBridgeConfig"
-// live oracles
-import "ERC4626PriceOracles"
-// mocks
-import "MockOracle"
-import "MockSwapper"
 // other
 import "FlowToken"
 import "MOET"
-import "YieldToken"
 import "FlowYieldVaultsStrategiesV1_1"
 import "FlowCreditMarket"
 
