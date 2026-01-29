@@ -65,12 +65,14 @@ Mock FungibleToken implementations representing:
 | FlowActions | 0xd27920b6384e2a78 | DeFiActions | TBD |
 | FlowCreditMarket | 0xd27920b6384e2a78 | FlowALP | TBD |
 | FlowYieldVaults | 0xd27920b6384e2a78 | FlowYieldVaults | TBD |
-| FlowYieldVaultsStrategies | 0xd27920b6384e2a78 | FlowYieldVaultsStrategies | TBD |
+| FlowYieldVaultsStrategiesV1_1 | 0xd27920b6384e2a78 | FlowYieldVaultsStrategiesV1_1 | TBD |
+| PMStrategiesV1 | 0xd27920b6384e2a78 | PMStrategiesV1 | TBD |
 | MOET | 0xd27920b6384e2a78 | MOET | 0x51f5cc5f50afb81e8f23c926080fa38c3024b238 |
 | USDC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_d431955d55a99ef69beb96ba34718d0f9fbc91b1 | 0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1 |
+| PYUSD0 | 0xdfc20aee650fcbdf | EVMVMBridgedToken_d7d43ab7b365f0d0789ae83f4385fa710ffdc98f | 0xd7d43ab7b365f0d0789aE83F4385fA710FfdC98F |
 | wBTC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6 | 0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6 |
 | wETH | 0xdfc20aee650fcbdf | EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848 | 0x059A77239daFa770977DD9f1E98632C3E4559848 |
-| mUSDC (ERC4626) | 0xdfc20aee650fcbdf | EVMVMBridgedToken_4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95 | 0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95 |
+| FUSDEV (ERC4626) | 0xdfc20aee650fcbdf | EVMVMBridgedToken_61b44d19486ee492449e83c1201581c754e9e1e1 | 0x61b44D19486EE492449E83C1201581C754e9e1E1 |
 
 #### Mainnet
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
@@ -78,13 +80,15 @@ Mock FungibleToken implementations representing:
 | FlowActions | 0x6d888f175c158410 | DeFiActions | TBD |
 | FlowCreditMarket | 0x6b00ff876c299c61 | FlowALP | TBD |
 | FlowYieldVaults | 0xb1d63873c3cc9f79 | FlowYieldVaults | TBD |
-| FlowYieldVaultsStrategies | 0xb1d63873c3cc9f79 | FlowYieldVaultsStrategies | TBD |
+| FlowYieldVaultsStrategiesV1_1 | 0xb1d63873c3cc9f79 | FlowYieldVaultsStrategiesV1_1 | TBD |
+| PMStrategiesV1 | 0xb1d63873c3cc9f79 | PMStrategiesV1 | TBD |
 | MOET | 0x6b00ff876c299c61 | MOET | 0x213979bB8A9A86966999b3AA797C1fcf3B967ae2 |
 | USDC | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_f1815bd50389c46847f0bda824ec8da914045d14 | 0xF1815bd50389c46847f0Bda824eC8da914045D14 |
 | USDF | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_2aabea2058b5ac2d339b163c6ab6f2b6d53aabed | 0x2aabea2058b5ac2d339b163c6ab6f2b6d53aabed |
+| PYUSD0 | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750 | 0x99aF3EeA856556646C98c8B9b2548Fe815240750 |
 | cbBTC | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_a0197b2044d28b08be34d98b23c9312158ea9a18 | 0xA0197b2044D28b08Be34d98b23c9312158Ea9A18 |
 | wETH | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590 | 0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590 |
-| tauUSDF (ERC4626) | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_c52E820d2D6207D18667a97e2c6Ac22eB26E803c | 0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c |
+| FUSDEV (ERC4626) | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_d069d989e2f44b70c65347d1853c0c67e10a9f8d | 0xd069d989e2F44B70c65347d1853C0c67e10a9F8D |
 
 ## How the System Works
 
