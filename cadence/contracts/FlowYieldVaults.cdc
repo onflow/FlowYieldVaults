@@ -251,6 +251,10 @@ access(all) contract FlowYieldVaults {
         access(all) view fun id(): UInt64 {
             return self.uniqueID.id
         }
+        /// Returns the type identifier of the Vault this YieldVault operates on
+        access(all) view fun getVaultTypeIdentifier(): String {
+            return self.vaultType.identifier
+        }
         /// Returns the balance of the YieldVault's vaultType available via the encapsulated Strategy
         access(all) fun getYieldVaultBalance(): UFix64 {
             return self._borrowStrategy().availableBalance(ofToken: self.vaultType)
@@ -260,7 +264,7 @@ access(all) contract FlowYieldVaults {
             emit BurnedYieldVault(
                 id: self.uniqueID.id,
                 strategyType: self.getStrategyType(),
-                tokenType: self.getType().identifier,
+                tokenType: self.vaultType.identifier,
                 remainingBalance: self.getYieldVaultBalance(),
                 owner: self.owner?.address
             )
@@ -415,7 +419,7 @@ access(all) contract FlowYieldVaults {
                 strategyType: yieldVault.getStrategyType(),
                 owner: self.owner?.address,
                 managerUUID: self.uuid,
-                tokenType: yieldVault.getType().identifier
+                tokenType: yieldVault.getVaultTypeIdentifier()
             )
             self.yieldVaults[yieldVault.uniqueID.id] <-! yieldVault
         }
