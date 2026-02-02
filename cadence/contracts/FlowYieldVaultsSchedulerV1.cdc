@@ -73,6 +73,17 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
         timestamp: UFix64
     )
 
+    /// Emitted when Supervisor fails to self-reschedule.
+    ///
+    /// This is primarily used to surface insufficient fee vault balance, which would otherwise
+    /// cause the Supervisor to stop monitoring without any on-chain signal.
+    access(all) event SupervisorRescheduleFailed(
+        timestamp: UFix64,
+        requiredFee: UFix64?,
+        availableBalance: UFix64?,
+        error: String
+    )
+
     /// Entitlement to schedule transactions
     access(all) entitlement Schedule
 
@@ -213,10 +224,9 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
 
                 // Borrow the AutoBalancer and call scheduleNextRebalance() directly
                 let autoBalancerRef = scheduleCap!.borrow()!
-                let scheduleError = autoBalancerRef.scheduleNextRebalance(whileExecuting: nil)
 
-                if scheduleError != nil {
-                    emit YieldVaultRecoveryFailed(yieldVaultID: yieldVaultID, error: scheduleError!)
+                if let scheduleError = autoBalancerRef.scheduleNextRebalance(whileExecuting: nil) {
+                    emit YieldVaultRecoveryFailed(yieldVaultID: yieldVaultID, error: scheduleError)
                     // Leave in pending queue for retry on next Supervisor run
                     continue
                 }
@@ -262,11 +272,16 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
             destroy txn
 
             let nextTimestamp = getCurrentBlock().timestamp + recurringInterval
-            let supervisorCap = FlowYieldVaultsSchedulerRegistry.getSupervisorCap()
-
-            if supervisorCap == nil || !supervisorCap!.check() {
-                return
-            }
+            if let supervisorCap = FlowYieldVaultsSchedulerRegistry.getSupervisorCap() {
+                if !supervisorCap.check() {
+                    emit SupervisorRescheduleFailed(
+                        timestamp: nextTimestamp,
+                        requiredFee: nil,
+                        availableBalance: nil,
+                        error: "Invalid Supervisor capability"
+                    )
+                    return
+                }
 
             let est = FlowYieldVaultsSchedulerV1.estimateSchedulingCost(
                 timestamp: nextTimestamp,
@@ -275,12 +290,20 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
             )
             let baseFee = est.flowFee ?? FlowYieldVaultsSchedulerV1.MIN_FEE_FALLBACK
             let required = baseFee * FlowYieldVaultsSchedulerV1.FEE_MARGIN_MULTIPLIER
+                if let vaultRef = self.feesCap.borrow() {
+                    if vaultRef.balance < required {
+                        emit SupervisorRescheduleFailed(
+                            timestamp: nextTimestamp,
+                            requiredFee: required,
+                            availableBalance: vaultRef.balance,
+                            error: "Insufficient fee vault balance"
+                        )
+                        return
+                    }
 
-            if let vaultRef = self.feesCap.borrow() {
-                if vaultRef.balance >= required {
                     let fees <- vaultRef.withdraw(amount: required) as! @FlowToken.Vault
 
-                    let nextData: {String: AnyStruct} = {
+                    let nextData = {
                         "priority": priority.rawValue,
                         "executionEffort": executionEffort,
                         "recurringInterval": recurringInterval,
@@ -288,7 +311,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
                     }
 
                     let selfTxn <- FlowTransactionScheduler.schedule(
-                        handlerCap: supervisorCap!,
+                        handlerCap: supervisorCap,
                         data: nextData,
                         timestamp: nextTimestamp,
                         priority: priority,
@@ -302,7 +325,23 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
                     )
 
                     self._scheduledTransaction <-! selfTxn
+                } else {
+                    emit SupervisorRescheduleFailed(
+                        timestamp: nextTimestamp,
+                        requiredFee: required,
+                        availableBalance: nil,
+                        error: "Could not borrow fee vault"
+                    )
+                    return
                 }
+            } else {
+                emit SupervisorRescheduleFailed(
+                    timestamp: nextTimestamp,
+                    requiredFee: nil,
+                    availableBalance: nil,
+                    error: "Missing Supervisor capability"
+                )
+                return
             }
         }
 
@@ -401,7 +440,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
     access(account) fun enqueuePendingYieldVault(yieldVaultID: UInt64) {
         assert(
             FlowYieldVaultsSchedulerRegistry.isRegistered(yieldVaultID: yieldVaultID),
-            message: "enqueuePendingYieldVault: YieldVault #".concat(yieldVaultID.toString()).concat(" is not registered")
+            message: "enqueuePendingYieldVault: YieldVault #\(yieldVaultID.toString()) is not registered"
         )
         FlowYieldVaultsSchedulerRegistry.enqueuePending(yieldVaultID: yieldVaultID)
     }
