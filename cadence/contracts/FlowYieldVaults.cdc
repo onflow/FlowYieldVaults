@@ -63,6 +63,53 @@ access(all) contract FlowYieldVaults {
         owner: Address?
     )
 
+    /* --- VIEWS --- */
+
+    /// YieldVaultInfo
+    ///
+    /// Minimal view struct providing basic identification and configuration details for a YieldVault
+    access(all) struct YieldVaultInfo {
+        /// The YieldVault's ID (DeFiActions.UniqueIdentifier.id)
+        access(all) let id: UInt64
+        /// The YieldVault resource uuid
+        access(all) let uuid: UInt64
+        /// The type identifier of the Vault this YieldVault operates on
+        access(all) let vaultTypeIdentifier: String
+        /// The strategy type identifier for this YieldVault
+        access(all) let strategyTypeIdentifier: String
+        /// The YieldVault owner's address if available
+        access(all) let owner: Address?
+
+        init(
+            id: UInt64,
+            uuid: UInt64,
+            vaultTypeIdentifier: String,
+            strategyTypeIdentifier: String,
+            owner: Address?
+        ) {
+            self.id = id
+            self.uuid = uuid
+            self.vaultTypeIdentifier = vaultTypeIdentifier
+            self.strategyTypeIdentifier = strategyTypeIdentifier
+            self.owner = owner
+        }
+    }
+
+    /// YieldVaultBalance
+    ///
+    /// Minimal view struct providing the YieldVault's current available balance for the vault's denomination.    ///
+    access(all) struct YieldVaultBalance {
+        /// The type identifier of the Vault this YieldVault operates on
+        access(all) let tokenTypeIdentifier: String
+        /// The current available balance for withdrawal
+        access(all) let availableBalance: UFix64
+
+        init(tokenTypeIdentifier: String, availableBalance: UFix64) {
+            self.tokenTypeIdentifier = tokenTypeIdentifier
+            self.availableBalance = availableBalance
+        }
+    }
+
     /* --- CONSTRUCTS --- */
 
     /// Strategy
@@ -268,12 +315,28 @@ access(all) contract FlowYieldVaults {
             // Force unwrap to ensure burnCallback is called on the Strategy
             Burner.burn(<-_strategy!)
         }
-        /// TODO: FlowYieldVaults specific views
         access(all) view fun getViews(): [Type] {
-            return []
+            return [
+                Type<YieldVaultInfo>(),
+                Type<YieldVaultBalance>()
+            ]
         }
-        /// TODO: FlowYieldVaults specific view resolution
         access(all) fun resolveView(_ view: Type): AnyStruct? {
+            switch view {
+                case Type<YieldVaultInfo>():
+                    return YieldVaultInfo(
+                        id: self.id(),
+                        uuid: self.uuid,
+                        vaultTypeIdentifier: self.vaultType.identifier,
+                        strategyTypeIdentifier: self.getStrategyType(),
+                        owner: self.owner?.address
+                    )
+                case Type<YieldVaultBalance>():
+                    return YieldVaultBalance(
+                        tokenTypeIdentifier: self.vaultType.identifier,
+                        availableBalance: self.getYieldVaultBalance()
+                    )
+            }
             return nil
         }
         /// Deposits the provided Vault to the Strategy
@@ -308,7 +371,7 @@ access(all) contract FlowYieldVaults {
         }
         /// Returns the strategy type identifier for this YieldVault
         access(all) view fun getStrategyType(): String {
-            return self.strategy.getType().identifier
+            return self._borrowStrategy().getType().identifier
         }
         /// Withdraws the requested amount from the Strategy
         access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @{FungibleToken.Vault} {

@@ -6,6 +6,7 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
+import "FlowYieldVaults"
 import "FlowYieldVaultsStrategies"
 import "FlowCreditMarket"
 
@@ -108,6 +109,18 @@ fun testLifecycle() {
     let yieldVaultID = yieldVaultIDs![0]
 
     log("✅ YieldVault created with ID: \(yieldVaultID)")
+
+    // Validate minimal YieldVault views
+    let info = getYieldVaultInfoView(address: user.address, yieldVaultID: yieldVaultID)
+    Test.assert(info != nil, message: "Expected YieldVaultInfo view to resolve")
+    Test.assertEqual(yieldVaultID, info!.id)
+    Test.assertEqual(flowTokenIdentifier, info!.vaultTypeIdentifier)
+    Test.assertEqual(strategyIdentifier, info!.strategyTypeIdentifier)
+
+    let balanceView = getYieldVaultBalanceView(address: user.address, yieldVaultID: yieldVaultID)
+    Test.assert(balanceView != nil, message: "Expected YieldVaultBalance view to resolve")
+    Test.assertEqual(flowTokenIdentifier, balanceView!.tokenTypeIdentifier)
+    Test.assertEqual(getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultID)!, balanceView!.availableBalance)
 
     // 2. Deposit to YieldVault
     depositToYieldVault(

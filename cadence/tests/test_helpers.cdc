@@ -5,6 +5,7 @@ import "MetadataViews"
 import "FlowToken"
 import "MOET"
 import "FlowCreditMarket"
+import "FlowYieldVaults"
 
 access(all) let serviceAccount = Test.serviceAccount()
 
@@ -397,6 +398,20 @@ fun getYieldVaultBalance(address: Address, yieldVaultID: UInt64): UFix64? {
     let res = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [address, yieldVaultID])
     Test.expect(res, Test.beSucceeded())
     return res.returnValue as! UFix64?
+}
+
+access(all)
+fun getYieldVaultInfoView(address: Address, yieldVaultID: UInt64): FlowYieldVaults.YieldVaultInfo? {
+    let res = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_info_view.cdc", [address, yieldVaultID])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! FlowYieldVaults.YieldVaultInfo?
+}
+
+access(all)
+fun getYieldVaultBalanceView(address: Address, yieldVaultID: UInt64): FlowYieldVaults.YieldVaultBalance? {
+    let res = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance_view.cdc", [address, yieldVaultID])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! FlowYieldVaults.YieldVaultBalance?
 }
 
 access(all)
