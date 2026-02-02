@@ -48,21 +48,20 @@ access(all) contract MockOracle {
         }
     }
 
-    // resets the price of the token within 0-bumpVariance (bps) of the current price
-    // allows for mocked data to have variability
+    // Adds a random increment between 0.0001 and 0.001 to simulate steady yield accrual
+    // With 15-minute polling: avg ~5.3% daily increase, range 0.96% to 9.6% daily
     access(all) fun bumpPrice(forToken: Type) {
         if forToken == self.unitOfAccount {
             return
         }
         let current = self.mockedPrices[forToken]
             ?? panic("MockOracle does not have a price set for token \(forToken.identifier)")
-        let sign = revertibleRandom<UInt8>(modulo: 2) // 0 - down | 1 - up
-        let variance = self.convertToBPS(revertibleRandom<UInt16>(modulo: self.bumpVariance)) // bps up or down
-        if sign == 0 {
-            self.mockedPrices[forToken] = current - (current * variance)
-        } else {
-            self.mockedPrices[forToken] = current + (current * variance)
-        }
+        
+        // Generate random multiplier 1-10, then multiply by 0.0001 to get range 0.0001-0.001
+        let randomMultiplier = UInt8(revertibleRandom<UInt8>(modulo: 10)) + 1 // 1 to 10
+        let increment = UFix64(randomMultiplier) * 0.0001 // 0.0001 to 0.001
+        
+        self.mockedPrices[forToken] = current + increment
     }
 
     access(all) fun setPrice(forToken: Type, price: UFix64) {
