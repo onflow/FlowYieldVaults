@@ -272,69 +272,9 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
             destroy txn
 
             let nextTimestamp = getCurrentBlock().timestamp + recurringInterval
-            if let supervisorCap = FlowYieldVaultsSchedulerRegistry.getSupervisorCap() {
-                if !supervisorCap.check() {
-                    emit SupervisorRescheduleFailed(
-                        timestamp: nextTimestamp,
-                        requiredFee: nil,
-                        availableBalance: nil,
-                        error: "Invalid Supervisor capability"
-                    )
-                    return
-                }
 
-            let est = FlowYieldVaultsSchedulerV1.estimateSchedulingCost(
-                timestamp: nextTimestamp,
-                priority: priority,
-                executionEffort: executionEffort
-            )
-            let baseFee = est.flowFee ?? FlowYieldVaultsSchedulerV1.MIN_FEE_FALLBACK
-            let required = baseFee * FlowYieldVaultsSchedulerV1.FEE_MARGIN_MULTIPLIER
-                if let vaultRef = self.feesCap.borrow() {
-                    if vaultRef.balance < required {
-                        emit SupervisorRescheduleFailed(
-                            timestamp: nextTimestamp,
-                            requiredFee: required,
-                            availableBalance: vaultRef.balance,
-                            error: "Insufficient fee vault balance"
-                        )
-                        return
-                    }
-
-                    let fees <- vaultRef.withdraw(amount: required) as! @FlowToken.Vault
-
-                    let nextData = {
-                        "priority": priority.rawValue,
-                        "executionEffort": executionEffort,
-                        "recurringInterval": recurringInterval,
-                        "scanForStuck": scanForStuck
-                    }
-
-                    let selfTxn <- FlowTransactionScheduler.schedule(
-                        handlerCap: supervisorCap,
-                        data: nextData,
-                        timestamp: nextTimestamp,
-                        priority: priority,
-                        executionEffort: executionEffort,
-                        fees: <-fees
-                    )
-
-                    emit SupervisorRescheduled(
-                        scheduledTransactionID: selfTxn.id,
-                        timestamp: nextTimestamp
-                    )
-
-                    self._scheduledTransaction <-! selfTxn
-                } else {
-                    emit SupervisorRescheduleFailed(
-                        timestamp: nextTimestamp,
-                        requiredFee: required,
-                        availableBalance: nil,
-                        error: "Could not borrow fee vault"
-                    )
-                    return
-                }
-            } else {
+            let supervisorCap = FlowYieldVaultsSchedulerRegistry.getSupervisorCap()
+            if supervisorCap == nil {
                 emit SupervisorRescheduleFailed(
                     timestamp: nextTimestamp,
                     requiredFee: nil,
@@ -343,6 +283,68 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
                 )
                 return
             }
+            if !supervisorCap!.check() {
+                emit SupervisorRescheduleFailed(
+                    timestamp: nextTimestamp,
+                    requiredFee: nil,
+                    availableBalance: nil,
+                    error: "Invalid Supervisor capability"
+                )
+                return
+            }
+
+            let est = FlowYieldVaultsSchedulerV1.estimateSchedulingCost(
+                timestamp: nextTimestamp,
+                priority: priority,
+                executionEffort: executionEffort
+            )
+            let baseFee = est.flowFee ?? FlowYieldVaultsSchedulerV1.MIN_FEE_FALLBACK
+            let required = baseFee * FlowYieldVaultsSchedulerV1.FEE_MARGIN_MULTIPLIER
+
+            let vaultRef = self.feesCap.borrow()
+            if vaultRef == nil {
+                emit SupervisorRescheduleFailed(
+                    timestamp: nextTimestamp,
+                    requiredFee: required,
+                    availableBalance: nil,
+                    error: "Could not borrow fee vault"
+                )
+                return
+            }
+            if vaultRef!.balance < required {
+                emit SupervisorRescheduleFailed(
+                    timestamp: nextTimestamp,
+                    requiredFee: required,
+                    availableBalance: vaultRef!.balance,
+                    error: "Insufficient fee vault balance"
+                )
+                return
+            }
+
+            let fees <- vaultRef!.withdraw(amount: required) as! @FlowToken.Vault
+
+            let nextData = {
+                "priority": priority.rawValue,
+                "executionEffort": executionEffort,
+                "recurringInterval": recurringInterval,
+                "scanForStuck": scanForStuck
+            }
+
+            let selfTxn <- FlowTransactionScheduler.schedule(
+                handlerCap: supervisorCap!,
+                data: nextData,
+                timestamp: nextTimestamp,
+                priority: priority,
+                executionEffort: executionEffort,
+                fees: <-fees
+            )
+
+            emit SupervisorRescheduled(
+                scheduledTransactionID: selfTxn.id,
+                timestamp: nextTimestamp
+            )
+
+            self._scheduledTransaction <-! selfTxn
         }
 
         /// Cancels the scheduled transaction if it is scheduled.
