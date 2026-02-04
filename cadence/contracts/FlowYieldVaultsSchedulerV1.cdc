@@ -186,9 +186,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
                     scanned = scanned + 1
                     
                     // Skip if already in pending queue
-                    // TODO: This is extremely inefficient - accessing from mapping is preferrable to iterating over
-                    //      an array
-                    if FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDs().contains(yieldVaultID) {
+                    if FlowYieldVaultsSchedulerRegistry.isPending(yieldVaultID: yieldVaultID) {
                         continue
                     }
 
