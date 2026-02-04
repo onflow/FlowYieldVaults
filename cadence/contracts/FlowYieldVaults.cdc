@@ -264,7 +264,7 @@ access(all) contract FlowYieldVaults {
             emit BurnedYieldVault(
                 id: self.uniqueID.id,
                 strategyType: self.getStrategyType(),
-                tokenType: self.vaultType.identifier,
+                tokenType: self.getVaultTypeIdentifier(),
                 remainingBalance: self.getYieldVaultBalance(),
                 owner: self.owner?.address
             )
