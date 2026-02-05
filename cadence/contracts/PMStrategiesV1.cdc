@@ -8,7 +8,7 @@ import "SwapConnectors"
 import "FungibleTokenConnectors"
 // amm integration
 import "UniswapV3SwapConnectors"
-import "ERC4626SwapConnectors"
+import "MorphoERC4626SwapConnectors"
 import "ERC4626Utils"
 // FlowYieldVaults platform
 import "FlowYieldVaults"
@@ -346,24 +346,32 @@ access(all) contract PMStrategiesV1 {
                     uniqueID: uniqueID
                 )
             // Swap Collateral -> YieldToken via ERC4626 Vault
-            let collateralTo4626Swapper = ERC4626SwapConnectors.Swapper(
+            let collateralToYieldMorphoERC4626Swapper = MorphoERC4626SwapConnectors.Swapper(
                     asset: collateralType,
                     vault: yieldTokenEVMAddress,
                     coa: PMStrategiesV1._getCOACapability(),
                     feeSource: PMStrategiesV1._createFeeSource(withID: uniqueID),
-                    uniqueID: uniqueID
+                    uniqueID: uniqueID,
+                    isReversed: false
                 )
             // Finally, add the two Collateral -> YieldToken swappers into an aggregate MultiSwapper
             let collateralToYieldSwapper = SwapConnectors.MultiSwapper(
                     inVault: collateralType,
                     outVault: yieldTokenType,
-                    swappers: [collateralToYieldAMMSwapper, collateralTo4626Swapper],
+                    swappers: [collateralToYieldAMMSwapper, collateralToYieldMorphoERC4626Swapper],
                     uniqueID: uniqueID
                 )
 
-            // YieldToken -> Collateral
-            // - Targets the Collateral <-> YieldToken pool as the only route since withdraws from the ERC4626 Vault are async
-            let yieldToCollateralSwapper = UniswapV3SwapConnectors.Swapper(
+            // create YieldToken <-> Collateral swappers
+            //
+            // YieldToken -> Collateral - can swap via two primary routes:
+            // - via AMM swap pairing YieldToken <-> Collateral
+            // - via ERC4626 vault deposit
+            // YieldToken -> Collateral high-level Swapper contains:
+            //     - MultiSwapper aggregates across two sub-swappers
+            //         - YieldToken -> Collateral (UniV3 Swapper)
+            //         - YieldToken -> Collateral (ERC4626 Swapper)
+            let yieldToCollateralAMMSwapper = UniswapV3SwapConnectors.Swapper(
                     factoryAddress: PMStrategiesV1.univ3FactoryEVMAddress,
                     routerAddress: PMStrategiesV1.univ3RouterEVMAddress,
                     quoterAddress: PMStrategiesV1.univ3QuoterEVMAddress,
@@ -374,6 +382,24 @@ access(all) contract PMStrategiesV1 {
                     coaCapability: PMStrategiesV1._getCOACapability(),
                     uniqueID: uniqueID
                 )
+
+            // Swap (redeem) YieldToken -> Collateral via MorphoERC4626 Vault
+            let yieldToCollateralMorphoERC4626Swapper = MorphoERC4626SwapConnectors.Swaper(
+                    asset: collateralType,
+                    vault: yieldTokenEVMAddress,
+                    coa: PMStrategiesV1._getCOACapability(),
+                    feeSource: PMStrategiesV1._createFeeSource(withID: uniqueID),
+                    uniqueID: uniqueID,
+                    isReversed: true
+                )
+
+            // Finally, add the two YieldToken <-> Collateral swappers into an aggregate MultiSwapper
+            let yieldToCollateralSwapper = SwapConnectors.MultiSwapper(
+                    inVault: yieldTokenType,
+                    outVault: collateralType,
+                    swappers: [yieldToCollateralAMMSwapper, yieldToCollateralMorphoERC4626Swapper],
+                    uniqueID: uniqueID
+            )
 
             // init SwapSink directing swapped funds to AutoBalancer
             //
