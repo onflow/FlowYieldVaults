@@ -161,8 +161,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowYieldVaultsStrategiesV1_1": {
-			"source": "cadence/contracts/FlowYieldVaultsStrategiesV1_1.cdc",
+		"FlowYieldVaultsStrategiesV2": {
+			"source": "cadence/contracts/FlowYieldVaultsStrategiesV2.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -873,7 +873,7 @@
 					]
 				},
 				{
-					"name": "FlowYieldVaultsStrategiesV1_1",
+					"name": "FlowYieldVaultsStrategiesV2",
 					"args": [
 						{
 							"value": "0x986Cb42b0557159431d48fE0A40073296414d410",
@@ -1001,7 +1001,7 @@
 					]
 				},
 				{
-					"name": "FlowYieldVaultsStrategiesV1_1",
+					"name": "FlowYieldVaultsStrategiesV2",
 					"args": [
 						{
 							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
@@ -1106,7 +1106,7 @@
 					]
 				},
 				{
-					"name": "FlowYieldVaultsStrategiesV1_1",
+					"name": "FlowYieldVaultsStrategiesV2",
 					"args": [
 						{
 							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",

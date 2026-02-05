@@ -8,7 +8,7 @@ import "SwapConnectors"
 import "FungibleTokenConnectors"
 // amm integration
 import "UniswapV3SwapConnectors"
-import "ERC4626SwapConnectors"
+import "MorphoERC4626SwapConnectors"
 import "ERC4626Utils"
 // Lending protocol
 import "FlowCreditMarket"
@@ -24,7 +24,7 @@ import "FlowEVMBridgeConfig"
 // live oracles
 import "ERC4626PriceOracles"
 
-/// FlowYieldVaultsStrategiesV1_1
+/// FlowYieldVaultsStrategiesV2
 ///
 /// This contract defines Strategies used in the FlowYieldVaults platform.
 ///
@@ -35,7 +35,7 @@ import "ERC4626PriceOracles"
 /// A StrategyComposer is tasked with the creation of a supported Strategy. It's within the stacking of DeFiActions
 /// connectors that the true power of the components lies.
 ///
-access(all) contract FlowYieldVaultsStrategiesV1_1 {
+access(all) contract FlowYieldVaultsStrategiesV2 {
 
     access(all) let univ3FactoryEVMAddress: EVM.EVMAddress
     access(all) let univ3RouterEVMAddress: EVM.EVMAddress
@@ -71,66 +71,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         }
     }
 
-    /// This strategy uses mUSDF vaults
-    access(all) resource mUSDFStrategy : FlowYieldVaults.Strategy, DeFiActions.IdentifiableResource {
-        /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
-        /// specific Identifier to associated connectors on construction
-        access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
-        access(self) let position: FlowCreditMarket.Position
-        access(self) var sink: {DeFiActions.Sink}
-        access(self) var source: {DeFiActions.Source}
-
-        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: FlowCreditMarket.Position) {
-            self.uniqueID = id
-            self.position = position
-            self.sink = position.createSink(type: collateralType)
-            self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
-        }
-
-        // Inherited from FlowYieldVaults.Strategy default implementation
-        // access(all) view fun isSupportedCollateralType(_ type: Type): Bool
-
-        access(all) view fun getSupportedCollateralTypes(): {Type: Bool} {
-            return { self.sink.getSinkType(): true }
-        }
-        /// Returns the amount available for withdrawal via the inner Source
-        access(all) fun availableBalance(ofToken: Type): UFix64 {
-            return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
-        }
-        /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
-        access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
-            self.sink.depositCapacity(from: from)
-        }
-        /// Withdraws up to the max amount, returning the withdrawn Vault. If the requested token type is unsupported,
-        /// an empty Vault is returned.
-        access(FungibleToken.Withdraw) fun withdraw(maxAmount: UFix64, ofToken: Type): @{FungibleToken.Vault} {
-            if ofToken != self.source.getSourceType() {
-                return <- DeFiActionsUtils.getEmptyVault(ofToken)
-            }
-            return <- self.source.withdrawAvailable(maxAmount: maxAmount)
-        }
-        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
-        access(contract) fun burnCallback() {
-            FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
-        }
-        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
-            return DeFiActions.ComponentInfo(
-                type: self.getType(),
-                id: self.id(),
-                innerComponents: [
-                    self.sink.getComponentInfo(),
-                    self.source.getComponentInfo()
-                ]
-            )
-        }
-        access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
-            return self.uniqueID
-        }
-        access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) {
-            self.uniqueID = id
-        }
-    }
-
+    /// This strategy uses FUSDEV vault
     access(all) resource FUSDEVStrategy : FlowYieldVaults.Strategy, DeFiActions.IdentifiableResource {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
@@ -237,12 +178,12 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         }
     }
 
-    /// This StrategyComposer builds a mUSDFStrategy
-    access(all) resource mUSDFStrategyComposer : FlowYieldVaults.StrategyComposer {
-        /// { Strategy Type: { Collateral Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig } }
-        access(self) let config: {Type: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}}
+    /// This StrategyComposer builds a Strategy that uses MorphoERC4626 vault
+    access(all) resource MorphoERC4626StrategyComposer : FlowYieldVaults.StrategyComposer {
+        /// { Strategy Type: { Collateral Type: FlowYieldVaultsStrategiesV2.CollateralConfig } }
+        access(self) let config: {Type: {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}}
 
-        init(_ config: {Type: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}}) {
+        init(_ config: {Type: {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}}) {
             self.config = config
         }
 
@@ -258,7 +199,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         /// Returns the Vault types which can be used to initialize a given Strategy
         access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
             let supported: {Type: Bool} = {}
-            if let strategyConfig = &self.config[forStrategy] as &{Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}? {
+            if let strategyConfig = &self.config[forStrategy] as &{Type: FlowYieldVaultsStrategiesV2.CollateralConfig}? {
                 for collateralType in strategyConfig.keys {
                     supported[collateralType] = true
                 }
@@ -287,6 +228,9 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             uniqueID: DeFiActions.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
         ): @{FlowYieldVaults.Strategy} {
+            pre {
+                self.config[type] != nil: "Unsupported strategy type \(type.identifier)"
+            }
             let collateralType = withFunds.getType()
 
             let collateralConfig = self._getCollateralConfig(
@@ -304,7 +248,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             )
 
             // Create recurring config for automatic rebalancing
-            let recurringConfig = FlowYieldVaultsStrategiesV1_1._createRecurringConfig(withID: uniqueID)
+            let recurringConfig = FlowYieldVaultsStrategiesV2._createRecurringConfig(withID: uniqueID)
 
             // Create/store/publish/register AutoBalancer (returns authorized ref)
             let balancerIO = self._initAutoBalancerAndIO(
@@ -317,13 +261,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             // Swappers: MOET <-> YIELD (YIELD is ERC4626 vault token)
             let moetToYieldSwapper = self._createMoetToYieldSwapper(tokens: tokens, uniqueID: uniqueID)
 
-            let yieldToMoetSwapper = self._createUniV3Swapper(
-                tokenPath: [tokens.yieldTokenEVMAddress, tokens.moetTokenEVMAddress],
-                feePath: [100],
-                inVault: tokens.yieldTokenType,
-                outVault: tokens.moetTokenType,
-                uniqueID: uniqueID
-            )
+            let yieldToMoetSwapper = self._createYieldToMoetSwapper(tokens: tokens, uniqueID: uniqueID)
 
             // AutoBalancer-directed swap IO
             let abaSwapSink = SwapConnectors.SwapSink(
@@ -366,12 +304,6 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             balancerIO.autoBalancer.setSink(positionSwapSink, updateSinkID: true)
 
             switch type {
-            case Type<@mUSDFStrategy>():
-                return <-create mUSDFStrategy(
-                    id: uniqueID,
-                    collateralType: collateralType,
-                    position: position
-                )
             case Type<@FUSDEVStrategy>():
                 return <-create FUSDEVStrategy(
                     id: uniqueID,
@@ -390,7 +322,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         access(self) fun _getCollateralConfig(
             strategyType: Type,
             collateralType: Type
-        ): FlowYieldVaultsStrategiesV1_1.CollateralConfig {
+        ): FlowYieldVaultsStrategiesV2.CollateralConfig {
             let strategyConfig = self.config[strategyType]
                 ?? panic(
                     "Could not find a config for Strategy \(strategyType.identifier) initialized with \(collateralType.identifier)"
@@ -403,8 +335,8 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         }
 
         access(self) fun _resolveTokenBundle(
-            collateralConfig: FlowYieldVaultsStrategiesV1_1.CollateralConfig
-        ): FlowYieldVaultsStrategiesV1_1.TokenBundle {
+            collateralConfig: FlowYieldVaultsStrategiesV2.CollateralConfig
+        ): FlowYieldVaultsStrategiesV2.TokenBundle {
             // MOET
             let moetTokenType = Type<@MOET.Vault>()
             let moetTokenEVMAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: moetTokenType)
@@ -427,7 +359,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
                     "Could not retrieve the VM Bridge associated Type for the ERC4626 underlying asset \(underlying4626AssetEVMAddress.toString())"
                 )
 
-            return FlowYieldVaultsStrategiesV1_1.TokenBundle(
+            return FlowYieldVaultsStrategiesV2.TokenBundle(
                 moetTokenType: moetTokenType,
                 moetTokenEVMAddress: moetTokenEVMAddress,
                 yieldTokenType: yieldTokenType,
@@ -457,20 +389,20 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             uniqueID: DeFiActions.UniqueIdentifier
         ): UniswapV3SwapConnectors.Swapper {
             return UniswapV3SwapConnectors.Swapper(
-                factoryAddress: FlowYieldVaultsStrategiesV1_1.univ3FactoryEVMAddress,
-                routerAddress: FlowYieldVaultsStrategiesV1_1.univ3RouterEVMAddress,
-                quoterAddress: FlowYieldVaultsStrategiesV1_1.univ3QuoterEVMAddress,
+                factoryAddress: FlowYieldVaultsStrategiesV2.univ3FactoryEVMAddress,
+                routerAddress: FlowYieldVaultsStrategiesV2.univ3RouterEVMAddress,
+                quoterAddress: FlowYieldVaultsStrategiesV2.univ3QuoterEVMAddress,
                 tokenPath: tokenPath,
                 feePath: feePath,
                 inVault: inVault,
                 outVault: outVault,
-                coaCapability: FlowYieldVaultsStrategiesV1_1._getCOACapability(),
+                coaCapability: FlowYieldVaultsStrategiesV2._getCOACapability(),
                 uniqueID: uniqueID
             )
         }
 
         access(self) fun _createMoetToYieldSwapper(
-            tokens: FlowYieldVaultsStrategiesV1_1.TokenBundle,
+            tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
             uniqueID: DeFiActions.UniqueIdentifier
         ): SwapConnectors.MultiSwapper {
             // Direct MOET -> YIELD via AMM
@@ -492,12 +424,12 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             )
 
             // UNDERLYING -> YIELD via ERC4626 vault
-            let underlyingTo4626 = ERC4626SwapConnectors.Swapper(
-                asset: tokens.underlying4626AssetType,
-                vault: tokens.yieldTokenEVMAddress,
-                coa: FlowYieldVaultsStrategiesV1_1._getCOACapability(),
-                feeSource: FlowYieldVaultsStrategiesV1_1._createFeeSource(withID: uniqueID),
-                uniqueID: uniqueID
+            let underlyingTo4626 = MorphoERC4626SwapConnectors.Swapper(
+                vaultEVMAddress: tokens.yieldTokenEVMAddress,
+                coa: FlowYieldVaultsStrategiesV2._getCOACapability(),
+                feeSource: FlowYieldVaultsStrategiesV2._createFeeSource(withID: uniqueID),
+                uniqueID: uniqueID,
+                isReversed: false
             )
 
             let seq = SwapConnectors.SequentialSwapper(
@@ -513,12 +445,56 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             )
         }
 
+        access(self) fun _createYieldToMoetSwapper(
+            tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
+            uniqueID: DeFiActions.UniqueIdentifier
+        ): SwapConnectors.MultiSwapper {
+            // Direct YIELD -> MOET via AMM
+            let yieldToMoetAMM = self._createUniV3Swapper(
+                tokenPath: [tokens.yieldTokenEVMAddress, tokens.moetTokenEVMAddress],
+                feePath: [100],
+                inVault: tokens.yieldTokenType,
+                outVault: tokens.moetTokenType,
+                uniqueID: uniqueID
+            )
+
+            //  YIELD -> UNDERLYING redeem via MorphoERC4626 vault
+            let yieldToUnderlying = MorphoERC4626SwapConnectors.Swapper(
+                vaultEVMAddress: tokens.yieldTokenEVMAddress,
+                coa: FlowYieldVaultsStrategiesV2._getCOACapability(),
+                feeSource: FlowYieldVaultsStrategiesV2._createFeeSource(withID: uniqueID),
+                uniqueID: uniqueID,
+                isReversed: true
+            )
+            // UNDERLYING -> MOET via AMM
+            let underlyingToMoet = self._createUniV3Swapper(
+                tokenPath: [tokens.underlying4626AssetEVMAddress, tokens.moetTokenEVMAddress],
+                feePath: [100],
+                inVault: tokens.underlying4626AssetType,
+                outVault: tokens.moetTokenType,
+                uniqueID: uniqueID
+            )
+
+
+            let seq = SwapConnectors.SequentialSwapper(
+                swappers: [yieldToUnderlying, underlyingToMoet],
+                uniqueID: uniqueID
+            )
+
+            return SwapConnectors.MultiSwapper(
+                inVault: tokens.yieldTokenType,
+                outVault: tokens.moetTokenType,
+                swappers: [yieldToMoetAMM, seq],
+                uniqueID: uniqueID
+            )
+        }
+
         access(self) fun _initAutoBalancerAndIO(
             oracle: {DeFiActions.PriceOracle},
             yieldTokenType: Type,
             recurringConfig: DeFiActions.AutoBalancerRecurringConfig?,
             uniqueID: DeFiActions.UniqueIdentifier
-        ): FlowYieldVaultsStrategiesV1_1.AutoBalancerIO {
+        ): FlowYieldVaultsStrategiesV2.AutoBalancerIO {
             // NOTE: This stores the AutoBalancer in FlowYieldVaultsAutoBalancers storage and returns an authorized ref.
             let autoBalancerRef =
                 FlowYieldVaultsAutoBalancers._initNewAutoBalancer(
@@ -537,7 +513,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             let source = autoBalancerRef.createBalancerSource()
                 ?? panic("Could not retrieve Source from AutoBalancer with id \(uniqueID.id)")
 
-            return FlowYieldVaultsStrategiesV1_1.AutoBalancerIO(
+            return FlowYieldVaultsStrategiesV2.AutoBalancerIO(
                 autoBalancer: autoBalancerRef,
                 sink: sink,
                 source: source
@@ -549,7 +525,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             issuanceSink: {DeFiActions.Sink},
             repaymentSource: {DeFiActions.Source}
         ): FlowCreditMarket.Position {
-            let poolCap = FlowYieldVaultsStrategiesV1_1.account.storage.copy<
+            let poolCap = FlowYieldVaultsStrategiesV2.account.storage.copy<
                 Capability<auth(FlowCreditMarket.EParticipant, FlowCreditMarket.EPosition) &FlowCreditMarket.Pool>
             >(from: FlowCreditMarket.PoolCapStoragePath)
                 ?? panic("Missing or invalid pool capability")
@@ -567,7 +543,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         }
 
         access(self) fun _createYieldToCollateralSwapper(
-            collateralConfig: FlowYieldVaultsStrategiesV1_1.CollateralConfig,
+            collateralConfig: FlowYieldVaultsStrategiesV2.CollateralConfig,
             yieldTokenEVMAddress: EVM.EVMAddress,
             yieldTokenType: Type,
             collateralType: Type,
@@ -623,10 +599,10 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
     /// may utilize resource consumption (i.e. account storage). Since Strategy creation consumes account storage
     /// via configured AutoBalancers
     access(all) resource StrategyComposerIssuer : FlowYieldVaults.StrategyComposerIssuer {
-        /// { StrategyComposer Type: { Strategy Type: { Collateral Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig } } }
-        access(all) var configs: {Type: {Type: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}}}
+        /// { StrategyComposer Type: { Strategy Type: { Collateral Type: FlowYieldVaultsStrategiesV2.CollateralConfig } } }
+        access(all) var configs: {Type: {Type: {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}}}
 
-        init(configs: {Type: {Type: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}}}) {
+        init(configs: {Type: {Type: {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}}}) {
             self.configs = configs
         }
 
@@ -645,12 +621,12 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
 
         access(all) view fun getSupportedComposers(): {Type: Bool} {
             return { 
-                Type<@mUSDFStrategyComposer>(): true
+                Type<@MorphoERC4626StrategyComposer>(): true
             }
         }
 
         access(self) view fun isSupportedComposer(_ type: Type): Bool {
-            return type == Type<@mUSDFStrategyComposer>()
+            return type == Type<@MorphoERC4626StrategyComposer>()
         }
         access(all) fun issueComposer(_ type: Type): @{FlowYieldVaults.StrategyComposer} {
             pre {
@@ -660,8 +636,8 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
                 "Could not find config for StrategyComposer \(type.identifier)"
             }
             switch type {
-            case Type<@mUSDFStrategyComposer>():
-                return <- create mUSDFStrategyComposer(self.configs[type]!)
+            case Type<@MorphoERC4626StrategyComposer>():
+                return <- create MorphoERC4626StrategyComposer(self.configs[type]!)
             default:
                 panic("Unsupported StrategyComposer \(type.identifier) requested")
             }
@@ -670,7 +646,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         access(Configure)
         fun upsertConfigFor(
             composer: Type,
-            config: {Type: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}}
+            config: {Type: {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}}
         ) {
             pre {
                 self.isSupportedComposer(composer) == true:
@@ -694,7 +670,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             for stratType in config.keys {
                 let newPerCollateral = config[stratType]!
                 let existingPerCollateral = mergedComposerConfig[stratType] ?? {}
-                var mergedPerCollateral: {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig} = existingPerCollateral
+                var mergedPerCollateral: {Type: FlowYieldVaultsStrategiesV2.CollateralConfig} = existingPerCollateral
 
                 for collateralType in newPerCollateral.keys {
                     mergedPerCollateral[collateralType] = newPerCollateral[collateralType]!
@@ -723,7 +699,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             }
 
             // Base struct with shared addresses
-            var base = FlowYieldVaultsStrategiesV1_1.makeCollateralConfig(
+            var base = FlowYieldVaultsStrategiesV2.makeCollateralConfig(
                 yieldTokenEVMAddress: yieldTokenEVMAddress,
                 yieldToCollateralAddressPath: yieldToCollateralAddressPath,
                 yieldToCollateralFeePath: yieldToCollateralFeePath
@@ -740,9 +716,8 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         }
         access(Configure) fun purgeConfig() {
             self.configs = {
-                Type<@mUSDFStrategyComposer>(): {
-                    Type<@mUSDFStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig},
-                    Type<@FUSDEVStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}
+                Type<@MorphoERC4626StrategyComposer>(): {
+                    Type<@FUSDEVStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}
                 }
             }
         }
@@ -818,7 +793,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         self.univ3FactoryEVMAddress = EVM.addressFromString(univ3FactoryEVMAddress)
         self.univ3RouterEVMAddress = EVM.addressFromString(univ3RouterEVMAddress)
         self.univ3QuoterEVMAddress = EVM.addressFromString(univ3QuoterEVMAddress)
-        self.IssuerStoragePath = StoragePath(identifier: "FlowYieldVaultsStrategyV1_1ComposerIssuer_\(self.account.address)")!
+        self.IssuerStoragePath = StoragePath(identifier: "FlowYieldVaultsStrategyV2ComposerIssuer_\(self.account.address)")!
         self.config = {}
 
         let moetType = Type<@MOET.Vault>()
@@ -827,9 +802,8 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         }
 
         let configs = {
-                Type<@mUSDFStrategyComposer>(): {
-                    Type<@mUSDFStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig},
-                    Type<@FUSDEVStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV1_1.CollateralConfig}
+                Type<@MorphoERC4626StrategyComposer>(): {
+                    Type<@FUSDEVStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}
                 }
             }
         self.account.storage.save(<-create StrategyComposerIssuer(configs: configs), to: self.IssuerStoragePath)

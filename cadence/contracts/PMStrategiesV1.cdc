@@ -347,8 +347,7 @@ access(all) contract PMStrategiesV1 {
                 )
             // Swap Collateral -> YieldToken via ERC4626 Vault
             let collateralToYieldMorphoERC4626Swapper = MorphoERC4626SwapConnectors.Swapper(
-                    asset: collateralType,
-                    vault: yieldTokenEVMAddress,
+                    vaultEVMAddress: yieldTokenEVMAddress,
                     coa: PMStrategiesV1._getCOACapability(),
                     feeSource: PMStrategiesV1._createFeeSource(withID: uniqueID),
                     uniqueID: uniqueID,
@@ -385,8 +384,7 @@ access(all) contract PMStrategiesV1 {
 
             // Swap (redeem) YieldToken -> Collateral via MorphoERC4626 Vault
             let yieldToCollateralMorphoERC4626Swapper = MorphoERC4626SwapConnectors.Swaper(
-                    asset: collateralType,
-                    vault: yieldTokenEVMAddress,
+                    vaultEVMAddress: yieldTokenEVMAddress,
                     coa: PMStrategiesV1._getCOACapability(),
                     feeSource: PMStrategiesV1._createFeeSource(withID: uniqueID),
                     uniqueID: uniqueID,
