@@ -104,16 +104,10 @@ access(all) contract FlowYieldVaultsClosedBeta {
             assert(addr == nil, message: "Address is required for Beta verification") 
             return false
         }
-        let recordedID = self.getBetaCapID(addr!); 
-        if recordedID == nil {
-            assert(recordedID == nil, message: "No Beta access") 
-            return false
-        }
+        let recordedID = self.getBetaCapID(addr!)
+        assert(recordedID != nil, message: "No Beta access")
 
-        if betaRef.assignedTo != addr {
-            assert(betaRef.assignedTo != addr, message: "BetaBadge may only be used by its assigned owner") 
-            return false
-        }
+        assert(betaRef.assignedTo == addr, message: "BetaBadge may only be used by its assigned owner")
 
         return true 
     }

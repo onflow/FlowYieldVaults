@@ -32,5 +32,10 @@ fun test_CreateYieldVaultManagerValidatesBetaRef() {
     )
     let res = Test.executeTransaction(txn)
     Test.expect(res, Test.beFailed())
+    Test.assert(res.error != nil, message: "Expected transaction to fail with an error")
+    let errorMessage = res.error!.message
+    Test.assert(
+        errorMessage.contains("Invalid Beta Ref"),
+        message: "Unexpected error message: ".concat(errorMessage)
+    )
 }
-
