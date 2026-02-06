@@ -65,6 +65,16 @@ access(all) contract FlowYieldVaultsClosedBeta {
         return cap
     }
 
+    /// Clean up any previously issued controller before issuing a fresh capability.
+    access(contract) fun _cleanupExistingGrant(_ addr: Address) {
+        if let info = self.issuedCapIDs[addr] {
+            if let ctrl = self.account.capabilities.storage.getController(byCapabilityID: info.capID) {
+                ctrl.delete()
+                emit BetaRevoked(addr: addr, capID: info.capID)
+            }
+        }
+    }
+
     /// Delete the recorded controller, revoking *all copies* of the capability
     access(contract) fun _revokeByAddress(_ addr: Address) {
         let info = self.issuedCapIDs[addr] ?? panic("No cap recorded for address")
@@ -79,6 +89,7 @@ access(all) contract FlowYieldVaultsClosedBeta {
     // 2) A small in-account helper resource that performs privileged ops
     access(all) resource AdminHandle {
         access(Admin) fun grantBeta(addr: Address): Capability<auth(FlowYieldVaultsClosedBeta.Beta) &FlowYieldVaultsClosedBeta.BetaBadge> {
+            FlowYieldVaultsClosedBeta._cleanupExistingGrant(addr)
             FlowYieldVaultsClosedBeta._ensureBadge(addr)
             return FlowYieldVaultsClosedBeta._issueBadgeCap(addr)
         }
