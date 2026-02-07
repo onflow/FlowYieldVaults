@@ -51,8 +51,8 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
 
 
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
-    'A.045a1763c93006ca.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy' \
-    'A.045a1763c93006ca.FlowYieldVaultsStrategiesV1_1.mUSDFStrategyComposer' \
+    'A.045a1763c93006ca.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
+    'A.045a1763c93006ca.FlowYieldVaultsStrategiesV2.MorphoERC4626StrategyComposer' \
     /storage/FlowYieldVaultsStrategyV1_1ComposerIssuer_0x045a1763c93006ca \
     --signer emulator-flow-yield-vaults
 
