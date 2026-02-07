@@ -89,6 +89,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
     --signer testnet-admin
 
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy'
 	'A.7e60df042a9c0868.FlowToken.Vault' \
 	"0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95" \
 	'["0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95", "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"]' \
@@ -98,6 +99,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mus
 
 # WETH univ3 path and fees
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy'
 	'A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault' \
 	"0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95" \
 	'["0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95","0x02d3575e2516a515E9B91a52b294Edc80DC7987c", "0x059A77239daFa770977DD9f1E98632C3E4559848"]' \
@@ -107,6 +109,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mus
 
 # WBTC univ3 path and fees
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy'
 	'A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault' \
 	"0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95" \
 	'["0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95","0x02d3575e2516a515E9B91a52b294Edc80DC7987c","0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6"]' \
@@ -114,8 +117,50 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mus
 	--network testnet \
 	--signer testnet-admin
 
+
+## PYUSD0 Vault
+# WFLOW univ3 path and fees
+# path: FUSDEV - WFLOW
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.FUSDEVStrategy'
+	'A.7e60df042a9c0868.FlowToken.Vault' \
+	"0x61b44D19486EE492449E83C1201581C754e9e1E1" \
+	'["0x61b44D19486EE492449E83C1201581C754e9e1E1", "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"]' \
+	'[3000]' \
+	--network testnet \
+	--signer testnet-admin
+
+# WETH univ3 path and fees
+# path: FUSDEV - MOET - WETH
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.FUSDEVStrategy'
+	'A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault' \
+	"0x61b44D19486EE492449E83C1201581C754e9e1E1" \
+	'["0x61b44D19486EE492449E83C1201581C754e9e1E1","0x02d3575e2516a515E9B91a52b294Edc80DC7987c", "0x059A77239daFa770977DD9f1E98632C3E4559848"]' \
+	'[3000,3000]' \
+	--network testnet \
+	--signer testnet-admin
+
+# WBTC univ3 path and fees
+# path: FUSDEV - MOET - WETH
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.FUSDEVStrategy'
+	'A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault' \
+	"0x61b44D19486EE492449E83C1201581C754e9e1E1" \
+	'["0x61b44D19486EE492449E83C1201581C754e9e1E1","0x02d3575e2516a515E9B91a52b294Edc80DC7987c","0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6"]' \
+	'[3000,3000]' \
+	--network testnet \
+	--signer testnet-admin
+
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategy' \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategyComposer' \
+	/storage/FlowYieldVaultsStrategyV1_1ComposerIssuer_0xd2580caf2ef07c2f \
+	--network testnet \
+	--signer testnet-admin
+
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
+	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.FUSDEVStrategy' \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV1_1.mUSDFStrategyComposer' \
 	/storage/FlowYieldVaultsStrategyV1_1ComposerIssuer_0xd2580caf2ef07c2f \
 	--network testnet \

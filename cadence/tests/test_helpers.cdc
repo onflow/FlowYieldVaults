@@ -9,6 +9,9 @@ import "FlowCreditMarket"
 access(all) let serviceAccount = Test.serviceAccount()
 
 /* --- Test execution helpers --- */
+// tolerance for forked tests
+access(all) 
+let forkedPercentTolerance = 0.05
 
 access(all)
 fun _executeScript(_ path: String, _ args: [AnyStruct]): Test.ScriptResult {
@@ -480,6 +483,16 @@ fun addSupportedTokenSimpleInterestCurve(
 }
 
 access(all)
+fun setPoolMockOracle(signer: Test.TestAccount) {
+    let res = _executeTransaction(
+        "./transactions/set_mock_oracle.cdc",
+        [],
+        signer
+    )
+    Test.expect(res, Test.beSucceeded())
+}
+
+access(all)
 fun rebalancePosition(signer: Test.TestAccount, pid: UInt64, force: Bool, beFailed: Bool) {
     let rebalanceRes = _executeTransaction(
         "../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-management/rebalance_position.cdc",
@@ -592,6 +605,50 @@ fun setMockSwapperLiquidityConnector(signer: Test.TestAccount, vaultStoragePath:
     let setRes = _executeTransaction(
         "../transactions/mocks/swapper/set_liquidity_connector.cdc",
         [ vaultStoragePath ],
+        signer
+    )
+    Test.expect(setRes, Test.beSucceeded())
+}
+
+/// Sets the BandOracle price for a given symbol (e.g., "FLOW", "USD")
+/// The price is in USD, converted internally to BandOracle's 1e9 format
+///
+/// @param signer: The BandOracle admin account that has DataUpdater capability
+/// @param symbol: The oracle symbol (e.g., "FLOW", "USD", "stFLOW")
+/// @param price: The price in USD (e.g., 0.5 for $0.50, 1.0 for $1.00)
+///
+access(all)
+fun setBandOraclePrice(signer: Test.TestAccount, symbol: String, price: UFix64) {
+    // BandOracle uses 1e9 multiplier for prices
+    // e.g., $1.00 = 1_000_000_000, $0.50 = 500_000_000
+    let priceAsUInt64 = UInt64(price * 1_000_000_000.0)
+    let symbolsRates: {String: UInt64} = { symbol: priceAsUInt64 }
+    
+    let setRes = _executeTransaction(
+        "../../lib/FlowCreditMarket/FlowActions/cadence/tests/transactions/band-oracle/update_data.cdc",
+        [ symbolsRates ],
+        signer
+    )
+    Test.expect(setRes, Test.beSucceeded())
+}
+
+/// Sets multiple BandOracle prices at once
+///
+/// @param signer: The BandOracle admin account that has DataUpdater capability
+/// @param symbolPrices: A dictionary mapping symbols to prices in USD
+///     e.g., { "FLOW": 0.5, "USD": 1.0 }
+///
+access(all)
+fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}) {
+    let symbolsRates: {String: UInt64} = {}
+    for symbol in symbolPrices.keys {
+        let price = symbolPrices[symbol]!
+        symbolsRates[symbol] = UInt64(price * 1_000_000_000.0)
+    }
+    
+    let setRes = _executeTransaction(
+        "../../lib/FlowCreditMarket/FlowActions/cadence/tests/transactions/band-oracle/update_data.cdc",
+        [ symbolsRates ],
         signer
     )
     Test.expect(setRes, Test.beSucceeded())
