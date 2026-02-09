@@ -188,12 +188,10 @@
 				"testnet": "426f0458ced60037"
 			}
 		},
-		"MockFlowCreditMarketConsumer": {
-			"source": "./lib/FlowCreditMarket/cadence/contracts/mocks/MockFlowCreditMarketConsumer.cdc",
+		"MockDexSwapper": {
+			"source": "./lib/FlowCreditMarket/cadence/contracts/mocks/MockDexSwapper.cdc",
 			"aliases": {
-				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000008",
-				"testnet": "d2580caf2ef07c2f"
+				"testing": "0000000000000007"
 			}
 		},
 		"MockOracle": {

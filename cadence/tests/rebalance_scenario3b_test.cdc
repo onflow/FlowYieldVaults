@@ -73,11 +73,12 @@ fun setup() {
 
 	// setup FlowCreditMarket with a Pool & add FLOW as supported token
 	createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
-	addSupportedTokenSimpleInterestCurve(
+	addSupportedTokenFixedRateInterestCurve(
 		signer: protocolAccount,
 		tokenTypeIdentifier: flowTokenIdentifier,
 		collateralFactor: 0.8,
 		borrowFactor: 1.0,
+        yearlyRate: UFix128(0.1),
 		depositRate: 1_000_000.0,
 		depositCapacityCap: 1_000_000.0
 	)
@@ -85,7 +86,7 @@ fun setup() {
 	// open wrapped position (pushToDrawDownSink)
 	// the equivalent of depositing reserves
 	let openRes = executeTransaction(
-		"../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
+		"../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/position/create_position.cdc",
 		[reserveAmount/2.0, /storage/flowTokenVault, true],
 		protocolAccount
 	)
