@@ -54,7 +54,7 @@ fun setup() {
         tokenTypeIdentifier: flowTokenIdentifier,
         collateralFactor: flowCollateralFactor,
         borrowFactor: flowBorrowFactor,
-        yearlyRate: UFix128(0.1),
+        yearlyRate: UFix128(0.0),
         depositRate: 1_000_000.0,
         depositCapacityCap: 1_000_000.0
     )
