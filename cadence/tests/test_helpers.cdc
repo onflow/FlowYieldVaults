@@ -461,23 +461,6 @@ fun createAndStorePool(signer: Test.TestAccount, defaultTokenIdentifier: String,
 }
 
 access(all)
-fun addSupportedTokenSimpleInterestCurve(
-    signer: Test.TestAccount,
-    tokenTypeIdentifier: String,
-    collateralFactor: UFix64,
-    borrowFactor: UFix64,
-    depositRate: UFix64,
-    depositCapacityCap: UFix64
-) {
-    let additionRes = _executeTransaction(
-        "../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc",
-        [ tokenTypeIdentifier, collateralFactor, borrowFactor, depositRate, depositCapacityCap ],
-        signer
-    )
-    Test.expect(additionRes, Test.beSucceeded())
-}
-
-access(all)
 fun addSupportedTokenFixedRateInterestCurve(
     signer: Test.TestAccount,
     tokenTypeIdentifier: String,
