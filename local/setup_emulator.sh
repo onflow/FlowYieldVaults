@@ -23,7 +23,7 @@ flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.045a
 # create Pool with MOET as default token
 flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc 'A.045a1763c93006ca.MOET.Vault' --signer emulator-flow-yield-vaults
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.0ae53cb6e3f42a79.FlowToken.Vault' \
     0.8 \
     1.0 \
@@ -67,4 +67,3 @@ flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-cr
 TIDAL_COA=0x$(flow scripts execute ./lib/flow-evm-bridge/cadence/scripts/evm/get_evm_address_string.cdc 045a1763c93006ca --format inline | sed -E 's/"([^"]+)"/\1/')
 echo $TIDAL_COA
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/transfer_flow_to_cadence_or_evm.cdc $TIDAL_COA 100.0 --signer emulator-flow-yield-vaults --gas-limit 9999
-

@@ -22,7 +22,7 @@ flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-m
 flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/update_oracle.cdc --network mainnet --signer mainnet-flow-credit-market-deployer
 
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.1654653399040a61.FlowToken.Vault' \
     0.8 \
     1.0 \
@@ -38,7 +38,7 @@ cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transa
 cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "ETH" "A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault" --network mainnet --signer mainnet-band-oracle-connectors && cd ../../..
 
 # WBTC simple curve
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault' \
     0.8 \
     1.0 \
@@ -48,7 +48,7 @@ flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-m
     --signer mainnet-flow-credit-market-deployer
 
 # WETH simple curve
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault' \
     0.8 \
     1.0 \

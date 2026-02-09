@@ -188,6 +188,15 @@
 				"testnet": "426f0458ced60037"
 			}
 		},
+		"MockDexSwapper": {
+			"source": "./lib/FlowCreditMarket/cadence/contracts/mocks/MockDexSwapper.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "6b00ff876c299c61",
+				"testing": "0000000000000008",
+				"testnet": "426f0458ced60037"
+			}
+		},
 		"MockFlowCreditMarketConsumer": {
 			"source": "./lib/FlowCreditMarket/cadence/contracts/mocks/MockFlowCreditMarketConsumer.cdc",
 			"aliases": {
@@ -809,6 +818,7 @@
 				"FungibleTokenConnectors",
 				"SwapConnectors",
 				"DummyConnectors",
+				"MockDexSwapper",
 				"FlowCreditMarket",
 				{
 					"name": "YieldToken",

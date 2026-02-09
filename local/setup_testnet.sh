@@ -22,7 +22,7 @@ flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-m
 # update Pool with Band Oracle instead of Mock Oracle
 flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/update_oracle.cdc --network testnet --signer testnet-flow-credit-market-deployer
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.7e60df042a9c0868.FlowToken.Vault' \
     0.8 \
     1.0 \
@@ -38,7 +38,7 @@ cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transa
 cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "ETH" "A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault" --network testnet --signer testnet-band-oracle-connectors && cd ../../..
 
 # add WBTC as supported token
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault' \
     0.8 \
     1.0 \
@@ -48,7 +48,7 @@ flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-m
     --signer testnet-flow-credit-market-deployer
 
 # add WETH as supported token
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault' \
     0.8 \
     1.0 \
