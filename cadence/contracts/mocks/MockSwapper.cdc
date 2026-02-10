@@ -94,12 +94,12 @@ access(all) contract MockSwapper {
             let inTokenPrice = self.oracle.price(ofToken: self.inType())
             ?? panic("Price for token \(self.inType().identifier) is currently unavailable")
 
-            let uintOutTokenPrice = FlowCreditMarketMath.toUFix128(outTokenPrice)
-            let uintInTokenPrice = FlowCreditMarketMath.toUFix128(inTokenPrice)
+            let uintOutTokenPrice = UFix128(outTokenPrice)
+            let uintInTokenPrice = UFix128(inTokenPrice)
 
             // the original formula is correct, but lacks precision
             // let price = reverse  ? outTokenPrice / inTokenPrice : inTokenPrice / outTokenPrice
-            let uintPrice = reverse ? FlowCreditMarketMath.div(uintOutTokenPrice, uintInTokenPrice) : FlowCreditMarketMath.div(uintInTokenPrice, uintOutTokenPrice)
+            let uintPrice = reverse ? (uintOutTokenPrice / uintInTokenPrice) : (uintInTokenPrice / uintOutTokenPrice)
 
             if amount == UFix64.max {
                 return SwapConnectors.BasicQuote(
@@ -110,8 +110,8 @@ access(all) contract MockSwapper {
                 )
             }
 
-            let uintAmount = FlowCreditMarketMath.toUFix128(amount)
-            let uintInAmount = out ? uintAmount : FlowCreditMarketMath.div(uintAmount, uintPrice)
+            let uintAmount = UFix128(amount)
+            let uintInAmount = out ? uintAmount : (uintAmount / uintPrice)
             let uintOutAmount = out ? uintAmount * uintPrice : uintAmount
 
             let inAmount = FlowCreditMarketMath.toUFix64Round(uintInAmount)
