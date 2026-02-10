@@ -10,3 +10,8 @@ remappings = [
   "@openzeppelin/=./solidity/lib/openzeppelin-contracts/"
 ]
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+# --- Make CREATE2 deterministic across environments/versions ---
+# Removes metadata hash / CBOR metadata that otherwise changes initcode hash.
+bytecode_hash = "none"
+cbor_metadata = false
