@@ -305,13 +305,37 @@ access(all) fun setVaultSharePrice(vaultAddress: String, priceMultiplier: UFix64
     )
     Test.expect(storeResult, Test.beSucceeded())
     
-    // 2. Set vault._totalAssets (preserving lastUpdate/maxRate in packed slot 15)
+    // 2. Set vault._totalAssets AND update lastUpdate (packed slot 15)
+    // Slot 15 layout (32 bytes total):
+    //   - bytes 0-7:   lastUpdate (uint64)
+    //   - bytes 8-15:  maxRate (uint64)
+    //   - bytes 16-31: _totalAssets (uint128)
+    
     let slotResult = _executeScript("scripts/load_storage_slot.cdc", [vaultAddress, morphoVaultTotalAssetsSlot])
     Test.expect(slotResult, Test.beSucceeded())
     let slotHex = slotResult.returnValue as! String
     let slotBytes = slotHex.slice(from: 2, upTo: slotHex.length).decodeHex()
     
-    // Preserve first 16 bytes (lastUpdate + maxRate), replace last 16 bytes (_totalAssets)
+    // Get current block timestamp (for lastUpdate)
+    let blockResult = _executeScript("scripts/get_block_timestamp.cdc", [])
+    let currentTimestamp = blockResult.status == Test.ResultStatus.succeeded 
+        ? UInt64.fromString((blockResult.returnValue as! String?) ?? "0") ?? UInt64(getCurrentBlock().timestamp)
+        : UInt64(getCurrentBlock().timestamp)
+    
+    // Preserve maxRate (bytes 8-15), but UPDATE lastUpdate and _totalAssets
+    let maxRateBytes = slotBytes.slice(from: 8, upTo: 16)
+    
+    // Encode new lastUpdate (uint64, 8 bytes, big-endian)
+    var lastUpdateBytes: [UInt8] = []
+    var tempTimestamp = currentTimestamp
+    var i = 0
+    while i < 8 {
+        lastUpdateBytes.insert(at: 0, UInt8(tempTimestamp % 256))
+        tempTimestamp = tempTimestamp / 256
+        i = i + 1
+    }
+    
+    // Encode new _totalAssets (uint128, 16 bytes, big-endian, left-padded)
     let assetsBytes = targetAssets.toBigEndianBytes()
     var paddedAssets: [UInt8] = []
     var padCount = 16 - assetsBytes.length
@@ -320,7 +344,17 @@ access(all) fun setVaultSharePrice(vaultAddress: String, priceMultiplier: UFix64
         padCount = padCount - 1
     }
     paddedAssets.appendAll(assetsBytes)
-    let newSlotBytes = slotBytes.slice(from: 0, upTo: 16).concat(paddedAssets)
+    
+    // Pack: lastUpdate (8) + maxRate (8) + _totalAssets (16) = 32 bytes
+    var newSlotBytes: [UInt8] = []
+    newSlotBytes.appendAll(lastUpdateBytes)
+    newSlotBytes.appendAll(maxRateBytes)
+    newSlotBytes.appendAll(paddedAssets)
+    
+    log("Stored value at slot \(morphoVaultTotalAssetsSlot)")
+    log("  lastUpdate: \(currentTimestamp) (updated to current block)")
+    log("  maxRate: preserved")
+    log("  _totalAssets: \(targetAssets.toString())")
     
     storeResult = _executeTransaction(
         "transactions/store_storage_slot.cdc",
