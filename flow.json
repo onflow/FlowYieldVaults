@@ -1,5 +1,9 @@
 {
 	"contracts": {
+		"EVM": {
+			"source": "./cadence/contracts/mocks/EVM.cdc",
+			"aliases": {}
+		},
 		"BandOracleConnectors": {
 			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/band-oracle/BandOracleConnectors.cdc",
 			"aliases": {

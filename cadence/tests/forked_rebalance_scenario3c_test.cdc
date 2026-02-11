@@ -34,6 +34,9 @@ access(all) let targetHealthFactor = 1.3
 // Morpho FUSDEV vault address
 access(all) let morphoVaultAddress = "0xd069d989e2F44B70c65347d1853C0c67e10a9F8D"
 
+// Uniswap V3 Factory address on Flow EVM mainnet
+access(all) let factoryAddress = "0xca6d7Bb03334bBf135902e1d919a5feccb461632"
+
 // Storage slot for Morpho vault _totalAssets
 // Slot 15: uint128 _totalAssets + uint64 lastUpdate + uint64 maxRate (packed)
 access(all) let totalAssetsSlot = "0x000000000000000000000000000000000000000000000000000000000000000f"
@@ -68,215 +71,340 @@ access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
 // Correct address from vault.asset(): 0x99aF3EeA856556646C98c8B9b2548Fe815240750
 access(all) let pyusd0Address = "0x99aF3EeA856556646C98c8B9b2548Fe815240750"
 
-// PYUSD0 balanceOf mapping is at slot 1 (standard ERC20 layout)
-// Storage slot for balanceOf[morphoVault] = keccak256(vault_address_padded || slot_1)
-// Calculated using: cast keccak 0x000000000000000000000000d069d989e2f44b70c65347d1853c0c67e10a9f8d0000000000000000000000000000000000000000000000000000000000000001
-access(all) let pyusd0BalanceSlotForVault = "0x00056c3aa1845366a3744ff6c51cff309159d9be9eacec9ff06ec523ae9db7f0"
-
 // Morpho vault _totalAssets slot (slot 15, packed with lastUpdate and maxRate)
 access(all) let morphoVaultTotalAssetsSlot = "0x000000000000000000000000000000000000000000000000000000000000000f"
-
-// ERC20 balanceOf mapping slots (standard layout at slot 0 for most tokens)
-access(all) let erc20BalanceOfSlot = "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 // Token addresses for liquidity seeding
 access(all) let moetAddress = "0x5c147e74D63B1D31AA3Fd78Eb229B65161983B2b"
 access(all) let flowEVMAddress = "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
 
-// Storage slots for balanceOf[COA] where COA = 0xe467b9dd11fa00df
-// Calculated via: cast index address 0x000000000000000000000000e467b9dd11fa00df <slot>
-access(all) let moetBalanceSlotForCOA = "0x00163bda938054c6ef029aa834a66783a57ce7bedb1a8c2815e8bdf7ab9ddb39"  // MOET slot 0
-access(all) let pyusd0BalanceSlotForCOA = "0xb2beb48b003c8e5b001f84bc854c4027531bf1261e8e308e47f3edf075df5ab5"  // PYUSD0 slot 1
-access(all) let flowBalanceSlotForCOA = "0x00163bda938054c6ef029aa834a66783a57ce7bedb1a8c2815e8bdf7ab9ddb39"  // FLOW slot 0
+// Helper: Compute Solidity mapping storage slot (wraps script call for convenience)
+access(all) fun computeMappingSlot(holderAddress: String, slot: UInt256): String {
+    let result = _executeScript("scripts/compute_solidity_mapping_slot.cdc", [holderAddress, slot])
+    return result.returnValue as! String
+}
 
-// Create the missing Uniswap V3 pools needed for rebalancing
-access(all) fun createRequiredPools(signer: Test.TestAccount) {
-    log("\n=== CREATING REQUIRED UNISWAP V3 POOLS ===")
+// Set pool to a specific price via EVM.store
+// Will create the pool first if it doesn't exist
+// tokenA/tokenB can be passed in any order - the function handles sorting internally
+// priceTokenBPerTokenA is the desired price ratio (tokenB/tokenA)
+access(all) fun setPoolToPrice(
+    factoryAddress: String,
+    tokenAAddress: String,
+    tokenBAddress: String,
+    fee: UInt64,
+    priceTokenBPerTokenA: UFix64,
+    signer: Test.TestAccount
+) {
+    // Sort tokens (Uniswap V3 requires token0 < token1)
+    let token0 = tokenAAddress < tokenBAddress ? tokenAAddress : tokenBAddress
+    let token1 = tokenAAddress < tokenBAddress ? tokenBAddress : tokenAAddress
     
-    // CORRECT MAINNET FACTORY ADDRESS (from flow.json mainnet deployment)
-    let factory = "0xca6d7Bb03334bBf135902e1d919a5feccb461632"
-    let sqrtPriceX96_1_1 = "79228162514264337593543950336" // 2^96 for 1:1 price
+    // Calculate actual pool price based on sorting
+    // If A < B: price = B/A (as passed in)
+    // If B < A: price = A/B (inverse)
+    let poolPrice = tokenAAddress < tokenBAddress ? priceTokenBPerTokenA : 1.0 / priceTokenBPerTokenA
     
-    // Pool 1: PYUSD0/FUSDEV at fee 100 (0.01%) - CORRECTED ORDER
-    log("Creating PYUSD0/FUSDEV pool...")
-    var result = _executeTransaction(
+    // Calculate sqrtPriceX96 and tick for the pool
+    let targetSqrtPriceX96 = calculateSqrtPriceX96(price: poolPrice)
+    let targetTick = calculateTick(price: poolPrice)
+    
+    log("[COERCE] Setting pool price to sqrtPriceX96=\(targetSqrtPriceX96), tick=\(targetTick.toString())")
+    log("[COERCE] Token0: \(token0), Token1: \(token1), Price (token1/token0): \(poolPrice)")
+    
+    // First, try to create the pool (will fail gracefully if it already exists)
+    let createResult = _executeTransaction(
         "transactions/create_uniswap_pool.cdc",
-        [factory, pyusd0Address, morphoVaultAddress, UInt64(100), sqrtPriceX96_1_1],
+        [factoryAddress, token0, token1, fee, targetSqrtPriceX96],
         signer
     )
-    if result.status == Test.ResultStatus.failed {
-        log("PYUSD0/FUSDEV pool creation FAILED: ".concat(result.error?.message ?? "unknown"))
-    } else {
-        log("PYUSD0/FUSDEV pool tx succeeded")
-    }
+    // Don't fail if creation fails - pool might already exist
     
-    // Pool 2: PYUSD0/FLOW at fee 3000 (0.3%)
-    log("Creating PYUSD0/FLOW pool...")
-    result = _executeTransaction(
-        "transactions/create_uniswap_pool.cdc",
-        [factory, pyusd0Address, flowEVMAddress, UInt64(3000), sqrtPriceX96_1_1],
+    // Now set pool price using EVM.store
+    let seedResult = _executeTransaction(
+        "transactions/set_uniswap_v3_pool_price.cdc",
+        [factoryAddress, token0, token1, fee, targetSqrtPriceX96, targetTick],
         signer
     )
-    if result.status == Test.ResultStatus.failed {
-        log("PYUSD0/FLOW pool creation FAILED: ".concat(result.error?.message ?? "unknown"))
-    } else {
-        log("PYUSD0/FLOW pool tx succeeded")
+    Test.expect(seedResult, Test.beSucceeded())
+    log("[POOL] Pool set to target price with 1e24 liquidity")
+}
+
+// Calculate square root using Newton's method for UInt256
+// Returns sqrt(n) * scaleFactor to maintain precision
+access(all) fun sqrt(n: UInt256, scaleFactor: UInt256): UInt256 {
+    if n == UInt256(0) {
+        return UInt256(0)
     }
     
-    // Pool 3: MOET/FUSDEV at fee 100 (0.01%)
-    log("Creating MOET/FUSDEV pool...")
-    result = _executeTransaction(
-        "transactions/create_uniswap_pool.cdc",
-        [factory, moetAddress, morphoVaultAddress, UInt64(100), sqrtPriceX96_1_1],
-        signer
-    )
-    if result.status == Test.ResultStatus.failed {
-        log("MOET/FUSDEV pool creation FAILED: ".concat(result.error?.message ?? "unknown"))
-    } else {
-        log("MOET/FUSDEV pool tx succeeded")
+    // Initial guess: n/2 (scaled)
+    var x = (n * scaleFactor) / UInt256(2)
+    var prevX = UInt256(0)
+    
+    // Newton's method: x_new = (x + n*scale^2/x) / 2
+    // Iterate until convergence (max 50 iterations for safety)
+    var iterations = 0
+    while x != prevX && iterations < 50 {
+        prevX = x
+        // x_new = (x + (n * scaleFactor^2) / x) / 2
+        let nScaled = n * scaleFactor * scaleFactor
+        x = (x + nScaled / x) / UInt256(2)
+        iterations = iterations + 1
     }
     
-    log("Pool creation transactions submitted")
+    return x
+}
+
+// Calculate sqrtPriceX96 for a given price ratio
+// price = token1/token0 ratio (as UFix64, e.g., 2.0 means token1 is 2x token0)
+// sqrtPriceX96 = sqrt(price) * 2^96
+access(all) fun calculateSqrtPriceX96(price: UFix64): String {
+    // Convert UFix64 to UInt256 (UFix64 has 8 decimal places)
+    // price is stored as integer * 10^8 internally
+    let priceBytes = price.toBigEndianBytes()
+    var priceUInt64: UInt64 = 0
+    for byte in priceBytes {
+        priceUInt64 = (priceUInt64 << 8) + UInt64(byte)
+    }
+    let priceScaled = UInt256(priceUInt64) // This is price * 10^8
     
-    log("\n=== POOL STATUS SUMMARY ===")
-    log("PYUSD0/FUSDEV (fee 100): Exists on mainnet")
-    log("PYUSD0/FLOW (fee 3000): Exists on mainnet")
-    log("MOET/FUSDEV (fee 100): Created in fork, initialized")
+    // We want: sqrt(price) * 2^96
+    // = sqrt(priceScaled / 10^8) * 2^96
+    // = sqrt(priceScaled) * 2^96 / sqrt(10^8)
+    // = sqrt(priceScaled) * 2^96 / 10^4
     
-    // CRITICAL: Seed ALL THREE POOLS with massive liquidity using vm.store
-    // 
-    // NOTE: On mainnet, MOET/FUSDEV pool doesn't exist, BUT there's a fallback path:
-    //   MOET → PYUSD0 (Uniswap) → FUSDEV (ERC4626 deposit)
-    // This means the bug CAN still occur on mainnet if MOET/PYUSD0 has liquidity.
-    // 
-    // We seed all three pools here to test the full amplification behavior with perfect liquidity.
-    // The mainnet pools (PYUSD0/FUSDEV, PYUSD0/FLOW) exist but may have insufficient liquidity
-    // at this fork block, so we seed them too.
-    log("\n=== SEEDING ALL POOL LIQUIDITY WITH VM.STORE ===")
+    // Calculate sqrt(priceScaled) with scale factor 2^48 for precision
+    // sqrt(priceScaled) * 2^48
+    let sqrtPriceScaled = sqrt(n: priceScaled, scaleFactor: UInt256(1) << 48)
     
-    // Pool addresses
-    let pyusd0FusdevPoolAddr = "0x9196e243b7562b0866309013f2f9eb63f83a690f"  // PYUSD0/FUSDEV fee 100
-    let pyusd0FlowPoolAddr = "0x0fdba612fea7a7ad0256687eebf056d81ca63f63"     // PYUSD0/FLOW fee 3000
-    let moetFusdevPoolAddr = "0x2d19d4287d6708fdc47d649cc07114aec8cb0d6a"    // MOET/FUSDEV fee 100
+    // Now we have: sqrt(priceScaled) * 2^48
+    // We want: sqrt(priceScaled) * 2^96 / 10^4
+    // = (sqrt(priceScaled) * 2^48) * 2^48 / 10^4
     
-    // Uniswap V3 pool storage layout:
-    // slot 0: slot0 (packed: sqrtPriceX96, tick, observationIndex, etc.)
-    // slot 1: feeGrowthGlobal0X128
-    // slot 2: feeGrowthGlobal1X128  
-    // slot 3: protocolFees (packed)
-    // slot 4: liquidity (uint128)
+    let sqrtPriceX96 = (sqrtPriceScaled * (UInt256(1) << 48)) / UInt256(10000)
     
-    let liquiditySlot = "0x0000000000000000000000000000000000000000000000000000000000000004"
-    // Set liquidity to 1e21 (1 sextillion) - uint128 max is ~3.4e38
-    let massiveLiquidity = "0x00000000000000000000000000000000000000000000003635c9adc5dea00000" // 1e21 in hex
-    
-    // Seed PYUSD0/FUSDEV pool
-    log("\n1. SEEDING PYUSD0/FUSDEV POOL (\(pyusd0FusdevPoolAddr))...")
-    var seedResult = _executeTransaction(
-        "transactions/store_storage_slot.cdc",
-        [pyusd0FusdevPoolAddr, liquiditySlot, massiveLiquidity],
-        coaOwnerAccount
-    )
-    if seedResult.status == Test.ResultStatus.succeeded {
-        log("   SUCCESS: PYUSD0/FUSDEV pool liquidity seeded")
-    } else {
-        panic("FAILED to seed PYUSD0/FUSDEV pool: ".concat(seedResult.error?.message ?? "unknown"))
+    return sqrtPriceX96.toString()
+}
+
+// Calculate natural logarithm using Taylor series
+// ln(x) for x > 0, returns ln(x) * scaleFactor for precision
+access(all) fun ln(x: UInt256, scaleFactor: UInt256): Int256 {
+    if x == UInt256(0) {
+        panic("ln(0) is undefined")
     }
     
-    // Seed PYUSD0/FLOW pool
-    log("\n2. SEEDING PYUSD0/FLOW POOL (\(pyusd0FlowPoolAddr))...")
-    seedResult = _executeTransaction(
-        "transactions/store_storage_slot.cdc",
-        [pyusd0FlowPoolAddr, liquiditySlot, massiveLiquidity],
-        coaOwnerAccount
-    )
-    if seedResult.status == Test.ResultStatus.succeeded {
-        log("   SUCCESS: PYUSD0/FLOW pool liquidity seeded")
-    } else {
-        panic("FAILED to seed PYUSD0/FLOW pool: ".concat(seedResult.error?.message ?? "unknown"))
+    // For better convergence, reduce x to range [0.5, 1.5] using:
+    // ln(x) = ln(2^n * y) = n*ln(2) + ln(y) where y is in [0.5, 1.5]
+    
+    var value = x
+    var n = 0
+    
+    // Scale down if x > 1.5 * scaleFactor
+    let threshold = (scaleFactor * UInt256(3)) / UInt256(2)
+    while value > threshold {
+        value = value / UInt256(2)
+        n = n + 1
     }
     
-    // Seed MOET/FUSDEV pool
-    log("\n3. SEEDING MOET/FUSDEV POOL (\(moetFusdevPoolAddr))...")
-    seedResult = _executeTransaction(
-        "transactions/store_storage_slot.cdc",
-        [moetFusdevPoolAddr, liquiditySlot, massiveLiquidity],
-        coaOwnerAccount
-    )
-    if seedResult.status == Test.ResultStatus.succeeded {
-        log("   SUCCESS: MOET/FUSDEV pool liquidity seeded")
-    } else {
-        panic("FAILED to seed MOET/FUSDEV pool: ".concat(seedResult.error?.message ?? "unknown"))
+    // Scale up if x < 0.5 * scaleFactor
+    let lowerThreshold = scaleFactor / UInt256(2)
+    while value < lowerThreshold {
+        value = value * UInt256(2)
+        n = n - 1
     }
     
-    // Verify all pools have liquidity
-    log("\n=== VERIFYING ALL POOLS HAVE LIQUIDITY ===")
-    let poolAddresses = [pyusd0FusdevPoolAddr, pyusd0FlowPoolAddr, moetFusdevPoolAddr]
-    let poolNames = ["PYUSD0/FUSDEV", "PYUSD0/FLOW", "MOET/FUSDEV"]
+    // Now value is in [0.5*scale, 1.5*scale], compute ln(value/scale)
+    // Use Taylor series: ln(1+z) = z - z^2/2 + z^3/3 - z^4/4 + ...
+    // where z = value/scale - 1
     
-    var i = 0
-    while i < poolAddresses.length {
-        let poolStateResult = _executeScript(
-            "scripts/check_pool_state.cdc",
-            [poolAddresses[i]]
-        )
-        if poolStateResult.status == Test.ResultStatus.succeeded {
-            let stateData = poolStateResult.returnValue as! {String: String}
-            let liquidity = stateData["liquidity_data"] ?? "unknown"
-            log("\(poolNames[i]): liquidity = \(liquidity)")
-            
-            if liquidity == "00000000000000000000000000000000000000000000000000000000000000" {
-                panic("\(poolNames[i]) pool STILL has ZERO liquidity - vm.store failed!")
-            }
+    let z = value > scaleFactor 
+        ? Int256(value - scaleFactor)
+        : -Int256(scaleFactor - value)
+    
+    // Calculate Taylor series terms until convergence
+    var result = z // First term: z
+    var term = z
+    var i = 2
+    var prevResult = Int256(0)
+    
+    // Calculate terms until convergence (term becomes negligible or result stops changing)
+    // Max 50 iterations for safety
+    while i <= 50 && result != prevResult {
+        prevResult = result
+        
+        // term = term * z / scaleFactor
+        term = (term * z) / Int256(scaleFactor)
+        
+        // Add or subtract term/i based on sign
+        if i % 2 == 0 {
+            result = result - term / Int256(i)
         } else {
-            panic("Failed to check \(poolNames[i]) pool state")
+            result = result + term / Int256(i)
         }
         i = i + 1
     }
     
-    log("\n✓ ALL THREE POOLS NOW HAVE MASSIVE LIQUIDITY (1e21 each)")
+    // Add n * ln(2) * scaleFactor
+    // ln(2) ≈ 0.693147180559945309417232121458
+    // ln(2) * 10^18 ≈ 693147180559945309
+    let ln2Scaled = Int256(693147180559945309)
+    let nScaled = Int256(n) * ln2Scaled
     
-    log("\nAll pools verified and liquidity added\n")
+    // Scale to our scaleFactor (assuming scaleFactor is 10^18)
+    result = result + nScaled
+    
+    return result
 }
 
-// Seed the COA with massive token balances to enable swaps with minimal slippage
-// This doesn't add liquidity to pools, but ensures the COA (which executes swaps) has tokens
-access(all) fun seedCOAWithTokens(signer: Test.TestAccount) {
-    log("\n=== SEEDING COA WITH MASSIVE TOKEN BALANCES ===")
+// Calculate tick from price
+// tick = ln(price) / ln(1.0001)
+// ln(1.0001) ≈ 0.00009999500033... ≈ 99995000333 / 10^18
+access(all) fun calculateTick(price: UFix64): Int256 {
+    // Convert UFix64 to UInt256 (UFix64 has 8 decimal places, stored as int * 10^8)
+    let priceBytes = price.toBigEndianBytes()
+    var priceUInt64: UInt64 = 0
+    for byte in priceBytes {
+        priceUInt64 = (priceUInt64 << 8) + UInt64(byte)
+    }
     
-    // Mint 1 trillion tokens (with appropriate decimals) to ensure deep liquidity for swaps
-    // MOET: 6 decimals -> 1T = 1,000,000,000,000 * 10^6
-    let moetAmount = UInt256(1000000000000) * UInt256(1000000)
-    // PYUSD0: 6 decimals -> same as MOET
-    let pyusd0Amount = UInt256(1000000000000) * UInt256(1000000)
-    // FLOW: 18 decimals -> 1T = 1,000,000,000,000 * 10^18
-    let flowAmount = UInt256(1000000000000) * UInt256(1000000000000000000)
+    // priceUInt64 is price * 10^8
+    // Scale to 10^18 for precision: price * 10^18 = priceUInt64 * 10^10
+    let priceScaled = UInt256(priceUInt64) * UInt256(10000000000) // 10^10
+    let scaleFactor = UInt256(1000000000000000000) // 10^18
     
-    log("Minting 1 trillion MOET to COA (slot \(moetBalanceSlotForCOA))...")
-    var storeResult = _executeTransaction(
-        "transactions/store_storage_slot.cdc",
-        [moetAddress, moetBalanceSlotForCOA, "0x\(String.encodeHex(moetAmount.toBigEndianBytes()))"],
+    // Calculate ln(price) * 10^18
+    let lnPrice = ln(x: priceScaled, scaleFactor: scaleFactor)
+    
+    // ln(1.0001) * 10^18 ≈ 99995000333083
+    let ln1_0001 = Int256(99995000333083)
+    
+    // tick = ln(price) / ln(1.0001)
+    // = (lnPrice * 10^18) / (ln1_0001)
+    // = lnPrice * 10^18 / ln1_0001
+    
+    let tick = (lnPrice * Int256(1000000000000000000)) / ln1_0001
+    
+    return tick
+}
+
+// Setup Uniswap V3 pools with valid state at specified prices
+access(all) fun setupUniswapPools(signer: Test.TestAccount) {
+    log("\n=== CREATING AND SEEDING UNISWAP V3 POOLS WITH VALID STATE ===")
+    
+    // Pool configurations: (tokenA, tokenB, fee)
+    let poolConfigs: [{String: String}] = [
+        {
+            "name": "PYUSD0/FUSDEV",
+            "tokenA": pyusd0Address,
+            "tokenB": morphoVaultAddress,
+            "fee": "100"
+        },
+        {
+            "name": "PYUSD0/FLOW",
+            "tokenA": pyusd0Address,
+            "tokenB": flowEVMAddress,
+            "fee": "3000"
+        },
+        {
+            "name": "MOET/FUSDEV",
+            "tokenA": moetAddress,
+            "tokenB": morphoVaultAddress,
+            "fee": "100"
+        }
+    ]
+    
+    // Create and seed each pool
+    for config in poolConfigs {
+        let tokenA = config["tokenA"]!
+        let tokenB = config["tokenB"]!
+        let fee = UInt64.fromString(config["fee"]!)!
+        
+        log("\n=== \(config["name"]!) ===")
+        log("TokenA: \(tokenA)")
+        log("TokenB: \(tokenB)")
+        log("Fee: \(fee)")
+        
+        // Set pool to 1:1 price
+        setPoolToPrice(
+            factoryAddress: factoryAddress,
+            tokenAAddress: tokenA,
+            tokenBAddress: tokenB,
+            fee: fee,
+            priceTokenBPerTokenA: 1.0,
+            signer: signer
+        )
+        
+        log("✓ \(config["name"]!) pool seeded with valid V3 state at 1:1 price")
+    }
+    
+    log("\n✓✓✓ ALL POOLS SEEDED WITH STRUCTURALLY VALID V3 STATE ✓✓✓")
+    log("Each pool now has:")
+    log("  - Proper slot0 (unlocked, 1:1 price, observations)")
+    log("  - Initialized observations array")
+    log("  - Fee growth globals (feeGrowthGlobal0X128, feeGrowthGlobal1X128)")
+    log("  - Massive liquidity (1e24)")
+    log("  - Correctly initialized boundary ticks")
+    log("  - Tick bitmap set for both boundaries")
+    log("  - Position created (owner=pool, full-range, 1e24 liquidity)")
+    log("  - Huge token balances in pool")
+    log("\nSwaps should work with near-zero slippage!")
+}
+
+// Verify pools are READABLE with quoter (this is what rebalancing actually needs!)
+access(all) fun verifyPoolsWithQuoter(signer: Test.TestAccount) {
+    log("\n=== VERIFYING POOLS ARE READABLE (QUOTER TEST) ===")
+    log("NOTE: We test quoter.quoteExactInput() instead of actual swaps")
+    log("Rebalancing only needs price QUOTES, not actual swap execution")
+
+    // Quoter address from mainnet
+    let quoter = "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C"
+
+    // Test amounts (in EVM units - already accounting for decimals)
+    let amount1000_6dec = 1000000000 as UInt256      // 1000 tokens with 6 decimals
+
+    // Test quote 1: PYUSD0 -> FUSDEV (both 6 decimals, fee 100)
+    log("\n--- Quote Test 1: PYUSD0 -> FUSDEV ---")
+    let quoteResult1 = _executeTransaction(
+        "transactions/query_uniswap_quoter.cdc",
+        [quoter, pyusd0Address, morphoVaultAddress, 100 as UInt32, amount1000_6dec],
         signer
     )
-    Test.expect(storeResult, Test.beSucceeded())
-    
-    log("Minting 1 trillion PYUSD0 to COA (slot \(pyusd0BalanceSlotForCOA))...")
-    storeResult = _executeTransaction(
-        "transactions/store_storage_slot.cdc",
-        [pyusd0Address, pyusd0BalanceSlotForCOA, "0x\(String.encodeHex(pyusd0Amount.toBigEndianBytes()))"],
+
+    if quoteResult1.status == Test.ResultStatus.succeeded {
+        log("✓ PYUSD0/FUSDEV pool is readable")
+    } else {
+        panic("PYUSD0/FUSDEV quoter failed: \(quoteResult1.error?.message ?? "unknown")")
+    }
+
+    // Test quote 2: MOET -> FUSDEV (both 6 decimals, fee 100)
+    log("\n--- Quote Test 2: MOET -> FUSDEV ---")
+    let quoteResult2 = _executeTransaction(
+        "transactions/query_uniswap_quoter.cdc",
+        [quoter, moetAddress, morphoVaultAddress, 100 as UInt32, amount1000_6dec],
         signer
     )
-    Test.expect(storeResult, Test.beSucceeded())
-    
-    log("Minting 1 trillion FLOW to COA (slot \(flowBalanceSlotForCOA))...")
-    storeResult = _executeTransaction(
-        "transactions/store_storage_slot.cdc",
-        [flowEVMAddress, flowBalanceSlotForCOA, "0x\(String.encodeHex(flowAmount.toBigEndianBytes()))"],
+
+    if quoteResult2.status == Test.ResultStatus.succeeded {
+        log("✓ MOET/FUSDEV pool is readable")
+    } else {
+        panic("MOET/FUSDEV quoter failed: \(quoteResult2.error?.message ?? "unknown")")
+    }
+
+    // Test quote 3: PYUSD0 -> FLOW (6 decimals -> 18 decimals, fee 3000)
+    log("\n--- Quote Test 3: PYUSD0 -> FLOW ---")
+    let quoteResult3 = _executeTransaction(
+        "transactions/query_uniswap_quoter.cdc",
+        [quoter, pyusd0Address, flowEVMAddress, 3000 as UInt32, amount1000_6dec],
         signer
     )
-    Test.expect(storeResult, Test.beSucceeded())
-    
-    log("COA token seeding complete - should enable near-1:1 swap rates")
+
+    if quoteResult3.status == Test.ResultStatus.succeeded {
+        log("✓ PYUSD0/FLOW pool is readable")
+    } else {
+        panic("PYUSD0/FLOW quoter failed: \(quoteResult3.error?.message ?? "unknown")")
+    }
+
+    log("\n✓✓✓ ALL POOLS ARE READABLE - REBALANCING CAN USE THESE PRICES ✓✓✓")
 }
 
 // Set vault share price by multiplying current totalAssets by the given multiplier
@@ -296,11 +424,12 @@ access(all) fun setVaultSharePrice(vaultAddress: String, priceMultiplier: UFix64
     let targetAssets = (currentAssets * UInt256(multiplierUInt64)) / UInt256(100000000)
     
     log("[VM.STORE] Setting vault price to \(priceMultiplier.toString())x (totalAssets: \(currentAssets.toString()) -> \(targetAssets.toString()))")
-    
-    // 1. Set PYUSD0.balanceOf(vault)
+
+    // 1. Set PYUSD0.balanceOf(vault) - compute slot dynamically
+    let vaultBalanceSlot = computeMappingSlot(holderAddress: vaultAddress, slot: 1)  // PYUSD0 balanceOf at slot 1
     var storeResult = _executeTransaction(
         "transactions/store_storage_slot.cdc",
-        [pyusd0Address, pyusd0BalanceSlotForVault, "0x\(String.encodeHex(targetAssets.toBigEndianBytes()))"],
+        [pyusd0Address, vaultBalanceSlot, "0x\(String.encodeHex(targetAssets.toBigEndianBytes()))"],
         signer
     )
     Test.expect(storeResult, Test.beSucceeded())
@@ -364,27 +493,60 @@ access(all) fun setVaultSharePrice(vaultAddress: String, priceMultiplier: UFix64
     Test.expect(storeResult, Test.beSucceeded())
 }
 
+// Verify that pools work correctly with a simple swap
+access(all) fun verifyPoolSwap(signer: Test.TestAccount) {
+    log("\n=== TESTING POOL SWAPS (SANITY CHECK) ===")
+    log("Verifying that pools can execute swaps successfully")
+    
+    let router = "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341"
+    
+    // Test swap on PYUSD0/FUSDEV pool (both 6 decimals, 1:1 price)
+    log("\n--- Test Swap: PYUSD0 -> FUSDEV ---")
+    let swapAmount = 1000000 as UInt256 // 1 token (6 decimals)
+    
+    // Get COA address
+    let coaEVMAddress = getCOA(signer.address)!
+    
+    // Mint PYUSD0 to COA for the swap
+    let pyusd0BalanceSlot = computeMappingSlot(holderAddress: coaEVMAddress, slot: 1)
+    var mintResult = _executeTransaction(
+        "transactions/store_storage_slot.cdc",
+        [pyusd0Address, pyusd0BalanceSlot, "0x\(String.encodeHex(swapAmount.toBigEndianBytes()))"],
+        signer
+    )
+    Test.expect(mintResult, Test.beSucceeded())
+    
+    // Execute swap via router
+    let swapResult = _executeTransaction(
+        "transactions/swap_via_uniswap_router.cdc",
+        [router, pyusd0Address, morphoVaultAddress, UInt32(100), swapAmount],
+        signer
+    )
+    
+    if swapResult.status == Test.ResultStatus.succeeded {
+        log("✓ PYUSD0/FUSDEV swap SUCCEEDED - Pool is working correctly!")
+    } else {
+        log("✗ PYUSD0/FUSDEV swap FAILED")
+        log("Error: \(swapResult.error?.message ?? "unknown")")
+        panic("Pool swap failed - pool state is invalid!")
+    }
+    
+    log("\n✓✓✓ POOL SANITY CHECK PASSED - Swaps work correctly ✓✓✓\n")
+}
+
 access(all)
 fun setup() {
     // Deploy mock EVM contract to enable vm.store/vm.load cheatcodes
     var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
     Test.expect(err, Test.beNil())
     
-    // Create the missing Uniswap V3 pools
-    createRequiredPools(signer: coaOwnerAccount)
-    
-    // Seed COA with massive token balances to enable low-slippage swaps
-    seedCOAWithTokens(signer: whaleFlowAccount)
-    
-    // Verify pools exist (either pre-existing or just created)
-    log("\n=== VERIFYING POOL EXISTENCE ===")
-    let verifyResult = _executeScript("scripts/verify_pool_creation.cdc", [])
-    Test.expect(verifyResult, Test.beSucceeded())
-    let poolData = verifyResult.returnValue as! {String: String}
-    log("PYUSD0/FUSDEV fee100: ".concat(poolData["PYUSD0_FUSDEV_fee100"] ?? "not found"))
-    log("PYUSD0/FLOW fee3000: ".concat(poolData["PYUSD0_FLOW_fee3000"] ?? "not found"))
-    log("MOET/FUSDEV fee100: ".concat(poolData["MOET_FUSDEV_fee100"] ?? "not found"))
-    
+    // Setup Uniswap V3 pools with structurally valid state
+    // This sets slot0, observations, liquidity, ticks, bitmap, positions, and POOL token balances
+    setupUniswapPools(signer: coaOwnerAccount)
+
+    // Verify pools work with a test swap (sanity check)
+    verifyPoolSwap(signer: coaOwnerAccount)
+
     // BandOracle is only used for FLOW price for FCM collateral
     let symbolPrices = { 
         "FLOW": 1.0  // Start at 1.0, will increase to 2.0 during test
@@ -483,6 +645,17 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
     log("\n=== INCREASING FLOW PRICE TO 2.0x ===")
     setBandOraclePrice(signer: bandOracleAccount, symbol: "FLOW", price: flowPriceIncrease)
 
+    // Update PYUSD0/FLOW pool to match new Flow price (2:1 ratio token1:token0)
+    log("\n=== UPDATING PYUSD0/FLOW POOL TO 2:1 PRICE ===")
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: pyusd0Address,
+        tokenBAddress: flowEVMAddress,
+        fee: 3000,
+        priceTokenBPerTokenA: 2.0,  // Flow is 2x the price of PYUSD0
+        signer: coaOwnerAccount
+    )
+
     // These rebalance calls work correctly - position is undercollateralized after price increase
     rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
     rebalancePosition(signer: flowCreditMarketAccount, pid: pid, force: true, beFailed: false)
@@ -558,6 +731,29 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
     log("At new price (2.0), target shares: \(targetYieldValue / 2.0)")
     
     setVaultSharePrice(vaultAddress: morphoVaultAddress, priceMultiplier: yieldPriceIncrease, signer: user)
+    
+    // Update PYUSD0/FUSDEV and MOET/FUSDEV pools to match new vault share price (2:1 ratio)
+    log("\n=== UPDATING FUSDEV POOLS TO 2:1 PRICE ===")
+    
+    // PYUSD0/FUSDEV pool (both 6 decimals)
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: pyusd0Address,
+        tokenBAddress: morphoVaultAddress,
+        fee: 100,
+        priceTokenBPerTokenA: 2.0,  // FUSDEV is 2x the price of PYUSD0
+        signer: coaOwnerAccount
+    )
+    
+    // MOET/FUSDEV pool (both 6 decimals)
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: moetAddress,
+        tokenBAddress: morphoVaultAddress,
+        fee: 100,
+        priceTokenBPerTokenA: 2.0,  // FUSDEV is 2x the price of MOET
+        signer: coaOwnerAccount
+    )
     
     // Log state AFTER vault price change but BEFORE rebalance
     log("\n=== STATE AFTER VAULT PRICE CHANGE (before rebalance) ===")
