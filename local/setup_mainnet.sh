@@ -12,7 +12,7 @@ flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.1654
 echo "bridge YieldToken to Cadence"
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc 0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c --network mainnet --signer mainnet-admin 
 echo "bridge MOET to EVM"
-flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.6b00ff876c299c61.MOET.Vault" --gas-limit 9999 --network mainnet --signer mainnet-flow-credit-market-deployer
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.6b00ff876c299c61.MOET.Vault" --compute-limit 9999 --network mainnet --signer mainnet-flow-credit-market-deployer
 
 # configure FlowCreditMarket
 #
@@ -211,7 +211,7 @@ flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-cr
 # TODO 
 # setup coa and transfer flow to it
 # TIDAL_COA=0x$(flow scripts execute ./lib/flow-evm-bridge/cadence/scripts/evm/get_evm_address_string.cdc 0xb1d63873c3cc9f79 --format inline --network mainnet | sed -E 's/"([^"]+)"/\1/')
-# flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/transfer_flow_to_cadence_or_evm.cdc $TIDAL_COA 100.0 --network mainnet --signer mainnet-admin --gas-limit 9999
+# flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/transfer_flow_to_cadence_or_evm.cdc $TIDAL_COA 100.0 --network mainnet --signer mainnet-admin --compute-limit 9999
 #
 #
 # sanity test

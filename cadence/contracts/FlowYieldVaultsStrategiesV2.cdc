@@ -76,15 +76,15 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
-        access(self) let position: FlowCreditMarket.Position
+        access(self) let position: @FlowCreditMarket.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
 
-        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: FlowCreditMarket.Position) {
+        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowCreditMarket.Position) {
             self.uniqueID = id
-            self.position = position
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
+            self.position <-position
         }
 
         // Inherited from FlowYieldVaults.Strategy default implementation
@@ -276,7 +276,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             )
 
             // Open FlowCreditMarket position
-            let position = self._openCreditPosition(
+            let position <- self._openCreditPosition(
                 funds: <-withFunds,
                 issuanceSink: abaSwapSink,
                 repaymentSource: abaSwapSource
@@ -308,7 +308,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 return <-create FUSDEVStrategy(
                     id: uniqueID,
                     collateralType: collateralType,
-                    position: position
+                    position: <-position
                 )
             default:
                 panic("Unsupported strategy type \(type.identifier)")
@@ -524,7 +524,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             funds: @{FungibleToken.Vault},
             issuanceSink: {DeFiActions.Sink},
             repaymentSource: {DeFiActions.Source}
-        ): FlowCreditMarket.Position {
+        ): @FlowCreditMarket.Position {
             let poolCap = FlowYieldVaultsStrategiesV2.account.storage.copy<
                 Capability<auth(FlowCreditMarket.EParticipant, FlowCreditMarket.EPosition) &FlowCreditMarket.Pool>
             >(from: FlowCreditMarket.PoolCapStoragePath)
@@ -532,14 +532,14 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
             let poolRef = poolCap.borrow() ?? panic("Invalid Pool Cap")
 
-            let pid = poolRef.createPosition(
+            let position <- poolRef.createPosition(
                 funds: <-funds,
                 issuanceSink: issuanceSink,
                 repaymentSource: repaymentSource,
                 pushToDrawDownSink: true
             )
 
-            return FlowCreditMarket.Position(id: pid, pool: poolCap)
+            return <-position
         }
 
         access(self) fun _createYieldToCollateralSwapper(

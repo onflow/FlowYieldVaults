@@ -215,14 +215,12 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-
     err = Test.deployContract(
-        name: "MockFlowCreditMarketConsumer",
-        path: "../../lib/FlowCreditMarket/cadence/contracts/mocks/MockFlowCreditMarketConsumer.cdc",
+        name: "MockDexSwapper",
+        path: "../../lib/FlowCreditMarket/cadence/contracts/mocks/MockDexSwapper.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
-
     // FlowYieldVaults contracts
     // Deployment order matters due to imports:
     // 1. FlowYieldVaultsSchedulerRegistry (no FlowYieldVaults dependencies)
@@ -463,17 +461,18 @@ fun createAndStorePool(signer: Test.TestAccount, defaultTokenIdentifier: String,
 }
 
 access(all)
-fun addSupportedTokenSimpleInterestCurve(
+fun addSupportedTokenFixedRateInterestCurve(
     signer: Test.TestAccount,
     tokenTypeIdentifier: String,
     collateralFactor: UFix64,
     borrowFactor: UFix64,
+    yearlyRate: UFix128,
     depositRate: UFix64,
     depositCapacityCap: UFix64
 ) {
     let additionRes = _executeTransaction(
-        "../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc",
-        [ tokenTypeIdentifier, collateralFactor, borrowFactor, depositRate, depositCapacityCap ],
+        "../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_fixed_rate_curve.cdc",
+        [ tokenTypeIdentifier, collateralFactor, borrowFactor, yearlyRate, depositRate, depositCapacityCap ],
         signer
     )
     Test.expect(additionRes, Test.beSucceeded())
