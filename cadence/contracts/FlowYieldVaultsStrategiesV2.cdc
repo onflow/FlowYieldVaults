@@ -8,6 +8,7 @@ import "SwapConnectors"
 import "FungibleTokenConnectors"
 // amm integration
 import "UniswapV3SwapConnectors"
+import "ERC4626SwapConnectors"
 import "MorphoERC4626SwapConnectors"
 import "ERC4626Utils"
 // Lending protocol
@@ -259,9 +260,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             )
 
             // Swappers: MOET <-> YIELD (YIELD is ERC4626 vault token)
-            let moetToYieldSwapper = self._createMoetToYieldSwapper(tokens: tokens, uniqueID: uniqueID)
+            let moetToYieldSwapper = self._createMoetToYieldSwapper(strategyType: type, tokens: tokens, uniqueID: uniqueID)
 
-            let yieldToMoetSwapper = self._createYieldToMoetSwapper(tokens: tokens, uniqueID: uniqueID)
+            let yieldToMoetSwapper = self._createYieldToMoetSwapper(strategyType: type, tokens: tokens, uniqueID: uniqueID)
 
             // AutoBalancer-directed swap IO
             let abaSwapSink = SwapConnectors.SwapSink(
@@ -402,6 +403,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
 
         access(self) fun _createMoetToYieldSwapper(
+            strategyType: Type,
             tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
             uniqueID: DeFiActions.UniqueIdentifier
         ): SwapConnectors.MultiSwapper {
@@ -424,16 +426,28 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             )
 
             // UNDERLYING -> YIELD via ERC4626 vault
-            let underlyingTo4626 = MorphoERC4626SwapConnectors.Swapper(
-                vaultEVMAddress: tokens.yieldTokenEVMAddress,
-                coa: FlowYieldVaultsStrategiesV2._getCOACapability(),
-                feeSource: FlowYieldVaultsStrategiesV2._createFeeSource(withID: uniqueID),
-                uniqueID: uniqueID,
-                isReversed: false
-            )
+            // Morpho vaults use MorphoERC4626SwapConnectors; standard ERC4626 vaults use ERC4626SwapConnectors
+            var underlyingTo4626: {DeFiActions.Swapper}? = nil
+            if strategyType == Type<@FUSDEVStrategy>() {
+                underlyingTo4626 = MorphoERC4626SwapConnectors.Swapper(
+                    vaultEVMAddress: tokens.yieldTokenEVMAddress,
+                    coa: FlowYieldVaultsStrategiesV2._getCOACapability(),
+                    feeSource: FlowYieldVaultsStrategiesV2._createFeeSource(withID: uniqueID),
+                    uniqueID: uniqueID,
+                    isReversed: false
+                )
+            } else {
+                underlyingTo4626 = ERC4626SwapConnectors.Swapper(
+                    asset: tokens.underlying4626AssetType,
+                    vault: tokens.yieldTokenEVMAddress,
+                    coa: FlowYieldVaultsStrategiesV2._getCOACapability(),
+                    feeSource: FlowYieldVaultsStrategiesV2._createFeeSource(withID: uniqueID),
+                    uniqueID: uniqueID
+                )
+            }
 
             let seq = SwapConnectors.SequentialSwapper(
-                swappers: [moetToUnderlying, underlyingTo4626],
+                swappers: [moetToUnderlying, underlyingTo4626!],
                 uniqueID: uniqueID
             )
 
@@ -446,6 +460,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
 
         access(self) fun _createYieldToMoetSwapper(
+            strategyType: Type,
             tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
             uniqueID: DeFiActions.UniqueIdentifier
         ): SwapConnectors.MultiSwapper {
@@ -458,35 +473,45 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 uniqueID: uniqueID
             )
 
-            //  YIELD -> UNDERLYING redeem via MorphoERC4626 vault
-            let yieldToUnderlying = MorphoERC4626SwapConnectors.Swapper(
-                vaultEVMAddress: tokens.yieldTokenEVMAddress,
-                coa: FlowYieldVaultsStrategiesV2._getCOACapability(),
-                feeSource: FlowYieldVaultsStrategiesV2._createFeeSource(withID: uniqueID),
-                uniqueID: uniqueID,
-                isReversed: true
-            )
-            // UNDERLYING -> MOET via AMM
-            let underlyingToMoet = self._createUniV3Swapper(
-                tokenPath: [tokens.underlying4626AssetEVMAddress, tokens.moetTokenEVMAddress],
-                feePath: [100],
-                inVault: tokens.underlying4626AssetType,
-                outVault: tokens.moetTokenType,
-                uniqueID: uniqueID
-            )
+            // Reverse path: Morpho vaults support direct redeem; standard ERC4626 vaults use AMM-only path
+            if strategyType == Type<@FUSDEVStrategy>() {
+                // YIELD -> UNDERLYING redeem via MorphoERC4626 vault
+                let yieldToUnderlying = MorphoERC4626SwapConnectors.Swapper(
+                    vaultEVMAddress: tokens.yieldTokenEVMAddress,
+                    coa: FlowYieldVaultsStrategiesV2._getCOACapability(),
+                    feeSource: FlowYieldVaultsStrategiesV2._createFeeSource(withID: uniqueID),
+                    uniqueID: uniqueID,
+                    isReversed: true
+                )
+                // UNDERLYING -> MOET via AMM
+                let underlyingToMoet = self._createUniV3Swapper(
+                    tokenPath: [tokens.underlying4626AssetEVMAddress, tokens.moetTokenEVMAddress],
+                    feePath: [100],
+                    inVault: tokens.underlying4626AssetType,
+                    outVault: tokens.moetTokenType,
+                    uniqueID: uniqueID
+                )
 
+                let seq = SwapConnectors.SequentialSwapper(
+                    swappers: [yieldToUnderlying, underlyingToMoet],
+                    uniqueID: uniqueID
+                )
 
-            let seq = SwapConnectors.SequentialSwapper(
-                swappers: [yieldToUnderlying, underlyingToMoet],
-                uniqueID: uniqueID
-            )
-
-            return SwapConnectors.MultiSwapper(
-                inVault: tokens.yieldTokenType,
-                outVault: tokens.moetTokenType,
-                swappers: [yieldToMoetAMM, seq],
-                uniqueID: uniqueID
-            )
+                return SwapConnectors.MultiSwapper(
+                    inVault: tokens.yieldTokenType,
+                    outVault: tokens.moetTokenType,
+                    swappers: [yieldToMoetAMM, seq],
+                    uniqueID: uniqueID
+                )
+            } else {
+                // Standard ERC4626: AMM-only reverse (no synchronous redeem support)
+                return SwapConnectors.MultiSwapper(
+                    inVault: tokens.yieldTokenType,
+                    outVault: tokens.moetTokenType,
+                    swappers: [yieldToMoetAMM],
+                    uniqueID: uniqueID
+                )
+            }
         }
 
         access(self) fun _initAutoBalancerAndIO(
