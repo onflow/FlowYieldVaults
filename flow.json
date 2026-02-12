@@ -879,6 +879,7 @@
 				},
 				"DeFiActionsUtils",
 				"DeFiActions",
+				"EVMAmountUtils",
 				"FlowALPMath",
 				"FungibleTokenConnectors",
 				"SwapConnectors",
