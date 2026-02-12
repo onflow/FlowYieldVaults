@@ -1,6 +1,6 @@
 # FlowYieldVaults Smart Contracts
 
-FlowYieldVaults is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via FlowCreditMarket's Active Lending Platform. FlowYieldVaults aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
+FlowYieldVaults is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via FlowALPv1's Active Lending Platform. FlowYieldVaults aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
 
 ## System Architecture
 
@@ -22,7 +22,7 @@ The main contract that orchestrates the entire yield farming system:
 
 Implements specific yield strategies:
 
-- **TracerStrategy**: A strategy that uses FlowCreditMarket lending positions with auto-balancing
+- **TracerStrategy**: A strategy that uses FlowALPv1 lending positions with auto-balancing
 - **TracerStrategyComposer**: Creates TracerStrategy instances with complex DeFi Actions stacking
 - **StrategyComposerIssuer**: Controls access to strategy composer creation
 
@@ -41,7 +41,7 @@ Manages automated rebalancing of positions:
 Mock FungibleToken implementations representing:
 
 - **YieldToken**: Receipt tokens for yield-bearing positions
-- **MOET**: FlowCreditMarket's synthetic stablecoin
+- **MOET**: FlowALPv1's synthetic stablecoin
 
 ### Mock Infrastructure
 
@@ -63,7 +63,7 @@ Mock FungibleToken implementations representing:
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
 |---|---|---|---|
 | FlowActions | 0xd27920b6384e2a78 | DeFiActions | TBD |
-| FlowCreditMarket | 0xd27920b6384e2a78 | FlowALP | TBD |
+| FlowALPv1 | 0xd27920b6384e2a78 | FlowALPv1 | TBD |
 | FlowYieldVaults | 0xd27920b6384e2a78 | FlowYieldVaults | TBD |
 | FlowYieldVaultsStrategiesV2 | 0xd27920b6384e2a78 | FlowYieldVaultsStrategiesV2 | TBD |
 | PMStrategiesV1 | 0xd27920b6384e2a78 | PMStrategiesV1 | TBD |
@@ -78,7 +78,7 @@ Mock FungibleToken implementations representing:
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
 |---|---|---|---|
 | FlowActions | 0x6d888f175c158410 | DeFiActions | TBD |
-| FlowCreditMarket | 0x6b00ff876c299c61 | FlowALP | TBD |
+| FlowALPv1 | 0x6b00ff876c299c61 | FlowALPv1 | TBD |
 | FlowYieldVaults | 0xb1d63873c3cc9f79 | FlowYieldVaults | TBD |
 | FlowYieldVaultsStrategiesV2 | 0xb1d63873c3cc9f79 | FlowYieldVaultsStrategiesV2 | TBD |
 | PMStrategiesV1 | 0xb1d63873c3cc9f79 | PMStrategiesV1 | TBD |
@@ -92,14 +92,14 @@ Mock FungibleToken implementations representing:
 
 ## How the System Works
 
-Below is an overview of the initial prototype Tracer Strategy in the broader context of FlowCreditMarket and the FlowYieldVaults platform.
+Below is an overview of the initial prototype Tracer Strategy in the broader context of FlowALPv1 and the FlowYieldVaults platform.
 
 ### 1. Strategy Architecture
 
 The TracerStrategy demonstrates the power of DeFi Actions composition:
 
 ```
-User Deposit (FLOW) → FlowCreditMarket Position → MOET Issuance → Swap to YieldToken → AutoBalancer
+User Deposit (FLOW) → FlowALPv1 Position → MOET Issuance → Swap to YieldToken → AutoBalancer
                                                ↑
                                          YieldToken → Swap to FLOW → Recollateralize Position
 ```
@@ -188,7 +188,7 @@ The FlowYieldVaults platform implements sophisticated automatic rebalancing and 
 **Important Distinction:** The system has TWO different rebalancing mechanisms:
 
 1. **AutoBalancer Rebalancing** (DFB): Maintains optimal ratio between YieldToken holdings and expected deposit value
-2. **Position Rebalancing** (FlowCreditMarket): Maintains healthy collateralization ratios for lending positions
+2. **Position Rebalancing** (FlowALPv1): Maintains healthy collateralization ratios for lending positions
 
 These work together but serve different purposes and can trigger independently based on market conditions.
 
@@ -210,12 +210,12 @@ The AutoBalancer continuously monitors the **value ratio** between:
 
 **When:** Current YieldToken value > 105% historical value of deposits
 **Cause:** YieldToken price has increased OR position became over-collateralized leading to excess token holdings
-**Action:** AutoBalancer deposits excess YieldToken to the rebalanceSink, swapping to FLOW and recollateralizing the FlowCreditMarket position.
+**Action:** AutoBalancer deposits excess YieldToken to the rebalanceSink, swapping to FLOW and recollateralizing the FlowALPv1 position.
 
 **Automated Flow:**
 
 ```
-YieldToken (excess) → Swap to FLOW → Deposit to FlowCreditMarket Position (recollateralization)
+YieldToken (excess) → Swap to FLOW → Deposit to FlowALPv1 Position (recollateralization)
 ```
 
 **Result:**
@@ -264,7 +264,7 @@ The system creates a sophisticated token flow:
 
 1. **Initial Position Opening:**
 
-   - User deposits FLOW → FlowCreditMarket Position
+   - User deposits FLOW → FlowALPv1 Position
    - Position issues MOET → Swaps to YieldToken
    - YieldToken held in AutoBalancer
 
@@ -335,7 +335,7 @@ This creates a fully automated yield farming system that adapts to market condit
 
 ## Interest Rate System
 
-The FlowCreditMarket implements a sophisticated interest rate system that governs borrowing costs and lending yields. This system is fundamental to the protocol's economics and affects all lending positions.
+The FlowALPv1 implements a sophisticated interest rate system that governs borrowing costs and lending yields. This system is fundamental to the protocol's economics and affects all lending positions.
 
 ### How Interest Rates Work
 
@@ -520,15 +520,15 @@ The interest rate system is designed to:
 3. **Manage Risk**: Insurance reserves and dynamic adjustments protect the protocol
 4. **Enable Automation**: Continuous compounding without manual intervention
 
-This interest system is what enables the FlowCreditMarket to function as a sustainable lending platform while providing the foundation for complex yield farming strategies built on top.
+This interest system is what enables the FlowALPv1 to function as a sustainable lending platform while providing the foundation for complex yield farming strategies built on top.
 
-## FlowCreditMarket Loan Health Mechanism
+## FlowALPv1 Loan Health Mechanism
 
-The FlowCreditMarket implements a sophisticated loan health system that determines borrowing capacity, monitors position safety, and prevents liquidations. This system is fundamental to how the TracerStrategy calculates how much can be borrowed against a user's initial collateral position.
+The FlowALPv1 implements a sophisticated loan health system that determines borrowing capacity, monitors position safety, and prevents liquidations. This system is fundamental to how the TracerStrategy calculates how much can be borrowed against a user's initial collateral position.
 
 ### Key Definitions
 
-Before diving into the mechanics, it's important to understand the core terminology used throughout the FlowCreditMarket loan system:
+Before diving into the mechanics, it's important to understand the core terminology used throughout the FlowALPv1 loan system:
 
 #### Position-Related Terms
 
@@ -577,7 +577,7 @@ Position Health = Effective Collateral / Effective Debt
 #### Health Computation Function
 
 ```cadence
-// From FlowCreditMarket.cdc
+// From FlowALPv1.cdc
 access(all) fun healthComputation(effectiveCollateral: UFix64, effectiveDebt: UFix64): UFix64 {
     if effectiveCollateral == 0.0 {
         return 0.0
@@ -866,7 +866,7 @@ let value = tokenPrice * trueBalance
 - Cross-collateralization enables complex strategies
 - Unified health calculation across all assets
 
-This comprehensive loan health system enables the FlowCreditMarket to safely support leveraged yield farming strategies while maintaining strict risk management and protecting user funds from liquidation through automated rebalancing mechanisms.
+This comprehensive loan health system enables the FlowALPv1 to safely support leveraged yield farming strategies while maintaining strict risk management and protecting user funds from liquidation through automated rebalancing mechanisms.
 
 ## Testing Rebalancing
 
@@ -1020,7 +1020,7 @@ flow transactions send cadence/transactions/flow-yield-vaults/admin/rebalance_au
   $YIELD_VAULT_ID true \
   --signer test-account
 
-flow transactions send cadence/transactions/flow-credit-market/pool-management/rebalance_position.cdc \
+flow transactions send cadence/transactions/flow-alp/pool-management/rebalance_position.cdc \
   $YIELD_VAULT_ID true \
   --signer test-account
 
@@ -1512,10 +1512,10 @@ scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc
 
 ```bash
 # Overall position health (collateralization ratio)
-scripts/flow-credit-market/position_health.cdc
+scripts/flow-alp/position_health.cdc
 
 # Available balance for withdrawal from position
-scripts/flow-credit-market/get_available_balance.cdc
+scripts/flow-alp/get_available_balance.cdc
 ```
 
 #### User Balance
@@ -1557,7 +1557,7 @@ scripts/tokens/get_balance.cdc
 1. **"Could not borrow AutoBalancer"** - Ensure YieldVault ID is correct
 2. **"No price set for token"** - Set initial prices for all tokens before testing
 3. **"Insufficient liquidity"** - Fund MockSwapper with adequate token reserves
-4. **"Position not found"** - Verify FlowCreditMarket position ID (different from YieldVault ID)
+4. **"Position not found"** - Verify FlowALPv1 position ID (different from YieldVault ID)
 
 #### Debugging Commands:
 

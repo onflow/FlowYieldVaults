@@ -10,7 +10,7 @@ flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.d258
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.dfc20aee650fcbdf.EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95.Vault' 1.0 --network testnet --signer testnet-admin
 
 echo "bridge MOET to EVM"
-flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.426f0458ced60037.MOET.Vault" --compute-limit 9999 --network testnet --signer testnet-flow-credit-market-deployer
+flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.426f0458ced60037.MOET.Vault" --compute-limit 9999 --network testnet --signer testnet-flow-alp-deployer
 
 # configure FlowCreditMarket
 #
@@ -18,18 +18,18 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboard
 cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "USD" "A.426f0458ced60037.MOET.Vault" --network testnet --signer testnet-band-oracle-connectors
 
 # create Pool with MOET as default token with Mock Oracle
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc 'A.426f0458ced60037.MOET.Vault' --network testnet --signer testnet-flow-credit-market-deployer
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-factory/create_and_store_pool.cdc 'A.426f0458ced60037.MOET.Vault' --network testnet --signer testnet-flow-alp-deployer
 # update Pool with Band Oracle instead of Mock Oracle
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/update_oracle.cdc --network testnet --signer testnet-flow-credit-market-deployer
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-governance/update_oracle.cdc --network testnet --signer testnet-flow-alp-deployer
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
     'A.7e60df042a9c0868.FlowToken.Vault' \
     0.8 \
     1.0 \
     1_000_000.0 \
     1_000_000.0 \
     --network testnet \
-    --signer testnet-flow-credit-market-deployer
+    --signer testnet-flow-alp-deployer
 
 # add WBTC to band oracle
 cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "BTC" "A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault" --network testnet --signer testnet-band-oracle-connectors && cd ../../..
@@ -38,32 +38,32 @@ cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transa
 cd ./lib/FlowCreditMarket/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "ETH" "A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault" --network testnet --signer testnet-band-oracle-connectors && cd ../../..
 
 # add WBTC as supported token
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
     'A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault' \
     0.8 \
     1.0 \
     1_000_000.0 \
     1_000_000.0 \
     --network testnet \
-    --signer testnet-flow-credit-market-deployer
+    --signer testnet-flow-alp-deployer
 
 # add WETH as supported token
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
     'A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault' \
     0.8 \
     1.0 \
     1_000_000.0 \
     1_000_000.0 \
     --network testnet \
-    --signer testnet-flow-credit-market-deployer
+    --signer testnet-flow-alp-deployer
 
 echo "swap Flow to MOET"
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/create_position.cdc 100000.0 --network testnet --signer testnet-flow-credit-market-deployer
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-alp/create_position.cdc 100000.0 --network testnet --signer testnet-flow-alp-deployer
 
 # TODO:
 # flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/tokens/bridge_tokens_to_any_evm_address.cdc \
 #	"A.426f0458ced60037.MOET.Vault" 100000.0 "0xOWNER" \
-#	--network testnet --signer testnet-flow-credit-market-deployer
+#	--network testnet --signer testnet-flow-alp-deployer
 # create pool
 
 # add liquidity to pool
@@ -147,9 +147,9 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
 
 # grant PoolBeta cap
 echo "Grant Protocol Beta access to FlowYieldVaults"
-flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-credit-market/pool-management/03_grant_beta.cdc \
-  --authorizer testnet-flow-credit-market-deployer,testnet-admin \
-  --proposer testnet-flow-credit-market-deployer \
+flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc \
+  --authorizer testnet-flow-alp-deployer,testnet-admin \
+  --proposer testnet-flow-alp-deployer \
   --payer testnet-admin \
   --network testnet
 

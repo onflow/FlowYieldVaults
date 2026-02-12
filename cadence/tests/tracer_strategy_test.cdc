@@ -7,7 +7,7 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "FlowYieldVaultsStrategies"
-import "FlowCreditMarket"
+import "FlowALPv1"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
@@ -47,7 +47,7 @@ fun setup() {
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
 
-    // setup FlowCreditMarket with a Pool & add FLOW as supported token
+    // setup FlowALPv1 with a Pool & add FLOW as supported token
     createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
     addSupportedTokenFixedRateInterestCurve(
         signer: protocolAccount,
@@ -62,7 +62,7 @@ fun setup() {
 	// open wrapped position (pushToDrawDownSink)
 	// the equivalent of depositing reserves
 	let openRes = executeTransaction(
-		"../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/position/create_position.cdc",
+		"../../lib/FlowCreditMarket/cadence/transactions/flow-alp/position/create_position.cdc",
 		[reserveAmount/2.0, /storage/flowTokenVault, true],
 		protocolAccount
 	)
@@ -162,7 +162,7 @@ fun test_RebalanceYieldVaultSucceeds() {
         amount: fundingAmount,
         beFailed: false
     )
-    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowCreditMarket.Opened>())) as! FlowCreditMarket.Opened).pid
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv1.Opened>())) as! FlowALPv1.Opened).pid
 
     var yieldVaultIDs = getYieldVaultIDs(address: user.address)
     Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
@@ -186,7 +186,7 @@ fun test_RebalanceYieldVaultSucceeds() {
     //      for now we can use events to intercept fund flows between pre- and post- Position & AutoBalancer state
 
     // assess how much FLOW was deposited into the position
-    let autoBalancerRecollateralizeEvent = getLastPositionDepositedEvent(Test.eventsOfType(Type<FlowCreditMarket.Deposited>())) as! FlowCreditMarket.Deposited
+    let autoBalancerRecollateralizeEvent = getLastPositionDepositedEvent(Test.eventsOfType(Type<FlowALPv1.Deposited>())) as! FlowALPv1.Deposited
     Test.assertEqual(positionID, autoBalancerRecollateralizeEvent.pid)
     Test.assertEqual(autoBalancerRecollateralizeEvent.amount,
         (autoBalancerValueAfter - autoBalancerValueBefore) / startingFlowPrice
@@ -247,7 +247,7 @@ fun test_RebalanceYieldVaultSucceedsAfterYieldPriceDecrease() {
 		amount: fundingAmount,
 		beFailed: false
 	)
-    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowCreditMarket.Opened>())) as! FlowCreditMarket.Opened).pid
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv1.Opened>())) as! FlowALPv1.Opened).pid
 
 	var yieldVaultIDs = getYieldVaultIDs(address: user.address)
 	Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
@@ -304,7 +304,7 @@ fun test_RebalanceYieldVaultSucceedsAfterCollateralPriceIncrease() {
         amount: fundingAmount,
         beFailed: false
     )
-    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowCreditMarket.Opened>())) as! FlowCreditMarket.Opened).pid
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv1.Opened>())) as! FlowALPv1.Opened).pid
 
     var yieldVaultIDs = getYieldVaultIDs(address: user.address)
     Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")

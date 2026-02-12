@@ -174,7 +174,7 @@ let autoBalancerRef = scheduleCap!.borrow()!
 let scheduleError = autoBalancerRef.scheduleNextRebalance(whileExecuting: nil)
 ```
 
-### DeFiActions (FlowCreditMarket/FlowActions)
+### DeFiActions (FlowALPv1/FlowActions)
 
 Only the fee buffer fix (5% margin) was kept. No `restartRecurring` flag was added.
 

@@ -1,4 +1,4 @@
-#test_fork(network: "mainnet", height: nil)
+#test_fork(network: "mainnet", height: 141935000)
 
 import Test
 
@@ -85,7 +85,7 @@ access(all) fun setup() {
     log("Deploying EVMAmountUtils contract ...")
     var err = Test.deployContract(
         name: "EVMAmountUtils",
-        path: "../../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -93,7 +93,7 @@ access(all) fun setup() {
     log("Deploying UniswapV3SwapConnectors contract ...")
     err = Test.deployContract(
         name: "UniswapV3SwapConnectors",
-        path: "../../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -102,28 +102,28 @@ access(all) fun setup() {
     log("Deploying Morpho contracts...")
     err = Test.deployContract(
         name: "ERC4626Utils",
-        path: "../../../lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
         name: "ERC4626SwapConnectors",
-        path: "../../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
         name: "MorphoERC4626SinkConnectors",
-        path: "../../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
         name: "MorphoERC4626SwapConnectors",
-        path: "../../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -131,7 +131,7 @@ access(all) fun setup() {
     log("Deploying FlowYieldVaults contract ...")
     err = Test.deployContract(
         name: "FlowYieldVaults",
-        path: "../../../cadence/contracts/FlowYieldVaults.cdc",
+        path: "../../cadence/contracts/FlowYieldVaults.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -140,7 +140,7 @@ access(all) fun setup() {
     log("Deploying PMStrategiesV1...")
     err = Test.deployContract(
         name: "PMStrategiesV1",
-        path: "../../../cadence/contracts/PMStrategiesV1.cdc",
+        path: "../../cadence/contracts/PMStrategiesV1.cdc",
         arguments: [
             "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
             "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
@@ -149,46 +149,10 @@ access(all) fun setup() {
     )
     Test.expect(err, Test.beNil())
 
-    // // 1. Configure syWFLOWvStrategy with FlowToken collateral
-    // log("Configuring syWFLOWvStrategy...")
-    // var result = _executeTransactionFile(
-    //     "../../transactions/flow-yield-vaults/admin/upsert-pm-strategy-config.cdc",
-    //     [syWFLOWvStrategyIdentifier, flowVaultIdentifier, syWFLOWvEVMAddress, swapFeeTier],
-    //     [adminAccount]
-    // )
-    // Test.expect(result, Test.beSucceeded())
-    //
-    // // 2. Configure FUSDEVStrategy with PYUSD0 collateral
-    // log("Configuring FUSDEVStrategy...")
-    // result = _executeTransactionFile(
-    //     "../../transactions/flow-yield-vaults/admin/upsert-pm-strategy-config.cdc",
-    //     [fusdEvStrategyIdentifier, pyusd0VaultIdentifier, fusdEvEVMAddress, swapFeeTier],
-    //     [adminAccount]
-    // )
-    // Test.expect(result, Test.beSucceeded())
-    //
-    // // 3. Register syWFLOWvStrategy with the StrategyFactory
-    // log("Adding syWFLOWvStrategy composer...")
-    // result = _executeTransactionFile(
-    //     "../../transactions/flow-yield-vaults/admin/add_strategy_composer.cdc",
-    //     [syWFLOWvStrategyIdentifier, composerIdentifier, issuerStoragePath],
-    //     [adminAccount]
-    // )
-    // Test.expect(result, Test.beSucceeded())
-    //
-    // // 4. Register FUSDEVStrategy with the StrategyFactory
-    // log("Adding FUSDEVStrategy composer...")
-    // result = _executeTransactionFile(
-    //     "../../transactions/flow-yield-vaults/admin/add_strategy_composer.cdc",
-    //     [fusdEvStrategyIdentifier, composerIdentifier, issuerStoragePath],
-    //     [adminAccount]
-    // )
-    // Test.expect(result, Test.beSucceeded())
-    //
-    // 5. Grant beta access to user account for testing yield vault operations
+    // Grant beta access to user account for testing yield vault operations
     log("Granting beta access to user...")
     var result = _executeTransactionFile(
-        "../../transactions/flow-yield-vaults/admin/grant_beta.cdc",
+        "../transactions/flow-yield-vaults/admin/grant_beta.cdc",
         [],
         [adminAccount, userAccount]
     )
@@ -202,7 +166,7 @@ access(all) fun setup() {
 access(all) fun testCreateSyWFLOWvYieldVault() {
     log("Creating syWFLOWvStrategy yield vault with 1.0 FLOW...")
     let result = _executeTransactionFile(
-        "../../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [syWFLOWvStrategyIdentifier, flowVaultIdentifier, 1.0],
         [userAccount]
     )
@@ -210,7 +174,7 @@ access(all) fun testCreateSyWFLOWvYieldVault() {
 
     // Retrieve the vault IDs
     let idsResult = _executeScript(
-        "../../scripts/flow-yield-vaults/get_yield_vault_ids.cdc",
+        "../scripts/flow-yield-vaults/get_yield_vault_ids.cdc",
         [userAccount.address]
     )
     Test.expect(idsResult, Test.beSucceeded())
@@ -221,7 +185,7 @@ access(all) fun testCreateSyWFLOWvYieldVault() {
 
     // Verify initial balance
     let balResult = _executeScript(
-        "../../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
         [userAccount.address, syWFLOWvYieldVaultID]
     )
     Test.expect(balResult, Test.beSucceeded())
@@ -234,14 +198,14 @@ access(all) fun testCreateSyWFLOWvYieldVault() {
 access(all) fun testDepositToSyWFLOWvYieldVault() {
     log("Depositing 0.5 FLOW to syWFLOWv yield vault...")
     let result = _executeTransactionFile(
-        "../../transactions/flow-yield-vaults/deposit_to_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/deposit_to_yield_vault.cdc",
         [syWFLOWvYieldVaultID, 0.5],
         [userAccount]
     )
     Test.expect(result, Test.beSucceeded())
 
     let balResult = _executeScript(
-        "../../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
         [userAccount.address, syWFLOWvYieldVaultID]
     )
     Test.expect(balResult, Test.beSucceeded())
@@ -253,14 +217,14 @@ access(all) fun testDepositToSyWFLOWvYieldVault() {
 access(all) fun testWithdrawFromSyWFLOWvYieldVault() {
     log("Withdrawing 0.3 FLOW from syWFLOWv yield vault...")
     let result = _executeTransactionFile(
-        "../../transactions/flow-yield-vaults/withdraw_from_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/withdraw_from_yield_vault.cdc",
         [syWFLOWvYieldVaultID, 0.3],
         [userAccount]
     )
     Test.expect(result, Test.beSucceeded())
 
     let balResult = _executeScript(
-        "../../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
         [userAccount.address, syWFLOWvYieldVaultID]
     )
     Test.expect(balResult, Test.beSucceeded())
@@ -272,7 +236,7 @@ access(all) fun testWithdrawFromSyWFLOWvYieldVault() {
 access(all) fun testCloseSyWFLOWvYieldVault() {
     log("Closing syWFLOWv yield vault...")
     let result = _executeTransactionFile(
-        "../../transactions/flow-yield-vaults/close_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/close_yield_vault.cdc",
         [syWFLOWvYieldVaultID],
         [userAccount]
     )
@@ -285,7 +249,7 @@ access(all) fun testCloseSyWFLOWvYieldVault() {
 access(all) fun testCreateFUSDEVYieldVault() {
     log("Creating FUSDEVStrategy yield vault with 1.0 PYUSD0...")
     let result = _executeTransactionFile(
-        "../../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [fusdEvStrategyIdentifier, pyusd0VaultIdentifier, 1.0],
         [userAccount]
     )
@@ -293,7 +257,7 @@ access(all) fun testCreateFUSDEVYieldVault() {
 
     // Retrieve the vault IDs
     let idsResult = _executeScript(
-        "../../scripts/flow-yield-vaults/get_yield_vault_ids.cdc",
+        "../scripts/flow-yield-vaults/get_yield_vault_ids.cdc",
         [userAccount.address]
     )
     Test.expect(idsResult, Test.beSucceeded())
@@ -304,7 +268,7 @@ access(all) fun testCreateFUSDEVYieldVault() {
 
     // Verify initial balance
     let balResult = _executeScript(
-        "../../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
         [userAccount.address, fusdEvYieldVaultID]
     )
     Test.expect(balResult, Test.beSucceeded())
@@ -317,14 +281,14 @@ access(all) fun testCreateFUSDEVYieldVault() {
 access(all) fun testDepositToFUSDEVYieldVault() {
     log("Depositing 0.5 PYUSD0 to FUSDEV yield vault...")
     let result = _executeTransactionFile(
-        "../../transactions/flow-yield-vaults/deposit_to_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/deposit_to_yield_vault.cdc",
         [fusdEvYieldVaultID, 0.5],
         [userAccount]
     )
     Test.expect(result, Test.beSucceeded())
 
     let balResult = _executeScript(
-        "../../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
         [userAccount.address, fusdEvYieldVaultID]
     )
     Test.expect(balResult, Test.beSucceeded())
@@ -336,14 +300,14 @@ access(all) fun testDepositToFUSDEVYieldVault() {
 access(all) fun testWithdrawFromFUSDEVYieldVault() {
     log("Withdrawing 0.3 PYUSD0 from FUSDEV yield vault...")
     let result = _executeTransactionFile(
-        "../../transactions/flow-yield-vaults/withdraw_from_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/withdraw_from_yield_vault.cdc",
         [fusdEvYieldVaultID, 0.3],
         [userAccount]
     )
     Test.expect(result, Test.beSucceeded())
 
     let balResult = _executeScript(
-        "../../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
         [userAccount.address, fusdEvYieldVaultID]
     )
     Test.expect(balResult, Test.beSucceeded())
@@ -355,7 +319,7 @@ access(all) fun testWithdrawFromFUSDEVYieldVault() {
 access(all) fun testCloseFUSDEVYieldVault() {
     log("Closing FUSDEV yield vault...")
     let result = _executeTransactionFile(
-        "../../transactions/flow-yield-vaults/close_yield_vault.cdc",
+        "../transactions/flow-yield-vaults/close_yield_vault.cdc",
         [fusdEvYieldVaultID],
         [userAccount]
     )

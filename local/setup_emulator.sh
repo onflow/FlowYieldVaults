@@ -21,9 +21,9 @@ flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.045a
 # configure FlowCreditMarket
 #
 # create Pool with MOET as default token
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc 'A.045a1763c93006ca.MOET.Vault' --signer emulator-flow-yield-vaults
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-factory/create_and_store_pool.cdc 'A.045a1763c93006ca.MOET.Vault' --signer emulator-flow-yield-vaults
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_zero_rate_curve.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.0ae53cb6e3f42a79.FlowToken.Vault' \
     0.8 \
     1.0 \
@@ -58,7 +58,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
 
 # grant PoolBeta cap
 echo "Grant Protocol Beta access to FlowYieldVaults"
-flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-credit-market/pool-management/03_grant_beta.cdc \
+flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc \
   --authorizer emulator-flow-yield-vaults,emulator-flow-yield-vaults \
   --proposer emulator-flow-yield-vaults \
   --payer emulator-flow-yield-vaults

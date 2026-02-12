@@ -7,7 +7,7 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "FlowYieldVaultsStrategies"
-import "FlowCreditMarket"
+import "FlowALPv1"
 import "FlowYieldVaults"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
@@ -128,7 +128,7 @@ fun setup() {
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
 
-	// setup FlowCreditMarket with a Pool & add FLOW as supported token
+	// setup FlowALPv1 with a Pool & add FLOW as supported token
 	createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
 	addSupportedTokenFixedRateInterestCurve(
 		signer: protocolAccount,
@@ -143,7 +143,7 @@ fun setup() {
 	// open wrapped position (pushToDrawDownSink)
 	// the equivalent of depositing reserves
 	let openRes = executeTransaction(
-		"../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/position/create_position.cdc",
+		"../../lib/FlowCreditMarket/cadence/transactions/flow-alp/position/create_position.cdc",
 		[reserveAmount/2.0, /storage/flowTokenVault, true],
 		protocolAccount
 	)
