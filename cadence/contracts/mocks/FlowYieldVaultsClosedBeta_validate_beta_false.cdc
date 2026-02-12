@@ -1,3 +1,19 @@
+// TEST-ONLY MOCK CONTRACT.
+//
+// Some unit tests need a *well-typed* beta reference
+// (`auth(FlowYieldVaultsClosedBeta.Beta) & FlowYieldVaultsClosedBeta.BetaBadge`)
+// that fails validation, to prove that a call-site actually invokes
+// `FlowYieldVaultsClosedBeta.validateBeta(...)`.
+//
+// In Cadence, resources like `BetaBadge` can only be created by the contract that
+// declares them, which makes it difficult to "forge" an invalid badge/reference
+// in a transaction.
+//
+// To keep tests deterministic, this file redeploys the `FlowYieldVaultsClosedBeta`
+// contract with `validateBeta` hardcoded to return `false` for all inputs. The
+// rest of the contract is kept aligned with `cadence/contracts/FlowYieldVaultsClosedBeta.cdc`.
+//
+// DO NOT deploy this mock to any network.
 access(all) contract FlowYieldVaultsClosedBeta {
 
     access(all) entitlement Admin
@@ -65,16 +81,6 @@ access(all) contract FlowYieldVaultsClosedBeta {
         return cap
     }
 
-    /// Clean up any previously issued controller before issuing a fresh capability.
-    access(contract) fun _cleanupExistingGrant(_ addr: Address) {
-        if let info = self.issuedCapIDs[addr] {
-            if let ctrl = self.account.capabilities.storage.getController(byCapabilityID: info.capID) {
-                ctrl.delete()
-                emit BetaRevoked(addr: addr, capID: info.capID)
-            }
-        }
-    }
-
     /// Delete the recorded controller, revoking *all copies* of the capability
     access(contract) fun _revokeByAddress(_ addr: Address) {
         let info = self.issuedCapIDs[addr] ?? panic("No cap recorded for address")
@@ -89,7 +95,6 @@ access(all) contract FlowYieldVaultsClosedBeta {
     // 2) A small in-account helper resource that performs privileged ops
     access(all) resource AdminHandle {
         access(Admin) fun grantBeta(addr: Address): Capability<auth(FlowYieldVaultsClosedBeta.Beta) &FlowYieldVaultsClosedBeta.BetaBadge> {
-            FlowYieldVaultsClosedBeta._cleanupExistingGrant(addr)
             FlowYieldVaultsClosedBeta._ensureBadge(addr)
             return FlowYieldVaultsClosedBeta._issueBadgeCap(addr)
         }
@@ -110,17 +115,10 @@ access(all) contract FlowYieldVaultsClosedBeta {
         return nil
     }
 
+    // TEST-ONLY: Always invalid, regardless of address or reference.
+    // Used to ensure beta-gated entrypoints actually call `validateBeta`.
     access(all) view fun validateBeta(_ addr: Address?, _ betaRef: auth(Beta) &BetaBadge): Bool {
-        if (addr == nil) {
-            assert(addr == nil, message: "Address is required for Beta verification") 
-            return false
-        }
-        let recordedID = self.getBetaCapID(addr!)
-        assert(recordedID != nil, message: "No Beta access")
-
-        assert(betaRef.assignedTo == addr, message: "BetaBadge may only be used by its assigned owner")
-
-        return true 
+        return false
     }
 
     init() {
