@@ -1,4 +1,4 @@
-import EVM from "EVM"
+import "EVM"
 
 access(all) fun main(poolAddress: String): {String: String} {
     // Parse pool address

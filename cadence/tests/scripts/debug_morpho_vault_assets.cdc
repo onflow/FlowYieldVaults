@@ -1,5 +1,5 @@
 // Debug script to understand how Morpho vault calculates totalAssets
-import EVM from "EVM"
+import "EVM"
 
 access(all) fun main(): {String: String} {
     let vaultAddress = "0xd069d989e2F44B70c65347d1853C0c67e10a9F8D"

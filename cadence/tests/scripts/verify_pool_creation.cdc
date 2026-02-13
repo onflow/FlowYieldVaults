@@ -1,5 +1,5 @@
 // After pool creation, verify they exist in our test fork
-import EVM from "EVM"
+import "EVM"
 
 access(all) fun main(): {String: String} {
     let coa = getAuthAccount<auth(Storage) &Account>(0xe467b9dd11fa00df)

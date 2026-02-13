@@ -1,4 +1,4 @@
-import EVM from "EVM"
+import "EVM"
 
 // Test that Uniswap V3 Quoter can READ from vm.store'd pools (proves pools are readable)
 transaction(

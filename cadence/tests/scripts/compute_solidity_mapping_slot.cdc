@@ -1,4 +1,4 @@
-import EVM from "EVM"
+import "EVM"
 
 // Compute Solidity mapping storage slot
 // Formula: keccak256(abi.encode(key, mappingSlot))

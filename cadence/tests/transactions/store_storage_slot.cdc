@@ -1,4 +1,4 @@
-import EVM from "EVM"
+import "EVM"
 
 transaction(targetAddress: String, slot: String, value: String) {
     prepare(signer: &Account) {}

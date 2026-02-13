@@ -1,4 +1,4 @@
-import EVM from "EVM"
+import "EVM"
 
 access(all) fun main(vaultAddress: String): {String: String} {
     let vault = EVM.addressFromString(vaultAddress)

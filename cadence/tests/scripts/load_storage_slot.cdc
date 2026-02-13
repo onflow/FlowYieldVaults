@@ -1,4 +1,4 @@
-import EVM from "EVM"
+import "EVM"
 
 access(all) fun main(targetAddress: String, slot: String): String {
     let target = EVM.addressFromString(targetAddress)

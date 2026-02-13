@@ -1,4 +1,4 @@
-import EVM from "EVM"
+import "EVM"
 
 access(all) fun main(poolAddress: String): {String: String} {
     let coa = getAuthAccount<auth(Storage) &Account>(0xe467b9dd11fa00df)
