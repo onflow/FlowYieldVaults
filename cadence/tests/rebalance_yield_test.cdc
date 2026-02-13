@@ -56,7 +56,7 @@ fun setup() {
     // open wrapped position (pushToDrawDownSink)
     // the equivalent of depositing reserves
     let openRes = executeTransaction(
-        "../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/position/create_position.cdc",
+        "../../lib/FlowCreditMarket/cadence/transactions/flow-alp/position/create_position.cdc",
         [reserveAmount/2.0, /storage/flowTokenVault, true],
         protocolAccount
     )

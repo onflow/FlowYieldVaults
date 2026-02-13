@@ -5,7 +5,7 @@ import "MockOracle"
 
 import "DeFiActions"
 import "SwapConnectors"
-import "FlowCreditMarketMath"
+import "FlowALPMath"
 
 ///
 /// THIS CONTRACT IS A MOCK AND IS NOT INTENDED FOR USE IN PRODUCTION
@@ -114,8 +114,8 @@ access(all) contract MockSwapper {
             let uintInAmount = out ? uintAmount : (uintAmount / uintPrice)
             let uintOutAmount = out ? uintAmount * uintPrice : uintAmount
 
-            let inAmount = FlowCreditMarketMath.toUFix64Round(uintInAmount)
-            let outAmount = FlowCreditMarketMath.toUFix64Round(uintOutAmount)
+            let inAmount = FlowALPMath.toUFix64Round(uintInAmount)
+            let outAmount = FlowALPMath.toUFix64Round(uintOutAmount)
 
             return SwapConnectors.BasicQuote(
                 inType: reverse ? self.outVault : self.inVault,

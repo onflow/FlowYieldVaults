@@ -89,6 +89,15 @@
 				"testnet": "3ebb7d2595e97cd2"
 			}
 		},
+		"EVMAmountUtils": {
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "6d888f175c158410",
+				"testing": "0000000000000009",
+				"testnet": "0b11b1848a8aa2c0"
+			}
+		},
 		"EVMTokenConnectors": {
 			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
 			"aliases": {

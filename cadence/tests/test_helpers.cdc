@@ -4,7 +4,7 @@ import "EVM"
 import "MetadataViews"
 import "FlowToken"
 import "MOET"
-import "FlowCreditMarket"
+import "FlowALPv1"
 
 access(all) let serviceAccount = Test.serviceAccount()
 
@@ -37,7 +37,7 @@ access(all)
 fun grantProtocolBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
     let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
     let betaTxn = Test.Transaction(
-        code: Test.readFile("../../lib/FlowCreditMarket/cadence/tests/transactions/flow-credit-market/pool-management/03_grant_beta.cdc"),
+        code: Test.readFile("../../lib/FlowCreditMarket/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc"),
         authorizers: [admin.address, grantee.address],
         signers: signers,
         arguments: []
@@ -157,8 +157,8 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FlowCreditMarketMath",
-        path: "../../lib/FlowCreditMarket/cadence/lib/FlowCreditMarketMath.cdc",
+        name: "FlowALPMath",
+        path: "../../lib/FlowCreditMarket/cadence/lib/FlowALPMath.cdc",
         arguments: []
     )
     err = Test.deployContract(
@@ -180,7 +180,7 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
 
-    // FlowCreditMarket contracts
+    // FlowALPv1 contracts
     let initialMoetSupply = 0.0
     err = Test.deployContract(
         name: "MOET",
@@ -189,8 +189,8 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FlowCreditMarket",
-        path: "../../lib/FlowCreditMarket/cadence/contracts/FlowCreditMarket.cdc",
+        name: "FlowALPv1",
+        path: "../../lib/FlowCreditMarket/cadence/contracts/FlowALPv1.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -374,7 +374,7 @@ access(all) fun deployContracts() {
 
 access(all)
 fun setupFlowCreditMarket(signer: Test.TestAccount) {
-    let res = _executeTransaction("../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/create_and_store_pool.cdc",
+    let res = _executeTransaction("../../lib/FlowCreditMarket/cadence/transactions/flow-alp/create_and_store_pool.cdc",
         [],
         signer
     )
@@ -418,19 +418,19 @@ fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
 }
 
 access(all)
-fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowCreditMarket.PositionDetails {
-    let res = _executeScript("../../lib/FlowCreditMarket/cadence/scripts/flow-credit-market/position_details.cdc",
+fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowALPv1.PositionDetails {
+    let res = _executeScript("../../lib/FlowCreditMarket/cadence/scripts/flow-alp/position_details.cdc",
         [pid]
     )
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 
-    return res.returnValue as! FlowCreditMarket.PositionDetails
+    return res.returnValue as! FlowALPv1.PositionDetails
 }
 
 access(all)
 fun getReserveBalanceForType(vaultIdentifier: String): UFix64 {
     let res = _executeScript(
-        "../../lib/FlowCreditMarket/cadence/scripts/flow-credit-market/get_reserve_balance_for_type.cdc",
+        "../../lib/FlowCreditMarket/cadence/scripts/flow-alp/get_reserve_balance_for_type.cdc",
         [vaultIdentifier]
     )
     Test.expect(res, Test.beSucceeded())
@@ -446,7 +446,7 @@ fun positionAvailableBalance(
     beFailed: Bool
 ): UFix64 {
     let res = _executeScript(
-        "../../lib/FlowCreditMarket/cadence/scripts/flow-credit-market/get_available_balance.cdc",
+        "../../lib/FlowCreditMarket/cadence/scripts/flow-alp/get_available_balance.cdc",
         [pid, type, pullFromSource]
     )
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
@@ -459,7 +459,7 @@ fun positionAvailableBalance(
 access(all)
 fun createAndStorePool(signer: Test.TestAccount, defaultTokenIdentifier: String, beFailed: Bool) {
     let createRes = _executeTransaction(
-        "../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-factory/create_and_store_pool.cdc",
+        "../../lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-factory/create_and_store_pool.cdc",
         [defaultTokenIdentifier],
         signer
     )
@@ -477,7 +477,7 @@ fun addSupportedTokenFixedRateInterestCurve(
     depositCapacityCap: UFix64
 ) {
     let additionRes = _executeTransaction(
-        "../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-governance/add_supported_token_fixed_rate_curve.cdc",
+        "../../lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-governance/add_supported_token_fixed_rate_curve.cdc",
         [ tokenTypeIdentifier, collateralFactor, borrowFactor, yearlyRate, depositRate, depositCapacityCap ],
         signer
     )
@@ -487,7 +487,7 @@ fun addSupportedTokenFixedRateInterestCurve(
 access(all)
 fun rebalancePosition(signer: Test.TestAccount, pid: UInt64, force: Bool, beFailed: Bool) {
     let rebalanceRes = _executeTransaction(
-        "../../lib/FlowCreditMarket/cadence/transactions/flow-credit-market/pool-management/rebalance_position.cdc",
+        "../../lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-management/rebalance_position.cdc",
         [ pid, force ],
         signer
     )
@@ -570,14 +570,14 @@ fun rebalanceYieldVault(signer: Test.TestAccount, id: UInt64, force: Bool, beFai
 
 access(all)
 fun getLastPositionOpenedEvent(_ evts: [AnyStruct]): AnyStruct { // can't return event types directly, they must be cast by caller
-    Test.assert(evts.length > 0, message: "Expected at least 1 FlowCreditMarket.Opened event but found none")
-    return evts[evts.length - 1] as! FlowCreditMarket.Opened
+    Test.assert(evts.length > 0, message: "Expected at least 1 FlowALPv1.Opened event but found none")
+    return evts[evts.length - 1] as! FlowALPv1.Opened
 }
 
 access(all)
 fun getLastPositionDepositedEvent(_ evts: [AnyStruct]): AnyStruct { // can't return event types directly, they must be cast by caller
-    Test.assert(evts.length > 0, message: "Expected at least 1 FlowCreditMarket.Deposited event but found none")
-    return evts[evts.length - 1] as! FlowCreditMarket.Deposited
+    Test.assert(evts.length > 0, message: "Expected at least 1 FlowALPv1.Deposited event but found none")
+    return evts[evts.length - 1] as! FlowALPv1.Deposited
 }
 
 /* --- Mock helpers --- */
@@ -657,7 +657,7 @@ access(all) fun setupBetaAccess(): Void {
 
 // Returns the balance for a given Vault 'Type' if present, otherwise nil.
 access(all) fun findBalance(
-    details: FlowCreditMarket.PositionDetails,
+    details: FlowALPv1.PositionDetails,
     vaultType: Type
 ): UFix64? {
     for b in details.balances {
