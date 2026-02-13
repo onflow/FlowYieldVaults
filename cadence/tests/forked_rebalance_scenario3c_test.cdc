@@ -80,9 +80,10 @@ fun setup() {
     // This sets slot0, observations, liquidity, ticks, bitmap, positions, and POOL token balances
     setupUniswapPools(signer: coaOwnerAccount)
 
-    // BandOracle is only used for FLOW price for FCM collateral
+    // BandOracle is used for FLOW and USD (MOET) prices
     let symbolPrices = { 
-        "FLOW": 1.0  // Start at 1.0, will increase to 2.0 during test
+        "FLOW": 1.0,  // Start at 1.0, will increase to 2.0 during test
+        "USD": 1.0    // MOET is pegged to USD, always 1.0
     }
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: symbolPrices)
 
@@ -154,7 +155,10 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
 
     // === FLOW PRICE INCREASE TO 2.0 ===
     log("\n=== FLOW PRICE → 2.0x ===")
-    setBandOraclePrice(signer: bandOracleAccount, symbol: "FLOW", price: flowPriceIncrease)
+    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: {
+        "FLOW": flowPriceIncrease,
+        "USD": 1.0
+    })
 
     // Update PYUSD0/FLOW pool to match new Flow price
     setPoolToPrice(
