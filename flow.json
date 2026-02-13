@@ -80,6 +80,15 @@
 				"testnet": "3ebb7d2595e97cd2"
 			}
 		},
+		"EVMAmountUtils": {
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "6d888f175c158410",
+				"testing": "0000000000000009",
+				"testnet": "0b11b1848a8aa2c0"
+			}
+		},
 		"EVMTokenConnectors": {
 			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
 			"aliases": {
@@ -89,8 +98,8 @@
 				"testnet": "b88ba0e976146cd1"
 			}
 		},
-		"FlowCreditMarket": {
-			"source": "./lib/FlowCreditMarket/cadence/contracts/FlowCreditMarket.cdc",
+		"FlowALPv1": {
+			"source": "./lib/FlowCreditMarket/cadence/contracts/FlowALPv1.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
@@ -98,8 +107,8 @@
 				"testnet": "426f0458ced60037"
 			}
 		},
-		"FlowCreditMarketMath": {
-			"source": "./lib/FlowCreditMarket/cadence/lib/FlowCreditMarketMath.cdc",
+		"FlowALPMath": {
+			"source": "./lib/FlowCreditMarket/cadence/lib/FlowALPMath.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
@@ -791,7 +800,7 @@
 				"resourceID": "projects/flow-foundation-admin/locations/global/keyRings/defi-actions/cryptoKeys/mainnet-defi-actions/cryptoKeyVersions/1"
 			}
 		},
-		"mainnet-flow-credit-market-deployer": {
+		"mainnet-flow-alp-deployer": {
 			"address": "6b00ff876c299c61",
 			"key": {
 				"type": "google-kms",
@@ -828,7 +837,7 @@
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
-		"testnet-flow-credit-market-deployer": {
+		"testnet-flow-alp-deployer": {
 			"address": "426f0458ced60037",
 			"key": {
 				"type": "google-kms",
@@ -851,11 +860,12 @@
 				},
 				"DeFiActionsUtils",
 				"DeFiActions",
-				"FlowCreditMarketMath",
+				"EVMAmountUtils",
+				"FlowALPMath",
 				"FungibleTokenConnectors",
 				"SwapConnectors",
 				"DummyConnectors",
-				"FlowCreditMarket",
+				"FlowALPv1",
 				{
 					"name": "YieldToken",
 					"args": [
