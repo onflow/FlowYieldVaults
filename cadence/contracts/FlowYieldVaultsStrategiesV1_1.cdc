@@ -11,7 +11,7 @@ import "UniswapV3SwapConnectors"
 import "ERC4626SwapConnectors"
 import "ERC4626Utils"
 // Lending protocol
-import "FlowCreditMarket"
+import "FlowALPv1"
 // FlowYieldVaults platform
 import "FlowYieldVaults"
 import "FlowYieldVaultsAutoBalancers"
@@ -76,11 +76,11 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
-        access(self) let position: @FlowCreditMarket.Position
+        access(self) let position: @FlowALPv1.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
 
-        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowCreditMarket.Position) {
+        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowALPv1.Position) {
             self.uniqueID = id
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
@@ -478,10 +478,10 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
             funds: @{FungibleToken.Vault},
             issuanceSink: {DeFiActions.Sink},
             repaymentSource: {DeFiActions.Source}
-        ): @FlowCreditMarket.Position {
+        ): @FlowALPv1.Position {
             let poolCap = FlowYieldVaultsStrategiesV1_1.account.storage.copy<
-                Capability<auth(FlowCreditMarket.EParticipant, FlowCreditMarket.EPosition) &FlowCreditMarket.Pool>
-            >(from: FlowCreditMarket.PoolCapStoragePath)
+                Capability<auth(FlowALPv1.EParticipant, FlowALPv1.EPosition) &FlowALPv1.Pool>
+            >(from: FlowALPv1.PoolCapStoragePath)
                 ?? panic("Missing or invalid pool capability")
 
             let poolRef = poolCap.borrow() ?? panic("Invalid Pool Cap")
