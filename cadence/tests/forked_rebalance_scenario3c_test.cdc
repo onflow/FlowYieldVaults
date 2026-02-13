@@ -6,6 +6,7 @@ import Test
 import BlockchainHelpers
 
 import "test_helpers.cdc"
+import "evm_state_helpers.cdc"
 
 // FlowYieldVaults platform
 import "FlowYieldVaults"
@@ -113,7 +114,16 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
     grantBeta(flowYieldVaultsAccount, user)
 
     // Set vault to baseline 1:1 price
-    setVaultSharePrice(vaultAddress: morphoVaultAddress, priceMultiplier: 1.0, signer: user)
+    // Use 1 billion (1e9) as base - large enough to prevent slippage, safe from UFix64 overflow
+    setVaultSharePrice(
+        vaultAddress: morphoVaultAddress,
+        assetAddress: pyusd0Address,
+        assetBalanceSlot: UInt256(1),
+        vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
+        baseAssets: 1000000000.0,  // 1 billion
+        priceMultiplier: 1.0,
+        signer: user
+    )
 
     createYieldVault(
         signer: user,
@@ -201,7 +211,16 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
     // === YIELD VAULT PRICE INCREASE TO 2.0 ===
     log("\n=== YIELD VAULT PRICE → 2.0x ===")
     
-    setVaultSharePrice(vaultAddress: morphoVaultAddress, priceMultiplier: yieldPriceIncrease, signer: user)
+    // Use 1 billion (1e9) as base - large enough to prevent slippage, safe from UFix64 overflow
+    setVaultSharePrice(
+        vaultAddress: morphoVaultAddress,
+        assetAddress: pyusd0Address,
+        assetBalanceSlot: UInt256(1),
+        vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
+        baseAssets: 1000000000.0,  // 1 billion
+        priceMultiplier: yieldPriceIncrease,
+        signer: user
+    )
     
     // Update FUSDEV pools to 2:1 price
     setPoolToPrice(
@@ -263,7 +282,6 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
 // HELPER FUNCTIONS
 // ============================================================================
 
-
 // Setup Uniswap V3 pools with valid state at specified prices
 access(all) fun setupUniswapPools(signer: Test.TestAccount) {
     log("\n=== Setting up Uniswap V3 pools ===")
@@ -301,247 +319,22 @@ access(all) fun setupUniswapPools(signer: Test.TestAccount) {
     ]
     
     for config in poolConfigs {
-        let tokenA = config["tokenA"]! as! String
-        let tokenB = config["tokenB"]! as! String
-        let fee = config["fee"]! as! UInt64
-        let tokenABalanceSlot = config["tokenABalanceSlot"]! as! UInt256
-        let tokenBBalanceSlot = config["tokenBBalanceSlot"]! as! UInt256
-        let priceRatio = config["priceTokenBPerTokenA"] != nil ? config["priceTokenBPerTokenA"]! as! UFix64 : 1.0
+        let name = config["name"]! as! String
+        log("Setting up ".concat(name))
         
         setPoolToPrice(
             factoryAddress: factoryAddress,
-            tokenAAddress: tokenA,
-            tokenBAddress: tokenB,
-            fee: fee,
-            priceTokenBPerTokenA: priceRatio,
-            tokenABalanceSlot: tokenABalanceSlot,
-            tokenBBalanceSlot: tokenBBalanceSlot,
+            tokenAAddress: config["tokenA"]! as! String,
+            tokenBAddress: config["tokenB"]! as! String,
+            fee: config["fee"]! as! UInt64,
+            priceTokenBPerTokenA: config["priceTokenBPerTokenA"]! as! UFix64,
+            tokenABalanceSlot: config["tokenABalanceSlot"]! as! UInt256,
+            tokenBBalanceSlot: config["tokenBBalanceSlot"]! as! UInt256,
             signer: signer
         )
     }
     
     log("✓ All pools seeded")
-}
-
-// Set vault share price by multiplying current totalAssets by the given multiplier
-// Manipulates both PYUSD0.balanceOf(vault) and vault._totalAssets to bypass maxRate capping
-// Sets totalAssets to a large stable value (1e15) to prevent slippage
-access(all) fun setVaultSharePrice(vaultAddress: String, priceMultiplier: UFix64, signer: Test.TestAccount) {
-    // Use a large stable base value: 1e15 (1,000,000,000,000,000)
-    // This prevents the vault from becoming too small/unstable during price changes
-    let largeBaseAssets = UInt256.fromString("1000000000000000")!
-    
-    // Calculate target: largeBaseAssets * multiplier
-    let multiplierBytes = priceMultiplier.toBigEndianBytes()
-    var multiplierUInt64: UInt64 = 0
-    for byte in multiplierBytes {
-        multiplierUInt64 = (multiplierUInt64 << 8) + UInt64(byte)
-    }
-    let targetAssets = (largeBaseAssets * UInt256(multiplierUInt64)) / UInt256(100000000)
-    
-    let result = _executeTransaction(
-        "transactions/set_erc4626_vault_price.cdc",
-        [vaultAddress, pyusd0Address, UInt256(1), morphoVaultTotalAssetsSlot, priceMultiplier, targetAssets],
-        signer
-    )
-    Test.expect(result, Test.beSucceeded())
-}
-
-
-// Set Uniswap V3 pool to a specific price via EVM.store
-// Creates pool if it doesn't exist, then seeds with full-range liquidity
-access(all) fun setPoolToPrice(
-    factoryAddress: String,
-    tokenAAddress: String,
-    tokenBAddress: String,
-    fee: UInt64,
-    priceTokenBPerTokenA: UFix64,
-    tokenABalanceSlot: UInt256,
-    tokenBBalanceSlot: UInt256,
-    signer: Test.TestAccount
-) {
-    // Sort tokens (Uniswap V3 requires token0 < token1)
-    let token0 = tokenAAddress < tokenBAddress ? tokenAAddress : tokenBAddress
-    let token1 = tokenAAddress < tokenBAddress ? tokenBAddress : tokenAAddress
-    let token0BalanceSlot = tokenAAddress < tokenBAddress ? tokenABalanceSlot : tokenBBalanceSlot
-    let token1BalanceSlot = tokenAAddress < tokenBAddress ? tokenBBalanceSlot : tokenABalanceSlot
-    
-    let poolPrice = tokenAAddress < tokenBAddress ? priceTokenBPerTokenA : 1.0 / priceTokenBPerTokenA
-    
-    let targetSqrtPriceX96 = calculateSqrtPriceX96(price: poolPrice)
-    let targetTick = calculateTick(price: poolPrice)
-    
-    let createResult = _executeTransaction(
-        "transactions/create_uniswap_pool.cdc",
-        [factoryAddress, token0, token1, fee, targetSqrtPriceX96],
-        signer
-    )
-    
-    let seedResult = _executeTransaction(
-        "transactions/set_uniswap_v3_pool_price.cdc",
-        [factoryAddress, token0, token1, fee, targetSqrtPriceX96, targetTick, token0BalanceSlot, token1BalanceSlot],
-        signer
-    )
-    Test.expect(seedResult, Test.beSucceeded())
-}
-
-
-access(all) fun calculateSqrtPriceX96(price: UFix64): String {
-    // Convert UFix64 to UInt256 (UFix64 has 8 decimal places)
-    // price is stored as integer * 10^8 internally
-    let priceBytes = price.toBigEndianBytes()
-    var priceUInt64: UInt64 = 0
-    for byte in priceBytes {
-        priceUInt64 = (priceUInt64 << 8) + UInt64(byte)
-    }
-    let priceScaled = UInt256(priceUInt64) // This is price * 10^8
-    
-    // We want: sqrt(price) * 2^96
-    // = sqrt(priceScaled / 10^8) * 2^96
-    // = sqrt(priceScaled) * 2^96 / sqrt(10^8)
-    // = sqrt(priceScaled) * 2^96 / 10^4
-    
-    // Calculate sqrt(priceScaled) with scale factor 2^48 for precision
-    // sqrt(priceScaled) * 2^48
-    let sqrtPriceScaled = sqrt(n: priceScaled, scaleFactor: UInt256(1) << 48)
-    
-    // Now we have: sqrt(priceScaled) * 2^48
-    // We want: sqrt(priceScaled) * 2^96 / 10^4
-    // = (sqrt(priceScaled) * 2^48) * 2^48 / 10^4
-    
-    let sqrtPriceX96 = (sqrtPriceScaled * (UInt256(1) << 48)) / UInt256(10000)
-    
-    return sqrtPriceX96.toString()
-}
-
-
-// Calculate tick from price
-// tick = ln(price) / ln(1.0001)
-// ln(1.0001) ≈ 0.00009999500033... ≈ 99995000333 / 10^18
-access(all) fun calculateTick(price: UFix64): Int256 {
-    // Convert UFix64 to UInt256 (UFix64 has 8 decimal places, stored as int * 10^8)
-    let priceBytes = price.toBigEndianBytes()
-    var priceUInt64: UInt64 = 0
-    for byte in priceBytes {
-        priceUInt64 = (priceUInt64 << 8) + UInt64(byte)
-    }
-    
-    // priceUInt64 is price * 10^8
-    // Scale to 10^18 for precision: price * 10^18 = priceUInt64 * 10^10
-    let priceScaled = UInt256(priceUInt64) * UInt256(10000000000) // 10^10
-    let scaleFactor = UInt256(1000000000000000000) // 10^18
-    
-    // Calculate ln(price) * 10^18
-    let lnPrice = ln(x: priceScaled, scaleFactor: scaleFactor)
-    
-    // ln(1.0001) * 10^18 ≈ 99995000333083
-    let ln1_0001 = Int256(99995000333083)
-    
-    // tick = ln(price) / ln(1.0001)
-    // lnPrice is already scaled by 10^18
-    // ln1_0001 is already scaled by 10^18  
-    // So: tick = (lnPrice * 10^18) / (ln1_0001 * 10^18) = lnPrice / ln1_0001
-    
-    let tick = lnPrice / ln1_0001
-    
-    return tick
-}
-
-
-// Calculate square root using Newton's method for UInt256
-// Returns sqrt(n) * scaleFactor to maintain precision
-access(all) fun sqrt(n: UInt256, scaleFactor: UInt256): UInt256 {
-    if n == UInt256(0) {
-        return UInt256(0)
-    }
-    
-    // Initial guess: n/2 (scaled)
-    var x = (n * scaleFactor) / UInt256(2)
-    var prevX = UInt256(0)
-    
-    // Newton's method: x_new = (x + n*scale^2/x) / 2
-    // Iterate until convergence (max 50 iterations for safety)
-    var iterations = 0
-    while x != prevX && iterations < 50 {
-        prevX = x
-        // x_new = (x + (n * scaleFactor^2) / x) / 2
-        let nScaled = n * scaleFactor * scaleFactor
-        x = (x + nScaled / x) / UInt256(2)
-        iterations = iterations + 1
-    }
-    
-    return x
-}
-
-
-// Calculate natural logarithm using Taylor series
-// ln(x) for x > 0, returns ln(x) * scaleFactor for precision
-access(all) fun ln(x: UInt256, scaleFactor: UInt256): Int256 {
-    if x == UInt256(0) {
-        panic("ln(0) is undefined")
-    }
-    
-    // For better convergence, reduce x to range [0.5, 1.5] using:
-    // ln(x) = ln(2^n * y) = n*ln(2) + ln(y) where y is in [0.5, 1.5]
-    
-    var value = x
-    var n = 0
-    
-    // Scale down if x > 1.5 * scaleFactor
-    let threshold = (scaleFactor * UInt256(3)) / UInt256(2)
-    while value > threshold {
-        value = value / UInt256(2)
-        n = n + 1
-    }
-    
-    // Scale up if x < 0.5 * scaleFactor
-    let lowerThreshold = scaleFactor / UInt256(2)
-    while value < lowerThreshold {
-        value = value * UInt256(2)
-        n = n - 1
-    }
-    
-    // Now value is in [0.5*scale, 1.5*scale], compute ln(value/scale)
-    // Use Taylor series: ln(1+z) = z - z^2/2 + z^3/3 - z^4/4 + ...
-    // where z = value/scale - 1
-    
-    let z = value > scaleFactor 
-        ? Int256(value - scaleFactor)
-        : -Int256(scaleFactor - value)
-    
-    // Calculate Taylor series terms until convergence
-    var result = z // First term: z
-    var term = z
-    var i = 2
-    var prevResult = Int256(0)
-    
-    // Calculate terms until convergence (term becomes negligible or result stops changing)
-    // Max 50 iterations for safety
-    while i <= 50 && result != prevResult {
-        prevResult = result
-        
-        // term = term * z / scaleFactor
-        term = (term * z) / Int256(scaleFactor)
-        
-        // Add or subtract term/i based on sign
-        if i % 2 == 0 {
-            result = result - term / Int256(i)
-        } else {
-            result = result + term / Int256(i)
-        }
-        i = i + 1
-    }
-    
-    // Add n * ln(2) * scaleFactor
-    // ln(2) ≈ 0.693147180559945309417232121458
-    // ln(2) * 10^18 ≈ 693147180559945309
-    let ln2Scaled = Int256(693147180559945309)
-    let nScaled = Int256(n) * ln2Scaled
-    
-    // Scale to our scaleFactor (assuming scaleFactor is 10^18)
-    result = result + nScaled
-    
-    return result
 }
 
 // Helper function to get Flow collateral from position
