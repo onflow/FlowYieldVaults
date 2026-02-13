@@ -540,13 +540,6 @@ access(all) fun ln(x: UInt256, scaleFactor: UInt256): Int256 {
     return result
 }
 
-
-// Helper: Compute Solidity mapping storage slot (wraps script call for convenience)
-access(all) fun computeMappingSlot(holderAddress: String, slot: UInt256): String {
-    let result = _executeScript("scripts/compute_solidity_mapping_slot.cdc", [holderAddress, slot])
-    return result.returnValue as! String
-}
-
 // Helper function to get Flow collateral from position
 access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
     let positionDetails = getPositionDetails(pid: pid, beFailed: false)
