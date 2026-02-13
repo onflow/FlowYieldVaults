@@ -53,6 +53,15 @@
 				"testnet": "7014dcffa1f14186"
 			}
 		},
+		"EVMAmountUtils": {
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "6d888f175c158410",
+				"testing": "0000000000000009",
+				"testnet": "0b11b1848a8aa2c0"
+			}
+		},
 		"ERC4626SwapConnectors": {
 			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
 			"aliases": {
@@ -89,8 +98,8 @@
 				"testnet": "b88ba0e976146cd1"
 			}
 		},
-		"FlowCreditMarket": {
-			"source": "./lib/FlowCreditMarket/cadence/contracts/FlowCreditMarket.cdc",
+		"FlowALPv1": {
+			"source": "./lib/FlowCreditMarket/cadence/contracts/FlowALPv1.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
@@ -98,8 +107,8 @@
 				"testnet": "426f0458ced60037"
 			}
 		},
-		"FlowCreditMarketMath": {
-			"source": "./lib/FlowCreditMarket/cadence/lib/FlowCreditMarketMath.cdc",
+		"FlowALPMath": {
+			"source": "./lib/FlowCreditMarket/cadence/lib/FlowALPMath.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
@@ -161,8 +170,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowYieldVaultsStrategiesV1_1": {
-			"source": "cadence/contracts/FlowYieldVaultsStrategiesV1_1.cdc",
+		"FlowYieldVaultsStrategiesV2": {
+			"source": "cadence/contracts/FlowYieldVaultsStrategiesV2.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -199,6 +208,7 @@
 			"source": "cadence/contracts/mocks/MockOracle.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009",
 				"testnet": "d2580caf2ef07c2f"
 			}
@@ -215,14 +225,32 @@
 			"source": "cadence/contracts/mocks/MockSwapper.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009",
 				"testnet": "d2580caf2ef07c2f"
+			}
+		},
+		"MorphoERC4626SinkConnectors": {
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "251032a66e9700ef",
+				"testing": "0000000000000009"
+			}
+		},
+		"MorphoERC4626SwapConnectors": {
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "251032a66e9700ef",
+				"testing": "0000000000000009"
 			}
 		},
 		"PMStrategiesV1": {
 			"source": "cadence/contracts/PMStrategiesV1.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009"
 			}
 		},
@@ -791,7 +819,7 @@
 				"resourceID": "projects/flow-foundation-admin/locations/global/keyRings/defi-actions/cryptoKeys/mainnet-defi-actions/cryptoKeyVersions/1"
 			}
 		},
-		"mainnet-flow-credit-market-deployer": {
+		"mainnet-flow-alp-deployer": {
 			"address": "6b00ff876c299c61",
 			"key": {
 				"type": "google-kms",
@@ -828,7 +856,7 @@
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
-		"testnet-flow-credit-market-deployer": {
+		"testnet-flow-alp-deployer": {
 			"address": "426f0458ced60037",
 			"key": {
 				"type": "google-kms",
@@ -851,11 +879,12 @@
 				},
 				"DeFiActionsUtils",
 				"DeFiActions",
-				"FlowCreditMarketMath",
+				"EVMAmountUtils",
+				"FlowALPMath",
 				"FungibleTokenConnectors",
 				"SwapConnectors",
 				"DummyConnectors",
-				"FlowCreditMarket",
+				"FlowALPv1",
 				{
 					"name": "YieldToken",
 					"args": [
@@ -920,7 +949,7 @@
 					]
 				},
 				{
-					"name": "FlowYieldVaultsStrategiesV1_1",
+					"name": "FlowYieldVaultsStrategiesV2",
 					"args": [
 						{
 							"value": "0x986Cb42b0557159431d48fE0A40073296414d410",
@@ -1048,7 +1077,7 @@
 					]
 				},
 				{
-					"name": "FlowYieldVaultsStrategiesV1_1",
+					"name": "FlowYieldVaultsStrategiesV2",
 					"args": [
 						{
 							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
@@ -1153,7 +1182,7 @@
 					]
 				},
 				{
-					"name": "FlowYieldVaultsStrategiesV1_1",
+					"name": "FlowYieldVaultsStrategiesV2",
 					"args": [
 						{
 							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
