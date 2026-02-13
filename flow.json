@@ -835,6 +835,10 @@
 				"hashAlgorithm": "SHA2_256",
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
+		},
+		"tidal-test": {
+			"address": "179b6b1cb6755e31",
+			"key": "dab5b96032f015d6f5d09d972e3113affda5a88dc0438a36e2784ff0159eae96"
 		}
 	},
 	"deployments": {
