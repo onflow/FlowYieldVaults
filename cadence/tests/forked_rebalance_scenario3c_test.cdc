@@ -321,67 +321,26 @@ access(all) fun setupUniswapPools(signer: Test.TestAccount) {
 
 // Set vault share price by multiplying current totalAssets by the given multiplier
 // Manipulates both PYUSD0.balanceOf(vault) and vault._totalAssets to bypass maxRate capping
+// Sets totalAssets to a large stable value (1e15) to prevent slippage
 access(all) fun setVaultSharePrice(vaultAddress: String, priceMultiplier: UFix64, signer: Test.TestAccount) {
-    let priceResult = _executeScript("scripts/get_erc4626_vault_price.cdc", [vaultAddress])
-    Test.expect(priceResult, Test.beSucceeded())
-    let currentAssets = UInt256.fromString((priceResult.returnValue as! {String: String})["totalAssets"]!)!
+    // Use a large stable base value: 1e15 (1,000,000,000,000,000)
+    // This prevents the vault from becoming too small/unstable during price changes
+    let largeBaseAssets = UInt256.fromString("1000000000000000")!
     
+    // Calculate target: largeBaseAssets * multiplier
     let multiplierBytes = priceMultiplier.toBigEndianBytes()
     var multiplierUInt64: UInt64 = 0
     for byte in multiplierBytes {
         multiplierUInt64 = (multiplierUInt64 << 8) + UInt64(byte)
     }
-    let targetAssets = (currentAssets * UInt256(multiplierUInt64)) / UInt256(100000000)
-
-    let vaultBalanceSlot = computeMappingSlot(holderAddress: vaultAddress, slot: 1)
-    var storeResult = _executeTransaction(
-        "transactions/store_storage_slot.cdc",
-        [pyusd0Address, vaultBalanceSlot, "0x\(String.encodeHex(targetAssets.toBigEndianBytes()))"],
+    let targetAssets = (largeBaseAssets * UInt256(multiplierUInt64)) / UInt256(100000000)
+    
+    let result = _executeTransaction(
+        "transactions/set_erc4626_vault_price.cdc",
+        [vaultAddress, pyusd0Address, UInt256(1), morphoVaultTotalAssetsSlot, priceMultiplier, targetAssets],
         signer
     )
-    Test.expect(storeResult, Test.beSucceeded())
-    
-    let slotResult = _executeScript("scripts/load_storage_slot.cdc", [vaultAddress, morphoVaultTotalAssetsSlot])
-    Test.expect(slotResult, Test.beSucceeded())
-    let slotHex = slotResult.returnValue as! String
-    let slotBytes = slotHex.slice(from: 2, upTo: slotHex.length).decodeHex()
-    
-    let blockResult = _executeScript("scripts/get_block_timestamp.cdc", [])
-    let currentTimestamp = blockResult.status == Test.ResultStatus.succeeded 
-        ? UInt64.fromString((blockResult.returnValue as! String?) ?? "0") ?? UInt64(getCurrentBlock().timestamp)
-        : UInt64(getCurrentBlock().timestamp)
-    
-    let maxRateBytes = slotBytes.slice(from: 8, upTo: 16)
-    
-    var lastUpdateBytes: [UInt8] = []
-    var tempTimestamp = currentTimestamp
-    var i = 0
-    while i < 8 {
-        lastUpdateBytes.insert(at: 0, UInt8(tempTimestamp % 256))
-        tempTimestamp = tempTimestamp / 256
-        i = i + 1
-    }
-    
-    let assetsBytes = targetAssets.toBigEndianBytes()
-    var paddedAssets: [UInt8] = []
-    var padCount = 16 - assetsBytes.length
-    while padCount > 0 {
-        paddedAssets.append(0)
-        padCount = padCount - 1
-    }
-    paddedAssets.appendAll(assetsBytes)
-    
-    var newSlotBytes: [UInt8] = []
-    newSlotBytes.appendAll(lastUpdateBytes)
-    newSlotBytes.appendAll(maxRateBytes)
-    newSlotBytes.appendAll(paddedAssets)
-    
-    storeResult = _executeTransaction(
-        "transactions/store_storage_slot.cdc",
-        [vaultAddress, morphoVaultTotalAssetsSlot, "0x\(String.encodeHex(newSlotBytes))"],
-        signer
-    )
-    Test.expect(storeResult, Test.beSucceeded())
+    Test.expect(result, Test.beSucceeded())
 }
 
 
