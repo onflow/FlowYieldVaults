@@ -4,7 +4,7 @@ import "EVM"
 access(all) fun computeMappingSlot(_ values: [AnyStruct]): String {
     let encoded = EVM.encodeABI(values)
     let hashBytes = HashAlgorithm.KECCAK_256.hash(encoded)
-    return "0x".concat(String.encodeHex(hashBytes))
+    return "0x\(String.encodeHex(hashBytes))"
 }
 
 // Helper: Compute ERC20 balanceOf storage slot
@@ -90,14 +90,7 @@ transaction(
         
         // Get current block timestamp for lastUpdate (bytes 0-7, 8 bytes)
         let currentTimestamp = UInt64(getCurrentBlock().timestamp)
-        var lastUpdateBytes: [UInt8] = []
-        var tempTimestamp = currentTimestamp
-        var i = 0
-        while i < 8 {
-            lastUpdateBytes.insert(at: 0, UInt8(tempTimestamp % 256))
-            tempTimestamp = tempTimestamp / 256
-            i = i + 1
-        }
+        let lastUpdateBytes = currentTimestamp.toBigEndianBytes()
         
         // Pad targetAssets to 16 bytes for the slot (bytes 16-31, 16 bytes in slot)
         // Re-get bytes from targetAssets to avoid using the 32-byte padded version
@@ -112,12 +105,8 @@ transaction(
         if assetsBytesForSlot.length <= 16 {
             paddedAssets.appendAll(assetsBytesForSlot)
         } else {
-            let startIdx = assetsBytesForSlot.length - 16
-            var idx = startIdx
-            while idx < assetsBytesForSlot.length {
-                paddedAssets.append(assetsBytesForSlot[idx])
-                idx = idx + 1
-            }
+            // Take last 16 bytes if longer
+            paddedAssets.appendAll(assetsBytesForSlot.slice(from: assetsBytesForSlot.length - 16, upTo: assetsBytesForSlot.length))
         }
         
         // Pack the slot: [lastUpdate(8)] [maxRate(8)] [totalAssets(16)]

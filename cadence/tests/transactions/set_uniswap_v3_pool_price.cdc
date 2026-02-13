@@ -4,7 +4,7 @@ import "EVM"
 access(all) fun computeMappingSlot(_ values: [AnyStruct]): String {
     let encoded = EVM.encodeABI(values)
     let hashBytes = HashAlgorithm.KECCAK_256.hash(encoded)
-    return "0x".concat(String.encodeHex(hashBytes))
+    return "0x\(String.encodeHex(hashBytes))"
 }
 
 // Helper: Compute ERC20 balanceOf storage slot
@@ -90,8 +90,8 @@ transaction(
         let targetTickAligned = (targetTick / tickSpacing) * tickSpacing
         
         // Calculate full-range ticks (MUST be multiples of tickSpacing!)
-        let tickLower = Int256(-887272) / tickSpacing * tickSpacing
-        let tickUpper = Int256(887272) / tickSpacing * tickSpacing
+        let tickLower = (-887272 as Int256) / tickSpacing * tickSpacing
+        let tickUpper = (887272 as Int256) / tickSpacing * tickSpacing
         
         // Set slot0 with target price
         // slot0 packing (from lowest to highest bits):
@@ -116,10 +116,10 @@ transaction(
         let sqrtPriceU256 = UInt256.fromString(targetSqrtPriceX96)!
         
         // Convert tick to 24-bit representation (with two's complement for negative)
-        let tickMask = UInt256((Int256(1) << 24) - 1)  // 0xFFFFFF
+        let tickMask = UInt256(((1 as Int256) << 24) - 1)  // 0xFFFFFF
         let tickU = UInt256(
-            targetTickAligned < Int256(0) 
-                ? (Int256(1) << 24) + targetTickAligned  // Two's complement for negative
+            targetTickAligned < 0 
+                ? ((1 as Int256) << 24) + targetTickAligned  // Two's complement for negative
                 : targetTickAligned
         ) & tickMask
         
@@ -134,15 +134,15 @@ transaction(
         
         // Add observationIndex = 0 at bits [184:199] - already 0
         // Add observationCardinality = 1 at bits [200:215]
-        packedValue = packedValue + (UInt256(1) << 200)
+        packedValue = packedValue + (1 << 200)
         
         // Add observationCardinalityNext = 1 at bits [216:231]
-        packedValue = packedValue + (UInt256(1) << 216)
+        packedValue = packedValue + (1 << 216)
         
         // Add feeProtocol = 0 at bits [232:239] - already 0
         
         // Add unlocked = 1 (bool, 8 bits) at bits [240:247]
-        packedValue = packedValue + (UInt256(1) << 240)
+        packedValue = packedValue + (1 << 240)
         
         // Convert to 32-byte hex string
         let packedBytes = packedValue.toBigEndianBytes()
@@ -156,7 +156,7 @@ transaction(
         }
         slot0Bytes = slot0Bytes.concat(packedBytes)
         
-        let slot0Value = "0x".concat(String.encodeHex(slot0Bytes))
+        let slot0Value = "0x\(String.encodeHex(slot0Bytes))"
         
         // ASSERTION: Verify slot0 is exactly 32 bytes
         assert(slot0Bytes.length == 32, message: "slot0 must be exactly 32 bytes")
@@ -165,7 +165,7 @@ transaction(
 
         // Verify what we stored by reading it back
         let readBack = EVM.load(target: poolAddr, slot: "0x0")
-        let readBackHex = "0x".concat(String.encodeHex(readBack))
+        let readBackHex = "0x\(String.encodeHex(readBack))"
         
         // ASSERTION: Verify EVM.store/load round-trip works
         assert(readBackHex == slot0Value, message: "slot0 read-back mismatch - storage corruption!")
@@ -191,35 +191,20 @@ transaction(
         obs0Bytes.append(1)
         
         // secondsPerLiquidityCumulativeX128 (uint160, 20 bytes) = 0
-        var splCount = 0
-        while splCount < 20 {
-            obs0Bytes.append(0)
-            splCount = splCount + 1
-        }
+        obs0Bytes.appendAll([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
         
         // tickCumulative (int56, 7 bytes) = 0
-        var tcCount = 0
-        while tcCount < 7 {
-            obs0Bytes.append(0)
-            tcCount = tcCount + 1
-        }
+        obs0Bytes.appendAll([0,0,0,0,0,0,0])
         
         // blockTimestamp (uint32, big-endian, 4 bytes, lowest/rightmost)
-        var ts = currentTimestamp
-        var tsBytes: [UInt8] = []
-        var tsi = 0
-        while tsi < 4 {
-            tsBytes.insert(at: 0, UInt8(ts % 256))
-            ts = ts / 256
-            tsi = tsi + 1
-        }
+        let tsBytes = currentTimestamp.toBigEndianBytes()
         obs0Bytes.appendAll(tsBytes)
         
         // ASSERTION: Verify observations[0] is exactly 32 bytes
         assert(obs0Bytes.length == 32, message: "observations[0] must be exactly 32 bytes")
         assert(obs0Bytes[0] == 1, message: "initialized must be at byte 0 and = 1")
         
-        let obs0Value = "0x".concat(String.encodeHex(obs0Bytes))
+        let obs0Value = "0x\(String.encodeHex(obs0Bytes))"
         EVM.store(target: poolAddr, slot: "0x8", value: obs0Value)
         
         // Set feeGrowthGlobal0X128 and feeGrowthGlobal1X128 (CRITICAL for swaps!)
@@ -236,7 +221,7 @@ transaction(
         // Initialize boundary ticks with CORRECT storage layout
         
         // Lower tick
-        let tickLowerSlot = computeMappingSlot([tickLower, UInt256(5)])
+        let tickLowerSlot = computeMappingSlot([tickLower, 5])
         
         // Slot 0: liquidityGross=1e24 (lower 128 bits), liquidityNet=+1e24 (upper 128 bits)
         let tickLowerData0 = "0x000000000000d3c21bcecceda1000000000000000000d3c21bcecceda1000000"
@@ -248,49 +233,46 @@ transaction(
         
         // Calculate slot offsets by parsing the base slot and adding 1, 2, 3
         let tickLowerSlotBytes = tickLowerSlot.slice(from: 2, upTo: tickLowerSlot.length).decodeHex()
-        var tickLowerSlotNum = UInt256(0)
+        var tickLowerSlotNum = 0 as UInt256
         for byte in tickLowerSlotBytes {
-            tickLowerSlotNum = tickLowerSlotNum * UInt256(256) + UInt256(byte)
+            tickLowerSlotNum = tickLowerSlotNum * 256 + UInt256(byte)
         }
         
         // Slot 1: feeGrowthOutside0X128 = 0
-        let tickLowerSlot1Bytes = (tickLowerSlotNum + UInt256(1)).toBigEndianBytes()
+        let tickLowerSlot1Bytes = (tickLowerSlotNum + 1).toBigEndianBytes()
         var tickLowerSlot1Hex = "0x"
         var padCount1 = 32 - tickLowerSlot1Bytes.length
         while padCount1 > 0 {
-            tickLowerSlot1Hex = tickLowerSlot1Hex.concat("00")
+            tickLowerSlot1Hex = "\(tickLowerSlot1Hex)00"
             padCount1 = padCount1 - 1
         }
-        tickLowerSlot1Hex = tickLowerSlot1Hex.concat(String.encodeHex(tickLowerSlot1Bytes))
+        tickLowerSlot1Hex = "\(tickLowerSlot1Hex)\(String.encodeHex(tickLowerSlot1Bytes))"
         EVM.store(target: poolAddr, slot: tickLowerSlot1Hex, value: "0x0000000000000000000000000000000000000000000000000000000000000000")
         
         // Slot 2: feeGrowthOutside1X128 = 0
-        let tickLowerSlot2Bytes = (tickLowerSlotNum + UInt256(2)).toBigEndianBytes()
+        let tickLowerSlot2Bytes = (tickLowerSlotNum + 2).toBigEndianBytes()
         var tickLowerSlot2Hex = "0x"
         var padCount2 = 32 - tickLowerSlot2Bytes.length
         while padCount2 > 0 {
-            tickLowerSlot2Hex = tickLowerSlot2Hex.concat("00")
+            tickLowerSlot2Hex = "\(tickLowerSlot2Hex)00"
             padCount2 = padCount2 - 1
         }
-        tickLowerSlot2Hex = tickLowerSlot2Hex.concat(String.encodeHex(tickLowerSlot2Bytes))
+        tickLowerSlot2Hex = "\(tickLowerSlot2Hex)\(String.encodeHex(tickLowerSlot2Bytes))"
         EVM.store(target: poolAddr, slot: tickLowerSlot2Hex, value: "0x0000000000000000000000000000000000000000000000000000000000000000")
         
         // Slot 3: tickCumulativeOutside=0, secondsPerLiquidity=0, secondsOutside=0, initialized=true(0x01)
-        let tickLowerSlot3Bytes = (tickLowerSlotNum + UInt256(3)).toBigEndianBytes()
+        let tickLowerSlot3Bytes = (tickLowerSlotNum + 3).toBigEndianBytes()
         var tickLowerSlot3Hex = "0x"
         var padCount3 = 32 - tickLowerSlot3Bytes.length
         while padCount3 > 0 {
-            tickLowerSlot3Hex = tickLowerSlot3Hex.concat("00")
+            tickLowerSlot3Hex = "\(tickLowerSlot3Hex)00"
             padCount3 = padCount3 - 1
         }
-        tickLowerSlot3Hex = tickLowerSlot3Hex.concat(String.encodeHex(tickLowerSlot3Bytes))
+        tickLowerSlot3Hex = "\(tickLowerSlot3Hex)\(String.encodeHex(tickLowerSlot3Bytes))"
         EVM.store(target: poolAddr, slot: tickLowerSlot3Hex, value: "0x0100000000000000000000000000000000000000000000000000000000000000")
         
-        log("✓ Tick lower initialized (\(tickLower.toString()))")
-        
         // Upper tick (liquidityNet is NEGATIVE for upper tick)
-        let tickUpperSlot = computeMappingSlot([tickUpper, UInt256(5)])
-        log("Tick upper slot: \(tickUpperSlot)")
+        let tickUpperSlot = computeMappingSlot([tickUpper, 5])
         
         // Slot 0: liquidityGross=1e24 (lower 128 bits), liquidityNet=-1e24 (upper 128 bits, two's complement)
         // CRITICAL: Must be exactly 64 hex chars = 32 bytes
@@ -305,63 +287,63 @@ transaction(
         EVM.store(target: poolAddr, slot: tickUpperSlot, value: tickUpperData0)
         
         let tickUpperSlotBytes = tickUpperSlot.slice(from: 2, upTo: tickUpperSlot.length).decodeHex()
-        var tickUpperSlotNum = UInt256(0)
+        var tickUpperSlotNum = 0 as UInt256
         for byte in tickUpperSlotBytes {
-            tickUpperSlotNum = tickUpperSlotNum * UInt256(256) + UInt256(byte)
+            tickUpperSlotNum = tickUpperSlotNum * 256 + UInt256(byte)
         }
         
         // Slot 1, 2, 3 same as lower
-        let tickUpperSlot1Bytes = (tickUpperSlotNum + UInt256(1)).toBigEndianBytes()
+        let tickUpperSlot1Bytes = (tickUpperSlotNum + 1).toBigEndianBytes()
         var tickUpperSlot1Hex = "0x"
         var padCount4 = 32 - tickUpperSlot1Bytes.length
         while padCount4 > 0 {
-            tickUpperSlot1Hex = tickUpperSlot1Hex.concat("00")
+            tickUpperSlot1Hex = "\(tickUpperSlot1Hex)00"
             padCount4 = padCount4 - 1
         }
-        tickUpperSlot1Hex = tickUpperSlot1Hex.concat(String.encodeHex(tickUpperSlot1Bytes))
+        tickUpperSlot1Hex = "\(tickUpperSlot1Hex)\(String.encodeHex(tickUpperSlot1Bytes))"
         EVM.store(target: poolAddr, slot: tickUpperSlot1Hex, value: "0x0000000000000000000000000000000000000000000000000000000000000000")
         
-        let tickUpperSlot2Bytes = (tickUpperSlotNum + UInt256(2)).toBigEndianBytes()
+        let tickUpperSlot2Bytes = (tickUpperSlotNum + 2).toBigEndianBytes()
         var tickUpperSlot2Hex = "0x"
         var padCount5 = 32 - tickUpperSlot2Bytes.length
         while padCount5 > 0 {
-            tickUpperSlot2Hex = tickUpperSlot2Hex.concat("00")
+            tickUpperSlot2Hex = "\(tickUpperSlot2Hex)00"
             padCount5 = padCount5 - 1
         }
-        tickUpperSlot2Hex = tickUpperSlot2Hex.concat(String.encodeHex(tickUpperSlot2Bytes))
+        tickUpperSlot2Hex = "\(tickUpperSlot2Hex)\(String.encodeHex(tickUpperSlot2Bytes))"
         EVM.store(target: poolAddr, slot: tickUpperSlot2Hex, value: "0x0000000000000000000000000000000000000000000000000000000000000000")
         
-        let tickUpperSlot3Bytes = (tickUpperSlotNum + UInt256(3)).toBigEndianBytes()
+        let tickUpperSlot3Bytes = (tickUpperSlotNum + 3).toBigEndianBytes()
         var tickUpperSlot3Hex = "0x"
         var padCount6 = 32 - tickUpperSlot3Bytes.length
         while padCount6 > 0 {
-            tickUpperSlot3Hex = tickUpperSlot3Hex.concat("00")
+            tickUpperSlot3Hex = "\(tickUpperSlot3Hex)00"
             padCount6 = padCount6 - 1
         }
-        tickUpperSlot3Hex = tickUpperSlot3Hex.concat(String.encodeHex(tickUpperSlot3Bytes))
+        tickUpperSlot3Hex = "\(tickUpperSlot3Hex)\(String.encodeHex(tickUpperSlot3Bytes))"
         EVM.store(target: poolAddr, slot: tickUpperSlot3Hex, value: "0x0100000000000000000000000000000000000000000000000000000000000000")
         
         // Set tick bitmap (CRITICAL for tick crossing!)
         
         let compressedLower = tickLower / tickSpacing
-        let wordPosLower = compressedLower / Int256(256)
-        var bitPosLower = compressedLower % Int256(256)
-        if bitPosLower < Int256(0) {
-            bitPosLower = bitPosLower + Int256(256)
+        let wordPosLower = compressedLower / 256
+        var bitPosLower = compressedLower % 256
+        if bitPosLower < 0 {
+            bitPosLower = bitPosLower + 256
         }
         
         let compressedUpper = tickUpper / tickSpacing  
-        let wordPosUpper = compressedUpper / Int256(256)
-        var bitPosUpper = compressedUpper % Int256(256)
-        if bitPosUpper < Int256(0) {
-            bitPosUpper = bitPosUpper + Int256(256)
+        let wordPosUpper = compressedUpper / 256
+        var bitPosUpper = compressedUpper % 256
+        if bitPosUpper < 0 {
+            bitPosUpper = bitPosUpper + 256
         }
         
         // Set bitmap for lower tick
-        let bitmapLowerSlot = computeMappingSlot([wordPosLower, UInt256(6)])
+        let bitmapLowerSlot = computeMappingSlot([wordPosLower, 6])
         
         // ASSERTION: Verify bitPos is valid
-        assert(bitPosLower >= Int256(0) && bitPosLower < Int256(256), message: "bitPosLower must be 0-255, got \(bitPosLower.toString())")
+        assert(bitPosLower >= 0 && bitPosLower < 256, message: "bitPosLower must be 0-255, got \(bitPosLower.toString())")
         
         var bitmapLowerValue = "0x"
         var byteIdx = 0
@@ -375,11 +357,11 @@ transaction(
             
             var byteVal: UInt8 = 0
             if byteIdx == targetByteIdx {
-                byteVal = UInt8(1) << UInt8(bitInByte)
+                byteVal = 1 << UInt8(bitInByte)
             }
             
             let byteHex = String.encodeHex([byteVal])
-            bitmapLowerValue = bitmapLowerValue.concat(byteHex)
+            bitmapLowerValue = "\(bitmapLowerValue)\(byteHex)"
             byteIdx = byteIdx + 1
         }
         
@@ -392,7 +374,7 @@ transaction(
         let bitmapUpperSlot = computeMappingSlot([wordPosUpper, UInt256(6)])
         
         // ASSERTION: Verify bitPos is valid
-        assert(bitPosUpper >= Int256(0) && bitPosUpper < Int256(256), message: "bitPosUpper must be 0-255, got \(bitPosUpper.toString())")
+        assert(bitPosUpper >= 0 && bitPosUpper < 256, message: "bitPosUpper must be 0-255, got \(bitPosUpper.toString())")
         
         var bitmapUpperValue = "0x"
         byteIdx = 0
@@ -406,11 +388,11 @@ transaction(
             
             var byteVal: UInt8 = 0
             if byteIdx == targetByteIdx {
-                byteVal = UInt8(1) << UInt8(bitInByte)
+                byteVal = 1 << UInt8(bitInByte)
             }
             
             let byteHex = String.encodeHex([byteVal])
-            bitmapUpperValue = bitmapUpperValue.concat(byteHex)
+            bitmapUpperValue = "\(bitmapUpperValue)\(byteHex)"
             byteIdx = byteIdx + 1
         }
         
@@ -424,16 +406,11 @@ transaction(
         var positionKeyData: [UInt8] = []
 
         // Add pool address (20 bytes)
-        let poolBytes: [UInt8; 20] = poolAddr.bytes
-        var i = 0
-        while i < 20 {
-            positionKeyData.append(poolBytes[i])
-            i = i + 1
-        }
+        positionKeyData.appendAll(poolAddr.bytes.toVariableSized())
 
         // Add tickLower (int24, 3 bytes, big-endian, two's complement)
-        let tickLowerU256 = tickLower < Int256(0)
-            ? (Int256(1) << 24) + tickLower  // Two's complement for negative
+        let tickLowerU256 = tickLower < 0
+            ? ((1 as Int256) << 24) + tickLower  // Two's complement for negative
             : tickLower
         let tickLowerBytes = tickLowerU256.toBigEndianBytes()
         
@@ -467,8 +444,8 @@ transaction(
         }
 
         // Add tickUpper (int24, 3 bytes, big-endian, two's complement)
-        let tickUpperU256 = tickUpper < Int256(0)
-            ? (Int256(1) << 24) + tickUpper
+        let tickUpperU256 = tickUpper < 0
+            ? ((1 as Int256) << 24) + tickUpper
             : tickUpper
         let tickUpperBytes = tickUpperU256.toBigEndianBytes()
         
@@ -502,7 +479,7 @@ transaction(
         }
         
         // ASSERTION: Verify total position key data is exactly 26 bytes (20 + 3 + 3)
-        assert(positionKeyData.length == 26, message: "Position key data must be 26 bytes (20 + 3 + 3), got \(positionKeyData.length)")
+        assert(positionKeyData.length == 26, message: "Position key data must be 26 bytes (20 + 3 + 3), got \(positionKeyData.length.toString())")
 
         let positionKeyHash = HashAlgorithm.KECCAK_256.hash(positionKeyData)
         let positionKeyHex = "0x".concat(String.encodeHex(positionKeyHash))
@@ -511,21 +488,15 @@ transaction(
         var positionSlotData: [UInt8] = []
         positionSlotData = positionSlotData.concat(positionKeyHash)
 
-        // Add slot 7 as 32-byte value
-        var slotBytes: [UInt8] = []
-        var k = 0
-        while k < 31 {
-            slotBytes.append(0)
-            k = k + 1
-        }
-        slotBytes.append(7)
+        // Add slot 7 as 32-byte value (31 zeros + 7)
+        var slotBytes: [UInt8] = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7]
         positionSlotData = positionSlotData.concat(slotBytes)
         
         // ASSERTION: Verify position slot data is 64 bytes (32 + 32)
         assert(positionSlotData.length == 64, message: "Position slot data must be 64 bytes (32 key + 32 slot), got \(positionSlotData.length)")
 
         let positionSlotHash = HashAlgorithm.KECCAK_256.hash(positionSlotData)
-        let positionSlot = "0x".concat(String.encodeHex(positionSlotHash))
+        let positionSlot = "0x\(String.encodeHex(positionSlotHash))"
 
         // Set position liquidity = 1e24 (matching global liquidity)
         let positionLiquidityValue = "0x00000000000000000000000000000000000000000000d3c21bcecceda1000000"
@@ -537,42 +508,42 @@ transaction(
 
         // Calculate slot+1, slot+2, slot+3
         let positionSlotBytes = positionSlotHash
-        var positionSlotNum = UInt256(0)
+        var positionSlotNum = 0 as UInt256
         for byte in positionSlotBytes {
-            positionSlotNum = positionSlotNum * UInt256(256) + UInt256(byte)
+            positionSlotNum = positionSlotNum * 256 + UInt256(byte)
         }
 
         // Slot 1: feeGrowthInside0LastX128 = 0
-        let positionSlot1Bytes = (positionSlotNum + UInt256(1)).toBigEndianBytes()
+        let positionSlot1Bytes = (positionSlotNum + 1).toBigEndianBytes()
         var positionSlot1Hex = "0x"
         var posPadCount1 = 32 - positionSlot1Bytes.length
         while posPadCount1 > 0 {
-            positionSlot1Hex = positionSlot1Hex.concat("00")
+            positionSlot1Hex = "\(positionSlot1Hex)00"
             posPadCount1 = posPadCount1 - 1
         }
-        positionSlot1Hex = positionSlot1Hex.concat(String.encodeHex(positionSlot1Bytes))
+        positionSlot1Hex = "\(positionSlot1Hex)\(String.encodeHex(positionSlot1Bytes))"
         EVM.store(target: poolAddr, slot: positionSlot1Hex, value: "0x0000000000000000000000000000000000000000000000000000000000000000")
 
         // Slot 2: feeGrowthInside1LastX128 = 0
-        let positionSlot2Bytes = (positionSlotNum + UInt256(2)).toBigEndianBytes()
+        let positionSlot2Bytes = (positionSlotNum + 2).toBigEndianBytes()
         var positionSlot2Hex = "0x"
         var posPadCount2 = 32 - positionSlot2Bytes.length
         while posPadCount2 > 0 {
-            positionSlot2Hex = positionSlot2Hex.concat("00")
+            positionSlot2Hex = "\(positionSlot2Hex)00"
             posPadCount2 = posPadCount2 - 1
         }
-        positionSlot2Hex = positionSlot2Hex.concat(String.encodeHex(positionSlot2Bytes))
+        positionSlot2Hex = "\(positionSlot2Hex)\(String.encodeHex(positionSlot2Bytes))"
         EVM.store(target: poolAddr, slot: positionSlot2Hex, value: "0x0000000000000000000000000000000000000000000000000000000000000000")
 
         // Slot 3: tokensOwed0 = 0, tokensOwed1 = 0
-        let positionSlot3Bytes = (positionSlotNum + UInt256(3)).toBigEndianBytes()
+        let positionSlot3Bytes = (positionSlotNum + 3).toBigEndianBytes()
         var positionSlot3Hex = "0x"
         var posPadCount3 = 32 - positionSlot3Bytes.length
         while posPadCount3 > 0 {
-            positionSlot3Hex = positionSlot3Hex.concat("00")
+            positionSlot3Hex = "\(positionSlot3Hex)00"
             posPadCount3 = posPadCount3 - 1
         }
-        positionSlot3Hex = positionSlot3Hex.concat(String.encodeHex(positionSlot3Bytes))
+        positionSlot3Hex = "\(positionSlot3Hex)\(String.encodeHex(positionSlot3Bytes))"
         EVM.store(target: poolAddr, slot: positionSlot3Hex, value: "0x0000000000000000000000000000000000000000000000000000000000000000")
 
         // Fund pool with massive token balances
