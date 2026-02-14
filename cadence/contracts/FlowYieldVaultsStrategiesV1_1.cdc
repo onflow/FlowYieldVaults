@@ -278,7 +278,7 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
                 uniqueID: uniqueID
             )
 
-            // Open FlowCreditMarket position
+            // Open FlowALP position
             let position <- self._openCreditPosition(
                 funds: <-withFunds,
                 issuanceSink: abaSwapSink,
