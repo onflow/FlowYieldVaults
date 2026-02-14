@@ -344,6 +344,37 @@ access(all) fun deployContracts() {
     )
 
     Test.expect(err, Test.beNil())
+
+    // Deploy Morpho contracts (latest local code) to the forked environment
+    log("Deploying Morpho contracts...")
+    err = Test.deployContract(
+        name: "ERC4626Utils",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "ERC4626SwapConnectors",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "MorphoERC4626SinkConnectors",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "MorphoERC4626SwapConnectors",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
     // FLOW looping strategy
     err = Test.deployContract(
         name: "PMStrategiesV1",
