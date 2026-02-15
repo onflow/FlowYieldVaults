@@ -85,7 +85,7 @@ access(all) fun setup() {
     log("Deploying EVMAmountUtils contract ...")
     var err = Test.deployContract(
         name: "EVMAmountUtils",
-        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -93,7 +93,7 @@ access(all) fun setup() {
     log("Deploying UniswapV3SwapConnectors contract ...")
     err = Test.deployContract(
         name: "UniswapV3SwapConnectors",
-        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -102,28 +102,28 @@ access(all) fun setup() {
     log("Deploying Morpho contracts...")
     err = Test.deployContract(
         name: "ERC4626Utils",
-        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
         name: "ERC4626SwapConnectors",
-        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
         name: "MorphoERC4626SinkConnectors",
-        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
         name: "MorphoERC4626SwapConnectors",
-        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())

@@ -49,7 +49,7 @@ fun setup() {
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
 
-    // FlowCreditMarket
+    // FlowALP
     createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
     addSupportedTokenFixedRateInterestCurve(
         signer: protocolAccount,
@@ -63,7 +63,7 @@ fun setup() {
 
     // Wrapped Position
     let openRes = executeTransaction(
-        "../../lib/FlowCreditMarket/cadence/transactions/flow-alp/position/create_position.cdc",
+        "../../lib/FlowALP/cadence/transactions/flow-alp/position/create_position.cdc",
         [reserveAmount/2.0, /storage/flowTokenVault, true],
         protocolAccount
     )
