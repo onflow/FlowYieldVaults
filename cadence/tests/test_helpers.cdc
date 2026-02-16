@@ -270,7 +270,7 @@ access(all) fun deployContracts() {
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "EVMAmountUtils",
-        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -318,14 +318,14 @@ access(all) fun deployContracts() {
 
     err = Test.deployContract(
         name: "MorphoERC4626SinkConnectors",
-        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
         name: "MorphoERC4626SwapConnectors",
-        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
