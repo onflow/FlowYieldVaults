@@ -67,7 +67,7 @@ fun setup() {
         depositRate: 1_000_000.0,
         depositCapacityCap: 1_000_000.0
     )
-    log("FlowALPv1 pool configured")
+    log("FlowALP pool configured")
 
     // Open wrapped position
     let openRes = executeTransaction(

@@ -55,6 +55,6 @@ access(all) contract MockFlowALPConsumer {
     }
 
     init() {
-        self.WrapperStoragePath = /storage/flowALPv1PositionWrapper
+        self.WrapperStoragePath = /storage/flowALPPositionWrapper
     }
 }
