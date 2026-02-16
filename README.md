@@ -1,6 +1,6 @@
 # FlowYieldVaults Smart Contracts
 
-FlowYieldVaults is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via FlowALPv1's Active Lending Platform. FlowYieldVaults aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
+FlowYieldVaults is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via FlowALP's Active Lending Platform. FlowYieldVaults aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
 
 ## System Architecture
 
@@ -22,7 +22,7 @@ The main contract that orchestrates the entire yield farming system:
 
 Implements specific yield strategies:
 
-- **TracerStrategy**: A strategy that uses FlowALPv1 lending positions with auto-balancing
+- **TracerStrategy**: A strategy that uses FlowALP lending positions with auto-balancing
 - **TracerStrategyComposer**: Creates TracerStrategy instances with complex DeFi Actions stacking
 - **StrategyComposerIssuer**: Controls access to strategy composer creation
 
@@ -41,7 +41,7 @@ Manages automated rebalancing of positions:
 Mock FungibleToken implementations representing:
 
 - **YieldToken**: Receipt tokens for yield-bearing positions
-- **MOET**: FlowALPv1's synthetic stablecoin
+- **MOET**: FlowALP's synthetic stablecoin
 
 ### Mock Infrastructure
 
@@ -92,7 +92,7 @@ Mock FungibleToken implementations representing:
 
 ## How the System Works
 
-Below is an overview of the initial prototype Tracer Strategy in the broader context of FlowALPv1 and the FlowYieldVaults platform.
+Below is an overview of the initial prototype Tracer Strategy in the broader context of FlowALP and the FlowYieldVaults platform.
 
 ### 1. Strategy Architecture
 
@@ -188,7 +188,7 @@ The FlowYieldVaults platform implements sophisticated automatic rebalancing and 
 **Important Distinction:** The system has TWO different rebalancing mechanisms:
 
 1. **AutoBalancer Rebalancing** (DFB): Maintains optimal ratio between YieldToken holdings and expected deposit value
-2. **Position Rebalancing** (FlowALPv1): Maintains healthy collateralization ratios for lending positions
+2. **Position Rebalancing** (FlowALP): Maintains healthy collateralization ratios for lending positions
 
 These work together but serve different purposes and can trigger independently based on market conditions.
 
@@ -335,7 +335,7 @@ This creates a fully automated yield farming system that adapts to market condit
 
 ## Interest Rate System
 
-The FlowALPv1 implements a sophisticated interest rate system that governs borrowing costs and lending yields. This system is fundamental to the protocol's economics and affects all lending positions.
+The FlowALP implements a sophisticated interest rate system that governs borrowing costs and lending yields. This system is fundamental to the protocol's economics and affects all lending positions.
 
 ### How Interest Rates Work
 
@@ -520,15 +520,15 @@ The interest rate system is designed to:
 3. **Manage Risk**: Insurance reserves and dynamic adjustments protect the protocol
 4. **Enable Automation**: Continuous compounding without manual intervention
 
-This interest system is what enables the FlowALPv1 to function as a sustainable lending platform while providing the foundation for complex yield farming strategies built on top.
+This interest system is what enables the FlowALP to function as a sustainable lending platform while providing the foundation for complex yield farming strategies built on top.
 
-## FlowALPv1 Loan Health Mechanism
+## FlowALP Loan Health Mechanism
 
-The FlowALPv1 implements a sophisticated loan health system that determines borrowing capacity, monitors position safety, and prevents liquidations. This system is fundamental to how the TracerStrategy calculates how much can be borrowed against a user's initial collateral position.
+The FlowALP implements a sophisticated loan health system that determines borrowing capacity, monitors position safety, and prevents liquidations. This system is fundamental to how the TracerStrategy calculates how much can be borrowed against a user's initial collateral position.
 
 ### Key Definitions
 
-Before diving into the mechanics, it's important to understand the core terminology used throughout the FlowALPv1 loan system:
+Before diving into the mechanics, it's important to understand the core terminology used throughout the FlowALP loan system:
 
 #### Position-Related Terms
 
@@ -866,7 +866,7 @@ let value = tokenPrice * trueBalance
 - Cross-collateralization enables complex strategies
 - Unified health calculation across all assets
 
-This comprehensive loan health system enables the FlowALPv1 to safely support leveraged yield farming strategies while maintaining strict risk management and protecting user funds from liquidation through automated rebalancing mechanisms.
+This comprehensive loan health system enables the FlowALP to safely support leveraged yield farming strategies while maintaining strict risk management and protecting user funds from liquidation through automated rebalancing mechanisms.
 
 ## Testing Rebalancing
 
@@ -1557,7 +1557,7 @@ scripts/tokens/get_balance.cdc
 1. **"Could not borrow AutoBalancer"** - Ensure YieldVault ID is correct
 2. **"No price set for token"** - Set initial prices for all tokens before testing
 3. **"Insufficient liquidity"** - Fund MockSwapper with adequate token reserves
-4. **"Position not found"** - Verify FlowALPv1 position ID (different from YieldVault ID)
+4. **"Position not found"** - Verify FlowALP position ID (different from YieldVault ID)
 
 #### Debugging Commands:
 

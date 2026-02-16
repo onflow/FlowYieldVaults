@@ -5,25 +5,25 @@ git submodule update --init --recursive
 flow deps install --skip-alias --skip-deployments
 
 echo "deploy MOET & bridge MOET to EVM"
-flow accounts add-contract ./lib/FlowCreditMarket/cadence/contracts/MOET.cdc 1000000.00000000 --signer emulator-flow-yield-vaults
+flow accounts add-contract ./lib/FlowALP/cadence/contracts/MOET.cdc 1000000.00000000 --signer emulator-flow-yield-vaults
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.045a1763c93006ca.MOET.Vault" --compute-limit 9999 --signer emulator-flow-yield-vaults
 
 # execute emulator deployment
 flow deploy
 
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/moet/setup_vault.cdc
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/moet/mint_moet.cdc 0x045a1763c93006ca 1000000.0 --signer emulator-flow-yield-vaults
+flow transactions send ./lib/FlowALP/cadence/transactions/moet/setup_vault.cdc
+flow transactions send ./lib/FlowALP/cadence/transactions/moet/mint_moet.cdc 0x045a1763c93006ca 1000000.0 --signer emulator-flow-yield-vaults
 
 # set mocked prices in the MockOracle contract, initialized with MOET as unitOfAccount
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.0ae53cb6e3f42a79.FlowToken.Vault' 0.5 --signer emulator-flow-yield-vaults
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.045a1763c93006ca.YieldToken.Vault' 1.0 --signer emulator-flow-yield-vaults
 
-# configure FlowCreditMarket
+# configure FlowALPv1
 #
 # create Pool with MOET as default token
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-factory/create_and_store_pool.cdc 'A.045a1763c93006ca.MOET.Vault' --signer emulator-flow-yield-vaults
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-factory/create_and_store_pool.cdc 'A.045a1763c93006ca.MOET.Vault' --signer emulator-flow-yield-vaults
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
-flow transactions send ./lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-governance/add_supported_token_zero_rate_curve.cdc \
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.0ae53cb6e3f42a79.FlowToken.Vault' \
     0.8 \
     1.0 \
@@ -58,7 +58,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
 
 # grant PoolBeta cap
 echo "Grant Protocol Beta access to FlowYieldVaults"
-flow transactions send ./lib/FlowCreditMarket/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc \
+flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc \
   --authorizer emulator-flow-yield-vaults,emulator-flow-yield-vaults \
   --proposer emulator-flow-yield-vaults \
   --payer emulator-flow-yield-vaults

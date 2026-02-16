@@ -1,18 +1,18 @@
-# Rebalancing Architecture: AutoBalancer, FlowALPv1 Position, and Scheduled Transactions
+# Rebalancing Architecture: AutoBalancer, FlowALP Position, and Scheduled Transactions
 
 ## 1. Main Components and Their Responsibilities
 
 ### FlowYieldVaults (YieldVaults)
 - Owns `YieldVault` and `YieldVaultManager`
 - Each YieldVault wraps a **FlowYieldVaults Strategy** (e.g. `TracerStrategy`)
-- The YieldVault itself does **not** know about scheduling or FlowALPv1; it just holds a strategy resource
+- The YieldVault itself does **not** know about scheduling or FlowALP; it just holds a strategy resource
 
 ### FlowYieldVaultsStrategies (TracerStrategy stack)
   - `TracerStrategyComposer` wires together:
   - A **DeFiActions.AutoBalancer** (manages Yield token exposure around deposits value)
-  - A **FlowALPv1.Position** (borrow/lend position in the FlowALPv1 pool)
-  - Swappers and connectors that shuttle value between AutoBalancer and FlowALPv1
-- This is where the **YieldVault -> AutoBalancer -> FlowALPv1** wiring is defined
+  - A **FlowALP.Position** (borrow/lend position in the FlowALP pool)
+  - Swappers and connectors that shuttle value between AutoBalancer and FlowALP
+- This is where the **YieldVault -> AutoBalancer -> FlowALP** wiring is defined
 
 ### FlowYieldVaultsAutoBalancers
   - Utility contract for:
@@ -34,7 +34,7 @@
   - `executeTransaction(id, data)`: entrypoint for **FlowTransactionScheduler**
   - `scheduleNextRebalance()`: self-schedules next execution (when configured with recurringConfig)
 
-### FlowALPv1.Pool + Position
+### FlowALP.Pool + Position
 - Maintains positions, collateral, MOET debt, health
 - Key function: `rebalancePosition(pid: UInt64, force: Bool)`:
   - If undercollateralized and there is a `topUpSource`, pulls extra collateral
@@ -54,7 +54,7 @@
 
 ---
 
-## 2. How the Tracer Strategy Wires AutoBalancer and FlowALPv1 Together
+## 2. How the Tracer Strategy Wires AutoBalancer and FlowALP Together
 
 Inside `FlowYieldVaultsStrategies.TracerStrategyComposer.createStrategy(...)`:
 
@@ -75,21 +75,21 @@ Inside `FlowYieldVaultsStrategies.TracerStrategyComposer.createStrategy(...)`:
 - Attach swappers (MockSwapper or UniswapV3) for MOET <-> Yield
 - Direct MOET -> Yield into `abaSink`, Yield -> MOET from `abaSource`
 
-### Step 3: Open a FlowALPv1 position
+### Step 3: Open a FlowALP position
 - Call `poolRef.createPosition(funds, issuanceSink: abaSwapSink, repaymentSource: abaSwapSource, pushToDrawDownSink: true)`
-- Initial user Flow goes through `abaSwapSink` to become Yield, deposited into AutoBalancer, then into FlowALPv1 position
+- Initial user Flow goes through `abaSwapSink` to become Yield, deposited into AutoBalancer, then into FlowALP position
 
-### Step 4: Create FlowALPv1 position-level sink/source
+### Step 4: Create FlowALP position-level sink/source
    - `positionSink = position.createSinkWithOptions(type: collateralType, pushToDrawDownSink: true)`  
    - `positionSource = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)`
 
-### Step 5: Wire AutoBalancer's rebalance sink into FlowALPv1 position
+### Step 5: Wire AutoBalancer's rebalance sink into FlowALP position
 - Create `positionSwapSink` to swap Yield -> Flow and deposit into `positionSink`
 - Call `autoBalancer.setSink(positionSwapSink, updateSinkID: true)`
-- When AutoBalancer rebalances, it withdraws Yield, swaps to Flow, deposits into FlowALPv1 position
+- When AutoBalancer rebalances, it withdraws Yield, swaps to Flow, deposits into FlowALP position
 
-### Step 6: FlowALPv1's `pushToDrawDownSink` triggers position rebalancing
-- In FlowALPv1's `depositAndPush` logic with `pushToDrawDownSink: true`:
+### Step 6: FlowALP's `pushToDrawDownSink` triggers position rebalancing
+- In FlowALP's `depositAndPush` logic with `pushToDrawDownSink: true`:
      ```cadence
      if pushToDrawDownSink {
          self.rebalancePosition(pid: pid, force: true)
@@ -98,8 +98,8 @@ Inside `FlowYieldVaultsStrategies.TracerStrategyComposer.createStrategy(...)`:
 - Any deposit via that sink automatically triggers `rebalancePosition(pid, force: true)`
 
 **Conclusion:** When AutoBalancer performs a rebalance that moves value through its sink, it indirectly causes:
-- An update in the FlowALPv1 position via deposits/withdrawals
-- A call to `FlowALPv1.Pool.rebalancePosition(pid, force: true)`
+- An update in the FlowALP position via deposits/withdrawals
+- A call to `FlowALP.Pool.rebalancePosition(pid, force: true)`
 
 ---
 
@@ -185,22 +185,22 @@ fun executeTransaction(id: UInt64, data: AnyStruct?) {
 ## 4. Behavior in Different Price Scenarios
 
 ### Only Flow collateral price changes (Yield price constant)
-- FlowALPv1 position's **health** changes (Flow is collateral)
+- FlowALP position's **health** changes (Flow is collateral)
 - AutoBalancer's asset (YieldToken) oracle price unchanged
 - `currentValue == valueOfDeposits` -> `valueDiff == 0` -> **rebalance is no-op**
-- **Only `rebalancePosition` (FlowALPv1) will actually move collateral**
+- **Only `rebalancePosition` (FlowALP) will actually move collateral**
 
 ### Only Yield token price changes (Flow price constant)
 - AutoBalancer's `currentValue` changes versus `valueOfDeposits`
 - If difference exceeds threshold (or `force == true`):
   - AutoBalancer rebalances via sink (`positionSwapSink`)
-  - Yield -> Flow deposited into FlowALPv1 position with `pushToDrawDownSink == true`
-  - Triggers `FlowALPv1.Pool.rebalancePosition(pid, force: true)`
-- **Both AutoBalancer and FlowALPv1 position are adjusted**
+  - Yield -> Flow deposited into FlowALP position with `pushToDrawDownSink == true`
+  - Triggers `FlowALP.Pool.rebalancePosition(pid, force: true)`
+- **Both AutoBalancer and FlowALP position are adjusted**
 
 ### Both Flow and Yield move
 - If Yield changes enough, AutoBalancer rebalances
-- FlowALPv1 position's health also changes from Flow's move
+- FlowALP position's health also changes from Flow's move
 - AutoBalancer-induced deposit triggers `rebalancePosition(pid, force: true)`
 - **Scheduled executions become effective when Yield-side value moves**
 
@@ -212,15 +212,15 @@ fun executeTransaction(id: UInt64, data: AnyStruct?) {
    - Semantically equivalent to manual `rebalanceYieldVault`
    
 2. **`rebalanceYieldVault` does NOT directly call `rebalancePosition`**
-   - Position rebalancing happens **indirectly** via connector graph and FlowALPv1's `pushToDrawDownSink` logic
+   - Position rebalancing happens **indirectly** via connector graph and FlowALP's `pushToDrawDownSink` logic
    
 3. **Flow-only price changes do NOT trigger AutoBalancer rebalance**
    - AutoBalancer's `valueDiff` only sensitive to Yield side
-   - Scheduled executions won't touch FlowALPv1 position in this case
+   - Scheduled executions won't touch FlowALP position in this case
    
-4. **For FlowALPv1 position rebalancing on collateral moves**
-   - Would need separate scheduling in FlowALPv1
-   - Belongs in FlowALPv1/FlowActions, not FlowYieldVaults
+4. **For FlowALP position rebalancing on collateral moves**
+   - Would need separate scheduling in FlowALP
+   - Belongs in FlowALP/FlowActions, not FlowYieldVaults
 
 ---
 
@@ -229,9 +229,9 @@ fun executeTransaction(id: UInt64, data: AnyStruct?) {
 | Component | Responsibility |
 |-----------|---------------|
 | FlowYieldVaults YieldVault | Holds strategy, user-facing |
-| TracerStrategy | Wires AutoBalancer <-> FlowALPv1 |
+| TracerStrategy | Wires AutoBalancer <-> FlowALP |
 | AutoBalancer | Manages Yield exposure, executes rebalance |
-| FlowALPv1 Position | Manages collateral/debt health |
+| FlowALP Position | Manages collateral/debt health |
 | FlowYieldVaultsScheduler | Registration, atomic initial scheduling |
 | FlowYieldVaultsSchedulerRegistry | Stores registry, pending queue |
 | Supervisor | Recovery for failed schedules (bounded) |

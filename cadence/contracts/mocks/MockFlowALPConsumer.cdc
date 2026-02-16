@@ -7,14 +7,14 @@ import "FlowALPv1"
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ///
 /// A simple contract enabling the persistent storage of a Position similar to a pattern expected for platforms
-/// building on top of FlowALPv1's lending protocol
+/// building on top of FlowALP's lending protocol
 ///
-access(all) contract MockFlowALPv1Consumer {
+access(all) contract MockFlowALPConsumer {
 
     /// Canonical path for where the wrapper is to be stored
     access(all) let WrapperStoragePath: StoragePath
 
-    /// Opens a FlowALPv1 Position and returns a PositionWrapper containing that new position
+    /// Opens a FlowALP Position and returns a PositionWrapper containing that new position
     ///
     access(all)
     fun createPositionWrapper(
@@ -33,7 +33,7 @@ access(all) contract MockFlowALPv1Consumer {
         )
     }
 
-    /// A simple resource encapsulating a FlowALPv1 Position
+    /// A simple resource encapsulating a FlowALP Position
     access(all) resource PositionWrapper {
 
         access(self) let position: FlowALPv1.Position

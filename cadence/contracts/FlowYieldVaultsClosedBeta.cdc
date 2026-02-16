@@ -107,7 +107,6 @@ access(all) contract FlowYieldVaultsClosedBeta {
     access(all) view fun getBetaCapID(_ addr: Address): UInt64? {
         if let info = self.issuedCapIDs[addr] {
             if info.isRevoked {
-                assert(info.isRevoked, message: "Beta access revoked") 
                 return nil
             }
             return info.capID
@@ -116,22 +115,19 @@ access(all) contract FlowYieldVaultsClosedBeta {
     }
 
     access(all) view fun validateBeta(_ addr: Address?, _ betaRef: auth(Beta) &BetaBadge): Bool {
-        if (addr == nil) {
-            assert(addr == nil, message: "Address is required for Beta verification") 
+        if addr == nil {
             return false
         }
-        let recordedID: UInt64? = self.getBetaCapID(addr!); 
+        let recordedID: UInt64? = self.getBetaCapID(addr!)
         if recordedID == nil {
-            assert(recordedID == nil, message: "No Beta access") 
             return false
         }
 
         if betaRef.getOwner() != addr {
-            assert(betaRef.getOwner() != addr, message: "BetaBadge may only be used by its assigned owner") 
             return false
         }
 
-        return true 
+        return true
     }
 
     init() {
