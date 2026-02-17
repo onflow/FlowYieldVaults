@@ -27,8 +27,15 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Cache Flow fork data
+        uses: actions/cache@v4
+        with:
+          path: .flow-fork-cache
+          key: ${{ runner.os }}-flow-fork-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-flow-fork-
       - name: Install Flow CLI
-        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)"
+        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v2.14.2-evm-manipulation-poc.1
       - name: Flow CLI Version
         run: flow version
       - name: Update PATH
