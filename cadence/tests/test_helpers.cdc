@@ -337,8 +337,8 @@ access(all) fun deployContracts() {
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
-        name: "FlowYieldVaultsStrategiesV1_1",
-        path: "../contracts/FlowYieldVaultsStrategiesV1_1.cdc",
+        name: "FlowYieldVaultsStrategiesV2",
+        path: "../contracts/FlowYieldVaultsStrategiesV2.cdc",
         arguments: [
             "0x986Cb42b0557159431d48fE0A40073296414d410",
             "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
@@ -377,8 +377,8 @@ access(all) fun deployContracts() {
 
 access(all)
 fun setupFlowCreditMarket(signer: Test.TestAccount) {
-    let res = _executeTransaction("../../lib/FlowCreditMarket/cadence/transactions/flow-alp/create_and_store_pool.cdc",
-        [],
+    let res = _executeTransaction("../../lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-factory/create_and_store_pool.cdc",
+        [Type<@MOET.Vault>().identifier],
         signer
     )
 }

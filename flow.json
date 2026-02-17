@@ -1,13 +1,5 @@
 {
 	"contracts": {
-		"EVM": {
-			"source": "./cadence/contracts/mocks/EVM.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "e467b9dd11fa00df",
-				"testnet": "8c5303eaa26202d6"
-			}
-		},
 		"BandOracleConnectors": {
 			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/band-oracle/BandOracleConnectors.cdc",
 			"aliases": {
@@ -106,21 +98,21 @@
 				"testnet": "b88ba0e976146cd1"
 			}
 		},
-		"FlowALPv1": {
-			"source": "./lib/FlowCreditMarket/cadence/contracts/FlowALPv1.cdc",
-			"aliases": {
-				"emulator": "045a1763c93006ca",
-				"mainnet": "6b00ff876c299c61",
-				"testing": "0000000000000008",
-				"testnet": "426f0458ced60037"
-			}
-		},
 		"FlowALPMath": {
 			"source": "./lib/FlowCreditMarket/cadence/lib/FlowALPMath.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
 				"testing": "0000000000000007",
+				"testnet": "426f0458ced60037"
+			}
+		},
+		"FlowALPv1": {
+			"source": "./lib/FlowCreditMarket/cadence/contracts/FlowALPv1.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "6b00ff876c299c61",
+				"testing": "0000000000000008",
 				"testnet": "426f0458ced60037"
 			}
 		},
@@ -178,8 +170,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowYieldVaultsStrategiesV1_1": {
-			"source": "cadence/contracts/FlowYieldVaultsStrategiesV1_1.cdc",
+		"FlowYieldVaultsStrategiesV2": {
+			"source": "cadence/contracts/FlowYieldVaultsStrategiesV2.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -209,13 +201,22 @@
 			"source": "./lib/FlowCreditMarket/cadence/contracts/mocks/MockDexSwapper.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000007"
+				"testing": "000000000000000e"
+			}
+		},
+		"MockEVM": {
+			"source": "./cadence/contracts/mocks/EVM.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "e467b9dd11fa00df",
+				"testnet": "8c5303eaa26202d6"
 			}
 		},
 		"MockOracle": {
 			"source": "cadence/contracts/mocks/MockOracle.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009",
 				"testnet": "d2580caf2ef07c2f"
 			}
@@ -232,14 +233,32 @@
 			"source": "cadence/contracts/mocks/MockSwapper.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000009",
+				"mainnet": "b1d63873c3cc9f79",
+				"testing": "000000000000000b",
 				"testnet": "d2580caf2ef07c2f"
+			}
+		},
+		"MorphoERC4626SinkConnectors": {
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "251032a66e9700ef",
+				"testing": "0000000000000009"
+			}
+		},
+		"MorphoERC4626SwapConnectors": {
+			"source": "./lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "251032a66e9700ef",
+				"testing": "0000000000000009"
 			}
 		},
 		"PMStrategiesV1": {
 			"source": "cadence/contracts/PMStrategiesV1.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
 				"testing": "0000000000000009"
 			}
 		},
@@ -938,7 +957,7 @@
 					]
 				},
 				{
-					"name": "FlowYieldVaultsStrategiesV1_1",
+					"name": "FlowYieldVaultsStrategiesV2",
 					"args": [
 						{
 							"value": "0x986Cb42b0557159431d48fE0A40073296414d410",
@@ -1066,7 +1085,7 @@
 					]
 				},
 				{
-					"name": "FlowYieldVaultsStrategiesV1_1",
+					"name": "FlowYieldVaultsStrategiesV2",
 					"args": [
 						{
 							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
@@ -1171,7 +1190,7 @@
 					]
 				},
 				{
-					"name": "FlowYieldVaultsStrategiesV1_1",
+					"name": "FlowYieldVaultsStrategiesV2",
 					"args": [
 						{
 							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",

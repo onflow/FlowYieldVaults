@@ -1,6 +1,6 @@
 // Scenario 3C: Flow price increases 2x, Yield vault price increases 2x
 // This height guarantees enough liquidity for the test
-#test_fork(network: "mainnet", height: 140164761)
+#test_fork(network: "mainnet", height: 142251136)
 
 import Test
 import BlockchainHelpers
@@ -13,8 +13,8 @@ import "FlowYieldVaults"
 // other
 import "FlowToken"
 import "MOET"
-import "FlowYieldVaultsStrategiesV1_1"
-import "FlowCreditMarket"
+import "FlowYieldVaultsStrategiesV2"
+import "FlowALPv1"
 import "EVM"
 
 import "DeFiActions"
@@ -27,7 +27,7 @@ access(all) let bandOracleAccount = Test.getAccount(0x6801a6222ebf784a)
 access(all) let whaleFlowAccount = Test.getAccount(0x92674150c9213fc9)
 access(all) let coaOwnerAccount = Test.getAccount(0xe467b9dd11fa00df)
 
-access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategiesV1_1.FUSDEVStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategiesV2.FUSDEVStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
@@ -73,10 +73,84 @@ access(all) let morphoVaultTotalAssetsSlot = "0x00000000000000000000000000000000
 
 access(all)
 fun setup() {
+    Test.commitBlock()
+
     // Deploy mock EVM contract to enable vm.store/vm.load cheatcodes
     var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
     Test.expect(err, Test.beNil())
+
+    // Deploy dependencies not present on mainnet yet/outdated
+    err = Test.deployContract(name: "DeFiActions", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc", arguments: [])
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(name: "DeFiActionsUtils", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc", arguments: [])
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(name: "FungibleTokenConnectors", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc", arguments: [])
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(name: "SwapConnectors", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc", arguments: [])
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(name: "FlowALPMath", path: "../../lib/FlowCreditMarket/cadence/lib/FlowALPMath.cdc", arguments: [])
+    Test.expect(err, Test.beNil())
     
+    // Deploy DeFiActions dependencies
+    err = Test.deployContract(name: "DeFiActions", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc", arguments: [])
+    if err != nil {
+        log("DeFiActions deployment error: ".concat(err!.message))
+    }
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(name: "DeFiActionsUtils", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc", arguments: [])
+    if err != nil {
+        log("DeFiActionsUtils deployment error: ".concat(err!.message))
+    }
+    Test.expect(err, Test.beNil())
+    
+    // Skip MockOracle and MockDexSwapper deployment - they have unresolved address conflicts
+    
+    // Deploy FlowALPv1
+    err = Test.deployContract(name: "FlowALPv1", path: "../../lib/FlowCreditMarket/cadence/contracts/FlowALPv1.cdc", arguments: [])
+    Test.expect(err, Test.beNil())
+    
+    err = Test.deployContract(name: "EVMAmountUtils", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc", arguments: [])
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(name: "MorphoERC4626SinkConnectors", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc", arguments: [])
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(name: "MorphoERC4626SwapConnectors", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc", arguments: [])
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(name: "FlowYieldVaultsStrategiesV2", path: "../contracts/FlowYieldVaultsStrategiesV2.cdc", arguments: [
+        "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+        "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+        "0x370A8DF17742867a44e56223EC20D82092242C85"
+    ])
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(name: "FlowYieldVaults", path: "../contracts/FlowYieldVaults.cdc", arguments: [])
+    Test.expect(err, Test.beNil())
+
+    // Upsert strategy config (temporary - this project has been completely mangled, it's borderline untestable and we have had to
+    // go through a lot to try to make it work)
+    let upsertRes = Test.executeTransaction(
+        Test.Transaction(
+            code: Test.readFile("../transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc"),
+            authorizers: [flowYieldVaultsAccount.address],
+            signers: [flowYieldVaultsAccount],
+            arguments: [
+                strategyIdentifier,
+                flowTokenIdentifier,
+                "0xd069d989e2F44B70c65347d1853C0c67e10a9F8D",
+                ["0xd069d989e2F44B70c65347d1853C0c67e10a9F8D", "0x99aF3EeA856556646C98c8B9b2548Fe815240750", "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"],
+                [100 as UInt32, 3000 as UInt32]
+            ]
+        )
+    )
+    Test.expect(upsertRes, Test.beSucceeded())
+
+    // Add mUSDFStrategyComposer AFTER config is set
+    addStrategyComposer(
+        signer: flowYieldVaultsAccount,
+        strategyIdentifier: strategyIdentifier,
+        composerIdentifier: Type<@FlowYieldVaultsStrategiesV2.MorphoERC4626StrategyComposer>().identifier,
+        issuerStoragePath: FlowYieldVaultsStrategiesV2.IssuerStoragePath,
+        beFailed: false
+    )
+
     // Setup Uniswap V3 pools with structurally valid state
     // This sets slot0, observations, liquidity, ticks, bitmap, positions, and POOL token balances
     setupUniswapPools(signer: coaOwnerAccount)
@@ -91,6 +165,14 @@ fun setup() {
     let reserveAmount = 100_000_00.0
     transferFlow(signer: whaleFlowAccount, recipient: flowCreditMarketAccount.address, amount: reserveAmount)
     mintMoet(signer: flowCreditMarketAccount, to: flowCreditMarketAccount.address, amount: reserveAmount, beFailed: false)
+
+    // SKIP Pool creation for now - it requires mocks which have deployment issues
+    // The test will likely fail when trying to use the Pool, but let's see what error we get
+    log("WARNING: Skipping Pool creation - test may fail when trying to open credit position")
+
+    // Grant FlowALPv1 Pool capability to FlowYieldVaults account (this will probably fail)
+    // let protocolBetaRes = grantProtocolBeta(flowCreditMarketAccount, flowYieldVaultsAccount)
+    // Test.expect(protocolBetaRes, Test.beSucceeded())
 
     // Fund FlowYieldVaults account for scheduling fees
     transferFlow(signer: whaleFlowAccount, recipient: flowYieldVaultsAccount.address, amount: 100.0)
@@ -111,14 +193,15 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
     let user = Test.createAccount()
 
     transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
-    grantBeta(flowYieldVaultsAccount, user)
+    let betaRes = grantBeta(flowYieldVaultsAccount, user)
+    Test.expect(betaRes, Test.beSucceeded())
 
     // Set vault to baseline 1:1 price
     // Use 1 billion (1e9) as base - large enough to prevent slippage, safe from UFix64 overflow
     setVaultSharePrice(
         vaultAddress: morphoVaultAddress,
         assetAddress: pyusd0Address,
-        assetBalanceSlot: UInt256(1),
+        assetBalanceSlot: pyusd0BalanceSlot,
         vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
         baseAssets: 1000000000.0,  // 1 billion
         priceMultiplier: 1.0,
@@ -134,7 +217,7 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
     )
 
     // Capture the actual position ID from the FlowCreditMarket.Opened event
-    var pid = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowCreditMarket.Opened>())) as! FlowCreditMarket.Opened).pid
+    var pid = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv1.Opened>())) as! FlowALPv1.Opened).pid
 
     var yieldVaultIDs = getYieldVaultIDs(address: user.address)
     Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
@@ -342,7 +425,7 @@ access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
     let positionDetails = getPositionDetails(pid: pid, beFailed: false)
     for balance in positionDetails.balances {
         if balance.vaultType == Type<@FlowToken.Vault>() {
-            if balance.direction == FlowCreditMarket.BalanceDirection.Credit {
+            if balance.direction == FlowALPv1.BalanceDirection.Credit {
                 return balance.balance
             }
         }
@@ -356,7 +439,7 @@ access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
     let positionDetails = getPositionDetails(pid: pid, beFailed: false)
     for balance in positionDetails.balances {
         if balance.vaultType == Type<@MOET.Vault>() {
-            if balance.direction == FlowCreditMarket.BalanceDirection.Debit {
+            if balance.direction == FlowALPv1.BalanceDirection.Debit {
                 return balance.balance
             }
         }

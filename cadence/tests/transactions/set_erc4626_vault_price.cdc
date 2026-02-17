@@ -1,4 +1,4 @@
-import "EVM"
+import EVM from "MockEVM"
 
 // Helper: Compute Solidity mapping storage slot
 access(all) fun computeMappingSlot(_ values: [AnyStruct]): String {
