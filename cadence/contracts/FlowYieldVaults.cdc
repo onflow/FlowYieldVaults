@@ -317,20 +317,7 @@ access(all) contract FlowYieldVaults {
         /// Withdraws the requested amount from the Strategy
         access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @{FungibleToken.Vault} {
             post {
-                /// Quoting exact output then swapping exact input can overshoot by 0.00000001 (1 UFix64 quantum).
-                ///
-                /// UFix64 has 8 decimals; EVM tokens have 18. One UFix64 step = 10^10 wei.
-                ///
-                /// Example (pool price 1 USDC = 2 FLOW, want 10 FLOW out):
-                ///   1. Quoter says need 5,000000002000000000 USDC wei
-                ///   2. Ceil to UFix64:  5,000000010000000000  (overshoot: 8e9 wei)
-                ///   3. exactInput swaps the ceiled amount; extra 8e9 FLOW wei × 2 = 16e9 FLOW wei extra
-                ///   4. Actual output:  10,000000016000000000 FLOW wei
-                ///   5. Floor to UFix64: 10.00000001 FLOW (quoted 10.00000000)
-                ///
-                /// The overshoot is always non-negative (ceiled input >= what pool needs).
-                /// It surfaces when the extra output crosses a 10^10 wei quantum boundary.
-                result.balance >= amount && result.balance <= amount + 0.00000001:
+                result.balance == amount:
                 "Invalid Vault balance returned - requested \(amount) but returned \(result.balance)"
 
                 self.vaultType == result.getType():
