@@ -7,7 +7,8 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "FlowYieldVaultsStrategies"
-import "FlowCreditMarket"
+import "FlowALPv1"
+import "FlowYieldVaults"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
@@ -48,11 +49,12 @@ fun setup() {
 
     // setup FlowCreditMarket with a Pool & add FLOW as supported token
     createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
-    addSupportedTokenSimpleInterestCurve(
+    addSupportedTokenFixedRateInterestCurve(
         signer: protocolAccount,
         tokenTypeIdentifier: flowTokenIdentifier,
         collateralFactor: flowCollateralFactor,
         borrowFactor: flowBorrowFactor,
+        yearlyRate: UFix128(0.1),
         depositRate: 1_000_000.0,
         depositCapacityCap: 1_000_000.0
     )
@@ -60,7 +62,7 @@ fun setup() {
     // open wrapped position (pushToDrawDownSink)
     // the equivalent of depositing reserves
     let openRes = executeTransaction(
-        "../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
+        "../../lib/FlowCreditMarket/cadence/transactions/flow-alp/position/create_position.cdc",
         [reserveAmount/2.0, /storage/flowTokenVault, true],
         protocolAccount
     )
@@ -109,6 +111,11 @@ fun testLifecycle() {
 
     log("✅ YieldVault created with ID: \(yieldVaultID)")
 
+    let addedToManagerEvents = Test.eventsOfType(Type<FlowYieldVaults.AddedToManager>())
+    Test.assert(addedToManagerEvents.length > 0, message: "Expected at least 1 FlowYieldVaults.AddedToManager event but found none")
+    let addedToManagerEvent = addedToManagerEvents[addedToManagerEvents.length - 1] as! FlowYieldVaults.AddedToManager
+    Test.assertEqual(flowTokenIdentifier, addedToManagerEvent.tokenType)
+
     // 2. Deposit to YieldVault
     depositToYieldVault(
         signer: user,
@@ -133,6 +140,11 @@ fun testLifecycle() {
     // 4. Close YieldVault
     closeYieldVault(signer: user, id: yieldVaultID, beFailed: false)
     log("✅ Closed YieldVault")
+
+    let burnedEvents = Test.eventsOfType(Type<FlowYieldVaults.BurnedYieldVault>())
+    Test.assert(burnedEvents.length > 0, message: "Expected at least 1 FlowYieldVaults.BurnedYieldVault event but found none")
+    let burnedEvent = burnedEvents[burnedEvents.length - 1] as! FlowYieldVaults.BurnedYieldVault
+    Test.assertEqual(flowTokenIdentifier, burnedEvent.tokenType)
 
     let finalYieldVaultIDs = getYieldVaultIDs(address: user.address)
     Test.assert(finalYieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil")

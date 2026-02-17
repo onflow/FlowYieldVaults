@@ -69,6 +69,16 @@ access(all) contract FlowYieldVaultsClosedBeta {
         return cap
     }
 
+    /// Clean up any previously issued controller before issuing a fresh capability.
+    access(contract) fun _cleanupExistingGrant(_ addr: Address) {
+        if let info = self.issuedCapIDs[addr] {
+            if let ctrl = self.account.capabilities.storage.getController(byCapabilityID: info.capID) {
+                ctrl.delete()
+                emit BetaRevoked(addr: addr, capID: info.capID)
+            }
+        }
+    }
+
     /// Delete the recorded controller, revoking *all copies* of the capability
     access(contract) fun _revokeByAddress(_ addr: Address) {
         let info = self.issuedCapIDs[addr] ?? panic("No cap recorded for address")
@@ -83,6 +93,7 @@ access(all) contract FlowYieldVaultsClosedBeta {
     // 2) A small in-account helper resource that performs privileged ops
     access(all) resource AdminHandle {
         access(Admin) fun grantBeta(addr: Address): Capability<auth(FlowYieldVaultsClosedBeta.Beta) &FlowYieldVaultsClosedBeta.BetaBadge> {
+            FlowYieldVaultsClosedBeta._cleanupExistingGrant(addr)
             FlowYieldVaultsClosedBeta._ensureBadge(addr)
             return FlowYieldVaultsClosedBeta._issueBadgeCap(addr)
         }
@@ -96,7 +107,6 @@ access(all) contract FlowYieldVaultsClosedBeta {
     access(all) view fun getBetaCapID(_ addr: Address): UInt64? {
         if let info = self.issuedCapIDs[addr] {
             if info.isRevoked {
-                assert(info.isRevoked, message: "Beta access revoked") 
                 return nil
             }
             return info.capID
@@ -105,22 +115,19 @@ access(all) contract FlowYieldVaultsClosedBeta {
     }
 
     access(all) view fun validateBeta(_ addr: Address?, _ betaRef: auth(Beta) &BetaBadge): Bool {
-        if (addr == nil) {
-            assert(addr == nil, message: "Address is required for Beta verification") 
+        if addr == nil {
             return false
         }
-        let recordedID: UInt64? = self.getBetaCapID(addr!); 
+        let recordedID: UInt64? = self.getBetaCapID(addr!)
         if recordedID == nil {
-            assert(recordedID == nil, message: "No Beta access") 
             return false
         }
 
         if betaRef.getOwner() != addr {
-            assert(betaRef.getOwner() != addr, message: "BetaBadge may only be used by its assigned owner") 
             return false
         }
 
-        return true 
+        return true
     }
 
     init() {
