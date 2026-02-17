@@ -135,15 +135,15 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
-        access(self) let position: FlowCreditMarket.Position
+        access(self) let position: @FlowALPv1.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
 
-        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: FlowCreditMarket.Position) {
+        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowALPv1.Position) {
             self.uniqueID = id
-            self.position = position
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
+            self.position <-position
         }
 
         // Inherited from FlowYieldVaults.Strategy default implementation
@@ -370,13 +370,13 @@ access(all) contract FlowYieldVaultsStrategiesV1_1 {
                 return <-create mUSDFStrategy(
                     id: uniqueID,
                     collateralType: collateralType,
-                    position: position
+                    position: <-position
                 )
             case Type<@FUSDEVStrategy>():
                 return <-create FUSDEVStrategy(
                     id: uniqueID,
                     collateralType: collateralType,
-                    position: position
+                    position: <-position
                 )
             default:
                 panic("Unsupported strategy type \(type.identifier)")

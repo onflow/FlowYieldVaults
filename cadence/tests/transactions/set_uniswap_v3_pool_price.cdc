@@ -215,7 +215,7 @@ transaction(
         EVM.store(target: poolAddr, slot: "0x3", value: "0x0000000000000000000000000000000000000000000000000000000000000000")
 
         // Set massive liquidity
-        let liquidityValue = "0x00000000000000000000000000000000000000000000d3c21bcecceda1000000"
+        let liquidityValue = "0000000000000000000000000000000000000000033b2e3c9fd0803ce8000000"
         EVM.store(target: poolAddr, slot: "0x4", value: liquidityValue)
         
         // Initialize boundary ticks with CORRECT storage layout
