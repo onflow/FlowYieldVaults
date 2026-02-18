@@ -73,59 +73,10 @@ access(all) let morphoVaultTotalAssetsSlot = "0x00000000000000000000000000000000
 
 access(all)
 fun setup() {
-    Test.commitBlock()
+    // Deploy all contracts for mainnet fork
+    deployContractsForFork()
 
-    // Deploy mock EVM contract to enable vm.store/vm.load cheatcodes
-    var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-
-    // Deploy dependencies not present on mainnet yet/outdated
-    err = Test.deployContract(name: "DeFiActions", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(name: "DeFiActionsUtils", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(name: "FungibleTokenConnectors", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(name: "SwapConnectors", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(name: "FlowALPMath", path: "../../lib/FlowCreditMarket/cadence/lib/FlowALPMath.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-    
-    // Deploy DeFiActions dependencies
-    err = Test.deployContract(name: "DeFiActions", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc", arguments: [])
-    if err != nil {
-        log("DeFiActions deployment error: ".concat(err!.message))
-    }
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(name: "DeFiActionsUtils", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc", arguments: [])
-    if err != nil {
-        log("DeFiActionsUtils deployment error: ".concat(err!.message))
-    }
-    Test.expect(err, Test.beNil())
-    
-    // Skip MockOracle and MockDexSwapper deployment - they have unresolved address conflicts
-    
-    // Deploy FlowALPv1
-    err = Test.deployContract(name: "FlowALPv1", path: "../../lib/FlowCreditMarket/cadence/contracts/FlowALPv1.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-    
-    err = Test.deployContract(name: "EVMAmountUtils", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(name: "MorphoERC4626SinkConnectors", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(name: "MorphoERC4626SwapConnectors", path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(name: "FlowYieldVaultsStrategiesV2", path: "../contracts/FlowYieldVaultsStrategiesV2.cdc", arguments: [
-        "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
-        "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
-        "0x370A8DF17742867a44e56223EC20D82092242C85"
-    ])
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(name: "FlowYieldVaults", path: "../contracts/FlowYieldVaults.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-
-    // Upsert strategy config (temporary - this project has been completely mangled, it's borderline untestable and we have had to
-    // go through a lot to try to make it work)
+    // Upsert strategy config using mainnet addresses
     let upsertRes = Test.executeTransaction(
         Test.Transaction(
             code: Test.readFile("../transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc"),
@@ -134,8 +85,8 @@ fun setup() {
             arguments: [
                 strategyIdentifier,
                 flowTokenIdentifier,
-                "0xd069d989e2F44B70c65347d1853C0c67e10a9F8D",
-                ["0xd069d989e2F44B70c65347d1853C0c67e10a9F8D", "0x99aF3EeA856556646C98c8B9b2548Fe815240750", "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"],
+                morphoVaultAddress,
+                [morphoVaultAddress, pyusd0Address, wflowAddress],
                 [100 as UInt32, 3000 as UInt32]
             ]
         )
@@ -166,13 +117,39 @@ fun setup() {
     transferFlow(signer: whaleFlowAccount, recipient: flowCreditMarketAccount.address, amount: reserveAmount)
     mintMoet(signer: flowCreditMarketAccount, to: flowCreditMarketAccount.address, amount: reserveAmount, beFailed: false)
 
-    // SKIP Pool creation for now - it requires mocks which have deployment issues
-    // The test will likely fail when trying to use the Pool, but let's see what error we get
-    log("WARNING: Skipping Pool creation - test may fail when trying to open credit position")
+    // Follow mainnet setup pattern:
+    // 1. Create Pool with MOET as default token (starts with MockOracle)
+    createAndStorePool(
+        signer: flowCreditMarketAccount,
+        defaultTokenIdentifier: Type<@MOET.Vault>().identifier,
+        beFailed: false
+    )
+    
+    // 2. Update Pool to use Band Oracle (instead of MockOracle)
+    let updateOracleRes = Test.executeTransaction(
+        Test.Transaction(
+            code: Test.readFile("../../lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-governance/update_oracle.cdc"),
+            authorizers: [flowCreditMarketAccount.address],
+            signers: [flowCreditMarketAccount],
+            arguments: []
+        )
+    )
+    Test.expect(updateOracleRes, Test.beSucceeded())
+    
+    // 3. Add FLOW as supported token (matching mainnet setup parameters)
+    addSupportedTokenFixedRateInterestCurve(
+        signer: flowCreditMarketAccount,
+        tokenTypeIdentifier: Type<@FlowToken.Vault>().identifier,
+        collateralFactor: 0.8,
+        borrowFactor: 1.0,
+        yearlyRate: 0.0,  // Simple interest with 0 rate
+        depositRate: 1_000_000.0,
+        depositCapacityCap: 1_000_000.0
+    )
 
-    // Grant FlowALPv1 Pool capability to FlowYieldVaults account (this will probably fail)
-    // let protocolBetaRes = grantProtocolBeta(flowCreditMarketAccount, flowYieldVaultsAccount)
-    // Test.expect(protocolBetaRes, Test.beSucceeded())
+    // Grant FlowALPv1 Pool capability to FlowYieldVaults account
+    let protocolBetaRes = grantProtocolBeta(flowCreditMarketAccount, flowYieldVaultsAccount)
+    Test.expect(protocolBetaRes, Test.beSucceeded())
 
     // Fund FlowYieldVaults account for scheduling fees
     transferFlow(signer: whaleFlowAccount, recipient: flowYieldVaultsAccount.address, amount: 100.0)

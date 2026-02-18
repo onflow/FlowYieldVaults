@@ -201,7 +201,8 @@
 			"source": "./lib/FlowCreditMarket/cadence/contracts/mocks/MockDexSwapper.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
-				"testing": "000000000000000e"
+				"testing": "000000000000000e",
+				"mainnet": "b1d63873c3cc9f79"
 			}
 		},
 		"MockEVM": {
@@ -787,7 +788,11 @@
 		"emulator": "127.0.0.1:3569",
 		"mainnet": "access.mainnet.nodes.onflow.org:9000",
 		"testing": "127.0.0.1:3569",
-		"testnet": "access.devnet.nodes.onflow.org:9000"
+		"testnet": "access.devnet.nodes.onflow.org:9000",
+		"mainnet-fork": {
+			"host": "127.0.0.1:3569",
+			"fork": "mainnet"
+		}
 	},
 	"accounts": {
 		"emulator-account": {
