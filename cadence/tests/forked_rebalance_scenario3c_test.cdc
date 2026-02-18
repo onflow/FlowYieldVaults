@@ -104,8 +104,42 @@ fun setup() {
 
     // Setup Uniswap V3 pools with structurally valid state
     // This sets slot0, observations, liquidity, ticks, bitmap, positions, and POOL token balances
-    setupUniswapPools(signer: coaOwnerAccount)
-
+    log("Setting up PYUSD0/FUSDEV")
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: pyusd0Address,
+        tokenBAddress: morphoVaultAddress,
+        fee: 100,
+        priceTokenBPerTokenA: 1.01,
+        tokenABalanceSlot: pyusd0BalanceSlot,
+        tokenBBalanceSlot: fusdevBalanceSlot,
+        signer: coaOwnerAccount
+    )
+    
+    log("Setting up PYUSD0/FLOW")
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: pyusd0Address,
+        tokenBAddress: wflowAddress,
+        fee: 3000,
+        priceTokenBPerTokenA: 1.0,
+        tokenABalanceSlot: pyusd0BalanceSlot,
+        tokenBBalanceSlot: wflowBalanceSlot,
+        signer: coaOwnerAccount
+    )
+    
+    log("Setting up MOET/FUSDEV")
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: moetAddress,
+        tokenBAddress: morphoVaultAddress,
+        fee: 100,
+        priceTokenBPerTokenA: 1.01,
+        tokenABalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: fusdevBalanceSlot,
+        signer: coaOwnerAccount
+    )
+    
     // BandOracle is used for FLOW and USD (MOET) prices
     let symbolPrices = { 
         "FLOW": 1.0,  // Start at 1.0, will increase to 2.0 during test
@@ -336,65 +370,6 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
     closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
     
     log("\n=== TEST COMPLETE ===")
-}
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-// Setup Uniswap V3 pools with valid state at specified prices
-access(all) fun setupUniswapPools(signer: Test.TestAccount) {
-    log("\n=== Setting up Uniswap V3 pools ===")
-    
-    let fusdevDexPremium = 1.01
-    
-    let poolConfigs: [{String: AnyStruct}] = [
-        {
-            "name": "PYUSD0/FUSDEV",
-            "tokenA": pyusd0Address,
-            "tokenB": morphoVaultAddress,
-            "fee": 100 as UInt64,
-            "tokenABalanceSlot": pyusd0BalanceSlot,
-            "tokenBBalanceSlot": fusdevBalanceSlot,
-            "priceTokenBPerTokenA": fusdevDexPremium
-        },
-        {
-            "name": "PYUSD0/FLOW",
-            "tokenA": pyusd0Address,
-            "tokenB": wflowAddress,
-            "fee": 3000 as UInt64,
-            "tokenABalanceSlot": pyusd0BalanceSlot,
-            "tokenBBalanceSlot": wflowBalanceSlot,
-            "priceTokenBPerTokenA": 1.0
-        },
-        {
-            "name": "MOET/FUSDEV",
-            "tokenA": moetAddress,
-            "tokenB": morphoVaultAddress,
-            "fee": 100 as UInt64,
-            "tokenABalanceSlot": moetBalanceSlot,
-            "tokenBBalanceSlot": fusdevBalanceSlot,
-            "priceTokenBPerTokenA": fusdevDexPremium
-        }
-    ]
-    
-    for config in poolConfigs {
-        let name = config["name"]! as! String
-        log("Setting up ".concat(name))
-        
-        setPoolToPrice(
-            factoryAddress: factoryAddress,
-            tokenAAddress: config["tokenA"]! as! String,
-            tokenBAddress: config["tokenB"]! as! String,
-            fee: config["fee"]! as! UInt64,
-            priceTokenBPerTokenA: config["priceTokenBPerTokenA"]! as! UFix64,
-            tokenABalanceSlot: config["tokenABalanceSlot"]! as! UInt256,
-            tokenBBalanceSlot: config["tokenBBalanceSlot"]! as! UInt256,
-            signer: signer
-        )
-    }
-    
-    log("✓ All pools seeded")
 }
 
 // Helper function to get Flow collateral from position
