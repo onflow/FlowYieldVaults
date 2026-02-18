@@ -102,8 +102,19 @@ access(self) fun calculateSqrtPriceX96(price: UFix64): String {
     }
     let priceScaled = UInt256(priceUInt64) // This is price * 10^8
     
-    // sqrt(price) * 2^96, adjusted for UFix64 scaling
+    // We want: sqrt(price) * 2^96
+    // = sqrt(priceScaled / 10^8) * 2^96
+    // = sqrt(priceScaled) * 2^96 / sqrt(10^8)
+    // = sqrt(priceScaled) * 2^96 / 10^4
+    
+    // Calculate sqrt(priceScaled) with scale factor 2^48 for precision
+    // sqrt(priceScaled) * 2^48
     let sqrtPriceScaled = sqrt(n: priceScaled, scaleFactor: UInt256(1) << 48)
+    
+    // Now we have: sqrt(priceScaled) * 2^48
+    // We want: sqrt(priceScaled) * 2^96 / 10^4
+    // = (sqrt(priceScaled) * 2^48) * 2^48 / 10^4
+    
     let sqrtPriceX96 = (sqrtPriceScaled * (UInt256(1) << 48)) / UInt256(10000)
     
     return sqrtPriceX96.toString()
@@ -131,24 +142,34 @@ access(self) fun calculateTick(price: UFix64): Int256 {
     let ln1_0001 = Int256(99995000333083)
     
     // tick = ln(price) / ln(1.0001)
+    // lnPrice is already scaled by 10^18
+    // ln1_0001 is already scaled by 10^18  
+    // So: tick = (lnPrice * 10^18) / (ln1_0001 * 10^18) = lnPrice / ln1_0001
+    
     let tick = lnPrice / ln1_0001
     
     return tick
 }
 
-/// Calculate square root using Newton's method
-/// Returns sqrt(n) * scaleFactor for precision
+/* --- Internal Math Utilities --- */
+
+/// Calculate square root using Newton's method for UInt256
+/// Returns sqrt(n) * scaleFactor to maintain precision
 access(self) fun sqrt(n: UInt256, scaleFactor: UInt256): UInt256 {
     if n == UInt256(0) {
         return UInt256(0)
     }
     
+    // Initial guess: n/2 (scaled)
     var x = (n * scaleFactor) / UInt256(2)
     var prevX = UInt256(0)
-    var iterations = 0
     
+    // Newton's method: x_new = (x + n*scale^2/x) / 2
+    // Iterate until convergence (max 50 iterations for safety)
+    var iterations = 0
     while x != prevX && iterations < 50 {
         prevX = x
+        // x_new = (x + (n * scaleFactor^2) / x) / 2
         let nScaled = n * scaleFactor * scaleFactor
         x = (x + nScaled / x) / UInt256(2)
         iterations = iterations + 1
@@ -158,41 +179,55 @@ access(self) fun sqrt(n: UInt256, scaleFactor: UInt256): UInt256 {
 }
 
 /// Calculate natural logarithm using Taylor series
-/// Returns ln(x) * scaleFactor for precision
+/// ln(x) for x > 0, returns ln(x) * scaleFactor for precision
 access(self) fun ln(x: UInt256, scaleFactor: UInt256): Int256 {
     if x == UInt256(0) {
         panic("ln(0) is undefined")
     }
     
-    // Reduce x to range [0.5, 1.5] for better convergence
+    // For better convergence, reduce x to range [0.5, 1.5] using:
+    // ln(x) = ln(2^n * y) = n*ln(2) + ln(y) where y is in [0.5, 1.5]
+    
     var value = x
     var n = 0
     
+    // Scale down if x > 1.5 * scaleFactor
     let threshold = (scaleFactor * UInt256(3)) / UInt256(2)
     while value > threshold {
         value = value / UInt256(2)
         n = n + 1
     }
     
+    // Scale up if x < 0.5 * scaleFactor
     let lowerThreshold = scaleFactor / UInt256(2)
     while value < lowerThreshold {
         value = value * UInt256(2)
         n = n - 1
     }
     
-    // Taylor series: ln(1+z) = z - z^2/2 + z^3/3 - ...
+    // Now value is in [0.5*scale, 1.5*scale], compute ln(value/scale)
+    // Use Taylor series: ln(1+z) = z - z^2/2 + z^3/3 - z^4/4 + ...
+    // where z = value/scale - 1
+    
     let z = value > scaleFactor 
         ? Int256(value - scaleFactor)
         : -Int256(scaleFactor - value)
     
-    var result = z
+    // Calculate Taylor series terms until convergence
+    var result = z // First term: z
     var term = z
     var i = 2
     var prevResult = Int256(0)
     
+    // Calculate terms until convergence (term becomes negligible or result stops changing)
+    // Max 50 iterations for safety
     while i <= 50 && result != prevResult {
         prevResult = result
+        
+        // term = term * z / scaleFactor
         term = (term * z) / Int256(scaleFactor)
+        
+        // Add or subtract term/i based on sign
         if i % 2 == 0 {
             result = result - term / Int256(i)
         } else {
@@ -201,9 +236,14 @@ access(self) fun ln(x: UInt256, scaleFactor: UInt256): Int256 {
         i = i + 1
     }
     
-    // Adjust for range reduction: ln(2^n * y) = n*ln(2) + ln(y)
-    let ln2Scaled = Int256(693147180559945309) // ln(2) * 10^18
-    result = result + Int256(n) * ln2Scaled
+    // Add n * ln(2) * scaleFactor
+    // ln(2) ≈ 0.693147180559945309417232121458
+    // ln(2) * 10^18 ≈ 693147180559945309
+    let ln2Scaled = Int256(693147180559945309)
+    let nScaled = Int256(n) * ln2Scaled
+    
+    // Scale to our scaleFactor (assuming scaleFactor is 10^18)
+    result = result + nScaled
     
     return result
 }

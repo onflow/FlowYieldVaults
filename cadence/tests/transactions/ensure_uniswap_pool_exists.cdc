@@ -62,8 +62,12 @@ transaction(
         
         assert(getPoolResult.status == EVM.Status.successful && getPoolResult.data.length >= 20, message: "Failed to get pool address after creation")
         
-        // Extract last 20 bytes as pool address
-        let poolAddrBytes = getPoolResult.data.slice(from: getPoolResult.data.length - 20, upTo: getPoolResult.data.length)
+        var poolAddrBytes: [UInt8] = []
+        var i = getPoolResult.data.length - 20
+        while i < getPoolResult.data.length {
+            poolAddrBytes.append(getPoolResult.data[i])
+            i = i + 1
+        }
         let poolAddr = EVM.addressFromString("0x\(String.encodeHex(poolAddrBytes))")
         
         // Initialize the pool with the target price
