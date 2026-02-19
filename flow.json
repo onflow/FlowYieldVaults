@@ -92,10 +92,10 @@
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
-				"mainnet": "6d888f175c158410",
-				"mainnet-fork": "6d888f175c158410",
+				"mainnet": "43c9e8bfec507db4",
+				"mainnet-fork": "43c9e8bfec507db4",
 				"testing": "0000000000000009",
-				"testnet": "0b11b1848a8aa2c0"
+				"testnet": "67402f29666f7b29"
 			}
 		},
 		"EVMTokenConnectors": {
@@ -118,8 +118,8 @@
 				"testnet": "426f0458ced60037"
 			}
 		},
-		"FlowALPv1": {
-			"source": "./lib/FlowALP/cadence/contracts/FlowALPv1.cdc",
+		"FlowALPv0": {
+			"source": "./lib/FlowALP/cadence/contracts/FlowALPv0.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
@@ -974,7 +974,7 @@
 				"FungibleTokenConnectors",
 				"SwapConnectors",
 				"DummyConnectors",
-				"FlowALPv1",
+				"FlowALPv0",
 				{
 					"name": "YieldToken",
 					"args": [

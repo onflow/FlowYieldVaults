@@ -12,7 +12,7 @@ flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.dfc2
 echo "bridge MOET to EVM"
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.426f0458ced60037.MOET.Vault" --compute-limit 9999 --network testnet --signer testnet-flow-alp-deployer
 
-# configure FlowALPv1
+# configure FlowALP
 #
 # add MOET - USD association on Band Oracle
 cd ./lib/FlowALP/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "USD" "A.426f0458ced60037.MOET.Vault" --network testnet --signer testnet-band-oracle-connectors

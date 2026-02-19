@@ -12,7 +12,7 @@ import "ERC4626SwapConnectors"
 import "MorphoERC4626SwapConnectors"
 import "ERC4626Utils"
 // Lending protocol
-import "FlowALPv1"
+import "FlowALPv0"
 // FlowYieldVaults platform
 import "FlowYieldVaults"
 import "FlowYieldVaultsAutoBalancers"
@@ -77,11 +77,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
-        access(self) let position: @FlowALPv1.Position
+        access(self) let position: @FlowALPv0.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
 
-        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowALPv1.Position) {
+        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowALPv0.Position) {
             self.uniqueID = id
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
@@ -276,7 +276,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 uniqueID: uniqueID
             )
 
-            // Open FlowALPv1 position
+            // Open FlowALPv0 position
             let position <- self._openCreditPosition(
                 funds: <-withFunds,
                 issuanceSink: abaSwapSink,
@@ -549,10 +549,10 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             funds: @{FungibleToken.Vault},
             issuanceSink: {DeFiActions.Sink},
             repaymentSource: {DeFiActions.Source}
-        ): @FlowALPv1.Position {
+        ): @FlowALPv0.Position {
             let poolCap = FlowYieldVaultsStrategiesV2.account.storage.copy<
-                Capability<auth(FlowALPv1.EParticipant, FlowALPv1.EPosition) &FlowALPv1.Pool>
-            >(from: FlowALPv1.PoolCapStoragePath)
+                Capability<auth(FlowALPv0.EParticipant, FlowALPv0.EPosition) &FlowALPv0.Pool>
+            >(from: FlowALPv0.PoolCapStoragePath)
                 ?? panic("Missing or invalid pool capability")
 
             let poolRef = poolCap.borrow() ?? panic("Invalid Pool Cap")

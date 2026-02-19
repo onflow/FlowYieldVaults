@@ -63,7 +63,7 @@ Mock FungibleToken implementations representing:
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
 |---|---|---|---|
 | FlowActions | 0xd27920b6384e2a78 | DeFiActions | TBD |
-| FlowALPv1 | 0xd27920b6384e2a78 | FlowALPv1 | TBD |
+| FlowALPv0 | 0xd27920b6384e2a78 | FlowALPv0 | TBD |
 | FlowYieldVaults | 0xd27920b6384e2a78 | FlowYieldVaults | TBD |
 | FlowYieldVaultsStrategiesV2 | 0xd27920b6384e2a78 | FlowYieldVaultsStrategiesV2 | TBD |
 | PMStrategiesV1 | 0xd27920b6384e2a78 | PMStrategiesV1 | TBD |
@@ -78,7 +78,7 @@ Mock FungibleToken implementations representing:
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
 |---|---|---|---|
 | FlowActions | 0x6d888f175c158410 | DeFiActions | TBD |
-| FlowALPv1 | 0x6b00ff876c299c61 | FlowALPv1 | TBD |
+| FlowALPv0 | 0x6b00ff876c299c61 | FlowALPv0 | TBD |
 | FlowYieldVaults | 0xb1d63873c3cc9f79 | FlowYieldVaults | TBD |
 | FlowYieldVaultsStrategiesV2 | 0xb1d63873c3cc9f79 | FlowYieldVaultsStrategiesV2 | TBD |
 | PMStrategiesV1 | 0xb1d63873c3cc9f79 | PMStrategiesV1 | TBD |
@@ -99,7 +99,7 @@ Below is an overview of the initial prototype Tracer Strategy in the broader con
 The TracerStrategy demonstrates the power of DeFi Actions composition:
 
 ```
-User Deposit (FLOW) → FlowALPv1 Position → MOET Issuance → Swap to YieldToken → AutoBalancer
+User Deposit (FLOW) → FlowALP Position → MOET Issuance → Swap to YieldToken → AutoBalancer
                                                ↑
                                          YieldToken → Swap to FLOW → Recollateralize Position
 ```
@@ -210,12 +210,12 @@ The AutoBalancer continuously monitors the **value ratio** between:
 
 **When:** Current YieldToken value > 105% historical value of deposits
 **Cause:** YieldToken price has increased OR position became over-collateralized leading to excess token holdings
-**Action:** AutoBalancer deposits excess YieldToken to the rebalanceSink, swapping to FLOW and recollateralizing the FlowALPv1 position.
+**Action:** AutoBalancer deposits excess YieldToken to the rebalanceSink, swapping to FLOW and recollateralizing the FlowALP position.
 
 **Automated Flow:**
 
 ```
-YieldToken (excess) → Swap to FLOW → Deposit to FlowALPv1 Position (recollateralization)
+YieldToken (excess) → Swap to FLOW → Deposit to FlowALP Position (recollateralization)
 ```
 
 **Result:**
@@ -264,7 +264,7 @@ The system creates a sophisticated token flow:
 
 1. **Initial Position Opening:**
 
-   - User deposits FLOW → FlowALPv1 Position
+   - User deposits FLOW → FlowALP Position
    - Position issues MOET → Swaps to YieldToken
    - YieldToken held in AutoBalancer
 
@@ -577,7 +577,7 @@ Position Health = Effective Collateral / Effective Debt
 #### Health Computation Function
 
 ```cadence
-// From FlowALPv1.cdc
+// From FlowALPv0.cdc
 access(all) fun healthComputation(effectiveCollateral: UFix64, effectiveDebt: UFix64): UFix64 {
     if effectiveCollateral == 0.0 {
         return 0.0

@@ -18,7 +18,7 @@ flow transactions send ./lib/FlowALP/cadence/transactions/moet/mint_moet.cdc 0x0
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.0ae53cb6e3f42a79.FlowToken.Vault' 0.5 --signer emulator-flow-yield-vaults
 flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.045a1763c93006ca.YieldToken.Vault' 1.0 --signer emulator-flow-yield-vaults
 
-# configure FlowALPv1
+# configure FlowALP
 #
 # create Pool with MOET as default token
 flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-factory/create_and_store_pool.cdc 'A.045a1763c93006ca.MOET.Vault' --signer emulator-flow-yield-vaults

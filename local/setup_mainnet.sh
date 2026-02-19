@@ -14,7 +14,7 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboard
 echo "bridge MOET to EVM"
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc "A.6b00ff876c299c61.MOET.Vault" --compute-limit 9999 --network mainnet --signer mainnet-flow-alp-deployer
 
-# configure FlowALPv1
+# configure FlowALP
 #
 # create Pool with MOET as default token
 flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-factory/create_and_store_pool.cdc 'A.6b00ff876c299c61.MOET.Vault' --network mainnet --signer mainnet-flow-alp-deployer
