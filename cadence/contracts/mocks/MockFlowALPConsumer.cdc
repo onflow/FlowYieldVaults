@@ -1,7 +1,7 @@
 import "FungibleToken"
 
 import "DeFiActions"
-import "FlowALPv1"
+import "FlowALPv0"
 
 /// THIS CONTRACT IS NOT SAFE FOR PRODUCTION - FOR TEST USE ONLY
 /// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -24,7 +24,7 @@ access(all) contract MockFlowALPConsumer {
         pushToDrawDownSink: Bool
     ): @PositionWrapper {
         return <- create PositionWrapper(
-            position: FlowALPv1.openPosition(
+            position: FlowALPv0.openPosition(
                 collateral: <-collateral,
                 issuanceSink: issuanceSink,
                 repaymentSource: repaymentSource,
@@ -36,20 +36,20 @@ access(all) contract MockFlowALPConsumer {
     /// A simple resource encapsulating a FlowALP Position
     access(all) resource PositionWrapper {
 
-        access(self) let position: FlowALPv1.Position
+        access(self) let position: FlowALPv0.Position
 
-        init(position: FlowALPv1.Position) {
+        init(position: FlowALPv0.Position) {
             self.position = position
         }
 
         /// NOT SAFE FOR PRODUCTION
         ///
         /// Returns a reference to the wrapped Position
-        access(all) fun borrowPosition(): &FlowALPv1.Position {
+        access(all) fun borrowPosition(): &FlowALPv0.Position {
             return &self.position
         }
 
-        access(all) fun borrowPositionForWithdraw(): auth(FungibleToken.Withdraw) &FlowALPv1.Position {
+        access(all) fun borrowPositionForWithdraw(): auth(FungibleToken.Withdraw) &FlowALPv0.Position {
             return &self.position
         }
     }

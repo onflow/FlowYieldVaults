@@ -63,9 +63,9 @@ Mock FungibleToken implementations representing:
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
 |---|---|---|---|
 | FlowActions | 0xd27920b6384e2a78 | DeFiActions | TBD |
-| FlowALP | 0xd27920b6384e2a78 | FlowALP | TBD |
+| FlowALPv0 | 0xd27920b6384e2a78 | FlowALPv0 | TBD |
 | FlowYieldVaults | 0xd27920b6384e2a78 | FlowYieldVaults | TBD |
-| FlowYieldVaultsStrategiesV1_1 | 0xd27920b6384e2a78 | FlowYieldVaultsStrategiesV1_1 | TBD |
+| FlowYieldVaultsStrategiesV2 | 0xd27920b6384e2a78 | FlowYieldVaultsStrategiesV2 | TBD |
 | PMStrategiesV1 | 0xd27920b6384e2a78 | PMStrategiesV1 | TBD |
 | MOET | 0xd27920b6384e2a78 | MOET | 0x51f5cc5f50afb81e8f23c926080fa38c3024b238 |
 | USDC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_d431955d55a99ef69beb96ba34718d0f9fbc91b1 | 0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1 |
@@ -78,9 +78,9 @@ Mock FungibleToken implementations representing:
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
 |---|---|---|---|
 | FlowActions | 0x6d888f175c158410 | DeFiActions | TBD |
-| FlowALP | 0x6b00ff876c299c61 | FlowALP | TBD |
+| FlowALPv0 | 0x6b00ff876c299c61 | FlowALPv0 | TBD |
 | FlowYieldVaults | 0xb1d63873c3cc9f79 | FlowYieldVaults | TBD |
-| FlowYieldVaultsStrategiesV1_1 | 0xb1d63873c3cc9f79 | FlowYieldVaultsStrategiesV1_1 | TBD |
+| FlowYieldVaultsStrategiesV2 | 0xb1d63873c3cc9f79 | FlowYieldVaultsStrategiesV2 | TBD |
 | PMStrategiesV1 | 0xb1d63873c3cc9f79 | PMStrategiesV1 | TBD |
 | MOET | 0x6b00ff876c299c61 | MOET | 0x213979bB8A9A86966999b3AA797C1fcf3B967ae2 |
 | USDC | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_f1815bd50389c46847f0bda824ec8da914045d14 | 0xF1815bd50389c46847f0Bda824eC8da914045D14 |
@@ -577,7 +577,7 @@ Position Health = Effective Collateral / Effective Debt
 #### Health Computation Function
 
 ```cadence
-// From FlowALP.cdc
+// From FlowALPv0.cdc
 access(all) fun healthComputation(effectiveCollateral: UFix64, effectiveDebt: UFix64): UFix64 {
     if effectiveCollateral == 0.0 {
         return 0.0

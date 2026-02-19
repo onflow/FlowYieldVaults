@@ -12,7 +12,7 @@ import "UniswapV3SwapConnectors"
 import "ERC4626SwapConnectors"
 import "ERC4626Utils"
 // Lending protocol
-import "FlowALPv1"
+import "FlowALPv0"
 // FlowYieldVaults platform
 import "FlowYieldVaultsClosedBeta"
 import "FlowYieldVaults"
@@ -57,7 +57,7 @@ access(all) contract FlowYieldVaultsStrategies {
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let IssuerStoragePath: StoragePath
 
-    /// This is the first Strategy implementation, wrapping a @FlowALPv1.Position along with its related Sink &
+    /// This is the first Strategy implementation, wrapping a @FlowALPv0.Position along with its related Sink &
     /// Source. While this object is a simple wrapper for the top-level collateralized position, the true magic of the
     /// DeFiActions is in the stacking of the related connectors. This stacking logic can be found in the
     /// TracerStrategyComposer construct.
@@ -65,11 +65,11 @@ access(all) contract FlowYieldVaultsStrategies {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
-        access(self) let position: @FlowALPv1.Position
+        access(self) let position: @FlowALPv0.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
 
-        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowALPv1.Position) {
+        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowALPv0.Position) {
             self.uniqueID = id
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
@@ -194,8 +194,8 @@ access(all) contract FlowYieldVaultsStrategies {
             let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToStableSwapper, source: abaSource, uniqueID: uniqueID)
 
             // open a FlowALP position
-            let poolCap = FlowYieldVaultsStrategies.account.storage.load<Capability<auth(FlowALPv1.EParticipant, FlowALPv1.EPosition) &FlowALPv1.Pool>>(
-                from: FlowALPv1.PoolCapStoragePath
+            let poolCap = FlowYieldVaultsStrategies.account.storage.load<Capability<auth(FlowALPv0.EParticipant, FlowALPv0.EPosition) &FlowALPv0.Pool>>(
+                from: FlowALPv0.PoolCapStoragePath
             ) ?? panic("Missing pool capability")
 
             let poolRef = poolCap.borrow() ?? panic("Invalid Pool Cap")
@@ -206,7 +206,7 @@ access(all) contract FlowYieldVaultsStrategies {
                 repaymentSource: abaSwapSource,
                 pushToDrawDownSink: true
             )
-            FlowYieldVaultsStrategies.account.storage.save(poolCap, to: FlowALPv1.PoolCapStoragePath)
+            FlowYieldVaultsStrategies.account.storage.save(poolCap, to: FlowALPv0.PoolCapStoragePath)
 
             // get Sink & Source connectors relating to the new Position
             let positionSink = position.createSinkWithOptions(type: collateralType, pushToDrawDownSink: true)
@@ -240,11 +240,11 @@ access(all) contract FlowYieldVaultsStrategies {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
-        access(self) let position: @FlowALPv1.Position
+        access(self) let position: @FlowALPv0.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
 
-        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowALPv1.Position) {
+        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowALPv0.Position) {
             self.uniqueID = id
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
@@ -470,8 +470,8 @@ access(all) contract FlowYieldVaultsStrategies {
             let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMOETSwapper, source: abaSource, uniqueID: uniqueID)
 
             // open a FlowALP position
-            let poolCap = FlowYieldVaultsStrategies.account.storage.copy<Capability<auth(FlowALPv1.EParticipant, FlowALPv1.EPosition) &FlowALPv1.Pool>>(
-                    from: FlowALPv1.PoolCapStoragePath
+            let poolCap = FlowYieldVaultsStrategies.account.storage.copy<Capability<auth(FlowALPv0.EParticipant, FlowALPv0.EPosition) &FlowALPv0.Pool>>(
+                    from: FlowALPv0.PoolCapStoragePath
                 ) ?? panic("Missing or invalid pool capability")
             let poolRef = poolCap.borrow() ?? panic("Invalid Pool Cap")
 

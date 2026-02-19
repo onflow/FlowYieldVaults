@@ -7,7 +7,7 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "FlowYieldVaultsStrategies"
-import "FlowALPv1"
+import "FlowALPv0"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
@@ -276,7 +276,7 @@ fun test_RebalanceYieldVaultScenario3B() {
 	let positionDetails = getPositionDetails(pid: 1, beFailed: false)
 	var positionFlowBalance = 0.0
 	for balance in positionDetails.balances {
-		if balance.vaultType == Type<@FlowToken.Vault>() && balance.direction == FlowALPv1.BalanceDirection.Credit {
+		if balance.vaultType == Type<@FlowToken.Vault>() && balance.direction == FlowALPv0.BalanceDirection.Credit {
 			positionFlowBalance = balance.balance
 			break
 		}
