@@ -69,7 +69,8 @@ access(all) let fusdevBalanceSlot = 12 as UInt256    // FUSDEV (Morpho VaultV2) 
 access(all) let wflowBalanceSlot = 1 as UInt256      // WFLOW balanceOf at slot 1
 
 // Morpho vault storage slots
-access(all) let morphoVaultTotalAssetsSlot = "0x000000000000000000000000000000000000000000000000000000000000000f"  // slot 15 (packed with lastUpdate and maxRate)
+access(all) let morphoVaultTotalSupplySlot = 11 as UInt256  // slot 11
+access(all) let morphoVaultTotalAssetsSlot = 15 as UInt256  // slot 15 (packed with lastUpdate and maxRate)
 
 access(all)
 fun setup() {
@@ -213,6 +214,7 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
         vaultAddress: morphoVaultAddress,
         assetAddress: pyusd0Address,
         assetBalanceSlot: pyusd0BalanceSlot,
+        totalSupplySlot: morphoVaultTotalSupplySlot,
         vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
         baseAssets: 1000000000.0,  // 1 billion
         priceMultiplier: 1.0,
@@ -310,6 +312,7 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
         vaultAddress: morphoVaultAddress,
         assetAddress: pyusd0Address,
         assetBalanceSlot: UInt256(1),
+        totalSupplySlot: morphoVaultTotalSupplySlot,
         vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
         baseAssets: 1000000000.0,  // 1 billion
         priceMultiplier: yieldPriceIncrease,

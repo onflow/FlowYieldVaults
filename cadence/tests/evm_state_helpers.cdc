@@ -10,33 +10,18 @@ access(all) fun setVaultSharePrice(
     vaultAddress: String,
     assetAddress: String,
     assetBalanceSlot: UInt256,
-    vaultTotalAssetsSlot: String,
+    totalSupplySlot: UInt256,
+    vaultTotalAssetsSlot: UInt256,
     baseAssets: UFix64,
     priceMultiplier: UFix64,
     signer: Test.TestAccount
 ) {
-    // Convert UFix64 baseAssets to UInt256 (UFix64 has 8 decimal places, stored as int * 10^8)
-    let baseAssetsBytes = baseAssets.toBigEndianBytes()
-    var baseAssetsUInt64: UInt64 = 0
-    for byte in baseAssetsBytes {
-        baseAssetsUInt64 = (baseAssetsUInt64 << 8) + UInt64(byte)
-    }
-    let baseAssetsUInt256 = UInt256(baseAssetsUInt64)
-    
-    // Calculate target: baseAssets * multiplier
-    let multiplierBytes = priceMultiplier.toBigEndianBytes()
-    var multiplierUInt64: UInt64 = 0
-    for byte in multiplierBytes {
-        multiplierUInt64 = (multiplierUInt64 << 8) + UInt64(byte)
-    }
-    let targetAssets = (baseAssetsUInt256 * UInt256(multiplierUInt64)) / UInt256(100000000)
-    
     let result = Test.executeTransaction(
         Test.Transaction(
             code: Test.readFile("transactions/set_erc4626_vault_price.cdc"),
             authorizers: [signer.address],
             signers: [signer],
-            arguments: [vaultAddress, assetAddress, assetBalanceSlot, vaultTotalAssetsSlot, priceMultiplier, targetAssets]
+            arguments: [vaultAddress, assetAddress, assetBalanceSlot, totalSupplySlot, vaultTotalAssetsSlot, baseAssets, priceMultiplier]
         )
     )
     Test.expect(result, Test.beSucceeded())
