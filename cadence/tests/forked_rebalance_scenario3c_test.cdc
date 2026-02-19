@@ -114,7 +114,9 @@ fun setup() {
         priceTokenBPerTokenA: 1.01,
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
+        signer: coaOwnerAccount,
+        tokenADecimals: 6,
+        tokenBDecimals: 18
     )
     
     log("Setting up PYUSD0/FLOW")
@@ -126,7 +128,9 @@ fun setup() {
         priceTokenBPerTokenA: 1.0,
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: wflowBalanceSlot,
-        signer: coaOwnerAccount
+        signer: coaOwnerAccount,
+        tokenADecimals: 6,
+        tokenBDecimals: 18
     )
     
     log("Setting up MOET/FUSDEV")
@@ -138,7 +142,23 @@ fun setup() {
         priceTokenBPerTokenA: 1.01,
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
+        signer: coaOwnerAccount,
+        tokenADecimals: 18,
+        tokenBDecimals: 18
+    )
+    
+    log("Setting up MOET/PYUSD0")
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: moetAddress,
+        tokenBAddress: pyusd0Address,
+        fee: 100,
+        priceTokenBPerTokenA: 1.0,
+        tokenABalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
+        signer: coaOwnerAccount,
+        tokenADecimals: 18,
+        tokenBDecimals: 6
     )
     
     // BandOracle is used for FLOW and USD (MOET) prices
@@ -275,7 +295,9 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
         priceTokenBPerTokenA: 2.0,  // Flow is 2x the price of PYUSD0
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: wflowBalanceSlot,
-        signer: coaOwnerAccount
+        signer: coaOwnerAccount,
+        tokenADecimals: 6,
+        tokenBDecimals: 18
     )
 
     rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
@@ -328,7 +350,9 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
         priceTokenBPerTokenA: 2.0,
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
+        signer: coaOwnerAccount,
+        tokenADecimals: 6,
+        tokenBDecimals: 18
     )
     
     setPoolToPrice(
@@ -339,7 +363,9 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
         priceTokenBPerTokenA: 2.0,
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
+        signer: coaOwnerAccount,
+        tokenADecimals: 18,
+        tokenBDecimals: 18
     )
     
     // Trigger the buggy rebalance

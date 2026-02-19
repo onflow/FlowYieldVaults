@@ -39,7 +39,9 @@ access(all) fun setPoolToPrice(
     priceTokenBPerTokenA: UFix64,
     tokenABalanceSlot: UInt256,
     tokenBBalanceSlot: UInt256,
-    signer: Test.TestAccount
+    signer: Test.TestAccount,
+    tokenADecimals: Int,
+    tokenBDecimals: Int
 ) {
     // Sort tokens (Uniswap V3 requires token0 < token1)
     let token0 = tokenAAddress < tokenBAddress ? tokenAAddress : tokenBAddress
@@ -49,8 +51,38 @@ access(all) fun setPoolToPrice(
     
     let poolPrice = tokenAAddress < tokenBAddress ? priceTokenBPerTokenA : 1.0 / priceTokenBPerTokenA
     
-    let targetSqrtPriceX96 = calculateSqrtPriceX96(price: poolPrice)
-    let targetTick = calculateTick(price: poolPrice)
+    // Calculate decimal offset for sorted tokens
+    let token0Decimals = tokenAAddress < tokenBAddress ? tokenADecimals : tokenBDecimals
+    let token1Decimals = tokenAAddress < tokenBAddress ? tokenBDecimals : tokenADecimals
+    let decOffset = token1Decimals - token0Decimals
+    
+    // Calculate base price/tick
+    var targetSqrtPriceX96 = calculateSqrtPriceX96(price: poolPrice)
+    var targetTick = calculateTick(price: poolPrice)
+    
+    // Apply decimal offset if needed (MINIMAL change)
+    if decOffset != 0 {
+        // Adjust sqrtPriceX96: multiply/divide by 10^(decOffset/2)
+        var sqrtPriceU256 = UInt256.fromString(targetSqrtPriceX96)!
+        let absHalfOffset = decOffset < 0 ? (-decOffset) / 2 : decOffset / 2
+        var pow10: UInt256 = 1
+        var i = 0
+        while i < absHalfOffset {
+            pow10 = pow10 * 10
+            i = i + 1
+        }
+        if decOffset > 0 {
+            sqrtPriceU256 = sqrtPriceU256 * pow10
+        } else {
+            sqrtPriceU256 = sqrtPriceU256 / pow10
+        }
+        targetSqrtPriceX96 = sqrtPriceU256.toString()
+        
+        // Adjust tick: add/subtract decOffset * 23026 (ticks per decimal)
+        targetTick = targetTick + Int256(decOffset) * 23026
+    }
+    
+    log("[setPoolToPrice] tokenA=\(tokenAAddress) tokenB=\(tokenBAddress) fee=\(fee) price=\(poolPrice) decOffset=\(decOffset) tick=\(targetTick.toString())")
     
     let createResult = Test.executeTransaction(
         Test.Transaction(

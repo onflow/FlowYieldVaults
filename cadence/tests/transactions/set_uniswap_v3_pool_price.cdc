@@ -89,9 +89,12 @@ transaction(
         // TODO: Consider passing unrounded tick to slot0 if precision matters
         let targetTickAligned = (targetTick / tickSpacing) * tickSpacing
         
-        // Calculate full-range ticks (MUST be multiples of tickSpacing!)
+        // Use FULL RANGE ticks (min/max for Uniswap V3)
+        // This ensures liquidity is available at any price
         let tickLower = (-887272 as Int256) / tickSpacing * tickSpacing
         let tickUpper = (887272 as Int256) / tickSpacing * tickSpacing
+        
+        log("Tick range: tickLower=\(tickLower), tick=\(targetTickAligned), tickUpper=\(tickUpper)")
         
         // Set slot0 with target price
         // slot0 packing (from lowest to highest bits):
@@ -275,10 +278,6 @@ transaction(
         let tickUpperSlot = computeMappingSlot([tickUpper, 5])
         
         // Slot 0: liquidityGross=1e24 (lower 128 bits), liquidityNet=-1e24 (upper 128 bits, two's complement)
-        // CRITICAL: Must be exactly 64 hex chars = 32 bytes
-        // -1e24 in 128-bit two's complement: ffffffffffff2c3de43133125f000000 (32 chars = 16 bytes)
-        // liquidityGross: 000000000000d3c21bcecceda1000000 (32 chars = 16 bytes)
-        // Storage layout: [liquidityNet (upper 128)] [liquidityGross (lower 128)]
         let tickUpperData0 = "0xffffffffffff2c3de43133125f000000000000000000d3c21bcecceda1000000"
         
         // ASSERTION: Verify tick upper data is 32 bytes
@@ -546,15 +545,47 @@ transaction(
         positionSlot3Hex = "\(positionSlot3Hex)\(String.encodeHex(positionSlot3Bytes))"
         EVM.store(target: poolAddr, slot: positionSlot3Hex, value: "0x0000000000000000000000000000000000000000000000000000000000000000")
 
-        // Fund pool with massive token balances
-        let hugeBalance = "0x000000000000000000000000af298d050e4395d69670b12b7f41000000000000"
+        // Fund pool with balanced token amounts (1 billion logical tokens for each)
+        // Need to account for decimal differences between tokens
+        
+        // Get decimals for each token
+        let zeroAddress = EVM.addressFromString("0x0000000000000000000000000000000000000000")
+        let decimalsCalldata = EVM.encodeABIWithSignature("decimals()", [])
+        
+        let token0DecimalsResult = EVM.dryCall(from: zeroAddress, to: token0, data: decimalsCalldata, gasLimit: 100000, value: EVM.Balance(attoflow: 0))
+        let token0Decimals = (EVM.decodeABI(types: [Type<UInt8>()], data: token0DecimalsResult.data)[0] as! UInt8)
+        
+        let token1DecimalsResult = EVM.dryCall(from: zeroAddress, to: token1, data: decimalsCalldata, gasLimit: 100000, value: EVM.Balance(attoflow: 0))
+        let token1Decimals = (EVM.decodeABI(types: [Type<UInt8>()], data: token1DecimalsResult.data)[0] as! UInt8)
+        
+        // Calculate 1 billion tokens in each token's decimal format
+        // 1,000,000,000 * 10^decimals
+        var token0Balance: UInt256 = 1000000000
+        var i: UInt8 = 0
+        while i < token0Decimals {
+            token0Balance = token0Balance * 10
+            i = i + 1
+        }
+        
+        var token1Balance: UInt256 = 1000000000
+        i = 0
+        while i < token1Decimals {
+            token1Balance = token1Balance * 10
+            i = i + 1
+        }
+        
+        log("Setting pool balances: token0=\(token0Balance.toString()) (\(token0Decimals) decimals), token1=\(token1Balance.toString()) (\(token1Decimals) decimals)")
+        
+        // Convert to hex and pad to 32 bytes
+        let token0BalanceHex = "0x".concat(String.encodeHex(token0Balance.toBigEndianBytes()))
+        let token1BalanceHex = "0x".concat(String.encodeHex(token1Balance.toBigEndianBytes()))
         
         // Set token0 balance
         let token0BalanceSlotComputed = computeBalanceOfSlot(holderAddress: poolAddress, balanceSlot: token0BalanceSlot)
-        EVM.store(target: token0, slot: token0BalanceSlotComputed, value: hugeBalance)
+        EVM.store(target: token0, slot: token0BalanceSlotComputed, value: token0BalanceHex)
         
         // Set token1 balance
         let token1BalanceSlotComputed = computeBalanceOfSlot(holderAddress: poolAddress, balanceSlot: token1BalanceSlot)
-        EVM.store(target: token1, slot: token1BalanceSlotComputed, value: hugeBalance)
+        EVM.store(target: token1, slot: token1BalanceSlotComputed, value: token1BalanceHex)
     }
 }
