@@ -58,16 +58,6 @@
                 "testnet": "7014dcffa1f14186"
             }
         },
-        "EVMAmountUtils": {
-            "source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
-            "aliases": {
-                "emulator": "045a1763c93006ca",
-                "mainnet": "6d888f175c158410",
-                "mainnet-fork": "6d888f175c158410",
-                "testing": "0000000000000009",
-                "testnet": "0b11b1848a8aa2c0"
-            }
-        },
         "ERC4626SwapConnectors": {
             "source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
             "aliases": {
@@ -102,10 +92,10 @@
             "source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
             "aliases": {
                 "emulator": "045a1763c93006ca",
-                "mainnet": "6d888f175c158410",
-                "mainnet-fork": "6d888f175c158410",
+                "mainnet": "43c9e8bfec507db4",
+                "mainnet-fork": "43c9e8bfec507db4",
                 "testing": "0000000000000009",
-                "testnet": "0b11b1848a8aa2c0"
+                "testnet": "67402f29666f7b29"
             }
         },
         "EVMTokenConnectors": {
@@ -118,16 +108,6 @@
                 "testnet": "b88ba0e976146cd1"
             }
         },
-        "FlowALPv1": {
-            "source": "./lib/FlowALP/cadence/contracts/FlowALPv1.cdc",
-            "aliases": {
-                "emulator": "045a1763c93006ca",
-                "mainnet": "6b00ff876c299c61",
-                "mainnet-fork": "6b00ff876c299c61",
-                "testing": "0000000000000008",
-                "testnet": "426f0458ced60037"
-            }
-        },
         "FlowALPMath": {
             "source": "./lib/FlowALP/cadence/lib/FlowALPMath.cdc",
             "aliases": {
@@ -135,6 +115,16 @@
                 "mainnet": "6b00ff876c299c61",
                 "mainnet-fork": "6b00ff876c299c61",
                 "testing": "0000000000000007",
+                "testnet": "426f0458ced60037"
+            }
+        },
+        "FlowALPv0": {
+            "source": "./lib/FlowALP/cadence/contracts/FlowALPv0.cdc",
+            "aliases": {
+                "emulator": "045a1763c93006ca",
+                "mainnet": "6b00ff876c299c61",
+                "mainnet-fork": "6b00ff876c299c61",
+                "testing": "0000000000000008",
                 "testnet": "426f0458ced60037"
             }
         },
@@ -198,8 +188,8 @@
                 "testnet": "d2580caf2ef07c2f"
             }
         },
-        "FlowYieldVaultsStrategiesV1_1": {
-            "source": "cadence/contracts/FlowYieldVaultsStrategiesV1_1.cdc",
+        "FlowYieldVaultsStrategiesV2": {
+            "source": "cadence/contracts/FlowYieldVaultsStrategiesV2.cdc",
             "aliases": {
                 "emulator": "045a1763c93006ca",
                 "mainnet": "b1d63873c3cc9f79",
@@ -232,7 +222,9 @@
             "source": "./lib/FlowALP/cadence/contracts/mocks/MockDexSwapper.cdc",
             "aliases": {
                 "emulator": "045a1763c93006ca",
-                "testing": "0000000000000007"
+                "testing": "0000000000000007",
+                "mainnet": "b1d63873c3cc9f79",
+                "mainnet-fork": "b1d63873c3cc9f79"
             }
         },
         "MockOracle": {
@@ -904,13 +896,6 @@
                 "resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
             }
         },
-        "mainnet-fork-admin": {
-            "address": "b1d63873c3cc9f79",
-            "key": {
-                "type": "file",
-                "location": "local/emulator-account.pkey"
-            }
-        },
         "mainnet-band-oracle-connectors": {
             "address": "e36ef556b8b5d955",
             "key": {
@@ -925,6 +910,13 @@
                 "type": "google-kms",
                 "hashAlgorithm": "SHA2_256",
                 "resourceID": "projects/dl-flow-devex-production/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+            }
+        },
+        "mainnet-fork-admin": {
+            "address": "b1d63873c3cc9f79",
+            "key": {
+                "type": "file",
+                "location": "local/emulator-account.pkey"
             }
         },
         "mock-incrementfi": {
@@ -984,7 +976,7 @@
                 "FungibleTokenConnectors",
                 "SwapConnectors",
                 "DummyConnectors",
-                "FlowALPv1",
+                "FlowALPv0",
                 {
                     "name": "YieldToken",
                     "args": [
@@ -1049,7 +1041,7 @@
                     ]
                 },
                 {
-                    "name": "FlowYieldVaultsStrategiesV1_1",
+                    "name": "FlowYieldVaultsStrategiesV2",
                     "args": [
                         {
                             "value": "0x986Cb42b0557159431d48fE0A40073296414d410",
@@ -1177,7 +1169,7 @@
                     ]
                 },
                 {
-                    "name": "FlowYieldVaultsStrategiesV1_1",
+                    "name": "FlowYieldVaultsStrategiesV2",
                     "args": [
                         {
                             "value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
@@ -1289,7 +1281,7 @@
                     ]
                 },
                 {
-                    "name": "FlowYieldVaultsStrategiesV1_1",
+                    "name": "FlowYieldVaultsStrategiesV2",
                     "args": [
                         {
                             "value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
@@ -1394,7 +1386,7 @@
                     ]
                 },
                 {
-                    "name": "FlowYieldVaultsStrategiesV1_1",
+                    "name": "FlowYieldVaultsStrategiesV2",
                     "args": [
                         {
                             "value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",

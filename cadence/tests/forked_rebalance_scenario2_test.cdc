@@ -1,5 +1,5 @@
 // this height guarantees enough liquidity for the test
-#test_fork(network: "mainnet", height: 140164761)
+#test_fork(network: "mainnet", height: nil)
 
 import Test
 import BlockchainHelpers
@@ -9,20 +9,20 @@ import "evm_state_helpers.cdc"
 
 import "FlowToken"
 import "MOET"
-import "FlowYieldVaultsStrategiesV1_1"
-import "FlowALPv1"
+import "FlowYieldVaultsStrategiesV2"
+import "FlowALPv0"
 import "FlowYieldVaults"
 import "ERC4626PriceOracles"
 
 // check (and update) flow.json for correct addresses
 // mainnet addresses
 access(all) let flowYieldVaultsAccount = Test.getAccount(0xb1d63873c3cc9f79)
-access(all) let flowCreditMarketAccount = Test.getAccount(0x6b00ff876c299c61)
+access(all) let flowALPAccount = Test.getAccount(0x6b00ff876c299c61)
 access(all) let bandOracleAccount = Test.getAccount(0x6801a6222ebf784a)
 access(all) let whaleFlowAccount = Test.getAccount(0x92674150c9213fc9)
 access(all) let coaOwnerAccount = Test.getAccount(0xe467b9dd11fa00df)
 
-access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategiesV1_1.FUSDEVStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategiesV2.FUSDEVStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
@@ -68,13 +68,18 @@ access(all) let morphoVaultTotalAssetsSlot = "0x00000000000000000000000000000000
 
 access(all)
 fun setup() {
-    // Deploy mock EVM contract to enable vm.store/vm.load cheatcodes
-    var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
+    deployContractsForForkedTests()
 
-    err = Test.deployContract(name: "ERC4626PriceOracles", path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-
+    // // set up pool (tmp)
+    // createAndStorePool(signer: flowALPAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
+    // addSupportedTokenZeroRateInterestCurve(
+    //     signer: flowALPAccount,
+    //     tokenTypeIdentifier: flowTokenIdentifier,
+    //     collateralFactor: 0.8,
+    //     borrowFactor: 1.0,
+    //     depositRate: 1_000_000.0,
+    //     depositCapacityCap: 1_000_000.0
+    // )
     
     // Setup Uniswap V3 pools with structurally valid state
     // This sets slot0, observations, liquidity, ticks, bitmap, positions, and POOL token balances
@@ -140,9 +145,9 @@ fun setup() {
 	// service account does not have enough flow to "mint"
 	// var mintFlowResult = mintFlow(to: flowCreditMarketAccount, amount: reserveAmount)
     // Test.expect(mintFlowResult, Test.beSucceeded())
-    transferFlow(signer: whaleFlowAccount, recipient: flowCreditMarketAccount.address, amount: reserveAmount)
+    transferFlow(signer: whaleFlowAccount, recipient: flowALPAccount.address, amount: reserveAmount)
 
-	mintMoet(signer: flowCreditMarketAccount, to: flowCreditMarketAccount.address, amount: reserveAmount, beFailed: false)
+	mintMoet(signer: flowALPAccount, to: flowALPAccount.address, amount: reserveAmount, beFailed: false)
 
 	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
     // service account does not have enough flow to "mint"
@@ -197,7 +202,7 @@ fun test_RebalanceYieldVaultScenario2() {
 	)
 
     // Capture the actual position ID from the FlowCreditMarket.Opened event
-	var pid = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv1.Opened>())) as! FlowALPv1.Opened).pid
+	var pid = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv0.Opened>())) as! FlowALPv0.Opened).pid
 	log("[TEST] Captured Position ID from event: \(pid)")
 
 	var yieldVaultIDs = getYieldVaultIDs(address: user.address)
@@ -210,7 +215,7 @@ fun test_RebalanceYieldVaultScenario2() {
 	log("[TEST] Initial yield vault balance: \(yieldVaultBalance ?? 0.0)")
 
 	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
-	rebalancePosition(signer: flowCreditMarketAccount, pid: pid, force: true, beFailed: false)
+	rebalancePosition(signer: flowALPAccount, pid: pid, force: true, beFailed: false)
 
 	for index, yieldTokenPrice in yieldPriceIncreases {
 		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
@@ -245,7 +250,7 @@ fun test_RebalanceYieldVaultScenario2() {
 		log("[TEST] YieldVault balance before yield price \(yieldTokenPrice) rebalance: \(yieldVaultBalance ?? 0.0)")
 
 		rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: false, beFailed: false)
-		rebalancePosition(signer: flowCreditMarketAccount, pid: pid, force: false, beFailed: false)
+		rebalancePosition(signer: flowALPAccount, pid: pid, force: false, beFailed: false)
 
 		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
