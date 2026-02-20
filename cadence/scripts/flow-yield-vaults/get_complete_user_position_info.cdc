@@ -1,6 +1,6 @@
 import "FlowYieldVaults"
 import "FlowYieldVaultsAutoBalancers"
-import "FlowCreditMarket"
+import "FlowALPv1"
 import "MockOracle"
 import "YieldToken"
 import "MOET"
@@ -181,8 +181,8 @@ fun main(address: Address): CompleteUserSummary {
     let moetPrice = oracle.price(ofToken: Type<@MOET.Vault>()) ?? 1.0
     let flowPrice = oracle.price(ofToken: Type<@FlowToken.Vault>()) ?? 1.0
 
-    // Note: FlowCreditMarket positions and FlowYieldVaults yield vaults use different ID systems
-    // We'll calculate health manually since yield vault IDs don't correspond to FlowCreditMarket position IDs
+    // Note: FlowALP positions and FlowYieldVaults yield vaults use different ID systems
+    // We'll calculate health manually since yield vault IDs don't correspond to FlowALP position IDs
 
     var totalCollateralValue = 0.0
     var totalYieldTokenValue = 0.0
@@ -196,7 +196,7 @@ fun main(address: Address): CompleteUserSummary {
             let yieldTokenBalance = autoBalancer?.vaultBalance() ?? 0.0
             
             // Use the AutoBalancer's balance as the primary balance source
-            // This bypasses the FlowCreditMarket overflow issue
+            // This bypasses the FlowALP overflow issue
             let realAvailableBalance = yieldTokenBalance
             
             let yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
@@ -231,13 +231,13 @@ fun main(address: Address): CompleteUserSummary {
             
             let netWorth = estimatedCollateralValue + yieldTokenValue - estimatedDebtValue
             
-            // Get the actual position health from FlowCreditMarket.Pool
-            // FlowCreditMarket positions use sequential IDs (0, 1, 2, ...) while yield vault IDs are different
+            // Get the actual position health from FlowALPv1.Pool
+            // FlowALP positions use sequential IDs (0, 1, 2, ...) while yield vault IDs are different
             var actualHealth: UFix128 = 999.0
             
-            // Try to get the real health from FlowCreditMarket.Pool using sequential position IDs
-            let protocolAddress = Type<@FlowCreditMarket.Pool>().address!
-            if let pool = getAccount(protocolAddress).capabilities.borrow<&FlowCreditMarket.Pool>(FlowCreditMarket.PoolPublicPath) {
+            // Try to get the real health from FlowALPv1.Pool using sequential position IDs
+            let protocolAddress = Type<@FlowALPv1.Pool>().address!
+            if let pool = getAccount(protocolAddress).capabilities.borrow<&FlowALPv1.Pool>(FlowALPv1.PoolPublicPath) {
                 // Since we can't directly map yield vault IDs to position IDs, we'll try sequential IDs
                 // This assumes positions are created in order (0, 1, 2, ...)
                 let positionIndex = UInt64(positions.length)  // Use the current position index

@@ -56,21 +56,22 @@ fun setup() {
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
     log("Token liquidity setup")
 
-    // Setup FlowCreditMarket with a Pool & add FLOW as supported token
+    // Setup FlowALP with a Pool & add FLOW as supported token
     createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
-    addSupportedTokenSimpleInterestCurve(
+    addSupportedTokenFixedRateInterestCurve(
         signer: protocolAccount,
         tokenTypeIdentifier: flowTokenIdentifier,
         collateralFactor: 0.8,
         borrowFactor: 1.0,
+        yearlyRate: UFix128(0.1),
         depositRate: 1_000_000.0,
         depositCapacityCap: 1_000_000.0
     )
-    log("FlowCreditMarket pool configured")
+    log("FlowALP pool configured")
 
     // Open wrapped position
     let openRes = executeTransaction(
-        "../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
+        "../../lib/FlowALP/cadence/transactions/flow-alp/position/create_position.cdc",
         [reserveAmount/2.0, /storage/flowTokenVault, true],
         protocolAccount
     )

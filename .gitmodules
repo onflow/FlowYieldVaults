@@ -19,6 +19,6 @@
 [submodule "solidity/lib/v2-periphery"]
 	path = solidity/lib/v2-periphery
 	url = https://github.com/uniswap/v2-periphery
-[submodule "lib/FlowCreditMarket"]
-	path = lib/FlowCreditMarket
-	url = git@github.com:onflow/FlowCreditMarket.git
+[submodule "lib/FlowALP"]
+	path = lib/FlowALP
+	url = git@github.com:onflow/FlowALP.git
