@@ -73,9 +73,10 @@ transaction(
         // totalAssets (in assetDecimals) / totalSupply (vault decimals) = 1
         // Morpho vaults use 18 decimals for shares regardless of underlying asset decimals
         // So: supply_raw = assets_raw * 10^(18 - assetDecimals)
+        // IMPORTANT: Supply should be based on BASE assets, not multiplied assets (to change price per share)
         let decimalDifference = UInt8(18) - assetDecimals
         let supplyMultiplier = FlowEVMBridgeUtils.pow(base: 10, exponent: decimalDifference)
-        let finalTargetSupply = finalTargetAssets * supplyMultiplier
+        let finalTargetSupply = targetAssets * supplyMultiplier
         
         log("SET_VAULT_PRICE: assetDecimals=".concat(assetDecimals.toString())
             .concat(", finalTargetAssets=").concat(finalTargetAssets.toString())

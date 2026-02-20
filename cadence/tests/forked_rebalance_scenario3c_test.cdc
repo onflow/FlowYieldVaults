@@ -360,7 +360,7 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
         tokenAAddress: moetAddress,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
-        priceTokenBPerTokenA: 2.0,
+        priceTokenBPerTokenA: 0.5,  // MOET=$1, FUSDEV=$2, so 1 MOET = 0.5 FUSDEV
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount,
