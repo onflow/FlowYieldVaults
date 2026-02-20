@@ -236,11 +236,14 @@ access(all) fun deployContractsForFork() {
         morphoVaultAddress: "0xd069d989e2F44B70c65347d1853C0c67e10a9F8D",
         wflowAddress: "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
     )
+
+    // Deploy EVM mock
+    var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
     
     _deploy(config: config)
     
     // Deploy Morpho connectors (mainnet-only, depend on real EVM contracts)
-    var err = Test.deployContract(
+    err = Test.deployContract(
         name: "MorphoERC4626SinkConnectors",
         path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
         arguments: []
@@ -255,11 +258,8 @@ access(all) fun deployContractsForFork() {
 }
 
 access(self) fun _deploy(config: DeploymentConfig) {
-    // Deploy EVM mock (harmless if not used)
-    var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
-
     // DeFiActions contracts
-    err = Test.deployContract(
+    var err = Test.deployContract(
         name: "DeFiActionsUtils",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
         arguments: []
@@ -421,12 +421,12 @@ access(self) fun _deploy(config: DeploymentConfig) {
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
-        name: "FlowYieldVaultsStrategiesV1_1",
-        path: "../contracts/FlowYieldVaultsStrategiesV1_1.cdc",
+        name: "FlowYieldVaultsStrategiesV2",
+        path: "../contracts/FlowYieldVaultsStrategiesV2.cdc",
         arguments: [
+            config.uniswapFactoryAddress,
             config.uniswapRouterAddress,
-            config.uniswapQuoterAddress,
-            config.pyusd0Address
+            config.uniswapQuoterAddress
         ]
     )
     Test.expect(err, Test.beNil())
@@ -470,20 +470,6 @@ access(self) fun _deploy(config: DeploymentConfig) {
         ]
     )
     Test.expect(err, Test.beNil())
-
-    // Mocked Strategy
-    err = Test.deployContract(
-        name: "MockStrategy",
-        path: "../contracts/mocks/MockStrategy.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    let wflowAddress = getEVMAddressAssociated(withType: Type<@FlowToken.Vault>().identifier)
-        ?? panic("Failed to get WFLOW address via VM Bridge association with FlowToken.Vault")
-
-    setupBetaAccess()
-    setupPunchswap(deployer: serviceAccount, wflowAddress: wflowAddress)
 }
 
 access(all)
