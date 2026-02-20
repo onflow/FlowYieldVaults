@@ -31,7 +31,7 @@ run_txn "Transfer Flow tokens" \
 
 run_txn "Creating YieldVault[0]" \
   ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
-  A.045a1763c93006ca.FlowYieldVaultsStrategies.TracerStrategy \
+  A.045a1763c93006ca.MockStrategies.TracerStrategy \
   A.0ae53cb6e3f42a79.FlowToken.Vault \
   100.0 \
   --signer test-user \

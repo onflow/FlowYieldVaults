@@ -2,7 +2,7 @@ import Test
 import BlockchainHelpers
 import "test_helpers.cdc"
 
-import "FlowYieldVaultsStrategies"
+import "MockStrategies"
 import "FlowYieldVaultsSchedulerRegistry"
 import "FlowToken"
 import "MOET"
@@ -12,7 +12,7 @@ access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@MockStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -62,8 +62,8 @@ access(all) fun setup() {
     addStrategyComposer(
         signer: flowYieldVaultsAccount,
         strategyIdentifier: strategyIdentifier,
-        composerIdentifier: Type<@FlowYieldVaultsStrategies.TracerStrategyComposer>().identifier,
-        issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
+        composerIdentifier: Type<@MockStrategies.TracerStrategyComposer>().identifier,
+        issuerStoragePath: MockStrategies.IssuerStoragePath,
         beFailed: false
     )
 
