@@ -558,7 +558,6 @@ fun positionAvailableBalance(
 
 access(all)
 fun createAndStorePool(signer: Test.TestAccount, defaultTokenIdentifier: String, beFailed: Bool) {
-    log("Creating and storing pool with default token: ".concat(defaultTokenIdentifier))
     let createRes = _executeTransaction(
         "../../lib/FlowALP/cadence/transactions/flow-alp/pool-factory/create_and_store_pool.cdc",
         [defaultTokenIdentifier],

@@ -160,8 +160,6 @@ transaction(
         let tickLower = (-887272 as Int256) / tickSpacing * tickSpacing
         let tickUpper = (887272 as Int256) / tickSpacing * tickSpacing
         
-        log("Tick range: tickLower=\(tickLower), tick=\(targetTickAligned), tickUpper=\(tickUpper)")
-        
         // Set slot0 with target price
         // slot0 packing (from lowest to highest bits):
         //   sqrtPriceX96 (160 bits)
@@ -629,8 +627,6 @@ transaction(
             token1Balance = token1Balance * 10
             i = i + 1
         }
-        
-        log("Setting pool balances: token0=\(token0Balance.toString()) (\(token0Decimals) decimals), token1=\(token1Balance.toString()) (\(token1Decimals) decimals)")
         
         // Convert to hex and pad to 32 bytes
         let token0BalanceHex = "0x".concat(String.encodeHex(token0Balance.toBigEndianBytes()))

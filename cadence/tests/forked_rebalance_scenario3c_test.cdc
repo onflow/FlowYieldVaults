@@ -105,7 +105,6 @@ fun setup() {
 
     // Setup Uniswap V3 pools with structurally valid state
     // This sets slot0, observations, liquidity, ticks, bitmap, positions, and POOL token balances
-    log("Setting up PYUSD0/FUSDEV")
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: pyusd0Address,
@@ -117,7 +116,6 @@ fun setup() {
         signer: coaOwnerAccount
     )
     
-    log("Setting up PYUSD0/FLOW")
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: pyusd0Address,
@@ -129,7 +127,6 @@ fun setup() {
         signer: coaOwnerAccount
     )
     
-    log("Setting up MOET/FUSDEV")
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: moetAddress,
@@ -141,7 +138,6 @@ fun setup() {
         signer: coaOwnerAccount
     )
     
-    log("Setting up MOET/PYUSD0")
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: moetAddress,
