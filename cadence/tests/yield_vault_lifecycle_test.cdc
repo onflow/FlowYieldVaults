@@ -7,7 +7,6 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "FlowYieldVaultsStrategies"
-import "FlowALPv1"
 import "FlowYieldVaults"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
