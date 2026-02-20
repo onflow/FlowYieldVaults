@@ -1,6 +1,6 @@
 {
 	"contracts": {
-		"EVM": {
+		"MockEVM": {
 			"source": "./cadence/contracts/mocks/EVM.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",

@@ -1,4 +1,6 @@
-import "EVM"
+import EVM from "MockEVM"
+import "ERC4626Utils"
+import "FlowEVMBridgeUtils"
 
 // Helper: Compute Solidity mapping storage slot
 access(all) fun computeMappingSlot(_ values: [AnyStruct]): String {
@@ -20,15 +22,14 @@ access(all) fun computeBalanceOfSlot(holderAddress: String, balanceSlot: UInt256
 
 // Atomically set ERC4626 vault share price
 // This manipulates both the underlying asset balance and vault's _totalAssets storage slot
-// If targetTotalAssets is 0, multiplies current totalAssets by priceMultiplier
-// If targetTotalAssets is non-zero, uses it directly (priceMultiplier is ignored)
 transaction(
     vaultAddress: String,
     assetAddress: String,
     assetBalanceSlot: UInt256,
-    vaultTotalAssetsSlot: String,
-    priceMultiplier: UFix64,
-    targetTotalAssets: UInt256
+    totalSupplySlot: UInt256,
+    vaultTotalAssetsSlot: UInt256,
+    baseAssets: UFix64,
+    priceMultiplier: UFix64
 ) {
     prepare(signer: &Account) {}
 
@@ -36,65 +37,72 @@ transaction(
         let vault = EVM.addressFromString(vaultAddress)
         let asset = EVM.addressFromString(assetAddress)
         
-        var targetAssets: UInt256 = targetTotalAssets
-        
-        // If targetTotalAssets is 0, calculate from current assets * multiplier
-        if targetTotalAssets == UInt256(0) {
-            // Read current totalAssets from vault via EVM call
-            let totalAssetsCalldata = EVM.encodeABIWithSignature("totalAssets()", [])
-            let totalAssetsResult = EVM.call(
-                from: vaultAddress,
-                to: vaultAddress,
-                data: totalAssetsCalldata,
-                gasLimit: 100000,
-                value: 0
-            )
-            
-            assert(totalAssetsResult.status == EVM.Status.successful, message: "Failed to read totalAssets")
-            
-            let currentAssets = (EVM.decodeABI(types: [Type<UInt256>()], data: totalAssetsResult.data)[0] as! UInt256)
-            
-            // Calculate target assets (currentAssets * multiplier / 1e8)
-            // priceMultiplier is UFix64, so convert to UInt64 via big-endian bytes
-            let multiplierBytes = priceMultiplier.toBigEndianBytes()
-            var multiplierUInt64: UInt64 = 0
-            for byte in multiplierBytes {
-                multiplierUInt64 = (multiplierUInt64 << 8) + UInt64(byte)
-            }
-            targetAssets = (currentAssets * UInt256(multiplierUInt64)) / UInt256(100000000)
+        // Helper to convert UInt256 to hex string for EVM.store
+        let toSlotString = fun (_ slot: UInt256): String {
+            return "0x".concat(String.encodeHex(slot.toBigEndianBytes()))
         }
         
-        // Update asset.balanceOf(vault) to targetAssets
+        // Query asset decimals from the ERC20 contract
+        let zeroAddress = EVM.addressFromString("0x0000000000000000000000000000000000000000")
+        let decimalsCalldata = EVM.encodeABIWithSignature("decimals()", [])
+        let decimalsResult = EVM.dryCall(
+            from: zeroAddress,
+            to: asset,
+            data: decimalsCalldata,
+            gasLimit: 100000,
+            value: EVM.Balance(attoflow: 0)
+        )
+        assert(decimalsResult.status == EVM.Status.successful, message: "Failed to query asset decimals")
+        let assetDecimals = (EVM.decodeABI(types: [Type<UInt8>()], data: decimalsResult.data)[0] as! UInt8)
+        
+        // Convert baseAssets to asset decimals and apply multiplier
+        let targetAssets = FlowEVMBridgeUtils.ufix64ToUInt256(value: baseAssets, decimals: assetDecimals)
+        log("SET_VAULT_PRICE: baseAssets=".concat(baseAssets.toString())
+            .concat(", assetDecimals=").concat(assetDecimals.toString())
+            .concat(", targetAssets=").concat(targetAssets.toString()))
+        let multiplierBytes = priceMultiplier.toBigEndianBytes()
+        var multiplierUInt64: UInt64 = 0
+        for byte in multiplierBytes {
+            multiplierUInt64 = (multiplierUInt64 << 8) + UInt64(byte)
+        }
+        let finalTargetAssets = (targetAssets * UInt256(multiplierUInt64)) / UInt256(100000000)
+        log("SET_VAULT_PRICE: multiplierUInt64=".concat(multiplierUInt64.toString())
+            .concat(", finalTargetAssets=").concat(finalTargetAssets.toString()))
+        
+        // For a 1:1 price (1 share = 1 asset), we need:
+        // totalAssets (in assetDecimals) / totalSupply (vault decimals) = 1
+        // Morpho vaults use 18 decimals for shares regardless of underlying asset decimals
+        // So: supply_raw = assets_raw * 10^(18 - assetDecimals)
+        // IMPORTANT: Supply should be based on BASE assets, not multiplied assets (to change price per share)
+        let decimalDifference = UInt8(18) - assetDecimals
+        let supplyMultiplier = FlowEVMBridgeUtils.pow(base: 10, exponent: decimalDifference)
+        let finalTargetSupply = targetAssets * supplyMultiplier
+        
+        log("SET_VAULT_PRICE: assetDecimals=".concat(assetDecimals.toString())
+            .concat(", finalTargetAssets=").concat(finalTargetAssets.toString())
+            .concat(", decimalDifference=").concat(decimalDifference.toString())
+            .concat(", supplyMultiplier=").concat(supplyMultiplier.toString())
+            .concat(", finalTargetSupply=").concat(finalTargetSupply.toString()))
+        
+        let supplyValue = "0x".concat(String.encodeHex(finalTargetSupply.toBigEndianBytes()))
+        EVM.store(target: vault, slot: toSlotString(totalSupplySlot), value: supplyValue)
+        log("SET_VAULT_PRICE: Stored totalSupply at slot ".concat(toSlotString(totalSupplySlot)).concat(" = ").concat(supplyValue))
+        
+        // Update asset.balanceOf(vault) to finalTargetAssets
         let vaultBalanceSlot = computeBalanceOfSlot(holderAddress: vaultAddress, balanceSlot: assetBalanceSlot)
-        
-        // Pad targetAssets to 32 bytes
-        let targetAssetsBytes = targetAssets.toBigEndianBytes()
-        var paddedTargetAssets: [UInt8] = []
-        var padCount = 32 - targetAssetsBytes.length
-        while padCount > 0 {
-            paddedTargetAssets.append(0)
-            padCount = padCount - 1
-        }
-        paddedTargetAssets.appendAll(targetAssetsBytes)
-        
-        let targetAssetsValue = "0x".concat(String.encodeHex(paddedTargetAssets))
+        let targetAssetsValue = "0x".concat(String.encodeHex(finalTargetAssets.toBigEndianBytes()))
         EVM.store(target: asset, slot: vaultBalanceSlot, value: targetAssetsValue)
+        log("SET_VAULT_PRICE: Stored asset balance at vault = ".concat(targetAssetsValue))
         
-        // Read current vault storage slot (contains lastUpdate, maxRate, and totalAssets packed)
-        let slotBytes = EVM.load(target: vault, slot: vaultTotalAssetsSlot)
-        
-        assert(slotBytes.length == 32, message: "Vault storage slot must be 32 bytes")
-        
-        // Extract maxRate (bytes 8-15, 8 bytes)
-        let maxRateBytes = slotBytes.slice(from: 8, upTo: 16)
-        
-        // Get current block timestamp for lastUpdate (bytes 0-7, 8 bytes)
+        // Set vault storage slot (lastUpdate, maxRate, totalAssets packed)
+        // For testing, we'll set maxRate to 0 to disable interest rate caps
         let currentTimestamp = UInt64(getCurrentBlock().timestamp)
         let lastUpdateBytes = currentTimestamp.toBigEndianBytes()
+        let maxRateBytes: [UInt8] = [0, 0, 0, 0, 0, 0, 0, 0]  // maxRate = 0
         
-        // Pad targetAssets to 16 bytes for the slot (bytes 16-31, 16 bytes in slot)
-        // Re-get bytes from targetAssets to avoid using the 32-byte padded version
-        let assetsBytesForSlot = targetAssets.toBigEndianBytes()
+        // Pad finalTargetAssets to 16 bytes for the slot (bytes 16-31, 16 bytes in slot)
+        // Re-get bytes from finalTargetAssets to avoid using the 32-byte padded version
+        let assetsBytesForSlot = finalTargetAssets.toBigEndianBytes()
         var paddedAssets: [UInt8] = []
         var assetsPadCount = 16 - assetsBytesForSlot.length
         while assetsPadCount > 0 {
@@ -118,6 +126,8 @@ transaction(
         assert(newSlotBytes.length == 32, message: "Vault storage slot must be exactly 32 bytes, got \(newSlotBytes.length) (lastUpdate: \(lastUpdateBytes.length), maxRate: \(maxRateBytes.length), assets: \(paddedAssets.length))")
         
         let newSlotValue = "0x".concat(String.encodeHex(newSlotBytes))
-        EVM.store(target: vault, slot: vaultTotalAssetsSlot, value: newSlotValue)
+        EVM.store(target: vault, slot: toSlotString(vaultTotalAssetsSlot), value: newSlotValue)
+        log("SET_VAULT_PRICE: Stored packed slot at ".concat(toSlotString(vaultTotalAssetsSlot)).concat(" = ").concat(newSlotValue))
+        log("SET_VAULT_PRICE: COMPLETE - Share price should be 1:1")
     }
 }
