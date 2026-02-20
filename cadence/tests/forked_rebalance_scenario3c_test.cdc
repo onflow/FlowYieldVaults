@@ -114,9 +114,7 @@ fun setup() {
         priceTokenBPerTokenA: 1.01,
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount,
-        tokenADecimals: 6,
-        tokenBDecimals: 18
+        signer: coaOwnerAccount
     )
     
     log("Setting up PYUSD0/FLOW")
@@ -128,9 +126,7 @@ fun setup() {
         priceTokenBPerTokenA: 1.0,
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: wflowBalanceSlot,
-        signer: coaOwnerAccount,
-        tokenADecimals: 6,
-        tokenBDecimals: 18
+        signer: coaOwnerAccount
     )
     
     log("Setting up MOET/FUSDEV")
@@ -142,9 +138,7 @@ fun setup() {
         priceTokenBPerTokenA: 1.01,
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount,
-        tokenADecimals: 18,
-        tokenBDecimals: 18
+        signer: coaOwnerAccount
     )
     
     log("Setting up MOET/PYUSD0")
@@ -156,9 +150,7 @@ fun setup() {
         priceTokenBPerTokenA: 1.0,
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: pyusd0BalanceSlot,
-        signer: coaOwnerAccount,
-        tokenADecimals: 18,
-        tokenBDecimals: 6
+        signer: coaOwnerAccount
     )
     
     // BandOracle is used for FLOW and USD (MOET) prices
@@ -295,9 +287,7 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
         priceTokenBPerTokenA: 2.0,  // Flow is 2x the price of PYUSD0
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: wflowBalanceSlot,
-        signer: coaOwnerAccount,
-        tokenADecimals: 6,
-        tokenBDecimals: 18
+        signer: coaOwnerAccount
     )
 
     rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
@@ -350,9 +340,7 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
         priceTokenBPerTokenA: 2.0,
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount,
-        tokenADecimals: 6,
-        tokenBDecimals: 18
+        signer: coaOwnerAccount
     )
     
     setPoolToPrice(
@@ -363,9 +351,7 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
         priceTokenBPerTokenA: 0.5,  // MOET=$1, FUSDEV=$2, so 1 MOET = 0.5 FUSDEV
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount,
-        tokenADecimals: 18,
-        tokenBDecimals: 18
+        signer: coaOwnerAccount
     )
     
     // Trigger the buggy rebalance
@@ -381,7 +367,6 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
     log("Yield Tokens: \(yieldTokensAfterYieldPriceIncrease) (expected: \(expectedYieldTokenValues[2]))")
     log("Flow Collateral: \(flowCollateralAfterYieldIncrease) FLOW (value: $\(flowCollateralValueAfterYieldIncrease))")
     log("MOET Debt: \(debtAfterYieldIncrease)")
-    log("BUG: Should have WITHDRAWN to \(expectedYieldTokenValues[2]), but DEPOSITED instead!")
     
     Test.assert(
         equalAmounts(a: yieldTokensAfterYieldPriceIncrease, b: expectedYieldTokenValues[2], tolerance: expectedYieldTokenValues[2] * forkedPercentTolerance),
