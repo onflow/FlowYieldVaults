@@ -57,17 +57,12 @@ transaction(
         
         // Convert baseAssets to asset decimals and apply multiplier
         let targetAssets = FlowEVMBridgeUtils.ufix64ToUInt256(value: baseAssets, decimals: assetDecimals)
-        log("SET_VAULT_PRICE: baseAssets=".concat(baseAssets.toString())
-            .concat(", assetDecimals=").concat(assetDecimals.toString())
-            .concat(", targetAssets=").concat(targetAssets.toString()))
         let multiplierBytes = priceMultiplier.toBigEndianBytes()
         var multiplierUInt64: UInt64 = 0
         for byte in multiplierBytes {
             multiplierUInt64 = (multiplierUInt64 << 8) + UInt64(byte)
         }
         let finalTargetAssets = (targetAssets * UInt256(multiplierUInt64)) / UInt256(100000000)
-        log("SET_VAULT_PRICE: multiplierUInt64=".concat(multiplierUInt64.toString())
-            .concat(", finalTargetAssets=").concat(finalTargetAssets.toString()))
         
         // For a 1:1 price (1 share = 1 asset), we need:
         // totalAssets (in assetDecimals) / totalSupply (vault decimals) = 1
@@ -78,21 +73,13 @@ transaction(
         let supplyMultiplier = FlowEVMBridgeUtils.pow(base: 10, exponent: decimalDifference)
         let finalTargetSupply = targetAssets * supplyMultiplier
         
-        log("SET_VAULT_PRICE: assetDecimals=".concat(assetDecimals.toString())
-            .concat(", finalTargetAssets=").concat(finalTargetAssets.toString())
-            .concat(", decimalDifference=").concat(decimalDifference.toString())
-            .concat(", supplyMultiplier=").concat(supplyMultiplier.toString())
-            .concat(", finalTargetSupply=").concat(finalTargetSupply.toString()))
-        
         let supplyValue = "0x".concat(String.encodeHex(finalTargetSupply.toBigEndianBytes()))
         EVM.store(target: vault, slot: toSlotString(totalSupplySlot), value: supplyValue)
-        log("SET_VAULT_PRICE: Stored totalSupply at slot ".concat(toSlotString(totalSupplySlot)).concat(" = ").concat(supplyValue))
         
         // Update asset.balanceOf(vault) to finalTargetAssets
         let vaultBalanceSlot = computeBalanceOfSlot(holderAddress: vaultAddress, balanceSlot: assetBalanceSlot)
         let targetAssetsValue = "0x".concat(String.encodeHex(finalTargetAssets.toBigEndianBytes()))
         EVM.store(target: asset, slot: vaultBalanceSlot, value: targetAssetsValue)
-        log("SET_VAULT_PRICE: Stored asset balance at vault = ".concat(targetAssetsValue))
         
         // Set vault storage slot (lastUpdate, maxRate, totalAssets packed)
         // For testing, we'll set maxRate to 0 to disable interest rate caps
@@ -127,7 +114,5 @@ transaction(
         
         let newSlotValue = "0x".concat(String.encodeHex(newSlotBytes))
         EVM.store(target: vault, slot: toSlotString(vaultTotalAssetsSlot), value: newSlotValue)
-        log("SET_VAULT_PRICE: Stored packed slot at ".concat(toSlotString(vaultTotalAssetsSlot)).concat(" = ").concat(newSlotValue))
-        log("SET_VAULT_PRICE: COMPLETE - Share price should be 1:1")
     }
 }
