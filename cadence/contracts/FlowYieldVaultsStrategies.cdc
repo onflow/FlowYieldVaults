@@ -193,7 +193,7 @@ access(all) contract FlowYieldVaultsStrategies {
             // Swaps YieldToken & provides swapped Stable, sourcing YieldToken from the AutoBalancer
             let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToStableSwapper, source: abaSource, uniqueID: uniqueID)
 
-            // open a FlowCreditMarket position
+            // open a FlowALP position
             let poolCap = FlowYieldVaultsStrategies.account.storage.load<Capability<auth(FlowALPv1.EParticipant, FlowALPv1.EPosition) &FlowALPv1.Pool>>(
                 from: FlowALPv1.PoolCapStoragePath
             ) ?? panic("Missing pool capability")
@@ -469,7 +469,7 @@ access(all) contract FlowYieldVaultsStrategies {
             // Swaps YIELD & provides swapped MOET, sourcing YIELD from the AutoBalancer
             let abaSwapSource = SwapConnectors.SwapSource(swapper: yieldToMOETSwapper, source: abaSource, uniqueID: uniqueID)
 
-            // open a FlowCreditMarket position
+            // open a FlowALP position
             let poolCap = FlowYieldVaultsStrategies.account.storage.copy<Capability<auth(FlowALPv1.EParticipant, FlowALPv1.EPosition) &FlowALPv1.Pool>>(
                     from: FlowALPv1.PoolCapStoragePath
                 ) ?? panic("Missing or invalid pool capability")
