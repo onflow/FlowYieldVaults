@@ -4,7 +4,7 @@ import "EVM"
 import "MetadataViews"
 import "FlowToken"
 import "MOET"
-import "FlowALPv1"
+import "FlowALPv0"
 
 access(all) let serviceAccount = Test.serviceAccount()
 
@@ -180,7 +180,7 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
 
-    // FlowALPv1 contracts
+    // FlowALPv0 contracts
     let initialMoetSupply = 0.0
     err = Test.deployContract(
         name: "MOET",
@@ -189,8 +189,8 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "FlowALPv1",
-        path: "../../lib/FlowALP/cadence/contracts/FlowALPv1.cdc",
+        name: "FlowALPv0",
+        path: "../../lib/FlowALP/cadence/contracts/FlowALPv0.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -310,6 +310,20 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
 
+    err = Test.deployContract(
+        name: "MorphoERC4626SinkConnectors",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "MorphoERC4626SwapConnectors",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
     let onboarder = Test.createAccount()
     transferFlow(signer: serviceAccount, recipient: onboarder.address, amount: 100.0)
     let onboardMoet = _executeTransaction(
@@ -320,22 +334,15 @@ access(all) fun deployContracts() {
     Test.expect(onboardMoet, Test.beSucceeded())
 
     err = Test.deployContract(
-        name: "FlowYieldVaultsStrategies",
-        path: "../contracts/FlowYieldVaultsStrategies.cdc",
-        arguments: [
-            "0x986Cb42b0557159431d48fE0A40073296414d410",
-            "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
-            "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C",
-            "0xaCCF0c4EeD4438Ad31Cd340548f4211a465B6528",
-            [] as [String],
-            [] as [UInt32]
-        ]
+        name: "MockStrategies",
+        path: "../contracts/mocks/MockStrategies.cdc",
+        arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
-        name: "FlowYieldVaultsStrategiesV1_1",
-        path: "../contracts/FlowYieldVaultsStrategiesV1_1.cdc",
+        name: "FlowYieldVaultsStrategiesV2",
+        path: "../contracts/FlowYieldVaultsStrategiesV2.cdc",
         arguments: [
             "0x986Cb42b0557159431d48fE0A40073296414d410",
             "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
@@ -449,13 +456,13 @@ fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
 }
 
 access(all)
-fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowALPv1.PositionDetails {
+fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowALPv0.PositionDetails {
     let res = _executeScript("../../lib/FlowALP/cadence/scripts/flow-alp/position_details.cdc",
         [pid]
     )
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 
-    return res.returnValue as! FlowALPv1.PositionDetails
+    return res.returnValue as! FlowALPv0.PositionDetails
 }
 
 access(all)
@@ -601,14 +608,14 @@ fun rebalanceYieldVault(signer: Test.TestAccount, id: UInt64, force: Bool, beFai
 
 access(all)
 fun getLastPositionOpenedEvent(_ evts: [AnyStruct]): AnyStruct { // can't return event types directly, they must be cast by caller
-    Test.assert(evts.length > 0, message: "Expected at least 1 FlowALPv1.Opened event but found none")
-    return evts[evts.length - 1] as! FlowALPv1.Opened
+    Test.assert(evts.length > 0, message: "Expected at least 1 FlowALPv0.Opened event but found none")
+    return evts[evts.length - 1] as! FlowALPv0.Opened
 }
 
 access(all)
 fun getLastPositionDepositedEvent(_ evts: [AnyStruct]): AnyStruct { // can't return event types directly, they must be cast by caller
-    Test.assert(evts.length > 0, message: "Expected at least 1 FlowALPv1.Deposited event but found none")
-    return evts[evts.length - 1] as! FlowALPv1.Deposited
+    Test.assert(evts.length > 0, message: "Expected at least 1 FlowALPv0.Deposited event but found none")
+    return evts[evts.length - 1] as! FlowALPv0.Deposited
 }
 
 /* --- Mock helpers --- */
@@ -688,7 +695,7 @@ access(all) fun setupBetaAccess(): Void {
 
 // Returns the balance for a given Vault 'Type' if present, otherwise nil.
 access(all) fun findBalance(
-    details: FlowALPv1.PositionDetails,
+    details: FlowALPv0.PositionDetails,
     vaultType: Type
 ): UFix64? {
     for b in details.balances {
