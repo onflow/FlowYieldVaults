@@ -43,38 +43,17 @@ transaction(
         let token0BalanceSlot = tokenAAddress < tokenBAddress ? tokenABalanceSlot : tokenBBalanceSlot
         let token1BalanceSlot = tokenAAddress < tokenBAddress ? tokenBBalanceSlot : tokenABalanceSlot
         
-        let poolPrice = tokenAAddress < tokenBAddress ? priceTokenBPerTokenA : 1.0 / priceTokenBPerTokenA
+        let poolPriceHuman = tokenAAddress < tokenBAddress ? priceTokenBPerTokenA : 1.0 / priceTokenBPerTokenA
         
         // Read decimals from EVM
         let token0Decimals = getTokenDecimals(evmContractAddress: token0)
         let token1Decimals = getTokenDecimals(evmContractAddress: token1)
         let decOffset = Int(token1Decimals) - Int(token0Decimals)
         
-        // Calculate base price/tick
-        var targetSqrtPriceX96 = calculateSqrtPriceX96(price: poolPrice)
-        var targetTick = calculateTick(price: poolPrice)
-        
-        // Apply decimal offset if needed
-        if decOffset != 0 {
-            // Adjust sqrtPriceX96: multiply/divide by 10^(decOffset/2)
-            var sqrtPriceU256 = UInt256.fromString(targetSqrtPriceX96)!
-            let absHalfOffset = decOffset < 0 ? (-decOffset) / 2 : decOffset / 2
-            var pow10: UInt256 = 1
-            var i = 0
-            while i < absHalfOffset {
-                pow10 = pow10 * 10
-                i = i + 1
-            }
-            if decOffset > 0 {
-                sqrtPriceU256 = sqrtPriceU256 * pow10
-            } else {
-                sqrtPriceU256 = sqrtPriceU256 / pow10
-            }
-            targetSqrtPriceX96 = sqrtPriceU256.toString()
-            
-            // Adjust tick: add/subtract decOffset * 23026 (ticks per decimal)
-            targetTick = targetTick + Int256(decOffset) * 23026
-        }
+        // Calculate tick from decimal-adjusted price, then derive sqrtPriceX96 from tick
+        // This ensures they satisfy Uniswap's invariant: sqrtPriceX96 = getSqrtRatioAtTick(tick)
+        let targetTick = calculateTick(price: poolPriceHuman, decimalOffset: decOffset)
+        var targetSqrtPriceX96 = calculateSqrtPriceX96FromTick(tick: targetTick)
         
         // First check if pool already exists
         var getPoolCalldata = EVM.encodeABIWithSignature(
@@ -118,7 +97,7 @@ transaction(
             poolAddr = (EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: getPoolResult.data)[0] as! EVM.EVMAddress)
             
             // Initialize the pool with the target price
-            let initPrice = UInt256.fromString(targetSqrtPriceX96)!
+            let initPrice = targetSqrtPriceX96
             calldata = EVM.encodeABIWithSignature(
                 "initialize(uint160)",
                 [initPrice]
@@ -155,6 +134,10 @@ transaction(
         // TODO: Consider passing unrounded tick to slot0 if precision matters
         let targetTickAligned = (targetTick / tickSpacing) * tickSpacing
         
+        // CRITICAL: Recalculate sqrtPriceX96 from the ALIGNED tick to ensure consistency
+        // After rounding tick to tickSpacing, sqrtPriceX96 must match the aligned tick
+        targetSqrtPriceX96 = calculateSqrtPriceX96FromTick(tick: targetTickAligned)
+        
         // Use FULL RANGE ticks (min/max for Uniswap V3)
         // This ensures liquidity is available at any price
         let tickLower = (-887272 as Int256) / tickSpacing * tickSpacing
@@ -180,7 +163,7 @@ transaction(
         // We build the byte array in BIG-ENDIAN order (as it will be stored).
 
         // Parse sqrtPriceX96 as UInt256
-        let sqrtPriceU256 = UInt256.fromString(targetSqrtPriceX96)!
+        let sqrtPriceU256 = targetSqrtPriceX96
         
         // Convert tick to 24-bit representation (with two's complement for negative)
         let tickMask = UInt256(((1 as Int256) << 24) - 1)  // 0xFFFFFF
@@ -237,7 +220,7 @@ transaction(
         // ASSERTION: Verify EVM.store/load round-trip works
         assert(readBackHex == slot0Value, message: "slot0 read-back mismatch - storage corruption!")
         assert(readBack.length == 32, message: "slot0 read-back wrong size")
-
+        
         // Initialize observations[0] (REQUIRED or swaps will revert!)
         // Observations array structure (slot 8):
         // Solidity packs from LSB to MSB (right-to-left in big-endian hex):
@@ -642,39 +625,75 @@ transaction(
     }
 }
 
-/// Calculate sqrtPriceX96 from a price ratio
-/// Returns sqrt(price) * 2^96 as a string for Uniswap V3 pool initialization
-access(self) fun calculateSqrtPriceX96(price: UFix64): String {
-    // Convert UFix64 to UInt256 (UFix64 has 8 decimal places)
-    // price is stored as integer * 10^8 internally
-    let priceBytes = price.toBigEndianBytes()
-    var priceUInt64: UInt64 = 0
-    for byte in priceBytes {
-        priceUInt64 = (priceUInt64 << 8) + UInt64(byte)
+/// Calculate sqrtPriceX96 from tick using Uniswap V3's formula
+/// sqrtPriceX96 = 1.0001^(tick/2) * 2^96
+/// This ensures consistency with Uniswap's tick-to-price conversion
+/// NOTE: This is kept for reference but not used - we calculate sqrtPriceX96 directly from price
+access(self) fun calculateSqrtPriceX96FromTick(tick: Int256): UInt256 {
+    // sqrtPriceX96 = 1.0001^(tick/2) * 2^96
+    // = exp(tick/2 * ln(1.0001)) * 2^96
+    // = exp(tick * ln(sqrt(1.0001))) * 2^96
+    
+    // ln(sqrt(1.0001)) = ln(1.0001) / 2 ≈ 0.00009999500033 / 2 ≈ 0.000049997500165
+    // ln(sqrt(1.0001)) * 10^18 ≈ 49997500166541
+    let lnSqrt1_0001 = Int256(49997500166541)
+    let scaleFactor = UInt256(1000000000000000000) // 10^18
+    
+    // Calculate tick * ln(sqrt(1.0001))
+    let exponent = tick * lnSqrt1_0001  // This is scaled by 10^18
+    
+    // Calculate exp(exponent / 10^18) * scaleFactor using Taylor series
+    let expValue = expInt256(x: exponent, scaleFactor: scaleFactor)
+    
+    // expValue is now exp(tick * ln(sqrt(1.0001))) * 10^18
+    // We want: exp(...) * 2^96
+    // = (expValue / 10^18) * 2^96
+    // = expValue * 2^96 / 10^18
+    
+    let twoTo96 = (UInt256(1) << 96)
+    let sqrtPriceX96 = (expValue * twoTo96) / scaleFactor
+    
+    return sqrtPriceX96
+}
+
+/// Calculate e^x for Int256 x (can be negative) using Taylor series
+/// Returns e^(x/scaleFactor) * scaleFactor
+access(self) fun expInt256(x: Int256, scaleFactor: UInt256): UInt256 {
+    // Handle negative exponents: e^(-x) = 1 / e^x
+    if x < 0 {
+        let posExp = expInt256(x: -x, scaleFactor: scaleFactor)
+        // Return scaleFactor^2 / posExp
+        return (scaleFactor * scaleFactor) / posExp
     }
-    let priceScaled = UInt256(priceUInt64) // This is price * 10^8
     
-    // We want: sqrt(price) * 2^96
-    // = sqrt(priceScaled / 10^8) * 2^96
-    // = sqrt(priceScaled) * 2^96 / sqrt(10^8)
-    // = sqrt(priceScaled) * 2^96 / 10^4
+    // For positive x, use Taylor series: e^x = 1 + x + x^2/2! + x^3/3! + ...
+    // x is already scaled by scaleFactor
+    let xU = UInt256(x)
     
-    // Calculate sqrt(priceScaled) with scale factor 2^48 for precision
-    // sqrt(priceScaled) * 2^48
-    let sqrtPriceScaled = sqrtUInt256(n: priceScaled, scaleFactor: UInt256(1) << 48)
+    var sum = scaleFactor  // Start with 1 * scaleFactor
+    var term = scaleFactor  // Current term in series
+    var i = UInt256(1)
     
-    // Now we have: sqrt(priceScaled) * 2^48
-    // We want: sqrt(priceScaled) * 2^96 / 10^4
-    // = (sqrt(priceScaled) * 2^48) * 2^48 / 10^4
+    // Calculate up to 50 terms for precision
+    while i <= 50 && term > 0 {
+        // term = term * x / (i * scaleFactor)
+        term = (term * xU) / (i * scaleFactor)
+        sum = sum + term
+        i = i + 1
+        
+        // Stop if term becomes negligible
+        if term < scaleFactor / UInt256(1000000000000) {
+            break
+        }
+    }
     
-    let sqrtPriceX96 = (sqrtPriceScaled * (UInt256(1) << 48)) / UInt256(10000)
-    
-    return sqrtPriceX96.toString()
+    return sum
 }
 
 /// Calculate tick from price ratio
 /// Returns tick = floor(log_1.0001(price)) for Uniswap V3 tick spacing
-access(self) fun calculateTick(price: UFix64): Int256 {
+/// decimalOffset: (token1Decimals - token0Decimals) to adjust for raw EVM units
+access(self) fun calculateTick(price: UFix64, decimalOffset: Int): Int256 {
     // Convert UFix64 to UInt256 (UFix64 has 8 decimal places, stored as int * 10^8)
     let priceBytes = price.toBigEndianBytes()
     var priceUInt64: UInt64 = 0
@@ -683,21 +702,37 @@ access(self) fun calculateTick(price: UFix64): Int256 {
     }
     
     // priceUInt64 is price * 10^8
-    // Scale to 10^18 for precision: price * 10^18 = priceUInt64 * 10^10
-    let priceScaled = UInt256(priceUInt64) * UInt256(10000000000) // 10^10
+    //
+    // For decimal offset adjustment:
+    // - If decOffset > 0: multiply price (token1 has MORE decimals than token0)
+    // - If decOffset < 0: divide price (token1 has FEWER decimals than token0)
+    //
+    // To avoid underflow when dividing, we adjust using logarithm properties
+    // For example, with decOffset = -12:
+    //   - Raw price = human_price / 10^12
+    //   - ln(raw_price) = ln(human_price / 10^12) = ln(human_price) - ln(10^12)
+    //   - ln(10^12) = 12 * ln(10) = 12 * 2.302585093... ≈ 27.631021115...
+    //   - ln(10) * 10^18 ≈ 2302585092994045684 (for scale factor 10^18)
+    
+    let priceScaled = UInt256(priceUInt64) * UInt256(10000000000) // price * 10^18
     let scaleFactor = UInt256(1000000000000000000) // 10^18
     
-    // Calculate ln(price) * 10^18
-    let lnPrice = lnUInt256(x: priceScaled, scaleFactor: scaleFactor)
+    // Calculate ln(price) * 10^18 (without decimal adjustment yet)
+    var lnPrice = lnUInt256(x: priceScaled, scaleFactor: scaleFactor)
+    
+    // Apply decimal offset adjustment to ln(price)
+    // ln(price * 10^decOffset) = ln(price) + decOffset * ln(10)
+    if decimalOffset != 0 {
+        // ln(10) * 10^18 ≈ 2302585092994045684
+        let ln10 = Int256(2302585092994045684)
+        let adjustment = Int256(decimalOffset) * ln10
+        lnPrice = lnPrice + adjustment
+    }
     
     // ln(1.0001) * 10^18 ≈ 99995000333083
     let ln1_0001 = Int256(99995000333083)
     
-    // tick = ln(price) / ln(1.0001)
-    // lnPrice is already scaled by 10^18
-    // ln1_0001 is already scaled by 10^18  
-    // So: tick = (lnPrice * 10^18) / (ln1_0001 * 10^18) = lnPrice / ln1_0001
-    
+    // tick = ln(adjusted_price) / ln(1.0001)
     let tick = lnPrice / ln1_0001
     
     return tick

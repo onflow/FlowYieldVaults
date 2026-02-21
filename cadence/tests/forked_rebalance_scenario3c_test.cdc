@@ -110,7 +110,7 @@ fun setup() {
         tokenAAddress: pyusd0Address,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
-        priceTokenBPerTokenA: 1.01,
+        priceTokenBPerTokenA: 1.0,
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
@@ -132,7 +132,7 @@ fun setup() {
         tokenAAddress: moetAddress,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
-        priceTokenBPerTokenA: 1.01,
+        priceTokenBPerTokenA: 1.0,
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
@@ -323,7 +323,7 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
         totalSupplySlot: morphoVaultTotalSupplySlot,
         vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
         baseAssets: 1000000000.0,  // 1 billion
-        priceMultiplier: yieldPriceIncrease,
+        priceMultiplier: 2.0,
         signer: user
     )
     

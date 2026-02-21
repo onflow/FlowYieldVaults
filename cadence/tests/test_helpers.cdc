@@ -289,6 +289,12 @@ access(self) fun _deploy(config: DeploymentConfig) {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "UniswapV3SwapConnectors",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
 
     // FlowALPv0 contracts
     let initialMoetSupply = 0.0
@@ -378,12 +384,7 @@ access(self) fun _deploy(config: DeploymentConfig) {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "UniswapV3SwapConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
+
 
     err = Test.deployContract(
         name: "ERC4626Utils",
@@ -452,9 +453,9 @@ access(self) fun _deploy(config: DeploymentConfig) {
         name: "FlowYieldVaultsStrategiesV2",
         path: "../contracts/FlowYieldVaultsStrategiesV2.cdc",
         arguments: [
-            "0x986Cb42b0557159431d48fE0A40073296414d410",
-            "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
-            "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C"
+            config.uniswapFactoryAddress,
+            config.uniswapRouterAddress,
+            config.uniswapQuoterAddress
         ]
     )
     Test.expect(err, Test.beNil())
