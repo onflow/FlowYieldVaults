@@ -153,6 +153,11 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         return self.pendingQueue.keys
     }
 
+    /// Check if a yield vault ID is in the pending queue - O(1) lookup
+    access(all) view fun isPending(yieldVaultID: UInt64): Bool {
+        return self.pendingQueue.containsKey(yieldVaultID)
+    }
+
     /// Get paginated pending yield vault IDs
     /// @param page: The page number (0-indexed)
     /// @param size: The page size (defaults to MAX_BATCH_SIZE if nil)
