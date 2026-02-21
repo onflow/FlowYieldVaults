@@ -14,7 +14,7 @@ import "FlowYieldVaults"
 import "FlowToken"
 import "MOET"
 import "FlowYieldVaultsStrategiesV2"
-import "FlowALPv1"
+import "FlowALPv0"
 import "EVM"
 
 import "DeFiActions"
@@ -171,7 +171,7 @@ fun setup() {
     // 2. Update Pool to use Band Oracle (instead of MockOracle)
     let updateOracleRes = Test.executeTransaction(
         Test.Transaction(
-            code: Test.readFile("../../lib/FlowCreditMarket/cadence/transactions/flow-alp/pool-governance/update_oracle.cdc"),
+            code: Test.readFile("../../lib/FlowALP/cadence/transactions/flow-alp/pool-governance/update_oracle.cdc"),
             authorizers: [flowCreditMarketAccount.address],
             signers: [flowCreditMarketAccount],
             arguments: []
@@ -190,7 +190,7 @@ fun setup() {
         depositCapacityCap: 1_000_000.0
     )
 
-    // Grant FlowALPv1 Pool capability to FlowYieldVaults account
+    // Grant FlowALPv0 Pool capability to FlowYieldVaults account
     let protocolBetaRes = grantProtocolBeta(flowCreditMarketAccount, flowYieldVaultsAccount)
     Test.expect(protocolBetaRes, Test.beSucceeded())
 
@@ -238,7 +238,7 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
     )
 
     // Capture the actual position ID from the FlowCreditMarket.Opened event
-    var pid = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv1.Opened>())) as! FlowALPv1.Opened).pid
+    var pid = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv0.Opened>())) as! FlowALPv0.Opened).pid
 
     var yieldVaultIDs = getYieldVaultIDs(address: user.address)
     Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
@@ -387,7 +387,7 @@ access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
     let positionDetails = getPositionDetails(pid: pid, beFailed: false)
     for balance in positionDetails.balances {
         if balance.vaultType == Type<@FlowToken.Vault>() {
-            if balance.direction == FlowALPv1.BalanceDirection.Credit {
+            if balance.direction == FlowALPv0.BalanceDirection.Credit {
                 return balance.balance
             }
         }
@@ -401,7 +401,7 @@ access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
     let positionDetails = getPositionDetails(pid: pid, beFailed: false)
     for balance in positionDetails.balances {
         if balance.vaultType == Type<@MOET.Vault>() {
-            if balance.direction == FlowALPv1.BalanceDirection.Debit {
+            if balance.direction == FlowALPv0.BalanceDirection.Debit {
                 return balance.balance
             }
         }
