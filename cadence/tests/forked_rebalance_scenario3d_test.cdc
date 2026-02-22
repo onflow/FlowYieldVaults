@@ -1,19 +1,20 @@
 // Scenario 3D: Flow price decreases 0.5x, Yield vault price increases 1.5x
 // This height guarantees enough liquidity for the test
-#test_fork(network: "mainnet", height: 140164761)
+#test_fork(network: "mainnet", height: 142251136)
 
 import Test
 import BlockchainHelpers
 
 import "test_helpers.cdc"
+import "evm_state_helpers.cdc"
 
 // FlowYieldVaults platform
 import "FlowYieldVaults"
 // other
 import "FlowToken"
 import "MOET"
-import "FlowYieldVaultsStrategiesV1_1"
-import "FlowCreditMarket"
+import "FlowYieldVaultsStrategiesV2"
+import "FlowALPv0"
 import "EVM"
 
 import "DeFiActions"
@@ -26,7 +27,7 @@ access(all) let bandOracleAccount = Test.getAccount(0x6801a6222ebf784a)
 access(all) let whaleFlowAccount = Test.getAccount(0x92674150c9213fc9)
 access(all) let coaOwnerAccount = Test.getAccount(0xe467b9dd11fa00df)
 
-access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategiesV1_1.FUSDEVStrategy>().identifier
+access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategiesV2.FUSDEVStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
@@ -68,27 +69,130 @@ access(all) let fusdevBalanceSlot = 12 as UInt256    // FUSDEV (Morpho VaultV2) 
 access(all) let wflowBalanceSlot = 1 as UInt256      // WFLOW balanceOf at slot 1
 
 // Morpho vault storage slots
-access(all) let morphoVaultTotalAssetsSlot = "0x000000000000000000000000000000000000000000000000000000000000000f"  // slot 15 (packed with lastUpdate and maxRate)
+access(all) let morphoVaultTotalAssetsSlot = 15 as UInt256  // slot 15 (packed with lastUpdate and maxRate)
+access(all) let morphoVaultTotalSupplySlot = 11 as UInt256  // slot 11
 
 access(all)
 fun setup() {
-    // Deploy mock EVM contract to enable vm.store/vm.load cheatcodes
-    var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-    
+    // Deploy all contracts for mainnet fork
+    deployContractsForFork()
+
+    // Upsert strategy config using mainnet addresses
+    let upsertRes = Test.executeTransaction(
+        Test.Transaction(
+            code: Test.readFile("../transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc"),
+            authorizers: [flowYieldVaultsAccount.address],
+            signers: [flowYieldVaultsAccount],
+            arguments: [
+                strategyIdentifier,
+                flowTokenIdentifier,
+                morphoVaultAddress,
+                [morphoVaultAddress, pyusd0Address, wflowAddress],
+                [100 as UInt32, 3000 as UInt32]
+            ]
+        )
+    )
+    Test.expect(upsertRes, Test.beSucceeded())
+
+    // Add mUSDFStrategyComposer AFTER config is set
+    addStrategyComposer(
+        signer: flowYieldVaultsAccount,
+        strategyIdentifier: strategyIdentifier,
+        composerIdentifier: Type<@FlowYieldVaultsStrategiesV2.MorphoERC4626StrategyComposer>().identifier,
+        issuerStoragePath: FlowYieldVaultsStrategiesV2.IssuerStoragePath,
+        beFailed: false
+    )
+
     // Setup Uniswap V3 pools with structurally valid state
     // This sets slot0, observations, liquidity, ticks, bitmap, positions, and POOL token balances
-    setupUniswapPools(signer: coaOwnerAccount)
-
-    // BandOracle is only used for FLOW price for FCM collateral
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: pyusd0Address,
+        tokenBAddress: morphoVaultAddress,
+        fee: 100,
+        priceTokenBPerTokenA: 1.0,
+        tokenABalanceSlot: pyusd0BalanceSlot,
+        tokenBBalanceSlot: fusdevBalanceSlot,
+        signer: coaOwnerAccount
+    )
+    
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: pyusd0Address,
+        tokenBAddress: wflowAddress,
+        fee: 3000,
+        priceTokenBPerTokenA: 1.0,
+        tokenABalanceSlot: pyusd0BalanceSlot,
+        tokenBBalanceSlot: wflowBalanceSlot,
+        signer: coaOwnerAccount
+    )
+    
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: moetAddress,
+        tokenBAddress: morphoVaultAddress,
+        fee: 100,
+        priceTokenBPerTokenA: 1.0,
+        tokenABalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: fusdevBalanceSlot,
+        signer: coaOwnerAccount
+    )
+    
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: moetAddress,
+        tokenBAddress: pyusd0Address,
+        fee: 100,
+        priceTokenBPerTokenA: 1.0,
+        tokenABalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
+        signer: coaOwnerAccount
+    )
+    
+    // BandOracle is used for FLOW and USD (MOET) prices
     let symbolPrices = { 
-        "FLOW": 1.0  // Start at 1.0, will decrease to 0.5 during test
+        "FLOW": 1.0,  // Start at 1.0, will decrease to 0.5 during test
+        "USD": 1.0    // MOET is pegged to USD, always 1.0
     }
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: symbolPrices)
 
     let reserveAmount = 100_000_00.0
     transferFlow(signer: whaleFlowAccount, recipient: flowCreditMarketAccount.address, amount: reserveAmount)
     mintMoet(signer: flowCreditMarketAccount, to: flowCreditMarketAccount.address, amount: reserveAmount, beFailed: false)
+
+    // Follow mainnet setup pattern:
+    // 1. Create Pool with MOET as default token (starts with MockOracle)
+    createAndStorePool(
+        signer: flowCreditMarketAccount,
+        defaultTokenIdentifier: Type<@MOET.Vault>().identifier,
+        beFailed: false
+    )
+    
+    // 2. Update Pool to use Band Oracle (instead of MockOracle)
+    let updateOracleRes = Test.executeTransaction(
+        Test.Transaction(
+            code: Test.readFile("../../lib/FlowALP/cadence/transactions/flow-alp/pool-governance/update_oracle.cdc"),
+            authorizers: [flowCreditMarketAccount.address],
+            signers: [flowCreditMarketAccount],
+            arguments: []
+        )
+    )
+    Test.expect(updateOracleRes, Test.beSucceeded())
+    
+    // 3. Add FLOW as supported token (matching mainnet setup parameters)
+    addSupportedTokenFixedRateInterestCurve(
+        signer: flowCreditMarketAccount,
+        tokenTypeIdentifier: Type<@FlowToken.Vault>().identifier,
+        collateralFactor: 0.8,
+        borrowFactor: 1.0,
+        yearlyRate: 0.0,  // Simple interest with 0 rate
+        depositRate: 1_000_000.0,
+        depositCapacityCap: 1_000_000.0
+    )
+
+    // Grant FlowALPv0 Pool capability to FlowYieldVaults account
+    let protocolBetaRes = grantProtocolBeta(flowCreditMarketAccount, flowYieldVaultsAccount)
+    Test.expect(protocolBetaRes, Test.beSucceeded())
 
     // Fund FlowYieldVaults account for scheduling fees
     transferFlow(signer: whaleFlowAccount, recipient: flowYieldVaultsAccount.address, amount: 100.0)
@@ -107,8 +211,22 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
 
     let user = Test.createAccount()
     
-    mintFlow(to: user, amount: fundingAmount)
-    grantBeta(flowYieldVaultsAccount, user)
+    transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
+    let betaRes = grantBeta(flowYieldVaultsAccount, user)
+    Test.expect(betaRes, Test.beSucceeded())
+
+    // Set vault to baseline 1:1 price
+    // Use 1 billion (1e9) as base - large enough to prevent slippage, safe from UFix64 overflow
+    setVaultSharePrice(
+        vaultAddress: morphoVaultAddress,
+        assetAddress: pyusd0Address,
+        assetBalanceSlot: pyusd0BalanceSlot,
+        totalSupplySlot: morphoVaultTotalSupplySlot,
+        vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
+        baseAssets: 1000000000.0,  // 1 billion
+        priceMultiplier: 1.0,
+        signer: user
+    )
 
     log("\n=== Creating Yield Vault ===")
     createYieldVault(
@@ -120,7 +238,7 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     )
 
     // Capture the actual position ID from the FlowCreditMarket.Opened event
-    var pid = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowCreditMarket.Opened>())) as! FlowCreditMarket.Opened).pid
+    var pid = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv0.Opened>())) as! FlowALPv0.Opened).pid
 
     var yieldVaultIDs = getYieldVaultIDs(address: user.address)
     Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
@@ -129,6 +247,7 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     log("\n=== Initial State ===")
     let yieldTokensBefore = getAutoBalancerBalance(id: yieldVaultIDs![0])!
     let flowCollateralBefore = getFlowCollateralFromPosition(pid: pid)
+    let flowCollateralValueBefore = flowCollateralBefore * 1.0
     let debtBefore = getMOETDebtFromPosition(pid: pid)
     
     log("Yield Tokens: \(yieldTokensBefore) (expected: \(expectedYieldTokenValues[0]))")
@@ -139,21 +258,31 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
         equalAmounts(a: yieldTokensBefore, b: expectedYieldTokenValues[0], tolerance: expectedYieldTokenValues[0] * forkedPercentTolerance),
         message: "Expected yield tokens to be \(expectedYieldTokenValues[0]) but got \(yieldTokensBefore)"
     )
+    Test.assert(
+        equalAmounts(a: flowCollateralValueBefore, b: expectedFlowCollateralValues[0], tolerance: expectedFlowCollateralValues[0] * forkedPercentTolerance),
+        message: "Expected flow collateral value to be \(expectedFlowCollateralValues[0]) but got \(flowCollateralValueBefore)"
+    )
+    Test.assert(
+        equalAmounts(a: debtBefore, b: expectedDebtValues[0], tolerance: expectedDebtValues[0] * forkedPercentTolerance),
+        message: "Expected MOET debt to be \(expectedDebtValues[0]) but got \(debtBefore)"
+    )
 
     log("\n=== FLOW PRICE → \(flowPriceDecrease)x ===")
     // Set FLOW price to 0.5 via Band Oracle (for FCM collateral calculation)
-    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: { "FLOW": flowPriceDecrease })
+    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: { 
+        "FLOW": flowPriceDecrease,
+        "USD": 1.0
+    })
     
-    // Set FLOW/MOET pool to reflect 0.5x price (FLOW is worth half as much)
-    // At 0.5x: 1 FLOW = 0.5 MOET, so priceTokenBPerTokenA = 0.5
+    // Update PYUSD0/FLOW pool to match new Flow price
     setPoolToPrice(
         factoryAddress: factoryAddress,
-        tokenAAddress: wflowAddress,
-        tokenBAddress: moetAddress,
+        tokenAAddress: pyusd0Address,
+        tokenBAddress: wflowAddress,
         fee: 3000,
-        priceTokenBPerTokenA: flowPriceDecrease,
-        tokenABalanceSlot: wflowBalanceSlot,
-        tokenBBalanceSlot: moetBalanceSlot,
+        priceTokenBPerTokenA: 0.5,  // Flow is 0.5x the price of PYUSD0
+        tokenABalanceSlot: pyusd0BalanceSlot,
+        tokenBBalanceSlot: wflowBalanceSlot,
         signer: coaOwnerAccount
     )
 
@@ -163,46 +292,75 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     log("\n=== After Flow Price Decrease ===")
     let yieldTokensAfterFlowPriceDecrease = getAutoBalancerBalance(id: yieldVaultIDs![0])!
     let flowCollateralAfterFlowDecrease = getFlowCollateralFromPosition(pid: pid)
+    let flowCollateralValueAfterFlowDecrease = flowCollateralAfterFlowDecrease * flowPriceDecrease
     let debtAfterFlowDecrease = getMOETDebtFromPosition(pid: pid)
     
     log("Yield Tokens: \(yieldTokensAfterFlowPriceDecrease) (expected: \(expectedYieldTokenValues[1]))")
-    log("Flow Collateral: \(flowCollateralAfterFlowDecrease) FLOW (value: $\(flowCollateralAfterFlowDecrease * flowPriceDecrease))")
+    log("Flow Collateral: \(flowCollateralAfterFlowDecrease) FLOW (value: $\(flowCollateralValueAfterFlowDecrease))")
     log("MOET Debt: \(debtAfterFlowDecrease)")
     
     Test.assert(
         equalAmounts(a: yieldTokensAfterFlowPriceDecrease, b: expectedYieldTokenValues[1], tolerance: expectedYieldTokenValues[1] * forkedPercentTolerance),
         message: "Expected yield tokens after flow price decrease to be \(expectedYieldTokenValues[1]) but got \(yieldTokensAfterFlowPriceDecrease)"
     )
+    Test.assert(
+        equalAmounts(a: flowCollateralValueAfterFlowDecrease, b: expectedFlowCollateralValues[1], tolerance: expectedFlowCollateralValues[1] * forkedPercentTolerance),
+        message: "Expected flow collateral value after flow price decrease to be \(expectedFlowCollateralValues[1]) but got \(flowCollateralValueAfterFlowDecrease)"
+    )
+    Test.assert(
+        equalAmounts(a: debtAfterFlowDecrease, b: expectedDebtValues[1], tolerance: expectedDebtValues[1] * forkedPercentTolerance),
+        message: "Expected MOET debt after flow price decrease to be \(expectedDebtValues[1]) but got \(debtAfterFlowDecrease)"
+    )
 
     log("\n=== YIELD VAULT PRICE → \(yieldPriceIncrease)x ===")
     // Set vault share price to 1.5x by manipulating totalAssets
-    setVaultSharePrice(vaultAddress: morphoVaultAddress, priceMultiplier: yieldPriceIncrease, signer: coaOwnerAccount)
-    
-    // Set FUSDEV/FLOW pool to reflect 1.5x price increase
-    // At baseline: 1 FUSDEV = 1 FLOW (when both at $1)
-    // At 1.5x FUSDEV price and 0.5x FLOW price: 1 FUSDEV = 3 FLOW
-    // So priceTokenBPerTokenA (FLOW per FUSDEV) = 3.0
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: morphoVaultAddress,
-        tokenBAddress: wflowAddress,
-        fee: 3000,
-        priceTokenBPerTokenA: 3.0,  // 1.5 / 0.5 = 3
-        tokenABalanceSlot: fusdevBalanceSlot,
-        tokenBBalanceSlot: wflowBalanceSlot,
-        signer: coaOwnerAccount
+    // Use 1 billion (1e9) as base - large enough to prevent slippage, safe from UFix64 overflow
+    setVaultSharePrice(
+        vaultAddress: morphoVaultAddress,
+        assetAddress: pyusd0Address,
+        assetBalanceSlot: pyusd0BalanceSlot,
+        totalSupplySlot: morphoVaultTotalSupplySlot,
+        vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
+        baseAssets: 1000000000.0,  // 1 billion
+        priceMultiplier: yieldPriceIncrease,
+        signer: user
     )
     
-    // Set PYUSD0/FLOW pool (FUSDEV's underlying asset)
-    // PYUSD0 is $1 stablecoin, FLOW is $0.5, so 1 PYUSD0 = 2 FLOW
+    // Update FUSDEV pools to reflect 1.5x price
+    // PYUSD0=$1, FUSDEV=$1.5, so 1 PYUSD0 buys 1/1.5 = 0.666... FUSDEV
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: pyusd0Address,
-        tokenBAddress: wflowAddress,
-        fee: 500,
-        priceTokenBPerTokenA: 2.0,  // 1.0 / 0.5 = 2
+        tokenBAddress: morphoVaultAddress,
+        fee: 100,
+        priceTokenBPerTokenA: 1.5,  // 1 PYUSD0 = 1.5 FUSDEV (inverted because tokenB is FUSDEV)
         tokenABalanceSlot: pyusd0BalanceSlot,
-        tokenBBalanceSlot: wflowBalanceSlot,
+        tokenBBalanceSlot: fusdevBalanceSlot,
+        signer: coaOwnerAccount
+    )
+    
+    // MOET=$1, FUSDEV=$1.5, so 1 MOET = 0.666... FUSDEV
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: moetAddress,
+        tokenBAddress: morphoVaultAddress,
+        fee: 100,
+        priceTokenBPerTokenA: 1.0 / 1.5,  // 1 MOET = 0.666... FUSDEV
+        tokenABalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: fusdevBalanceSlot,
+        signer: coaOwnerAccount
+    )
+    
+    // MOET=$1, PYUSD0=$1, so 1:1
+    // (This stays the same, but update for completeness)
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: moetAddress,
+        tokenBAddress: pyusd0Address,
+        fee: 100,
+        priceTokenBPerTokenA: 1.0,
+        tokenABalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
         signer: coaOwnerAccount
     )
 
@@ -211,26 +369,20 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     log("\n=== After Yield Vault Price Increase ===")
     let yieldTokensAfterYieldPriceIncrease = getAutoBalancerBalance(id: yieldVaultIDs![0])!
     let flowCollateralAfterYieldIncrease = getFlowCollateralFromPosition(pid: pid)
+    let flowCollateralValueAfterYieldIncrease = flowCollateralAfterYieldIncrease * flowPriceDecrease
     let debtAfterYieldIncrease = getMOETDebtFromPosition(pid: pid)
     
     log("Yield Tokens: \(yieldTokensAfterYieldPriceIncrease) (expected: \(expectedYieldTokenValues[2]))")
-    log("Flow Collateral: \(flowCollateralAfterYieldIncrease) FLOW (value: $\(flowCollateralAfterYieldIncrease * flowPriceDecrease))")
+    log("Flow Collateral: \(flowCollateralAfterYieldIncrease) FLOW (value: $\(flowCollateralValueAfterYieldIncrease))")
     log("MOET Debt: \(debtAfterYieldIncrease)")
-    
-    // Check if rebalancing behaved correctly
-    if yieldTokensAfterYieldPriceIncrease < expectedYieldTokenValues[1] {
-        log("BUG: Should have DEPOSITED to \(expectedYieldTokenValues[2]), but WITHDREW instead!")
-    } else if yieldTokensAfterYieldPriceIncrease > expectedYieldTokenValues[1] {
-        log("BUG: Should have WITHDRAWN to \(expectedYieldTokenValues[2]), but DEPOSITED instead!")
-    }
     
     Test.assert(
         equalAmounts(a: yieldTokensAfterYieldPriceIncrease, b: expectedYieldTokenValues[2], tolerance: expectedYieldTokenValues[2] * forkedPercentTolerance),
         message: "Expected yield tokens after yield price increase to be \(expectedYieldTokenValues[2]) but got \(yieldTokensAfterYieldPriceIncrease)"
     )
     Test.assert(
-        equalAmounts(a: flowCollateralAfterYieldIncrease * flowPriceDecrease, b: expectedFlowCollateralValues[2], tolerance: expectedFlowCollateralValues[2] * forkedPercentTolerance),
-        message: "Expected flow collateral value after yield price increase to be \(expectedFlowCollateralValues[2]) but got \(flowCollateralAfterYieldIncrease * flowPriceDecrease)"
+        equalAmounts(a: flowCollateralValueAfterYieldIncrease, b: expectedFlowCollateralValues[2], tolerance: expectedFlowCollateralValues[2] * forkedPercentTolerance),
+        message: "Expected flow collateral value after yield price increase to be \(expectedFlowCollateralValues[2]) but got \(flowCollateralValueAfterYieldIncrease)"
     )
     Test.assert(
         equalAmounts(a: debtAfterYieldIncrease, b: expectedDebtValues[2], tolerance: expectedDebtValues[2] * forkedPercentTolerance),
@@ -240,275 +392,12 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     log("\n=== TEST COMPLETE ===")
 }
 
-// Set vault share price by multiplying current totalAssets by the given multiplier
-// Manipulates both PYUSD0.balanceOf(vault) and vault._totalAssets to bypass maxRate capping
-// Sets totalAssets to a large stable value (1e15) to prevent slippage
-access(all) fun setVaultSharePrice(vaultAddress: String, priceMultiplier: UFix64, signer: Test.TestAccount) {
-    // Use a large stable base value: 1e15 (1,000,000,000,000,000)
-    // This prevents the vault from becoming too small/unstable during price changes
-    let largeBaseAssets = UInt256.fromString("1000000000000000")!
-    
-    // Calculate target: largeBaseAssets * multiplier
-    let multiplierBytes = priceMultiplier.toBigEndianBytes()
-    var multiplierUInt64: UInt64 = 0
-    for byte in multiplierBytes {
-        multiplierUInt64 = (multiplierUInt64 << 8) + UInt64(byte)
-    }
-    let targetAssets = (largeBaseAssets * UInt256(multiplierUInt64)) / UInt256(100000000)
-    
-    let result = _executeTransaction(
-        "transactions/set_erc4626_vault_price.cdc",
-        [vaultAddress, pyusd0Address, UInt256(1), morphoVaultTotalAssetsSlot, priceMultiplier, targetAssets],
-        signer
-    )
-    Test.expect(result, Test.beSucceeded())
-}
-
-
-// Set Uniswap V3 pool to a specific price via EVM.store
-// Creates pool if it doesn't exist, then seeds with full-range liquidity
-access(all) fun setPoolToPrice(
-    factoryAddress: String,
-    tokenAAddress: String,
-    tokenBAddress: String,
-    fee: UInt64,
-    priceTokenBPerTokenA: UFix64,
-    tokenABalanceSlot: UInt256,
-    tokenBBalanceSlot: UInt256,
-    signer: Test.TestAccount
-) {
-    // Sort tokens (Uniswap V3 requires token0 < token1)
-    let token0 = tokenAAddress < tokenBAddress ? tokenAAddress : tokenBAddress
-    let token1 = tokenAAddress < tokenBAddress ? tokenBAddress : tokenAAddress
-    let token0BalanceSlot = tokenAAddress < tokenBAddress ? tokenABalanceSlot : tokenBBalanceSlot
-    let token1BalanceSlot = tokenAAddress < tokenBAddress ? tokenBBalanceSlot : tokenABalanceSlot
-    
-    let poolPrice = tokenAAddress < tokenBAddress ? priceTokenBPerTokenA : 1.0 / priceTokenBPerTokenA
-    
-    let targetSqrtPriceX96 = calculateSqrtPriceX96(price: poolPrice)
-    let targetTick = calculateTick(price: poolPrice)
-    
-    let createResult = _executeTransaction(
-        "transactions/create_uniswap_pool.cdc",
-        [factoryAddress, token0, token1, fee, targetSqrtPriceX96],
-        signer
-    )
-    Test.expect(createResult, Test.beSucceeded())
-    
-    let seedResult = _executeTransaction(
-        "transactions/set_uniswap_v3_pool_price.cdc",
-        [factoryAddress, token0, token1, fee, targetSqrtPriceX96, targetTick, token0BalanceSlot, token1BalanceSlot],
-        signer
-    )
-    Test.expect(seedResult, Test.beSucceeded())
-}
-
-// Calculate sqrt(price) * 2^96 for Uniswap V3
-access(all) fun calculateSqrtPriceX96(price: UFix64): String {
-    // Convert UFix64 to UInt256 (UFix64 has 8 decimal places, stored as int * 10^8)
-    let priceBytes = price.toBigEndianBytes()
-    var priceUInt64: UInt64 = 0
-    for byte in priceBytes {
-        priceUInt64 = (priceUInt64 << 8) + UInt64(byte)
-    }
-    let priceScaled = UInt256(priceUInt64) // This is price * 10^8
-    
-    // We want: sqrt(price) * 2^96
-    // = sqrt(priceScaled / 10^8) * 2^96
-    // = sqrt(priceScaled) * 2^96 / sqrt(10^8)
-    // = sqrt(priceScaled) * 2^96 / 10^4
-    
-    // Calculate sqrt(priceScaled) with scale factor 2^48 for precision
-    // sqrt(priceScaled) * 2^48
-    let sqrtPriceScaled = sqrt(n: priceScaled, scaleFactor: UInt256(1) << 48)
-    
-    // Now we have: sqrt(priceScaled) * 2^48
-    // We want: sqrt(priceScaled) * 2^96 / 10^4
-    // = (sqrt(priceScaled) * 2^48) * 2^48 / 10^4
-    
-    let sqrtPriceX96 = (sqrtPriceScaled * (UInt256(1) << 48)) / UInt256(10000)
-    
-    return sqrtPriceX96.toString()
-}
-
-
-// Calculate tick from price
-// tick = ln(price) / ln(1.0001)
-// ln(1.0001) ≈ 0.00009999500033... ≈ 99995000333 / 10^18
-access(all) fun calculateTick(price: UFix64): Int256 {
-    // Convert UFix64 to UInt256 (UFix64 has 8 decimal places, stored as int * 10^8)
-    let priceBytes = price.toBigEndianBytes()
-    var priceUInt64: UInt64 = 0
-    for byte in priceBytes {
-        priceUInt64 = (priceUInt64 << 8) + UInt64(byte)
-    }
-    
-    // priceUInt64 is price * 10^8
-    // Scale to 10^18 for precision: price * 10^18 = priceUInt64 * 10^10
-    let priceScaled = UInt256(priceUInt64) * UInt256(10000000000) // 10^10
-    let scaleFactor = UInt256(1000000000000000000) // 10^18
-    
-    // Calculate ln(price) * 10^18
-    let lnPrice = ln(x: priceScaled, scaleFactor: scaleFactor)
-    
-    // ln(1.0001) * 10^18 ≈ 99995000333083
-    let ln1_0001 = Int256(99995000333083)
-    
-    // tick = ln(price) / ln(1.0001)
-    // lnPrice is already scaled by 10^18
-    // ln1_0001 is already scaled by 10^18  
-    // So: tick = (lnPrice * 10^18) / (ln1_0001 * 10^18) = lnPrice / ln1_0001
-    
-    let tick = lnPrice / ln1_0001
-    
-    return tick
-}
-
-
-// Calculate square root using Newton's method for UInt256
-// Returns sqrt(n) * scaleFactor to maintain precision
-access(all) fun sqrt(n: UInt256, scaleFactor: UInt256): UInt256 {
-    if n == UInt256(0) {
-        return UInt256(0)
-    }
-    
-    // Initial guess: n/2 (scaled)
-    var x = (n * scaleFactor) / UInt256(2)
-    var prevX = UInt256(0)
-    
-    // Newton's method: x_new = (x + n*scale^2/x) / 2
-    // Iterate until convergence (max 50 iterations for safety)
-    var iterations = 0
-    while x != prevX && iterations < 50 {
-        prevX = x
-        // x_new = (x + (n * scaleFactor^2) / x) / 2
-        let nScaled = n * scaleFactor * scaleFactor
-        x = (x + nScaled / x) / UInt256(2)
-        iterations = iterations + 1
-    }
-    
-    return x
-}
-
-
-// Calculate natural logarithm using Taylor series
-// ln(x) for x > 0, returns ln(x) * scaleFactor for precision
-access(all) fun ln(x: UInt256, scaleFactor: UInt256): Int256 {
-    if x == UInt256(0) {
-        panic("ln(0) is undefined")
-    }
-    
-    // For better convergence, reduce x to range [0.5, 1.5] using:
-    // ln(x) = ln(2^n * y) = n*ln(2) + ln(y) where y is in [0.5, 1.5]
-    
-    var value = x
-    var n = 0
-    
-    // Scale down if x > 1.5 * scaleFactor
-    let threshold = (scaleFactor * UInt256(3)) / UInt256(2)
-    while value > threshold {
-        value = value / UInt256(2)
-        n = n + 1
-    }
-    
-    // Scale up if x < 0.5 * scaleFactor
-    let lowerThreshold = scaleFactor / UInt256(2)
-    while value < lowerThreshold {
-        value = value * UInt256(2)
-        n = n - 1
-    }
-    
-    // Now value is in [0.5*scale, 1.5*scale], compute ln(value/scale)
-    // Use Taylor series: ln(1+z) = z - z^2/2 + z^3/3 - z^4/4 + ...
-    // where z = value/scale - 1
-    
-    let z = value > scaleFactor 
-        ? Int256(value - scaleFactor)
-        : -Int256(scaleFactor - value)
-    
-    // Calculate Taylor series terms until convergence
-    var result = z // First term: z
-    var term = z
-    var i = 2
-    var prevResult = Int256(0)
-    
-    // Calculate terms until convergence (term becomes negligible or result stops changing)
-    // Max 50 iterations for safety
-    while i <= 50 && result != prevResult {
-        prevResult = result
-        
-        // term = term * z / scaleFactor
-        term = (term * z) / Int256(scaleFactor)
-        
-        // Add or subtract term/i based on sign
-        if i % 2 == 0 {
-            result = result - term / Int256(i)
-        } else {
-            result = result + term / Int256(i)
-        }
-        i = i + 1
-    }
-    
-    // Add n * ln(2) * scaleFactor
-    // ln(2) ≈ 0.693147180559945309417232121458
-    // ln(2) * 10^18 ≈ 693147180559945309
-    let ln2Scaled = Int256(693147180559945309)
-    let nScaled = Int256(n) * ln2Scaled
-    
-    // Scale to our scaleFactor (assuming scaleFactor is 10^18)
-    result = result + nScaled
-    
-    return result
-}
-
-access(all) fun setupUniswapPools(signer: Test.TestAccount) {
-    log("\n=== Setting up Uniswap V3 pools ===")
-    
-    // MOET/FLOW pool at 1:1 (both $1)
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
-        tokenBAddress: wflowAddress,
-        fee: 3000,
-        priceTokenBPerTokenA: 1.0,
-        tokenABalanceSlot: moetBalanceSlot,
-        tokenBBalanceSlot: wflowBalanceSlot,
-        signer: signer
-    )
-    
-    // FUSDEV/FLOW pool at 1:1 (both $1)
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: morphoVaultAddress,
-        tokenBAddress: wflowAddress,
-        fee: 3000,
-        priceTokenBPerTokenA: 1.0,
-        tokenABalanceSlot: fusdevBalanceSlot,
-        tokenBBalanceSlot: wflowBalanceSlot,
-        signer: signer
-    )
-    
-    // PYUSD0/FLOW pool at 1:1 (both $1)
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: pyusd0Address,
-        tokenBAddress: wflowAddress,
-        fee: 500,
-        priceTokenBPerTokenA: 1.0,
-        tokenABalanceSlot: pyusd0BalanceSlot,
-        tokenBBalanceSlot: wflowBalanceSlot,
-        signer: signer
-    )
-    
-    log("✓ All pools seeded")
-}
-
 // Helper function to get Flow collateral from position
 access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
     let positionDetails = getPositionDetails(pid: pid, beFailed: false)
     for balance in positionDetails.balances {
         if balance.vaultType == Type<@FlowToken.Vault>() {
-            if balance.direction == FlowCreditMarket.BalanceDirection.Credit {
+            if balance.direction == FlowALPv0.BalanceDirection.Credit {
                 return balance.balance
             }
         }
@@ -522,7 +411,7 @@ access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
     let positionDetails = getPositionDetails(pid: pid, beFailed: false)
     for balance in positionDetails.balances {
         if balance.vaultType == Type<@MOET.Vault>() {
-            if balance.direction == FlowCreditMarket.BalanceDirection.Debit {
+            if balance.direction == FlowALPv0.BalanceDirection.Debit {
                 return balance.balance
             }
         }
