@@ -6,14 +6,14 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "FlowYieldVaultsStrategies"
-import "FlowALPv1"
+import "MockStrategies"
+import "FlowALPv0"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@MockStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -72,8 +72,8 @@ fun setup() {
 	addStrategyComposer(
 		signer: flowYieldVaultsAccount,
 		strategyIdentifier: strategyIdentifier,
-		composerIdentifier: Type<@FlowYieldVaultsStrategies.TracerStrategyComposer>().identifier,
-		issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
+		composerIdentifier: Type<@MockStrategies.TracerStrategyComposer>().identifier,
+		issuerStoragePath: MockStrategies.IssuerStoragePath,
 		beFailed: false
 	)
 
@@ -162,7 +162,7 @@ fun test_RebalanceYieldVaultSucceeds() {
         amount: fundingAmount,
         beFailed: false
     )
-    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv1.Opened>())) as! FlowALPv1.Opened).pid
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv0.Opened>())) as! FlowALPv0.Opened).pid
 
     var yieldVaultIDs = getYieldVaultIDs(address: user.address)
     Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
@@ -186,7 +186,7 @@ fun test_RebalanceYieldVaultSucceeds() {
     //      for now we can use events to intercept fund flows between pre- and post- Position & AutoBalancer state
 
     // assess how much FLOW was deposited into the position
-    let autoBalancerRecollateralizeEvent = getLastPositionDepositedEvent(Test.eventsOfType(Type<FlowALPv1.Deposited>())) as! FlowALPv1.Deposited
+    let autoBalancerRecollateralizeEvent = getLastPositionDepositedEvent(Test.eventsOfType(Type<FlowALPv0.Deposited>())) as! FlowALPv0.Deposited
     Test.assertEqual(positionID, autoBalancerRecollateralizeEvent.pid)
     Test.assertEqual(autoBalancerRecollateralizeEvent.amount,
         (autoBalancerValueAfter - autoBalancerValueBefore) / startingFlowPrice
@@ -247,7 +247,7 @@ fun test_RebalanceYieldVaultSucceedsAfterYieldPriceDecrease() {
 		amount: fundingAmount,
 		beFailed: false
 	)
-    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv1.Opened>())) as! FlowALPv1.Opened).pid
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv0.Opened>())) as! FlowALPv0.Opened).pid
 
 	var yieldVaultIDs = getYieldVaultIDs(address: user.address)
 	Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
@@ -304,7 +304,7 @@ fun test_RebalanceYieldVaultSucceedsAfterCollateralPriceIncrease() {
         amount: fundingAmount,
         beFailed: false
     )
-    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv1.Opened>())) as! FlowALPv1.Opened).pid
+    let positionID = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv0.Opened>())) as! FlowALPv0.Opened).pid
 
     var yieldVaultIDs = getYieldVaultIDs(address: user.address)
     Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
