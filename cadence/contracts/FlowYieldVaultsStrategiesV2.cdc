@@ -24,6 +24,7 @@ import "MOET"
 import "FlowEVMBridgeConfig"
 // live oracles
 import "ERC4626PriceOracles"
+import "FlowToken"
 
 /// FlowYieldVaultsStrategiesV2
 ///
@@ -555,7 +556,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             >(from: FlowALPv0.PoolCapStoragePath)
                 ?? panic("Missing or invalid pool capability")
 
-            let poolRef = poolCap.borrow() ?? panic("Invalid Pool Cap")
+            assert(poolCap.check(), message: "Pool capability check failed - Pool may not exist or capability is invalid")
+            let poolRef = poolCap.borrow() ?? panic("Failed to borrow Pool - capability exists but Pool resource is not accessible")
 
             let position <- poolRef.createPosition(
                 funds: <-funds,

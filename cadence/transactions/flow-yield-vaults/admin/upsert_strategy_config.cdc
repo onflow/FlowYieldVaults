@@ -57,5 +57,7 @@ transaction(
                 yieldToCollateralFeePath: fees 
             )
         }
+
+        log(FlowYieldVaultsStrategiesV2.config)
     }
 }

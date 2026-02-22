@@ -1,13 +1,5 @@
 {
 	"contracts": {
-		"MockEVM": {
-			"source": "./cadence/contracts/mocks/EVM.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"mainnet": "e467b9dd11fa00df",
-				"testnet": "8c5303eaa26202d6"
-			}
-		},
 		"BandOracleConnectors": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/band-oracle/BandOracleConnectors.cdc",
 			"aliases": {
@@ -230,7 +222,16 @@
 			"source": "./lib/FlowALP/cadence/contracts/mocks/MockDexSwapper.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
-				"testing": "0000000000000007"
+				"mainnet": "b1d63873c3cc9f79",
+				"testing": "000000000000000e"
+			}
+		},
+		"MockEVM": {
+			"source": "./cadence/contracts/mocks/EVM.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "e467b9dd11fa00df",
+				"testnet": "8c5303eaa26202d6"
 			}
 		},
 		"MockOracle": {
