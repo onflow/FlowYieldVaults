@@ -1,6 +1,6 @@
 import "FlowYieldVaults"
 import "FlowYieldVaultsAutoBalancers"
-import "FlowALPv1"
+import "FlowALPv0"
 import "MockOracle"
 import "YieldToken"
 import "MOET"
@@ -231,13 +231,13 @@ fun main(address: Address): CompleteUserSummary {
             
             let netWorth = estimatedCollateralValue + yieldTokenValue - estimatedDebtValue
             
-            // Get the actual position health from FlowALPv1.Pool
+            // Get the actual position health from FlowALPv0.Pool
             // FlowALP positions use sequential IDs (0, 1, 2, ...) while yield vault IDs are different
             var actualHealth: UFix128 = 999.0
             
-            // Try to get the real health from FlowALPv1.Pool using sequential position IDs
-            let protocolAddress = Type<@FlowALPv1.Pool>().address!
-            if let pool = getAccount(protocolAddress).capabilities.borrow<&FlowALPv1.Pool>(FlowALPv1.PoolPublicPath) {
+            // Try to get the real health from FlowALPv0.Pool using sequential position IDs
+            let protocolAddress = Type<@FlowALPv0.Pool>().address!
+            if let pool = getAccount(protocolAddress).capabilities.borrow<&FlowALPv0.Pool>(FlowALPv0.PoolPublicPath) {
                 // Since we can't directly map yield vault IDs to position IDs, we'll try sequential IDs
                 // This assumes positions are created in order (0, 1, 2, ...)
                 let positionIndex = UInt64(positions.length)  // Use the current position index

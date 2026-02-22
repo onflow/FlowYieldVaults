@@ -6,14 +6,14 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "FlowYieldVaultsStrategies"
-import "FlowALPv1"
+import "MockStrategies"
+import "FlowALPv0"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@MockStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -29,7 +29,7 @@ access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
     for balance in positionDetails.balances {
         if balance.vaultType == Type<@FlowToken.Vault>() {
             // Credit means it's a deposit (collateral)
-            if balance.direction == FlowALPv1.BalanceDirection.Credit {
+            if balance.direction == FlowALPv0.BalanceDirection.Credit {
                 return balance.balance
             }
         }
@@ -43,7 +43,7 @@ access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
     for balance in positionDetails.balances {
         if balance.vaultType == Type<@MOET.Vault>() {
             // Debit means it's borrowed (debt)
-            if balance.direction == FlowALPv1.BalanceDirection.Debit {
+            if balance.direction == FlowALPv0.BalanceDirection.Debit {
                 return balance.balance
             }
         }
@@ -96,8 +96,8 @@ fun setup() {
 	addStrategyComposer(
 		signer: flowYieldVaultsAccount,
 		strategyIdentifier: strategyIdentifier,
-		composerIdentifier: Type<@FlowYieldVaultsStrategies.TracerStrategyComposer>().identifier,
-		issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
+		composerIdentifier: Type<@MockStrategies.TracerStrategyComposer>().identifier,
+		issuerStoragePath: MockStrategies.IssuerStoragePath,
 		beFailed: false
 	)
 
@@ -280,7 +280,7 @@ fun test_RebalanceYieldVaultScenario3A() {
 	let positionDetails = getPositionDetails(pid: 1, beFailed: false)
 	var positionFlowBalance = 0.0
 	for balance in positionDetails.balances {
-		if balance.vaultType == Type<@FlowToken.Vault>() && balance.direction == FlowALPv1.BalanceDirection.Credit {
+		if balance.vaultType == Type<@FlowToken.Vault>() && balance.direction == FlowALPv0.BalanceDirection.Credit {
 			positionFlowBalance = balance.balance
 			break
 		}

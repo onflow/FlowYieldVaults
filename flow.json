@@ -92,10 +92,10 @@
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
-				"mainnet": "6d888f175c158410",
-				"mainnet-fork": "6d888f175c158410",
+				"mainnet": "43c9e8bfec507db4",
+				"mainnet-fork": "43c9e8bfec507db4",
 				"testing": "0000000000000009",
-				"testnet": "0b11b1848a8aa2c0"
+				"testnet": "67402f29666f7b29"
 			}
 		},
 		"EVMTokenConnectors": {
@@ -118,8 +118,8 @@
 				"testnet": "426f0458ced60037"
 			}
 		},
-		"FlowALPv1": {
-			"source": "./lib/FlowALP/cadence/contracts/FlowALPv1.cdc",
+		"FlowALPv0": {
+			"source": "./lib/FlowALP/cadence/contracts/FlowALPv0.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "6b00ff876c299c61",
@@ -178,8 +178,8 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
-		"FlowYieldVaultsStrategies": {
-			"source": "cadence/contracts/FlowYieldVaultsStrategies.cdc",
+		"MockStrategies": {
+			"source": "cadence/contracts/mocks/MockStrategies.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -983,7 +983,7 @@
 				"FungibleTokenConnectors",
 				"SwapConnectors",
 				"DummyConnectors",
-				"FlowALPv1",
+				"FlowALPv0",
 				{
 					"name": "YieldToken",
 					"args": [
@@ -1018,35 +1018,7 @@
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
 				"UniswapV3SwapConnectors",
-				{
-					"name": "FlowYieldVaultsStrategies",
-					"args": [
-						{
-							"value": "0x986Cb42b0557159431d48fE0A40073296414d410",
-							"type": "String"
-						},
-						{
-							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
-							"type": "String"
-						},
-						{
-							"value": "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C",
-							"type": "String"
-						},
-						{
-							"value": "0x102A7ed67858cF757CBBeA3390eaB72fcc60237E",
-							"type": "String"
-						},
-						{
-							"value": [],
-							"type": "Array"
-						},
-						{
-							"value": [],
-							"type": "Array"
-						}
-					]
-				},
+				"MockStrategies",
 				{
 					"name": "FlowYieldVaultsStrategiesV2",
 					"args": [
@@ -1117,65 +1089,6 @@
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
 				{
-					"name": "FlowYieldVaultsStrategies",
-					"args": [
-						{
-							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
-							"type": "String"
-						},
-						{
-							"value": "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
-							"type": "String"
-						},
-						{
-							"value": "0x370A8DF17742867a44e56223EC20D82092242C85",
-							"type": "String"
-						},
-						{
-							"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
-							"type": "String"
-						},
-						{
-							"value": [
-								{
-									"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
-									"type": "String"
-								},
-								{
-									"value": "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2",
-									"type": "String"
-								},
-								{
-									"value": "0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED",
-									"type": "String"
-								},
-								{
-									"value": "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e",
-									"type": "String"
-								}
-							],
-							"type": "Array"
-						},
-						{
-							"value": [
-								{
-									"value": "100",
-									"type": "UInt32"
-								},
-								{
-									"value": "100",
-									"type": "UInt32"
-								},
-								{
-									"value": "3000",
-									"type": "UInt32"
-								}
-							],
-							"type": "Array"
-						}
-					]
-				},
-				{
 					"name": "FlowYieldVaultsStrategiesV2",
 					"args": [
 						{
@@ -1228,65 +1141,7 @@
 				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
-				{
-					"name": "FlowYieldVaultsStrategies",
-					"args": [
-						{
-							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
-							"type": "String"
-						},
-						{
-							"value": "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
-							"type": "String"
-						},
-						{
-							"value": "0x370A8DF17742867a44e56223EC20D82092242C85",
-							"type": "String"
-						},
-						{
-							"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
-							"type": "String"
-						},
-						{
-							"value": [
-								{
-									"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
-									"type": "String"
-								},
-								{
-									"value": "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2",
-									"type": "String"
-								},
-								{
-									"value": "0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED",
-									"type": "String"
-								},
-								{
-									"value": "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e",
-									"type": "String"
-								}
-							],
-							"type": "Array"
-						},
-						{
-							"value": [
-								{
-									"value": "100",
-									"type": "UInt32"
-								},
-								{
-									"value": "100",
-									"type": "UInt32"
-								},
-								{
-									"value": "3000",
-									"type": "UInt32"
-								}
-							],
-							"type": "Array"
-						}
-					]
-				},
+				"MockStrategies",
 				{
 					"name": "FlowYieldVaultsStrategiesV2",
 					"args": [
@@ -1349,49 +1204,7 @@
 				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
-				{
-					"name": "FlowYieldVaultsStrategies",
-					"args": [
-						{
-							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
-							"type": "String"
-						},
-						{
-							"value": "0x2Db6468229F6fB1a77d248Dbb1c386760C257804",
-							"type": "String"
-						},
-						{
-							"value": "0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c",
-							"type": "String"
-						},
-						{
-							"value": "0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95",
-							"type": "String"
-						},
-						{
-							"value": [
-								{
-									"value": "0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95",
-									"type": "String"
-								},
-								{
-									"value": "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e",
-									"type": "String"
-								}
-							],
-							"type": "Array"
-						},
-						{
-							"value": [
-								{
-									"value": "3000",
-									"type": "UInt32"
-								}
-							],
-							"type": "Array"
-						}
-					]
-				},
+				"MockStrategies",
 				{
 					"name": "FlowYieldVaultsStrategiesV2",
 					"args": [
