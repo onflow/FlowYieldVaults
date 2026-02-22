@@ -274,15 +274,15 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
         "USD": 1.0
     })
     
-    // Update PYUSD0/FLOW pool to match new Flow price
+    // Update pools to reflect new Flow price
     setPoolToPrice(
         factoryAddress: factoryAddress,
-        tokenAAddress: pyusd0Address,
-        tokenBAddress: wflowAddress,
+        tokenAAddress: wflowAddress,
+        tokenBAddress: pyusd0Address,
         fee: 3000,
-        priceTokenBPerTokenA: 0.5,  // Flow is 0.5x the price of PYUSD0
-        tokenABalanceSlot: pyusd0BalanceSlot,
-        tokenBBalanceSlot: wflowBalanceSlot,
+        priceTokenBPerTokenA: flowPriceDecrease,
+        tokenABalanceSlot: wflowBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
         signer: coaOwnerAccount
     )
 
@@ -327,40 +327,25 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     )
     
     // Update FUSDEV pools to reflect 1.5x price
-    // PYUSD0=$1, FUSDEV=$1.5, so 1 PYUSD0 buys 1/1.5 = 0.666... FUSDEV
     setPoolToPrice(
         factoryAddress: factoryAddress,
-        tokenAAddress: pyusd0Address,
-        tokenBAddress: morphoVaultAddress,
-        fee: 100,
-        priceTokenBPerTokenA: 1.5,  // 1 PYUSD0 = 1.5 FUSDEV (inverted because tokenB is FUSDEV)
-        tokenABalanceSlot: pyusd0BalanceSlot,
-        tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
-    )
-    
-    // MOET=$1, FUSDEV=$1.5, so 1 MOET = 0.666... FUSDEV
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
-        tokenBAddress: morphoVaultAddress,
-        fee: 100,
-        priceTokenBPerTokenA: 1.0 / 1.5,  // 1 MOET = 0.666... FUSDEV
-        tokenABalanceSlot: moetBalanceSlot,
-        tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
-    )
-    
-    // MOET=$1, PYUSD0=$1, so 1:1
-    // (This stays the same, but update for completeness)
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
+        tokenAAddress: morphoVaultAddress,
         tokenBAddress: pyusd0Address,
         fee: 100,
-        priceTokenBPerTokenA: 1.0,
-        tokenABalanceSlot: moetBalanceSlot,
+        priceTokenBPerTokenA: yieldPriceIncrease,
+        tokenABalanceSlot: fusdevBalanceSlot,
         tokenBBalanceSlot: pyusd0BalanceSlot,
+        signer: coaOwnerAccount
+    )
+    
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: morphoVaultAddress,
+        tokenBAddress: moetAddress,
+        fee: 100,
+        priceTokenBPerTokenA: yieldPriceIncrease,
+        tokenABalanceSlot: fusdevBalanceSlot,
+        tokenBBalanceSlot: moetBalanceSlot,
         signer: coaOwnerAccount
     )
 
@@ -389,7 +374,8 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
         message: "Expected MOET debt after yield price increase to be \(expectedDebtValues[2]) but got \(debtAfterYieldIncrease)"
     )
 
-    log("\n=== TEST COMPLETE ===")
+    // Close Yield Vault
+    closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
 }
 
 // Helper function to get Flow collateral from position
