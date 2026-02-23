@@ -114,7 +114,7 @@ transaction(
         
         let poolAddress = poolAddr.toString()
         
-        // Read pool parameters (tickSpacing is CRITICAL)
+        // Read pool parameters (tickSpacing)
         let tickSpacingCalldata = EVM.encodeABIWithSignature("tickSpacing()", [])
         let spacingResult = self.coa.dryCall(
             to: poolAddr,
@@ -134,8 +134,7 @@ transaction(
         // TODO: Consider passing unrounded tick to slot0 if precision matters
         let targetTickAligned = (targetTick / tickSpacing) * tickSpacing
         
-        // CRITICAL: Recalculate sqrtPriceX96 from the ALIGNED tick to ensure consistency
-        // After rounding tick to tickSpacing, sqrtPriceX96 must match the aligned tick
+        // Recalculate sqrtPriceX96 from the aligned tick so it matches slot0
         targetSqrtPriceX96 = calculateSqrtPriceX96FromTick(tick: targetTickAligned)
         
         // Use FULL RANGE ticks (min/max for Uniswap V3)
@@ -257,18 +256,18 @@ transaction(
         let obs0Value = String.encodeHex(obs0Bytes)
         EVM.store(target: poolAddr, slot: "8", value: obs0Value)
         
-        // Set feeGrowthGlobal0X128 and feeGrowthGlobal1X128 (CRITICAL for swaps!)
+        // Set feeGrowthGlobal0X128 and feeGrowthGlobal1X128
         EVM.store(target: poolAddr, slot: "1", value: "0000000000000000000000000000000000000000000000000000000000000000")
         EVM.store(target: poolAddr, slot: "2", value: "0000000000000000000000000000000000000000000000000000000000000000")
 
-        // Set protocolFees (CRITICAL)
+        // protocolFees (slot 3): collected fees only; swap fee rate unchanged, fees still charged on swaps
         EVM.store(target: poolAddr, slot: "3", value: "0000000000000000000000000000000000000000000000000000000000000000")
 
         // Set massive liquidity
         let liquidityValue = "00000000000000000000000000000000000000000000d3c21bcecceda1000000"
         EVM.store(target: poolAddr, slot: "4", value: liquidityValue)
         
-        // Initialize boundary ticks with CORRECT storage layout
+        // Initialize boundary ticks (storage layout below)
         
         // Lower tick
         let tickLowerSlot = computeMappingSlot([tickLower, 5])
@@ -369,7 +368,7 @@ transaction(
         tickUpperSlot3Hex = "\(tickUpperSlot3Hex)\(String.encodeHex(tickUpperSlot3Bytes))"
         EVM.store(target: poolAddr, slot: tickUpperSlot3Hex, value: "0100000000000000000000000000000000000000000000000000000000000000")
         
-        // Set tick bitmap (CRITICAL for tick crossing!)
+        // Set tick bitmap
         
         let compressedLower = tickLower / tickSpacing
         let wordPosLower = compressedLower / 256
@@ -447,7 +446,7 @@ transaction(
         
         EVM.store(target: poolAddr, slot: bitmapUpperSlot, value: bitmapUpperValue)
 
-        // CREATE POSITION (CRITICAL)
+        // Create position
 
         var positionKeyData: [UInt8] = []
 
@@ -626,9 +625,7 @@ transaction(
 }
 
 /// Calculate sqrtPriceX96 from tick using Uniswap V3's formula
-/// sqrtPriceX96 = 1.0001^(tick/2) * 2^96
-/// This ensures consistency with Uniswap's tick-to-price conversion
-/// NOTE: This is kept for reference but not used - we calculate sqrtPriceX96 directly from price
+/// sqrtPriceX96 = 1.0001^(tick/2) * 2^96; used for the aligned tick so slot0 is consistent.
 access(self) fun calculateSqrtPriceX96FromTick(tick: Int256): UInt256 {
     // sqrtPriceX96 = 1.0001^(tick/2) * 2^96
     // = exp(tick/2 * ln(1.0001)) * 2^96
