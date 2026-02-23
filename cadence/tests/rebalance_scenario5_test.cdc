@@ -1,0 +1,287 @@
+import Test
+import BlockchainHelpers
+
+import "test_helpers.cdc"
+
+import "FlowToken"
+import "MOET"
+import "YieldToken"
+import "MockStrategies"
+import "FlowALPv0"
+
+access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
+access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
+access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
+
+access(all) var strategyIdentifier = Type<@MockStrategies.TracerStrategy>().identifier
+access(all) var collateralTokenIdentifier = Type<@FlowToken.Vault>().identifier
+access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
+access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
+
+access(all) var snapshot: UInt64 = 0
+
+// Helper function to get Flow collateral from position
+access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
+    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
+    for balance in positionDetails.balances {
+        if balance.vaultType == Type<@FlowToken.Vault>() {
+            // Credit means it's a deposit (collateral)
+            if balance.direction == FlowALPv0.BalanceDirection.Credit {
+                return balance.balance
+            }
+        }
+    }
+    return 0.0
+}
+
+// Helper function to get MOET debt from position
+access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
+    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
+    for balance in positionDetails.balances {
+        if balance.vaultType == Type<@MOET.Vault>() {
+            // Debit means it's borrowed (debt)
+            if balance.direction == FlowALPv0.BalanceDirection.Debit {
+                return balance.balance
+            }
+        }
+    }
+    return 0.0
+}
+
+access(all)
+fun setup() {
+	deployContracts()
+
+	// set mocked token prices
+	setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
+	setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: collateralTokenIdentifier, price: 1000.00)
+
+	// mint tokens & set liquidity in mock swapper contract
+	let reserveAmount = 100_000_00.0
+	setupMoetVault(protocolAccount, beFailed: false)
+	setupYieldVault(protocolAccount, beFailed: false)
+	mintFlow(to: protocolAccount, amount: reserveAmount)
+	mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
+	mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
+	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
+	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
+	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
+
+	// setup FlowALP with a Pool & add FLOW as supported token
+	createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
+	addSupportedTokenFixedRateInterestCurve(
+		signer: protocolAccount,
+		tokenTypeIdentifier: collateralTokenIdentifier,
+		collateralFactor: 0.8,
+		borrowFactor: 1.0,
+        yearlyRate: UFix128(0.1),
+		depositRate: 1_000_000.0,
+		depositCapacityCap: 1_000_000.0
+	)
+
+	// open wrapped position (pushToDrawDownSink)
+	// the equivalent of depositing reserves
+	let openRes = executeTransaction(
+		"../../lib/FlowALP/cadence/transactions/flow-alp/position/create_position.cdc",
+		[reserveAmount/2.0, /storage/flowTokenVault, true],
+		protocolAccount
+	)
+	Test.expect(openRes, Test.beSucceeded())
+
+	// enable mocked Strategy creation
+	addStrategyComposer(
+		signer: flowYieldVaultsAccount,
+		strategyIdentifier: strategyIdentifier,
+		composerIdentifier: Type<@MockStrategies.TracerStrategyComposer>().identifier,
+		issuerStoragePath: MockStrategies.IssuerStoragePath,
+		beFailed: false
+	)
+
+	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
+	mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
+
+	snapshot = getCurrentBlockHeight()
+}
+
+access(all)
+fun test_RebalanceYieldVaultScenario5() {
+	// Scenario 5: High-value collateral with moderate price drop
+	// Tests rebalancing when FLOW drops 20% from $1000 → $800
+	// This scenario tests whether position can handle moderate drops without liquidation
+
+	let fundingAmount = 100.0
+	let initialFlowPrice = 1000.00    // Setup price
+	let flowPriceDecrease = 800.00    // FLOW: $1000 → $800 (20% drop)
+	let yieldPriceIncrease = 1.5      // YT: $1.0 → $1.5
+
+	let user = Test.createAccount()
+	mintFlow(to: user, amount: fundingAmount)
+    grantBeta(flowYieldVaultsAccount, user)
+
+	createYieldVault(
+		signer: user,
+		strategyIdentifier: strategyIdentifier,
+		vaultIdentifier: collateralTokenIdentifier,
+		amount: fundingAmount,
+		beFailed: false
+	)
+
+	var yieldVaultIDs = getYieldVaultIDs(address: user.address)
+	var pid = 1 as UInt64
+	Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
+	Test.assertEqual(1, yieldVaultIDs!.length)
+	log("[Scenario5] YieldVault ID: \(yieldVaultIDs![0]), position ID: \(pid)")
+
+	// Calculate initial health
+	let initialCollateralValue = fundingAmount * initialFlowPrice
+	let initialDebt = initialCollateralValue * 0.8 / 1.1  // CF=0.8, minHealth=1.1
+	let initialHealth = (fundingAmount * 0.8 * initialFlowPrice) / initialDebt
+	log("[Scenario5] Initial state (FLOW=$\(initialFlowPrice), YT=$1.0)")
+	log("  Funding: \(fundingAmount) FLOW")
+	log("  Collateral value: $\(initialCollateralValue)")
+	log("  Expected debt: $\(initialDebt) MOET")
+	log("  Initial health: \(initialHealth)")
+
+	// --- Phase 1: FLOW price drops from $1000 to $800 (20% drop) ---
+	setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: collateralTokenIdentifier, price: flowPriceDecrease)
+
+	let ytBefore = getAutoBalancerBalance(id: yieldVaultIDs![0])!
+	let debtBefore = getMOETDebtFromPosition(pid: pid)
+	let collateralBefore = getFlowCollateralFromPosition(pid: pid)
+
+	// Calculate health before rebalance (avoid division by zero)
+	let healthBeforeRebalance = debtBefore > 0.0
+		? (collateralBefore * 0.8 * flowPriceDecrease) / debtBefore
+		: 0.0
+	let collateralValueBefore = collateralBefore * flowPriceDecrease
+
+	log("[Scenario5] After price drop to $\(flowPriceDecrease) (BEFORE rebalance)")
+	log("  YT balance:      \(ytBefore) YT")
+	log("  FLOW collateral: \(collateralBefore) FLOW")
+	log("  Collateral value: $\(collateralValueBefore) MOET")
+	log("  MOET debt:       \(debtBefore) MOET")
+	log("  Health:          \(healthBeforeRebalance)")
+
+	if healthBeforeRebalance < 1.0 {
+		log("  ⚠️  WARNING: Health dropped below 1.0! Position is at liquidation risk!")
+		log("  ⚠️  Health = (100 FLOW × 0.8 × $800) / $72,727 = $64,000 / $72,727 = \(healthBeforeRebalance)")
+		log("  ⚠️  A 20% price drop causes ~20% health drop from 1.1 → \(healthBeforeRebalance)")
+	}
+
+	// Rebalance to restore health to targetHealth (1.3)
+	log("[Scenario5] Rebalancing position and yield vault...")
+	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
+	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+
+	let ytAfterFlowDrop = getAutoBalancerBalance(id: yieldVaultIDs![0])!
+	let debtAfterFlowDrop = getMOETDebtFromPosition(pid: pid)
+	let collateralAfterFlowDrop = getFlowCollateralFromPosition(pid: pid)
+	let healthAfterRebalance = debtAfterFlowDrop > 0.0
+		? (collateralAfterFlowDrop * 0.8 * flowPriceDecrease) / debtAfterFlowDrop
+		: 0.0
+
+	log("[Scenario5] After rebalance (FLOW=$\(flowPriceDecrease), YT=$1.0)")
+	log("  YT balance:      \(ytAfterFlowDrop) YT")
+	log("  FLOW collateral: \(collateralAfterFlowDrop) FLOW")
+	log("  Collateral value: $\(collateralAfterFlowDrop * flowPriceDecrease) MOET")
+	log("  MOET debt:       \(debtAfterFlowDrop) MOET")
+	log("  Health:          \(healthAfterRebalance)")
+
+	if healthAfterRebalance >= 1.3 {
+		log("  ✅ Health restored to targetHealth (1.3)")
+	} else if healthAfterRebalance >= 1.1 {
+		log("  ✅ Health above minHealth (1.1) but below targetHealth (1.3)")
+	} else {
+		log("  ❌ Health still below minHealth!")
+	}
+
+	// --- Phase 2: YT price rises from $1.0 to $1.5 ---
+	log("[Scenario5] Phase 2: YT price increases to $\(yieldPriceIncrease)")
+	setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPriceIncrease)
+
+	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
+
+	let ytAfterYTRise = getAutoBalancerBalance(id: yieldVaultIDs![0])!
+	let debtAfterYTRise = getMOETDebtFromPosition(pid: pid)
+	let collateralAfterYTRise = getFlowCollateralFromPosition(pid: pid)
+	let healthAfterYTRise = debtAfterYTRise > 0.0
+		? (collateralAfterYTRise * 0.8 * flowPriceDecrease) / debtAfterYTRise
+		: 0.0
+
+	log("[Scenario5] After YT rise (FLOW=$\(flowPriceDecrease), YT=$\(yieldPriceIncrease))")
+	log("  YT balance:      \(ytAfterYTRise) YT")
+	log("  FLOW collateral: \(collateralAfterYTRise) FLOW")
+	log("  Collateral value: $\(collateralAfterYTRise * flowPriceDecrease) MOET")
+	log("  MOET debt:       \(debtAfterYTRise) MOET")
+	log("  Health:          \(healthAfterYTRise)")
+
+	// Try to close - EXPECT IT TO FAIL due to precision residual
+	log("\n[Scenario5] Attempting to close yield vault...")
+	// log("⚠️  NOTE: Close expected to fail due to precision residual at high collateral values")
+
+	let closeResult = executeTransaction(
+		"../transactions/flow-yield-vaults/close_yield_vault.cdc",
+		[yieldVaultIDs![0]],
+		user
+	)
+
+	Test.expect(closeResult, Test.beSucceeded())
+	// if closeResult.status == Test.ResultStatus.failed {
+	// 	log("\n❌ Close FAILED as expected!")
+	// 	log("   Error: Post-withdrawal position health dropped to 0")
+	// 	log("   This is the PRECISION RESIDUAL issue at close")
+	// 	log("")
+	// 	log("   Why it fails:")
+	// 	log("   - Before close: health = 1.30")
+	// 	log("   - During close: tries to withdraw ALL \(collateralAfterYTRise) FLOW")
+	// 	log("   - Precision mismatch leaves tiny residual (~10⁻⁶ FLOW)")
+	// 	log("   - Health check: remaining_collateral / remaining_debt ≈ 0")
+	// 	log("   - Assertion fails: postHealth (0.0) < 1.0")
+	// 	log("")
+	// 	log("   This is NOT a price drop issue - it's a close precision issue!")
+	// } else {
+	// 	log("\n✅ Close succeeded (residual was small enough)")
+	// }
+	//
+	// log("\n[Scenario5] ===== TEST SUMMARY =====")
+	// log("Initial health (FLOW=$1000): \(initialHealth)")
+	// log("Health after 20% drop (FLOW=$800, BEFORE rebalance): \(healthBeforeRebalance)")
+	// log("Health after rebalance: \(healthAfterRebalance)")
+	// log("Health after YT rise: \(healthAfterYTRise)")
+	// log("")
+	// log("===== KEY FINDINGS =====")
+	// log("")
+	// log("1. PRICE DROP BEHAVIOR:")
+	// log("   - Initial health: 1.30 (at targetHealth)")
+	// log("   - After -20% drop: 1.04 (still ABOVE 1.0!)")
+	// log("   - Health does NOT drop below 1.0 during price movement")
+	// log("   - Rebalancing correctly restores health to 1.30")
+	// log("")
+	// log("2. CLOSE BEHAVIOR:")
+	// log("   - Health before close: 1.30 ✓")
+	// log("   - Health during close: 0.0 ❌")
+	// log("   - Close FAILS due to precision residual")
+	// log("")
+	// log("3. ROOT CAUSE:")
+	// log("   - NOT a price drop problem (health stayed > 1.0)")
+	// log("   - IS a precision mismatch at close")
+	// log("   - availableBalance estimate ≠ actual withdrawal execution")
+	// log("   - High collateral values → larger absolute epsilon (~0.005 MOET)")
+	// log("   - Tiny residual causes health check to fail")
+	// log("")
+	// log("4. CONCLUSION:")
+	// log("   - Position health never drops below 1.0 during normal operation")
+	// log("   - Failure happens at CLOSE due to precision residual")
+	// log("   - Affects high-value collateral ($800-$1000/unit)")
+	// log("   - Requires protocol-level fix for production")
+	// log("")
+	// log("[Scenario5] Test complete")
+	// log("================================================================================")
+	//
+	// // Test passes if close failed with expected error
+	// if closeResult.status == Test.ResultStatus.failed {
+	// 	let errorMsg = closeResult.error?.message ?? ""
+	// 	let hasHealthError = errorMsg.contains("Post-withdrawal position health") && errorMsg.contains("unhealthy")
+	// 	Test.assert(hasHealthError, message: "Expected close to fail with health error, got: \(errorMsg)")
+	// }
+}
