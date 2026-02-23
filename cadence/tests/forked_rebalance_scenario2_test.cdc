@@ -29,6 +29,13 @@ access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 access(all) let collateralFactor = 0.8
 access(all) let targetHealthFactor = 1.3
 
+// Fee-compensating premiums: pool_price = true_price / (1 - fee_rate)
+// helps match expected values by artificially inflating the price of the pool token
+// normally amount of tokens we would get is true_price * (1 - fee_rate)
+// now we get true_price / (1 - fee_rate) * (1 - fee_rate) = true_price
+access(all) let fee3000Premium: UFix64 = 1.0 / (1.0-0.003)  // 1/(1-0.003), offsets 0.3% swap fee
+access(all) let fee100Premium: UFix64 = 1.0 / (1.0 - 0.0001)   // 1/(1-0.0001), offsets 0.01% swap fee
+
 // ============================================================================
 // PROTOCOL ADDRESSES
 // ============================================================================
@@ -64,74 +71,84 @@ access(all) let fusdevBalanceSlot = 12 as UInt256    // FUSDEV (Morpho VaultV2) 
 access(all) let wflowBalanceSlot = 1 as UInt256      // WFLOW balanceOf at slot 1
 
 // Morpho vault storage slots
-access(all) let morphoVaultTotalAssetsSlot = "0x000000000000000000000000000000000000000000000000000000000000000f"  // slot 15 (packed with lastUpdate and maxRate)
+access(all) let morphoVaultTotalSupplySlot = 11 as UInt256  // slot 11
+access(all) let morphoVaultTotalAssetsSlot = 15 as UInt256  // slot 15 (packed with lastUpdate and maxRate)
 
 access(all)
 fun setup() {
-    deployContractsForForkedTests()
+    // Deploy all contracts for mainnet fork
+    deployContractsForFork()
+// Upsert strategy config using mainnet addresses
+    let upsertRes = Test.executeTransaction(
+        Test.Transaction(
+            code: Test.readFile("../transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc"),
+            authorizers: [flowYieldVaultsAccount.address],
+            signers: [flowYieldVaultsAccount],
+            arguments: [
+                strategyIdentifier,
+                flowTokenIdentifier,
+                morphoVaultAddress,
+                [morphoVaultAddress, pyusd0Address, wflowAddress],
+                [100 as UInt32, 3000 as UInt32]
+            ]
+        )
+    )
+    Test.expect(upsertRes, Test.beSucceeded())
 
-    // // set up pool (tmp)
-    // createAndStorePool(signer: flowALPAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
-    // addSupportedTokenZeroRateInterestCurve(
-    //     signer: flowALPAccount,
-    //     tokenTypeIdentifier: flowTokenIdentifier,
-    //     collateralFactor: 0.8,
-    //     borrowFactor: 1.0,
-    //     depositRate: 1_000_000.0,
-    //     depositCapacityCap: 1_000_000.0
-    // )
-    
+    // Add mUSDFStrategyComposer AFTER config is set
+    addStrategyComposer(
+        signer: flowYieldVaultsAccount,
+        strategyIdentifier: strategyIdentifier,
+        composerIdentifier: Type<@FlowYieldVaultsStrategiesV2.MorphoERC4626StrategyComposer>().identifier,
+        issuerStoragePath: FlowYieldVaultsStrategiesV2.IssuerStoragePath,
+        beFailed: false
+    )
+
     // Setup Uniswap V3 pools with structurally valid state
     // This sets slot0, observations, liquidity, ticks, bitmap, positions, and POOL token balances
-    setupUniswapPools(signer: coaOwnerAccount)
-
-    // Set vault to baseline 1:1 price
-    // Use 1 billion (1e9) as base - large enough to prevent slippage, safe from UFix64 overflow
-    setVaultSharePrice(
-        vaultAddress: morphoVaultAddress,
-        assetAddress: pyusd0Address,
-        assetBalanceSlot: UInt256(1),
-        vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
-        baseAssets: 1000000000.0,  // 1 billion
-        priceMultiplier: 1.0,
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: pyusd0Address,
+        tokenBAddress: morphoVaultAddress,
+        fee: 100,
+        priceTokenBPerTokenA: fee100Premium,
+        tokenABalanceSlot: pyusd0BalanceSlot,
+        tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
     )
 
-    // Set pool prices for baseline 1:1 price
-    // PYUSD/WFLOW: always 1:1
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: pyusd0Address,
         tokenBAddress: wflowAddress,
         fee: 3000,
-        priceTokenBPerTokenA: 1.0,
+        priceTokenBPerTokenA: fee3000Premium,
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: wflowBalanceSlot,
         signer: coaOwnerAccount
     )
-    // PYUSD/FUSDEV: depends on yield token price
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: pyusd0Address,
-        tokenBAddress: morphoVaultAddress,
-        fee: 100,
-        priceTokenBPerTokenA: 1.0,
-        tokenABalanceSlot: pyusd0BalanceSlot,
-        tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
-    )
-    // MOET/FUSDEV: also always 1:1
+
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: moetAddress,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
-        priceTokenBPerTokenA: 1.0,
+        priceTokenBPerTokenA: fee100Premium,
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
     )
 
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: moetAddress,
+        tokenBAddress: pyusd0Address,
+        fee: 100,
+        priceTokenBPerTokenA: fee100Premium,
+        tokenABalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
+        signer: coaOwnerAccount
+    )
 
     // BandOracle is used for FLOW and USD (MOET) prices
     let symbolPrices = { 
@@ -148,6 +165,10 @@ fun setup() {
     transferFlow(signer: whaleFlowAccount, recipient: flowALPAccount.address, amount: reserveAmount)
 
 	mintMoet(signer: flowALPAccount, to: flowALPAccount.address, amount: reserveAmount, beFailed: false)
+
+    // Grant FlowALPv1 Pool capability to FlowYieldVaults account
+    let protocolBetaRes = grantProtocolBeta(flowALPAccount, flowYieldVaultsAccount)
+    Test.expect(protocolBetaRes, Test.beSucceeded())
 
 	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
     // service account does not have enough flow to "mint"
@@ -193,6 +214,19 @@ fun test_RebalanceYieldVaultScenario2() {
 	transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
     grantBeta(flowYieldVaultsAccount, user)
 
+    // Set vault to baseline 1:1 price
+    // Use 1 billion (1e9) as base - large enough to prevent slippage, safe from UFix64 overflow
+    setVaultSharePrice(
+        vaultAddress: morphoVaultAddress,
+        assetAddress: pyusd0Address,
+        assetBalanceSlot: pyusd0BalanceSlot,
+        totalSupplySlot: morphoVaultTotalSupplySlot,
+        vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
+        baseAssets: 1000000000.0,  // 1 billion
+        priceMultiplier: 1.0,
+        signer: user
+    )
+
 	createYieldVault(
 		signer: user,
 		strategyIdentifier: strategyIdentifier,
@@ -222,25 +256,37 @@ fun test_RebalanceYieldVaultScenario2() {
 
 		log("[TEST] YieldVault balance before yield price \(yieldTokenPrice): \(yieldVaultBalance ?? 0.0)")
 
-        // Update yield token price
-		// Set vault price using absolute multiplier against baseline
+        // Use 1 billion (1e9) as base - large enough to prevent slippage, safe from UFix64 overflow
         setVaultSharePrice(
             vaultAddress: morphoVaultAddress,
             assetAddress: pyusd0Address,
             assetBalanceSlot: UInt256(1),
+            totalSupplySlot: morphoVaultTotalSupplySlot,
             vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
             baseAssets: 1000000000.0,  // 1 billion
             priceMultiplier: yieldTokenPrice,
             signer: user
         )
-        // PYUSD/FUSDEV: depends on yield token price
+
+        // Update FUSDEV pools (with fee-compensating premium)
         setPoolToPrice(
             factoryAddress: factoryAddress,
             tokenAAddress: pyusd0Address,
             tokenBAddress: morphoVaultAddress,
             fee: 100,
-            priceTokenBPerTokenA: yieldTokenPrice,
+            priceTokenBPerTokenA: fee100Premium/yieldTokenPrice,
             tokenABalanceSlot: pyusd0BalanceSlot,
+            tokenBBalanceSlot: fusdevBalanceSlot,
+            signer: coaOwnerAccount
+        )
+
+        setPoolToPrice(
+            factoryAddress: factoryAddress,
+            tokenAAddress: moetAddress,
+            tokenBAddress: morphoVaultAddress,
+            fee: 100,
+            priceTokenBPerTokenA: fee100Premium/yieldTokenPrice,
+            tokenABalanceSlot: moetBalanceSlot,
             tokenBBalanceSlot: fusdevBalanceSlot,
             signer: coaOwnerAccount
         )

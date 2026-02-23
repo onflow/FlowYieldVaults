@@ -8,6 +8,31 @@ import "FlowALPv0"
 
 access(all) let serviceAccount = Test.serviceAccount()
 
+access(all) struct DeploymentConfig {
+    access(all) let uniswapFactoryAddress: String
+    access(all) let uniswapRouterAddress: String
+    access(all) let uniswapQuoterAddress: String
+    access(all) let pyusd0Address: String
+    access(all) let morphoVaultAddress: String
+    access(all) let wflowAddress: String
+    
+    init(
+        uniswapFactoryAddress: String,
+        uniswapRouterAddress: String,
+        uniswapQuoterAddress: String,
+        pyusd0Address: String,
+        morphoVaultAddress: String,
+        wflowAddress: String
+    ) {
+        self.uniswapFactoryAddress = uniswapFactoryAddress
+        self.uniswapRouterAddress = uniswapRouterAddress
+        self.uniswapQuoterAddress = uniswapQuoterAddress
+        self.pyusd0Address = pyusd0Address
+        self.morphoVaultAddress = morphoVaultAddress
+        self.wflowAddress = wflowAddress
+    }
+}
+
 /* --- Test execution helpers --- */
 // tolerance for forked tests
 access(all) 
@@ -144,188 +169,95 @@ fun tempUpsertBridgeTemplateChunks(_ serviceAccount: Test.TestAccount) {
     Test.expect(bridgedNFTChunkResult, Test.beSucceeded())
 }
 
-access(all) fun deployContractsForForkedTests() {
-    // DeFiActions contracts
-    var err = Test.deployContract(
-        name: "DeFiActionsUtils",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/DeFiActionsUtils.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowALPMath",
-        path: "../../lib/FlowALP/cadence/lib/FlowALPMath.cdc",
-        arguments: []
-    )
-    err = Test.deployContract(
-        name: "DeFiActions",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "SwapConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FungibleTokenConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "FlowALPv0",
-        path: "../../lib/FlowALP/cadence/contracts/FlowALPv0.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    // Deploy mock EVM contract to enable vm.store/vm.load cheatcodes
-    err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(name: "MockDexSwapper", path: "../../lib/FlowALP/cadence/contracts/mocks/MockDexSwapper.cdc", arguments: [])
-    Test.expect(err, Test.beNil())
-
-     err = Test.deployContract(
-        name: "FlowYieldVaultsSchedulerRegistry",
-        path: "../contracts/FlowYieldVaultsSchedulerRegistry.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowYieldVaultsAutoBalancers",
-        path: "../contracts/FlowYieldVaultsAutoBalancers.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowYieldVaultsSchedulerV1",
-        path: "../contracts/FlowYieldVaultsSchedulerV1.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowYieldVaultsClosedBeta",
-        path: "../contracts/FlowYieldVaultsClosedBeta.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowYieldVaults",
-        path: "../contracts/FlowYieldVaults.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "EVMAbiHelpers",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "EVMAmountUtils",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "UniswapV3SwapConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "ERC4626Utils",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "EVMTokenConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMTokenConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "ERC4626SinkConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SinkConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "ERC4626SwapConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "ERC4626PriceOracles",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "FlowYieldVaultsStrategiesV2",
-        path: "../contracts/FlowYieldVaultsStrategiesV2.cdc",
-        arguments: [
-            "0x986Cb42b0557159431d48fE0A40073296414d410",
-            "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
-            "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C"
-        ]
-    )
-
-    Test.expect(err, Test.beNil())
-
-    // Deploy Morpho contracts (latest local code) to the forked environment
-    log("Deploying Morpho contracts...")
-    err = Test.deployContract(
-        name: "ERC4626Utils",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "ERC4626SwapConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626SwapConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "MorphoERC4626SinkConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "MorphoERC4626SwapConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-}
-
 
 // Common test setup function that deploys all required contracts
 access(all) fun deployContracts() {
-
+    let config = DeploymentConfig(
+        uniswapFactoryAddress: "0x986Cb42b0557159431d48fE0A40073296414d410",
+        uniswapRouterAddress: "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+        uniswapQuoterAddress: "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C",
+        pyusd0Address: "0xaCCF0c4EeD4438Ad31Cd340548f4211a465B6528",
+        morphoVaultAddress: "0x0000000000000000000000000000000000000000",
+        wflowAddress: "0x0000000000000000000000000000000000000000"
+    )
+    
     // TODO: remove this step once the VM bridge templates are updated for test env
     // see https://github.com/onflow/flow-go/issues/8184
     tempUpsertBridgeTemplateChunks(serviceAccount)
+    
+    _deploy(config: config)
+    
+    // FlowYieldVaultsStrategies V1 (emulator-only, incompatible with mainnet FlowCreditMarket)
+    var err = Test.deployContract(
+        name: "FlowYieldVaultsStrategies",
+        path: "../contracts/FlowYieldVaultsStrategies.cdc",
+        arguments: [
+            config.uniswapFactoryAddress,
+            config.uniswapRouterAddress,
+            config.uniswapQuoterAddress,
+            config.pyusd0Address,
+            [] as [String],
+            [] as [UInt32]
+        ]
+    )
+    Test.expect(err, Test.beNil())
+    
+    // MOET onboarding (emulator-only, already onboarded on mainnet)
+    let onboarder = Test.createAccount()
+    transferFlow(signer: serviceAccount, recipient: onboarder.address, amount: 100.0)
+    let onboardMoet = _executeTransaction(
+        "../../lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type.cdc",
+        [Type<@MOET.Vault>()],
+        onboarder
+    )
+    Test.expect(onboardMoet, Test.beSucceeded())
+    
+    // MockStrategy (emulator-only)
+    err = Test.deployContract(
+        name: "MockStrategy",
+        path: "../contracts/mocks/MockStrategy.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    
+    // Emulator-specific setup (already exists on mainnet fork)
+    let wflowAddress = getEVMAddressAssociated(withType: Type<@FlowToken.Vault>().identifier)
+        ?? panic("Failed to get WFLOW address via VM Bridge association with FlowToken.Vault")
+    setupBetaAccess()
+    setupPunchswap(deployer: serviceAccount, wflowAddress: wflowAddress)
+}
 
+access(all) fun deployContractsForFork() {
+    let config = DeploymentConfig(
+        uniswapFactoryAddress: "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+        uniswapRouterAddress: "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+        uniswapQuoterAddress: "0x370A8DF17742867a44e56223EC20D82092242C85",
+        pyusd0Address: "0x99aF3EeA856556646C98c8B9b2548Fe815240750",
+        morphoVaultAddress: "0xd069d989e2F44B70c65347d1853C0c67e10a9F8D",
+        wflowAddress: "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
+    )
+
+    // Deploy EVM mock
+    var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
+    
+    _deploy(config: config)
+    
+    // Deploy Morpho connectors (mainnet-only, depend on real EVM contracts)
+    err = Test.deployContract(
+        name: "MorphoERC4626SinkConnectors",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "MorphoERC4626SwapConnectors",
+        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+}
+
+access(self) fun _deploy(config: DeploymentConfig) {
     // DeFiActions contracts
     var err = Test.deployContract(
         name: "DeFiActionsUtils",
@@ -338,6 +270,7 @@ access(all) fun deployContracts() {
         path: "../../lib/FlowALP/cadence/lib/FlowALPMath.cdc",
         arguments: []
     )
+    Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "DeFiActions",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
@@ -488,56 +421,16 @@ access(all) fun deployContracts() {
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
-        name: "MorphoERC4626SinkConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "MorphoERC4626SwapConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    let onboarder = Test.createAccount()
-    transferFlow(signer: serviceAccount, recipient: onboarder.address, amount: 100.0)
-    let onboardMoet = _executeTransaction(
-        "../../lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type.cdc",
-        [Type<@MOET.Vault>()],
-        onboarder
-    )
-    Test.expect(onboardMoet, Test.beSucceeded())
-
-    err = Test.deployContract(
-        name: "FlowYieldVaultsStrategies",
-        path: "../contracts/FlowYieldVaultsStrategies.cdc",
-        arguments: [
-            "0x986Cb42b0557159431d48fE0A40073296414d410",
-            "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
-            "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C",
-            "0xaCCF0c4EeD4438Ad31Cd340548f4211a465B6528",
-            [] as [String],
-            [] as [UInt32]
-        ]
-    )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
         name: "FlowYieldVaultsStrategiesV2",
         path: "../contracts/FlowYieldVaultsStrategiesV2.cdc",
         arguments: [
-            "0x986Cb42b0557159431d48fE0A40073296414d410",
-            "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
-            "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C"
+            config.uniswapFactoryAddress,
+            config.uniswapRouterAddress,
+            config.uniswapQuoterAddress
         ]
     )
-
     Test.expect(err, Test.beNil())
 
-    // Deploy Morpho contracts (latest local code) to the forked environment
-    log("Deploying Morpho contracts...")
     err = Test.deployContract(
         name: "ERC4626Utils",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
@@ -571,27 +464,12 @@ access(all) fun deployContracts() {
         name: "PMStrategiesV1",
         path: "../contracts/PMStrategiesV1.cdc",
         arguments: [
-            "0x0000000000000000000000000000000000000000",
-            "0x0000000000000000000000000000000000000000",
-            "0x0000000000000000000000000000000000000000"
+            config.uniswapRouterAddress,
+            config.uniswapQuoterAddress,
+            config.pyusd0Address
         ]
     )
-
     Test.expect(err, Test.beNil())
-
-    // Mocked Strategy
-    err = Test.deployContract(
-        name: "MockStrategy",
-        path: "../contracts/mocks/MockStrategy.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    let wflowAddress = getEVMAddressAssociated(withType: Type<@FlowToken.Vault>().identifier)
-        ?? panic("Failed to get WFLOW address via VM Bridge association with FlowToken.Vault")
-
-    setupBetaAccess()
-    setupPunchswap(deployer: serviceAccount, wflowAddress: wflowAddress)
 }
 
 access(all)
@@ -685,6 +563,9 @@ fun createAndStorePool(signer: Test.TestAccount, defaultTokenIdentifier: String,
         [defaultTokenIdentifier],
         signer
     )
+    if createRes.error != nil {
+        log("createAndStorePool error: ".concat(createRes.error!.message))
+    }
     Test.expect(createRes, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
@@ -704,33 +585,6 @@ fun addSupportedTokenFixedRateInterestCurve(
         signer
     )
     Test.expect(additionRes, Test.beSucceeded())
-}
-
-access(all)
-fun addSupportedTokenZeroRateInterestCurve(
-    signer: Test.TestAccount,
-    tokenTypeIdentifier: String,
-    collateralFactor: UFix64,
-    borrowFactor: UFix64,
-    depositRate: UFix64,
-    depositCapacityCap: UFix64
-) {
-    let additionRes = _executeTransaction(
-        "../../lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_zero_rate_curve.cdc",
-        [ tokenTypeIdentifier, collateralFactor, borrowFactor, depositRate, depositCapacityCap ],
-        signer
-    )
-    Test.expect(additionRes, Test.beSucceeded())
-}
-
-access(all)
-fun setPoolMockOracle(signer: Test.TestAccount) {
-    let res = _executeTransaction(
-        "./transactions/set_mock_oracle.cdc",
-        [],
-        signer
-    )
-    Test.expect(res, Test.beSucceeded())
 }
 
 access(all)
@@ -851,12 +705,15 @@ fun setMockSwapperLiquidityConnector(signer: Test.TestAccount, vaultStoragePath:
     Test.expect(setRes, Test.beSucceeded())
 }
 
-/// Sets the BandOracle price for a given symbol (e.g., "FLOW", "USD")
-/// The price is in USD, converted internally to BandOracle's 1e9 format
-///
-/// @param signer: The BandOracle admin account that has DataUpdater capability
-/// @param symbol: The oracle symbol (e.g., "FLOW", "USD", "stFLOW")
-/// @param price: The price in USD (e.g., 0.5 for $0.50, 1.0 for $1.00)
+access(all)
+fun equalAmounts(a: UFix64, b: UFix64, tolerance: UFix64): Bool {
+    if a > b {
+        return a - b <= tolerance
+    }
+    return b - a <= tolerance
+}
+
+/// Sets a single BandOracle price
 ///
 access(all)
 fun setBandOraclePrice(signer: Test.TestAccount, symbol: String, price: UFix64) {
@@ -875,10 +732,6 @@ fun setBandOraclePrice(signer: Test.TestAccount, symbol: String, price: UFix64) 
 
 /// Sets multiple BandOracle prices at once
 ///
-/// @param signer: The BandOracle admin account that has DataUpdater capability
-/// @param symbolPrices: A dictionary mapping symbols to prices in USD
-///     e.g., { "FLOW": 0.5, "USD": 1.0 }
-///
 access(all)
 fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}) {
     let symbolsRates: {String: UInt64} = {}
@@ -893,14 +746,6 @@ fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}
         signer
     )
     Test.expect(setRes, Test.beSucceeded())
-}
-
-access(all)
-fun equalAmounts(a: UFix64, b: UFix64, tolerance: UFix64): Bool {
-    if a > b {
-        return a - b <= tolerance
-    }
-    return b - a <= tolerance
 }
 
 /* --- Formatting helpers --- */
