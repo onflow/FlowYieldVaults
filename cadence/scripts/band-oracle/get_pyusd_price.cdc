@@ -28,7 +28,7 @@ fun main(): BandOracle.ReferenceData {
     // PYUSD is the base symbol; USD is the implicit quote for all Band oracle rates.
     // The returned fixedPointRate = PYUSD price in USD.
     let priceData = BandOracle.getReferenceData(
-        baseSymbol: "USD",
+        baseSymbol: "PYUSD",
         quoteSymbol: "USD",
         payment: <-payment
     )
