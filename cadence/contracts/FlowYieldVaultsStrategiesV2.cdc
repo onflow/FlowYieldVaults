@@ -72,8 +72,68 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
     }
 
-    /// This strategy uses FUSDEV vault
+    /// This strategy uses FUSDEV vault (Morpho ERC4626)
     access(all) resource FUSDEVStrategy : FlowYieldVaults.Strategy, DeFiActions.IdentifiableResource {
+        /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
+        /// specific Identifier to associated connectors on construction
+        access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
+        access(self) let position: @FlowALPv0.Position
+        access(self) var sink: {DeFiActions.Sink}
+        access(self) var source: {DeFiActions.Source}
+
+        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowALPv0.Position) {
+            self.uniqueID = id
+            self.sink = position.createSink(type: collateralType)
+            self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
+            self.position <-position
+        }
+
+        // Inherited from FlowYieldVaults.Strategy default implementation
+        // access(all) view fun isSupportedCollateralType(_ type: Type): Bool
+
+        access(all) view fun getSupportedCollateralTypes(): {Type: Bool} {
+            return { self.sink.getSinkType(): true }
+        }
+        /// Returns the amount available for withdrawal via the inner Source
+        access(all) fun availableBalance(ofToken: Type): UFix64 {
+            return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
+        }
+        /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
+        access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
+            self.sink.depositCapacity(from: from)
+        }
+        /// Withdraws up to the max amount, returning the withdrawn Vault. If the requested token type is unsupported,
+        /// an empty Vault is returned.
+        access(FungibleToken.Withdraw) fun withdraw(maxAmount: UFix64, ofToken: Type): @{FungibleToken.Vault} {
+            if ofToken != self.source.getSourceType() {
+                return <- DeFiActionsUtils.getEmptyVault(ofToken)
+            }
+            return <- self.source.withdrawAvailable(maxAmount: maxAmount)
+        }
+        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
+        access(contract) fun burnCallback() {
+            FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
+        }
+        access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
+            return DeFiActions.ComponentInfo(
+                type: self.getType(),
+                id: self.id(),
+                innerComponents: [
+                    self.sink.getComponentInfo(),
+                    self.source.getComponentInfo()
+                ]
+            )
+        }
+        access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? {
+            return self.uniqueID
+        }
+        access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) {
+            self.uniqueID = id
+        }
+    }
+
+    /// This strategy uses syWFLOWv vault (Standard ERC4626)
+    access(all) resource syWFLOWvStrategy : FlowYieldVaults.Strategy, DeFiActions.IdentifiableResource {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
@@ -179,8 +239,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
     }
 
-    /// This StrategyComposer builds a Strategy that uses MorphoERC4626 vault
-    access(all) resource MorphoERC4626StrategyComposer : FlowYieldVaults.StrategyComposer {
+    /// This StrategyComposer builds a Strategy that uses ERC4626 and MorphoERC4626 vaults
+    access(all) resource ERC4626StrategyComposer : FlowYieldVaults.StrategyComposer {
         /// { Strategy Type: { Collateral Type: FlowYieldVaultsStrategiesV2.CollateralConfig } }
         access(self) let config: {Type: {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}}
 
@@ -307,6 +367,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             switch type {
             case Type<@FUSDEVStrategy>():
                 return <-create FUSDEVStrategy(
+                    id: uniqueID,
+                    collateralType: collateralType,
+                    position: <-position
+                )
+            case Type<@syWFLOWvStrategy>():
+                return <-create syWFLOWvStrategy(
                     id: uniqueID,
                     collateralType: collateralType,
                     position: <-position
@@ -646,12 +712,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
         access(all) view fun getSupportedComposers(): {Type: Bool} {
             return { 
-                Type<@MorphoERC4626StrategyComposer>(): true
+                Type<@ERC4626StrategyComposer>(): true
             }
         }
 
         access(self) view fun isSupportedComposer(_ type: Type): Bool {
-            return type == Type<@MorphoERC4626StrategyComposer>()
+            return type == Type<@ERC4626StrategyComposer>()
         }
         access(all) fun issueComposer(_ type: Type): @{FlowYieldVaults.StrategyComposer} {
             pre {
@@ -661,8 +727,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 "Could not find config for StrategyComposer \(type.identifier)"
             }
             switch type {
-            case Type<@MorphoERC4626StrategyComposer>():
-                return <- create MorphoERC4626StrategyComposer(self.configs[type]!)
+            case Type<@ERC4626StrategyComposer>():
+                return <- create ERC4626StrategyComposer(self.configs[type]!)
             default:
                 panic("Unsupported StrategyComposer \(type.identifier) requested")
             }
@@ -741,8 +807,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
         access(Configure) fun purgeConfig() {
             self.configs = {
-                Type<@MorphoERC4626StrategyComposer>(): {
-                    Type<@FUSDEVStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}
+                Type<@ERC4626StrategyComposer>(): {
+                    Type<@FUSDEVStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV2.CollateralConfig},
+                    Type<@syWFLOWvStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}
                 }
             }
         }
@@ -827,8 +894,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
 
         let configs = {
-                Type<@MorphoERC4626StrategyComposer>(): {
-                    Type<@FUSDEVStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}
+                Type<@ERC4626StrategyComposer>(): {
+                    Type<@FUSDEVStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV2.CollateralConfig},
+                    Type<@syWFLOWvStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}
                 }
             }
         self.account.storage.save(<-create StrategyComposerIssuer(configs: configs), to: self.IssuerStoragePath)
