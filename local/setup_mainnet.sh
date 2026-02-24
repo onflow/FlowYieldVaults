@@ -22,7 +22,7 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-factory/
 flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/update_oracle.cdc --network mainnet --signer mainnet-flow-alp-deployer
 
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
-flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.1654653399040a61.FlowToken.Vault' \
     0.8 \
     1.0 \
@@ -35,7 +35,7 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governan
 cd ./lib/FlowALP/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "BTC" "A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault" --network mainnet --signer mainnet-band-oracle-connectors && cd ../../..
 
 # WBTC simple curve
-flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault' \
     0.8 \
     1.0 \
@@ -55,7 +55,7 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governan
 cd ./lib/FlowALP/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "ETH" "A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault" --network mainnet --signer mainnet-band-oracle-connectors && cd ../../..
 
 # WETH simple curve
-flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault' \
     0.8 \
     1.0 \
@@ -71,27 +71,25 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governan
 	--network mainnet \
 	--signer mainnet-flow-alp-deployer
 
-# TODO: setup PYUSD0
+# add PYUSD0 to band oracle
+cd ./lib/FlowALP/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "PYUSD" "A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault" --network mainnet --signer mainnet-band-oracle-connectors && cd ../../..
 
-# # add PYUSD0 to band oracle
-# cd ./lib/FlowALP/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "PYUSD" "A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault" --network mainnet --signer mainnet-band-oracle-connectors && cd ../../..
-#
-# # PYUSD0 simple curve
-# flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
-#     'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
-#     0.8 \
-#     1.0 \
-#     1_000_000.0 \
-#     1_000_000.0 \
-#     --network mainnet \
-#     --signer mainnet-flow-alp-deployer
-#
-# # set minimum deposit for PYUSD0 ~ 0.01 USD
-# flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_minimum_token_balance_per_position.cdc \
-# 	'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
-# 	0.01 \
-# 	--network mainnet \
-# 	--signer mainnet-flow-alp-deployer
+# PYUSD0 simple curve
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_zero_rate_curve.cdc \
+    'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
+    0.8 \
+    1.0 \
+    1_000_000.0 \
+    1_000_000.0 \
+    --network mainnet \
+    --signer mainnet-flow-alp-deployer
+
+# set minimum deposit for PYUSD0 ~ 0.01 USD
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_minimum_token_balance_per_position.cdc \
+	'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
+	0.01 \
+	--network mainnet \
+	--signer mainnet-flow-alp-deployer
 
 # kink interest curve setup
 # enable when FCM_V1 is deployed
@@ -182,6 +180,15 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_str
 	--network mainnet \
 	--signer mainnet-admin
 #
+# Setup UniV3 path FUSDEV -> PYUSD0
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc \
+	'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
+	'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
+	"0xd069d989e2F44B70c65347d1853C0c67e10a9F8D" \
+	'["0xd069d989e2F44B70c65347d1853C0c67e10a9F8D","0x99aF3EeA856556646C98c8B9b2548Fe815240750"]' \
+	'[100]' \
+	--network mainnet \
+	--signer mainnet-admin
 
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
