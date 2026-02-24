@@ -48,7 +48,7 @@ fun setup() {
     Test.expect(depositFlowRes, Test.beSucceeded())
 }
 
-access(all) let univ3PoolFee: UInt64 = 3000
+access(all) let univ3PoolFee: UInt64 = 100
 
 access(all)
 fun test_UniswapV3PriceSetAndSwap() {
