@@ -251,6 +251,10 @@ access(all) contract FlowYieldVaults {
         access(all) view fun id(): UInt64 {
             return self.uniqueID.id
         }
+        /// Returns the type identifier of the Vault this YieldVault operates on
+        access(all) view fun getVaultTypeIdentifier(): String {
+            return self.vaultType.identifier
+        }
         /// Returns the balance of the YieldVault's vaultType available via the encapsulated Strategy
         access(all) fun getYieldVaultBalance(): UFix64 {
             return self._borrowStrategy().availableBalance(ofToken: self.vaultType)
@@ -260,7 +264,7 @@ access(all) contract FlowYieldVaults {
             emit BurnedYieldVault(
                 id: self.uniqueID.id,
                 strategyType: self.getStrategyType(),
-                tokenType: self.getType().identifier,
+                tokenType: self.getVaultTypeIdentifier(),
                 remainingBalance: self.getYieldVaultBalance(),
                 owner: self.owner?.address
             )
@@ -315,6 +319,7 @@ access(all) contract FlowYieldVaults {
             post {
                 result.balance == amount:
                 "Invalid Vault balance returned - requested \(amount) but returned \(result.balance)"
+
                 self.vaultType == result.getType():
                 "Invalid Vault returned - expected \(self.vaultType.identifier) but returned \(result.getType().identifier)"
             }
@@ -415,7 +420,7 @@ access(all) contract FlowYieldVaults {
                 strategyType: yieldVault.getStrategyType(),
                 owner: self.owner?.address,
                 managerUUID: self.uuid,
-                tokenType: yieldVault.getType().identifier
+                tokenType: yieldVault.getVaultTypeIdentifier()
             )
             self.yieldVaults[yieldVault.uniqueID.id] <-! yieldVault
         }
@@ -496,6 +501,10 @@ access(all) contract FlowYieldVaults {
     }
     /// Creates a YieldVaultManager used to create and manage YieldVaults
     access(all) fun createYieldVaultManager(betaRef: auth(FlowYieldVaultsClosedBeta.Beta) &FlowYieldVaultsClosedBeta.BetaBadge): @ YieldVaultManager {
+        pre {
+            FlowYieldVaultsClosedBeta.validateBeta(betaRef.assignedTo, betaRef):
+            "Invalid Beta Ref"
+        }
         return <-create YieldVaultManager()
     }
     /// Creates a StrategyFactory resource
