@@ -278,6 +278,14 @@ flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-ma
 #   --network mainnet \
 #   --signer <TEST_USER>
 #
+# PYUSD0
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.FUSDEVStrategy \
+#   A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault \
+#   0.01 \
+#   --compute-limit 9999 \
+#   --network mainnet \
+#   --signer <TEST_USER>
 #
 # test PEAK MONEY strategy
 #
