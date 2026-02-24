@@ -96,7 +96,7 @@ fun test_UniswapV3PriceSetAndSwap() {
     let tolerance = expectedOut * forkedPercentTolerance
     Test.assert(
         equalAmounts(a: pyusd0Balance, b: expectedOut, tolerance: tolerance),
-        message: "PYUSD0 balance ".concat(pyusd0Balance.toString()).concat(" not within tolerance of ").concat(expectedOut.toString())
+        message: "PYUSD0 balance \(pyusd0Balance.toString()) not within tolerance of \(expectedOut.toString())"
     )
 }
 
@@ -145,6 +145,6 @@ fun test_ERC4626PriceSetAndDeposit() {
     let tolerance = expectedShares * forkedPercentTolerance
     Test.assert(
         equalAmounts(a: fusdevBalance, b: expectedShares, tolerance: tolerance),
-        message: "FUSDEV shares ".concat(fusdevBalance.toString()).concat(" not within tolerance of ").concat(expectedShares.toString())
+        message: "FUSDEV shares \(fusdevBalance.toString()) not within tolerance of \(expectedShares.toString())"
     )
 }
