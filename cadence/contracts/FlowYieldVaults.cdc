@@ -319,6 +319,7 @@ access(all) contract FlowYieldVaults {
             post {
                 result.balance == amount:
                 "Invalid Vault balance returned - requested \(amount) but returned \(result.balance)"
+
                 self.vaultType == result.getType():
                 "Invalid Vault returned - expected \(self.vaultType.identifier) but returned \(result.getType().identifier)"
             }
@@ -500,6 +501,10 @@ access(all) contract FlowYieldVaults {
     }
     /// Creates a YieldVaultManager used to create and manage YieldVaults
     access(all) fun createYieldVaultManager(betaRef: auth(FlowYieldVaultsClosedBeta.Beta) &FlowYieldVaultsClosedBeta.BetaBadge): @ YieldVaultManager {
+        pre {
+            FlowYieldVaultsClosedBeta.validateBeta(betaRef.assignedTo, betaRef):
+            "Invalid Beta Ref"
+        }
         return <-create YieldVaultManager()
     }
     /// Creates a StrategyFactory resource
