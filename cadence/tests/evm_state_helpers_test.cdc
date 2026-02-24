@@ -1,5 +1,4 @@
-// Tests that EVM state helpers correctly set Uniswap V3 pool price and ERC4626 vault price,
-// verified by executing a swap (UniV3) and a deposit (ERC4626) using the same fork/setup as scenario3c.
+// Tests that EVM state helpers correctly set Uniswap V3 pool price and ERC4626 vault price
 #test_fork(network: "mainnet-fork", height: 142251136)
 
 import Test
@@ -93,7 +92,7 @@ fun test_UniswapV3PriceSetAndSwap() {
     Test.expect(balanceRes, Test.beSucceeded())
     let pyusd0Balance = (balanceRes.returnValue as? UFix64) ?? 0.0
     let expectedOut = flowAmount * 2.0
-    let tolerance = expectedOut * forkedPercentTolerance
+    let tolerance = expectedOut * forkedPercentTolerance * 0.01
     Test.assert(
         equalAmounts(a: pyusd0Balance, b: expectedOut, tolerance: tolerance),
         message: "PYUSD0 balance \(pyusd0Balance.toString()) not within tolerance of \(expectedOut.toString())"
@@ -142,7 +141,7 @@ fun test_ERC4626PriceSetAndDeposit() {
     Test.expect(balanceRes, Test.beSucceeded())
     let fusdevBalance = (balanceRes.returnValue as? UFix64) ?? 0.0
     let expectedShares = 0.5
-    let tolerance = expectedShares * forkedPercentTolerance
+    let tolerance = expectedShares * forkedPercentTolerance * 0.01
     Test.assert(
         equalAmounts(a: fusdevBalance, b: expectedShares, tolerance: tolerance),
         message: "FUSDEV shares \(fusdevBalance.toString()) not within tolerance of \(expectedShares.toString())"
