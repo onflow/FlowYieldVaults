@@ -230,6 +230,7 @@
 			"source": "./lib/FlowALP/cadence/contracts/mocks/MockDexSwapper.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet-fork": "b1d63873c3cc9f79",
 				"testing": "0000000000000007"
 			}
 		},
