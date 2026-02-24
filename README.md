@@ -1,6 +1,6 @@
 # FlowYieldVaults Smart Contracts
 
-FlowYieldVaults is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via FlowCreditMarket's Active Lending Platform. FlowYieldVaults aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
+FlowYieldVaults is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via FlowALP's Active Lending Platform. FlowYieldVaults aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
 
 ## System Architecture
 
@@ -18,11 +18,11 @@ The main contract that orchestrates the entire yield farming system:
 - **YieldVault Resource**: Represents a user's position in a specific strategy
 - **YieldVaultManager**: Manages multiple YieldVault positions for a user account
 
-#### 2. FlowYieldVaultsStrategies.cdc - Strategy Implementations
+#### 2. MockStrategies.cdc - Strategy Implementations
 
 Implements specific yield strategies:
 
-- **TracerStrategy**: A strategy that uses FlowCreditMarket lending positions with auto-balancing
+- **TracerStrategy**: A strategy that uses FlowALP lending positions with auto-balancing
 - **TracerStrategyComposer**: Creates TracerStrategy instances with complex DeFi Actions stacking
 - **StrategyComposerIssuer**: Controls access to strategy composer creation
 
@@ -41,7 +41,7 @@ Manages automated rebalancing of positions:
 Mock FungibleToken implementations representing:
 
 - **YieldToken**: Receipt tokens for yield-bearing positions
-- **MOET**: FlowCreditMarket's synthetic stablecoin
+- **MOET**: FlowALP's synthetic stablecoin
 
 ### Mock Infrastructure
 
@@ -63,39 +63,43 @@ Mock FungibleToken implementations representing:
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
 |---|---|---|---|
 | FlowActions | 0xd27920b6384e2a78 | DeFiActions | TBD |
-| FlowCreditMarket | 0xd27920b6384e2a78 | FlowALP | TBD |
+| FlowALPv0 | 0xd27920b6384e2a78 | FlowALPv0 | TBD |
 | FlowYieldVaults | 0xd27920b6384e2a78 | FlowYieldVaults | TBD |
-| FlowYieldVaultsStrategies | 0xd27920b6384e2a78 | FlowYieldVaultsStrategies | TBD |
+| FlowYieldVaultsStrategiesV2 | 0xd27920b6384e2a78 | FlowYieldVaultsStrategiesV2 | TBD |
+| PMStrategiesV1 | 0xd27920b6384e2a78 | PMStrategiesV1 | TBD |
 | MOET | 0xd27920b6384e2a78 | MOET | 0x51f5cc5f50afb81e8f23c926080fa38c3024b238 |
 | USDC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_d431955d55a99ef69beb96ba34718d0f9fbc91b1 | 0xd431955D55a99EF69BEb96BA34718d0f9fBc91b1 |
+| PYUSD0 | 0xdfc20aee650fcbdf | EVMVMBridgedToken_d7d43ab7b365f0d0789ae83f4385fa710ffdc98f | 0xd7d43ab7b365f0d0789aE83F4385fA710FfdC98F |
 | wBTC | 0xdfc20aee650fcbdf | EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6 | 0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6 |
 | wETH | 0xdfc20aee650fcbdf | EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848 | 0x059A77239daFa770977DD9f1E98632C3E4559848 |
-| mUSDC (ERC4626) | 0xdfc20aee650fcbdf | EVMVMBridgedToken_4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95 | 0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95 |
+| FUSDEV (ERC4626) | 0xdfc20aee650fcbdf | EVMVMBridgedToken_61b44d19486ee492449e83c1201581c754e9e1e1 | 0x61b44D19486EE492449E83C1201581C754e9e1E1 |
 
 #### Mainnet
 | Asset Name | Cadence Address | Cadence Contract Name | EVM |
 |---|---|---|---|
 | FlowActions | 0x6d888f175c158410 | DeFiActions | TBD |
-| FlowCreditMarket | 0x6b00ff876c299c61 | FlowALP | TBD |
+| FlowALPv0 | 0x6b00ff876c299c61 | FlowALPv0 | TBD |
 | FlowYieldVaults | 0xb1d63873c3cc9f79 | FlowYieldVaults | TBD |
-| FlowYieldVaultsStrategies | 0xb1d63873c3cc9f79 | FlowYieldVaultsStrategies | TBD |
+| FlowYieldVaultsStrategiesV2 | 0xb1d63873c3cc9f79 | FlowYieldVaultsStrategiesV2 | TBD |
+| PMStrategiesV1 | 0xb1d63873c3cc9f79 | PMStrategiesV1 | TBD |
 | MOET | 0x6b00ff876c299c61 | MOET | 0x213979bB8A9A86966999b3AA797C1fcf3B967ae2 |
 | USDC | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_f1815bd50389c46847f0bda824ec8da914045d14 | 0xF1815bd50389c46847f0Bda824eC8da914045D14 |
 | USDF | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_2aabea2058b5ac2d339b163c6ab6f2b6d53aabed | 0x2aabea2058b5ac2d339b163c6ab6f2b6d53aabed |
+| PYUSD0 | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750 | 0x99aF3EeA856556646C98c8B9b2548Fe815240750 |
 | cbBTC | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_a0197b2044d28b08be34d98b23c9312158ea9a18 | 0xA0197b2044D28b08Be34d98b23c9312158Ea9A18 |
 | wETH | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590 | 0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590 |
-| tauUSDF (ERC4626) | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_c52E820d2D6207D18667a97e2c6Ac22eB26E803c | 0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c |
+| FUSDEV (ERC4626) | 0x1e4aa0b87d10b141 | EVMVMBridgedToken_d069d989e2f44b70c65347d1853c0c67e10a9f8d | 0xd069d989e2F44B70c65347d1853C0c67e10a9F8D |
 
 ## How the System Works
 
-Below is an overview of the initial prototype Tracer Strategy in the broader context of FlowCreditMarket and the FlowYieldVaults platform.
+Below is an overview of the initial prototype Tracer Strategy in the broader context of FlowALP and the FlowYieldVaults platform.
 
 ### 1. Strategy Architecture
 
 The TracerStrategy demonstrates the power of DeFi Actions composition:
 
 ```
-User Deposit (FLOW) → FlowCreditMarket Position → MOET Issuance → Swap to YieldToken → AutoBalancer
+User Deposit (FLOW) → FlowALP Position → MOET Issuance → Swap to YieldToken → AutoBalancer
                                                ↑
                                          YieldToken → Swap to FLOW → Recollateralize Position
 ```
@@ -184,7 +188,7 @@ The FlowYieldVaults platform implements sophisticated automatic rebalancing and 
 **Important Distinction:** The system has TWO different rebalancing mechanisms:
 
 1. **AutoBalancer Rebalancing** (DFB): Maintains optimal ratio between YieldToken holdings and expected deposit value
-2. **Position Rebalancing** (FlowCreditMarket): Maintains healthy collateralization ratios for lending positions
+2. **Position Rebalancing** (FlowALP): Maintains healthy collateralization ratios for lending positions
 
 These work together but serve different purposes and can trigger independently based on market conditions.
 
@@ -206,12 +210,12 @@ The AutoBalancer continuously monitors the **value ratio** between:
 
 **When:** Current YieldToken value > 105% historical value of deposits
 **Cause:** YieldToken price has increased OR position became over-collateralized leading to excess token holdings
-**Action:** AutoBalancer deposits excess YieldToken to the rebalanceSink, swapping to FLOW and recollateralizing the FlowCreditMarket position.
+**Action:** AutoBalancer deposits excess YieldToken to the rebalanceSink, swapping to FLOW and recollateralizing the FlowALP position.
 
 **Automated Flow:**
 
 ```
-YieldToken (excess) → Swap to FLOW → Deposit to FlowCreditMarket Position (recollateralization)
+YieldToken (excess) → Swap to FLOW → Deposit to FlowALP Position (recollateralization)
 ```
 
 **Result:**
@@ -260,7 +264,7 @@ The system creates a sophisticated token flow:
 
 1. **Initial Position Opening:**
 
-   - User deposits FLOW → FlowCreditMarket Position
+   - User deposits FLOW → FlowALP Position
    - Position issues MOET → Swaps to YieldToken
    - YieldToken held in AutoBalancer
 
@@ -331,7 +335,7 @@ This creates a fully automated yield farming system that adapts to market condit
 
 ## Interest Rate System
 
-The FlowCreditMarket implements a sophisticated interest rate system that governs borrowing costs and lending yields. This system is fundamental to the protocol's economics and affects all lending positions.
+The FlowALP implements a sophisticated interest rate system that governs borrowing costs and lending yields. This system is fundamental to the protocol's economics and affects all lending positions.
 
 ### How Interest Rates Work
 
@@ -516,15 +520,15 @@ The interest rate system is designed to:
 3. **Manage Risk**: Insurance reserves and dynamic adjustments protect the protocol
 4. **Enable Automation**: Continuous compounding without manual intervention
 
-This interest system is what enables the FlowCreditMarket to function as a sustainable lending platform while providing the foundation for complex yield farming strategies built on top.
+This interest system is what enables the FlowALP to function as a sustainable lending platform while providing the foundation for complex yield farming strategies built on top.
 
-## FlowCreditMarket Loan Health Mechanism
+## FlowALP Loan Health Mechanism
 
-The FlowCreditMarket implements a sophisticated loan health system that determines borrowing capacity, monitors position safety, and prevents liquidations. This system is fundamental to how the TracerStrategy calculates how much can be borrowed against a user's initial collateral position.
+The FlowALP implements a sophisticated loan health system that determines borrowing capacity, monitors position safety, and prevents liquidations. This system is fundamental to how the TracerStrategy calculates how much can be borrowed against a user's initial collateral position.
 
 ### Key Definitions
 
-Before diving into the mechanics, it's important to understand the core terminology used throughout the FlowCreditMarket loan system:
+Before diving into the mechanics, it's important to understand the core terminology used throughout the FlowALP loan system:
 
 #### Position-Related Terms
 
@@ -573,7 +577,7 @@ Position Health = Effective Collateral / Effective Debt
 #### Health Computation Function
 
 ```cadence
-// From FlowCreditMarket.cdc
+// From FlowALPv0.cdc
 access(all) fun healthComputation(effectiveCollateral: UFix64, effectiveDebt: UFix64): UFix64 {
     if effectiveCollateral == 0.0 {
         return 0.0
@@ -862,7 +866,7 @@ let value = tokenPrice * trueBalance
 - Cross-collateralization enables complex strategies
 - Unified health calculation across all assets
 
-This comprehensive loan health system enables the FlowCreditMarket to safely support leveraged yield farming strategies while maintaining strict risk management and protecting user funds from liquidation through automated rebalancing mechanisms.
+This comprehensive loan health system enables the FlowALP to safely support leveraged yield farming strategies while maintaining strict risk management and protecting user funds from liquidation through automated rebalancing mechanisms.
 
 ## Testing Rebalancing
 
@@ -969,7 +973,7 @@ flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connecto
 # Step 5: Create YieldVault position
 echo "Creating YieldVault position with $INITIAL_DEPOSIT FLOW..."
 flow transactions send cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
-  "A.045a1763c93006ca.FlowYieldVaultsStrategies.TracerStrategy" \
+  "A.045a1763c93006ca.MockStrategies.TracerStrategy" \
   "A.0ae53cb6e3f42a79.FlowToken.Vault" \
   $INITIAL_DEPOSIT \
   --signer test-account
@@ -1016,7 +1020,7 @@ flow transactions send cadence/transactions/flow-yield-vaults/admin/rebalance_au
   $YIELD_VAULT_ID true \
   --signer test-account
 
-flow transactions send cadence/transactions/flow-credit-market/pool-management/rebalance_position.cdc \
+flow transactions send cadence/transactions/flow-alp/pool-management/rebalance_position.cdc \
   $YIELD_VAULT_ID true \
   --signer test-account
 
@@ -1508,10 +1512,10 @@ scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc
 
 ```bash
 # Overall position health (collateralization ratio)
-scripts/flow-credit-market/position_health.cdc
+scripts/flow-alp/position_health.cdc
 
 # Available balance for withdrawal from position
-scripts/flow-credit-market/get_available_balance.cdc
+scripts/flow-alp/get_available_balance.cdc
 ```
 
 #### User Balance
@@ -1553,7 +1557,7 @@ scripts/tokens/get_balance.cdc
 1. **"Could not borrow AutoBalancer"** - Ensure YieldVault ID is correct
 2. **"No price set for token"** - Set initial prices for all tokens before testing
 3. **"Insufficient liquidity"** - Fund MockSwapper with adequate token reserves
-4. **"Position not found"** - Verify FlowCreditMarket position ID (different from YieldVault ID)
+4. **"Position not found"** - Verify FlowALP position ID (different from YieldVault ID)
 
 #### Debugging Commands:
 
