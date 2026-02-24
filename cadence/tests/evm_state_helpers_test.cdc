@@ -92,10 +92,11 @@ fun test_UniswapV3PriceSetAndSwap() {
     )
     Test.expect(balanceRes, Test.beSucceeded())
     let pyusd0Balance = (balanceRes.returnValue as? UFix64) ?? 0.0
-    let expectedOut = 2.0 * flowAmount
+    let expectedOut = flowAmount * 2.0
+    let tolerance = expectedOut * forkedPercentTolerance
     Test.assert(
-        pyusd0Balance >= expectedOut * (1.0 - forkedPercentTolerance),
-        message: "Expected PYUSD0 balance >= ".concat((expectedOut * (1.0 - forkedPercentTolerance)).toString()).concat(" after swap (price 2.0, 0.01% fee), got ").concat(pyusd0Balance.toString())
+        equalAmounts(a: pyusd0Balance, b: expectedOut, tolerance: tolerance),
+        message: "PYUSD0 balance ".concat(pyusd0Balance.toString()).concat(" not within tolerance of ").concat(expectedOut.toString())
     )
 }
 
@@ -141,8 +142,9 @@ fun test_ERC4626PriceSetAndDeposit() {
     Test.expect(balanceRes, Test.beSucceeded())
     let fusdevBalance = (balanceRes.returnValue as? UFix64) ?? 0.0
     let expectedShares = 0.5
+    let tolerance = expectedShares * forkedPercentTolerance
     Test.assert(
-        fusdevBalance >= expectedShares * (1.0 - forkedPercentTolerance),
-        message: "Expected FUSDEV shares >= ".concat((expectedShares * (1.0 - forkedPercentTolerance)).toString()).concat(" after deposit, got ").concat(fusdevBalance.toString())
+        equalAmounts(a: fusdevBalance, b: expectedShares, tolerance: tolerance),
+        message: "FUSDEV shares ".concat(fusdevBalance.toString()).concat(" not within tolerance of ").concat(expectedShares.toString())
     )
 }
