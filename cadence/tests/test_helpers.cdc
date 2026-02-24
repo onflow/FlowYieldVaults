@@ -589,16 +589,6 @@ fun addSupportedTokenFixedRateInterestCurve(
 }
 
 access(all)
-fun setPoolMockOracle(signer: Test.TestAccount) {
-    let res = _executeTransaction(
-        "./transactions/set_mock_oracle.cdc",
-        [],
-        signer
-    )
-    Test.expect(res, Test.beSucceeded())
-}
-
-access(all)
 fun rebalancePosition(signer: Test.TestAccount, pid: UInt64, force: Bool, beFailed: Bool) {
     let rebalanceRes = _executeTransaction(
         "../../lib/FlowALP/cadence/transactions/flow-alp/pool-management/rebalance_position.cdc",
