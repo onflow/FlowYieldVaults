@@ -4,10 +4,11 @@ on:
   push:
     branches:
       - main
-      - scheduled-rebalancing
+      - feature/*
   pull_request:
     branches:
       - main
+      - feature/*
 
 jobs:
   scheduled-rebalance-tests:
