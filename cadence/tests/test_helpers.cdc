@@ -256,12 +256,6 @@ access(self) fun _deploy(config: DeploymentConfig) {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "UniswapV3SwapConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
 
     // FlowALPv0 contracts
     let initialMoetSupply = 0.0
@@ -348,6 +342,12 @@ access(self) fun _deploy(config: DeploymentConfig) {
     err = Test.deployContract(
         name: "EVMAmountUtils",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/EVMAmountUtils.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "UniswapV3SwapConnectors",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
