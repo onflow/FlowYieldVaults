@@ -80,11 +80,19 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         access(self) let position: @FlowALPv0.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
+        /// Swapper used to convert yield tokens back to MOET for debt repayment
+        access(self) let yieldToMoetSwapper: {DeFiActions.Swapper}
 
-        init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowALPv0.Position) {
+        init(
+            id: DeFiActions.UniqueIdentifier,
+            collateralType: Type,
+            position: @FlowALPv0.Position,
+            yieldToMoetSwapper: {DeFiActions.Swapper}
+        ) {
             self.uniqueID = id
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
+            self.yieldToMoetSwapper = yieldToMoetSwapper
             self.position <-position
         }
 
@@ -114,8 +122,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         ///
         /// This method:
         /// 1. Calculates debt amount from position
-        /// 2. Withdraws YT from AutoBalancer
-        /// 3. Swaps YT → MOET via external swapper
+        /// 2. Creates external yield token source from AutoBalancer
+        /// 3. Swaps yield tokens → MOET via stored swapper
         /// 4. Closes position with prepared MOET vault
         ///
         /// This approach eliminates circular dependencies by preparing all funds externally
@@ -127,24 +135,40 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 "Unsupported collateral type \(collateralType.identifier)"
             }
 
-            // For production V2 strategies, users should prepare repayment funds manually:
-            // 1. Calculate debt: position.getPositionDetails() and sum debit balances
-            // 2. Extract yield tokens from AutoBalancer
-            // 3. Swap yield tokens to MOET using your preferred swapper/DEX
-            // 4. Call position.closePosition(repaymentVault: <-moet, collateralType: collateral)
-            //
-            // This approach gives users full control over:
-            // - Swap routes and slippage tolerance
-            // - Timing of fund preparation vs. position closing
-            // - Gas optimization strategies
-            //
-            // For automated closing via Strategy.closePosition(), consider:
-            // - Storing swapper reference in strategy struct during creation
-            // - Or implementing a two-phase close (prepare, then execute)
+            // Step 1: Get debt amount from position using helper
+            let debtInfo = self.position.getTotalDebt()
+            let totalDebtAmount = debtInfo.amount
 
-            panic("Strategy.closePosition() not implemented for production strategies. ".concat(
-                "Please prepare repayment funds manually and call position.closePosition() directly. ".concat(
-                    "See method documentation for details on manual closing process.")))
+            // Step 2: If no debt, pass empty vault
+            if totalDebtAmount == 0.0 {
+                let emptyVault <- DeFiActionsUtils.getEmptyVault(Type<@MOET.Vault>())
+                return <- self.position.closePosition(
+                    repaymentVault: <-emptyVault,
+                    collateralType: collateralType
+                )
+            }
+
+            // Step 3: Create external yield token source from AutoBalancer
+            let yieldTokenSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
+                ?? panic("Could not create external source from AutoBalancer")
+
+            // Step 4: Wrap in SwapSource to automatically handle YIELD→MOET conversion
+            // SwapSource calculates the exact yield token amount needed and handles the swap
+            let moetSource = SwapConnectors.SwapSource(
+                swapper: self.yieldToMoetSwapper,
+                source: yieldTokenSource,
+                uniqueID: self.copyID()!
+            )
+
+            // Step 5: Withdraw exact MOET amount needed
+            // SwapSource handles YIELD→MOET conversion using the stored MultiSwapper
+            let moetVault <- moetSource.withdrawAvailable(maxAmount: totalDebtAmount)
+
+            // Step 6: Close position with prepared MOET vault
+            return <- self.position.closePosition(
+                repaymentVault: <-moetVault,
+                collateralType: collateralType
+            )
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
@@ -345,7 +369,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 return <-create FUSDEVStrategy(
                     id: uniqueID,
                     collateralType: collateralType,
-                    position: <-position
+                    position: <-position,
+                    yieldToMoetSwapper: yieldToMoetSwapper
                 )
             default:
                 panic("Unsupported strategy type \(type.identifier)")

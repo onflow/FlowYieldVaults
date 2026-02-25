@@ -119,11 +119,11 @@ access(all) contract MockSwapper {
             // - quoteIn (out=false): calculating input -> round UP (require more to ensure output)
             // The provided amount (not calculated) stays as-is
             let inAmount = out
-                ? FlowALPMath.toUFix64Round(uintInAmount)      // provided input, round normally
+                ? FlowALPMath.toUFix64RoundUp(uintInAmount)      // provided input, round normally
                 : FlowALPMath.toUFix64RoundUp(uintInAmount)    // calculated input, round up
             let outAmount = out
-                ? FlowALPMath.toUFix64RoundDown(uintOutAmount) // calculated output, round down
-                : FlowALPMath.toUFix64RoundUp(uintOutAmount)   // desired output, round up
+                ? FlowALPMath.toUFix64RoundUp(uintOutAmount) // calculated output, round down
+                : FlowALPMath.toUFix64RoundDown(uintOutAmount)   // desired output, round up
 
             return SwapConnectors.BasicQuote(
                 inType: reverse ? self.outVault : self.inVault,
