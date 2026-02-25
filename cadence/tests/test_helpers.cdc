@@ -187,32 +187,13 @@ access(all) fun deployContracts() {
     
     _deploy(config: config)
     
-    // FlowYieldVaultsStrategies V1 (emulator-only, incompatible with mainnet FlowCreditMarket)
     var err = Test.deployContract(
-        name: "FlowYieldVaultsStrategies",
-        path: "../contracts/FlowYieldVaultsStrategies.cdc",
-        arguments: [
-            config.uniswapFactoryAddress,
-            config.uniswapRouterAddress,
-            config.uniswapQuoterAddress,
-            config.pyusd0Address,
-            [] as [String],
-            [] as [UInt32]
-        ]
+        name: "MockStrategies",
+        path: "../contracts/mocks/MockStrategies.cdc",
+        arguments: []
     )
     Test.expect(err, Test.beNil())
-    
-    // MOET onboarding (emulator-only, already onboarded on mainnet)
-    let onboarder = Test.createAccount()
-    transferFlow(signer: serviceAccount, recipient: onboarder.address, amount: 100.0)
-    let onboardMoet = _executeTransaction(
-        "../../lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type.cdc",
-        [Type<@MOET.Vault>()],
-        onboarder
-    )
-    Test.expect(onboardMoet, Test.beSucceeded())
-    
-    // MockStrategy (emulator-only)
+
     err = Test.deployContract(
         name: "MockStrategy",
         path: "../contracts/mocks/MockStrategy.cdc",
@@ -241,20 +222,6 @@ access(all) fun deployContractsForFork() {
     var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
     
     _deploy(config: config)
-    
-    // Deploy Morpho connectors (mainnet-only, depend on real EVM contracts)
-    err = Test.deployContract(
-        name: "MorphoERC4626SinkConnectors",
-        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "MorphoERC4626SwapConnectors",
-        path: "../../lib/FlowCreditMarket/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
 }
 
 access(self) fun _deploy(config: DeploymentConfig) {
@@ -434,6 +401,18 @@ access(self) fun _deploy(config: DeploymentConfig) {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+
+    let moetAddress = getEVMAddressAssociated(withType: Type<@MOET.Vault>().identifier)
+    if moetAddress == nil {
+        let onboarder = Test.createAccount()
+        transferFlow(signer: serviceAccount, recipient: onboarder.address, amount: 100.0)
+        let onboardMoet = _executeTransaction(
+            "../../lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type.cdc",
+            [Type<@MOET.Vault>()],
+            onboarder
+        )
+        Test.expect(onboardMoet, Test.beSucceeded())
+    }
 
     err = Test.deployContract(
         name: "ERC4626Utils",
@@ -714,35 +693,20 @@ fun equalAmounts(a: UFix64, b: UFix64, tolerance: UFix64): Bool {
     return b - a <= tolerance
 }
 
-/// Sets a single BandOracle price
-///
-access(all)
-fun setBandOraclePrice(signer: Test.TestAccount, symbol: String, price: UFix64) {
-    // BandOracle uses 1e9 multiplier for prices
-    // e.g., $1.00 = 1_000_000_000, $0.50 = 500_000_000
-    let priceAsUInt64 = UInt64(price * 1_000_000_000.0)
-    let symbolsRates: {String: UInt64} = { symbol: priceAsUInt64 }
-    
-    let setRes = _executeTransaction(
-        "../../lib/FlowCreditMarket/FlowActions/cadence/tests/transactions/band-oracle/update_data.cdc",
-        [ symbolsRates ],
-        signer
-    )
-    Test.expect(setRes, Test.beSucceeded())
-}
-
 /// Sets multiple BandOracle prices at once
 ///
 access(all)
 fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}) {
     let symbolsRates: {String: UInt64} = {}
     for symbol in symbolPrices.keys {
+        // BandOracle uses 1e9 multiplier for prices
+        // e.g., $1.00 = 1_000_000_000, $0.50 = 500_000_000
         let price = symbolPrices[symbol]!
         symbolsRates[symbol] = UInt64(price * 1_000_000_000.0)
     }
     
     let setRes = _executeTransaction(
-        "../../lib/FlowCreditMarket/FlowActions/cadence/tests/transactions/band-oracle/update_data.cdc",
+        "../../lib/FlowALP/FlowActions/cadence/tests/transactions/band-oracle/update_data.cdc",
         [ symbolsRates ],
         signer
     )

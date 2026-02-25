@@ -1,5 +1,5 @@
 // this height guarantees enough liquidity for the test
-#test_fork(network: "mainnet", height: 143292255)
+#test_fork(network: "mainnet-fork", height: 143292255)
 
 import Test
 import BlockchainHelpers
