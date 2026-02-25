@@ -99,15 +99,9 @@ access(all) contract MockStrategies {
                 "Unsupported collateral type \(collateralType.identifier)"
             }
 
-            // Step 1: Get debt amount from position
-            let balances = self.position.getBalances()
-            var totalDebtAmount: UFix64 = 0.0
-
-            for balance in balances {
-                if balance.direction == FlowALPv0.BalanceDirection.Debit {
-                    totalDebtAmount = totalDebtAmount + UFix64(balance.balance)
-                }
-            }
+            // Step 1: Get debt amount from position using helper
+            let debtInfo = self.position.getTotalDebt()
+            let totalDebtAmount = debtInfo.amount
 
             // Step 2: If no debt, pass empty vault
             if totalDebtAmount == 0.0 {
@@ -137,7 +131,8 @@ access(all) contract MockStrategies {
                 uniqueID: self.copyID()!
             )
 
-            // Step 6: Withdraw exact MOET amount needed (SwapSource handles YT→MOET internally)
+            // Step 6: Withdraw exact MOET amount needed
+            // SwapSource handles YT→MOET conversion, and MockSwapper rounds up output
             let moetVault <- moetSource.withdrawAvailable(maxAmount: totalDebtAmount)
 
             // Step 7: Close position with prepared MOET vault

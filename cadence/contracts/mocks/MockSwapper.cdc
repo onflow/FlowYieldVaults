@@ -114,8 +114,16 @@ access(all) contract MockSwapper {
             let uintInAmount = out ? uintAmount : (uintAmount / uintPrice)
             let uintOutAmount = out ? uintAmount * uintPrice : uintAmount
 
-            let inAmount = FlowALPMath.toUFix64Round(uintInAmount)
-            let outAmount = FlowALPMath.toUFix64Round(uintOutAmount)
+            // Round conservatively based on what's being calculated:
+            // - quoteOut (out=true): calculating output -> round DOWN (don't overpromise)
+            // - quoteIn (out=false): calculating input -> round UP (require more to ensure output)
+            // The provided amount (not calculated) stays as-is
+            let inAmount = out
+                ? FlowALPMath.toUFix64Round(uintInAmount)      // provided input, round normally
+                : FlowALPMath.toUFix64RoundUp(uintInAmount)    // calculated input, round up
+            let outAmount = out
+                ? FlowALPMath.toUFix64RoundDown(uintOutAmount) // calculated output, round down
+                : FlowALPMath.toUFix64RoundUp(uintOutAmount)   // desired output, round up
 
             return SwapConnectors.BasicQuote(
                 inType: reverse ? self.outVault : self.inVault,
@@ -129,7 +137,7 @@ access(all) contract MockSwapper {
             let inAmount = from.balance
             var swapInVault = reverse ? MockSwapper.liquidityConnectors[from.getType()]! : MockSwapper.liquidityConnectors[self.inType()]!
             var swapOutVault = reverse ? MockSwapper.liquidityConnectors[self.inType()]! : MockSwapper.liquidityConnectors[self.outType()]!
-            swapInVault.depositCapacity(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})            
+            swapInVault.depositCapacity(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
             Burner.burn(<-from)
             let outAmount = self.quoteOut(forProvided: inAmount, reverse: reverse).outAmount
             var outVault <- swapOutVault.withdrawAvailable(maxAmount: outAmount)
