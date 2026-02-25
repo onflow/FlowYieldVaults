@@ -352,7 +352,6 @@ access(self) fun _deploy(config: DeploymentConfig) {
     )
     Test.expect(err, Test.beNil())
 
-
     err = Test.deployContract(
         name: "ERC4626Utils",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",

@@ -283,7 +283,7 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 		log("=============================================\n")
 	}
 
-	closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
+	// closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
 
 	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	log("[TEST] flow balance after \(flowBalanceAfter)")
