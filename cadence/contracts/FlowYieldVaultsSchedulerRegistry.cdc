@@ -58,6 +58,11 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /// Stored as a dictionary for O(1) add/remove; iteration gives the pending set
     access(self) var pendingQueue: {UInt64: Bool}
 
+    /// Order for stuck scanning: least recently reported (executed) first.
+    /// Vaults call reportExecution() on each run (remove id from array, append to end).
+    /// Supervisor scans only the first MAX_BATCH_SIZE entries for stuck detection.
+    access(self) var stuckScanOrder: [UInt64]
+
     /* --- ACCOUNT-LEVEL FUNCTIONS --- */
 
     /// Register a YieldVault and store its handler and schedule capabilities (idempotent)
@@ -73,7 +78,25 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         self.yieldVaultRegistry[yieldVaultID] = true
         self.handlerCaps[yieldVaultID] = handlerCap
         self.scheduleCaps[yieldVaultID] = scheduleCap
+        self.stuckScanOrder.append(yieldVaultID)
         emit YieldVaultRegistered(yieldVaultID: yieldVaultID)
+    }
+
+    /// Called by the account that holds this contract (e.g. from the wrapper) on every execution. Removes yieldVaultID from stuckScanOrder (if present)
+    /// and appends it to the end so the Supervisor only scans the first N (least recently executed) for stuck.
+    access(account) fun reportExecution(yieldVaultID: UInt64) {
+        if !(self.yieldVaultRegistry[yieldVaultID] ?? false) {
+            return
+        }
+        var i = 0
+        while i < self.stuckScanOrder.length {
+            if self.stuckScanOrder[i] == yieldVaultID {
+                self.stuckScanOrder.remove(at: i)
+                break
+            }
+            i = i + 1
+        }
+        self.stuckScanOrder.append(yieldVaultID)
     }
 
     /// Adds a yield vault to the pending queue for seeding by the Supervisor
@@ -92,12 +115,20 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         }
     }
 
-    /// Unregister a YieldVault (idempotent) - removes from registry, capabilities, and pending queue
+    /// Unregister a YieldVault (idempotent) - removes from registry, capabilities, pending queue, and stuckScanOrder
     access(account) fun unregister(yieldVaultID: UInt64) {
         self.yieldVaultRegistry.remove(key: yieldVaultID)
         self.handlerCaps.remove(key: yieldVaultID)
         self.scheduleCaps.remove(key: yieldVaultID)
         let pending = self.pendingQueue.remove(key: yieldVaultID)
+        var i = 0
+        while i < self.stuckScanOrder.length {
+            if self.stuckScanOrder[i] == yieldVaultID {
+                self.stuckScanOrder.remove(at: i)
+                break
+            }
+            i = i + 1
+        }
         emit YieldVaultUnregistered(yieldVaultID: yieldVaultID, wasInPendingQueue: pending != nil)
     }
 
@@ -156,25 +187,33 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /// Get paginated pending yield vault IDs
     /// @param page: The page number (0-indexed)
     /// @param size: The page size (defaults to MAX_BATCH_SIZE if nil)
-    access(all) view fun getPendingYieldVaultIDsPaginated(page: Int, size: Int?): [UInt64] {
-        let pageSize = size ?? self.MAX_BATCH_SIZE
+    access(all) view fun getPendingYieldVaultIDsPaginated(page: Int, size: UInt?): [UInt64] {
+        let pageSize = size ?? Int(self.MAX_BATCH_SIZE)
         let allPending = self.pendingQueue.keys
-        let startIndex = page * pageSize
-        
+        let startIndex = page * Int(pageSize)
+
         if startIndex >= allPending.length {
             return []
         }
-        
-        let endIndex = startIndex + pageSize > allPending.length 
-            ? allPending.length 
-            : startIndex + pageSize
-            
+
+        let endIndex = startIndex + Int(pageSize) > allPending.length
+            ? allPending.length
+            : startIndex + Int(pageSize)
+
         return allPending.slice(from: startIndex, upTo: endIndex)
     }
 
     /// Returns the total number of yield vaults in the pending queue
     access(all) view fun getPendingCount(): Int {
         return self.pendingQueue.length
+    }
+
+    /// Returns the first n yield vault IDs from the stuck-scan order (least recently executed first).
+    /// Supervisor should only scan these for stuck detection instead of all registered vaults.
+    /// @param limit: Maximum number of IDs to return (caller typically passes MAX_BATCH_SIZE)
+    access(all) view fun getStuckScanCandidates(limit: UInt): [UInt64] {
+        let end = limit > UInt(self.stuckScanOrder.length) ? self.stuckScanOrder.length : limit
+        return self.stuckScanOrder.slice(from: 0, upTo: Int(end))
     }
 
     /// Get global Supervisor capability, if set
@@ -193,6 +232,7 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         self.handlerCaps = {}
         self.scheduleCaps = {}
         self.pendingQueue = {}
+        self.stuckScanOrder = []
     }
 }
 
