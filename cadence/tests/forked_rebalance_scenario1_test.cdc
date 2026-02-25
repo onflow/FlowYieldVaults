@@ -1,4 +1,3 @@
-// this height guarantees enough liquidity for the test
 #test_fork(network: "mainnet-fork", height: 143292255)
 
 import Test
@@ -15,8 +14,10 @@ import "MOET"
 import "FlowYieldVaultsStrategiesV2"
 import "FlowALPv0"
 
-// check (and update) flow.json for correct addresses
-// mainnet addresses
+// ============================================================================
+// CADENCE ACCOUNTS
+// ============================================================================
+
 access(all) let flowYieldVaultsAccount = Test.getAccount(0xb1d63873c3cc9f79)
 access(all) let flowALPAccount = Test.getAccount(0x6b00ff876c299c61)
 access(all) let bandOracleAccount = Test.getAccount(0x6801a6222ebf784a)
@@ -56,21 +57,24 @@ access(all) let wflowAddress = "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
 // ============================================================================
 
 // Token balanceOf mapping slots (for EVM.store to manipulate balances)
-access(all) let moetBalanceSlot = 0 as UInt256        // MOET balanceOf at slot 0
-access(all) let pyusd0BalanceSlot = 1 as UInt256     // PYUSD0 balanceOf at slot 1
-access(all) let fusdevBalanceSlot = 12 as UInt256    // FUSDEV (Morpho VaultV2) balanceOf at slot 12
-access(all) let wflowBalanceSlot = 1 as UInt256      // WFLOW balanceOf at slot 1
+access(all) let moetBalanceSlot = 0 as UInt256
+access(all) let pyusd0BalanceSlot = 1 as UInt256
+access(all) let fusdevBalanceSlot = 12 as UInt256 
+access(all) let wflowBalanceSlot = 1 as UInt256
 
 // Morpho vault storage slots
-access(all) let morphoVaultTotalSupplySlot = 11 as UInt256  // slot 11
-access(all) let morphoVaultTotalAssetsSlot = 15 as UInt256  // slot 15 (packed with lastUpdate and maxRate)
+access(all) let morphoVaultTotalSupplySlot = 11 as UInt256
+access(all) let morphoVaultTotalAssetsSlot = 15 as UInt256
 
-// Fee-compensating premiums: pool_price = true_price / (1 - fee_rate)
-// helps match expected values by artificially inflating the price of the pool token
+// ============================================================================
+// FEE COMPENSATING CONSTANTS
+// ============================================================================
+
+// helps match expected values by increasing the amount of tokens we would get
 // normally amount of tokens we would get is true_price * (1 - fee_rate)
 // now we get true_price / (1 - fee_rate) * (1 - fee_rate) = true_price
-access(all) let fee3000Premium: UFix64 = 1.0 / (1.0-0.003)  // 1/(1-0.003), offsets 0.3% swap fee
-access(all) let fee100Premium: UFix64 = 1.0 / (1.0 - 0.0001)   // 1/(1-0.0001), offsets 0.01% swap fee
+access(all) let fee3000Premium: UFix64 = 1.0 / (1.0-0.003)
+access(all) let fee100Premium: UFix64 = 1.0 / (1.0 - 0.0001)
 
 access(all)
 fun setup() {
@@ -123,7 +127,7 @@ fun setup() {
         signer: coaOwnerAccount
     )
 
-    // BandOracle is only used for FLOW price for FCM collateral
+    // BandOracle is only used for FLOW price for FlowALP collateral
     let symbolPrices: {String: UFix64}   = { 
         "FLOW": 1.0,
         "USD": 1.0
@@ -131,17 +135,10 @@ fun setup() {
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: symbolPrices)
 
 	let reserveAmount = 100_000_00.0
-    // service account does not have enough flow to "mint"
-	// var mintFlowResult = mintFlow(to: flowCreditMarketAccount, amount: reserveAmount)
-    // Test.expect(mintFlowResult, Test.beSucceeded())
     transferFlow(signer: whaleFlowAccount, recipient: flowALPAccount.address, amount: reserveAmount)
-
 	mintMoet(signer: flowALPAccount, to: flowALPAccount.address, amount: reserveAmount, beFailed: false)
 
 	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
-    // service account does not have enough flow to "mint"
-	// mintFlowResult = mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
-    // Test.expect(mintFlowResult, Test.beSucceeded())
     transferFlow(signer: whaleFlowAccount, recipient: flowYieldVaultsAccount.address, amount: 100.0)
 }
 
@@ -168,22 +165,18 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
-    // service account does not have enough flow to "mint"
-	// let mintFlowResult =The code snippet `mintFlow(to: user, amount: fundingAmount)` is a function call that mints a specified amount of a token (in this case, Flow tokens) to a specific user account.
-    // mintFlow(to: user, amount: fundingAmount)
-    // Test.expect(mintFlowResult, Test.beSucceeded())
     transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
     grantBeta(flowYieldVaultsAccount, user)
 
     // Set vault to baseline 1:1 price
-    // Use 1 billion (1e9) as base - large enough to prevent slippage, safe from UFix64 overflow
+    // Use 1 billion (1e9) as base to prevent slippage, safe from UFix64 overflow
     setVaultSharePrice(
         vaultAddress: morphoVaultAddress,
         assetAddress: pyusd0Address,
         assetBalanceSlot: pyusd0BalanceSlot,
         totalSupplySlot: morphoVaultTotalSupplySlot,
         vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
-        baseAssets: 1000000000.0,  // 1 billion
+        baseAssets: 1000000000.0,
         priceMultiplier: 1.0,
         signer: user
     )
@@ -229,6 +222,8 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
         })
         
         // Update PYUSD0/FLOW pool to match new Flow price
+        // priceTokenBPerTokenA = how many tokens of tokenB we get for 1 token of tokenA
+        // if flow price = 2.0 then priceTokenBPerTokenA = 1.0 / 2.0 = 0.5
         setPoolToPrice(
             factoryAddress: factoryAddress,
             tokenAAddress: pyusd0Address,
