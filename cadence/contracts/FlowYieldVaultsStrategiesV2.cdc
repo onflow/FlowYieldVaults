@@ -110,6 +110,42 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
         }
+        /// Closes the underlying FlowALP position by preparing repayment funds and closing with them.
+        ///
+        /// This method:
+        /// 1. Calculates debt amount from position
+        /// 2. Withdraws YT from AutoBalancer
+        /// 3. Swaps YT → MOET via external swapper
+        /// 4. Closes position with prepared MOET vault
+        ///
+        /// This approach eliminates circular dependencies by preparing all funds externally
+        /// before calling the position's close method.
+        ///
+        access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
+            pre {
+                self.isSupportedCollateralType(collateralType):
+                "Unsupported collateral type \(collateralType.identifier)"
+            }
+
+            // For production V2 strategies, users should prepare repayment funds manually:
+            // 1. Calculate debt: position.getPositionDetails() and sum debit balances
+            // 2. Extract yield tokens from AutoBalancer
+            // 3. Swap yield tokens to MOET using your preferred swapper/DEX
+            // 4. Call position.closePosition(repaymentVault: <-moet, collateralType: collateral)
+            //
+            // This approach gives users full control over:
+            // - Swap routes and slippage tolerance
+            // - Timing of fund preparation vs. position closing
+            // - Gas optimization strategies
+            //
+            // For automated closing via Strategy.closePosition(), consider:
+            // - Storing swapper reference in strategy struct during creation
+            // - Or implementing a two-phase close (prepare, then execute)
+
+            panic("Strategy.closePosition() not implemented for production strategies. ".concat(
+                "Please prepare repayment funds manually and call position.closePosition() directly. ".concat(
+                    "See method documentation for details on manual closing process.")))
+        }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)

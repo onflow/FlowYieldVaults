@@ -111,6 +111,17 @@ access(all) contract MockStrategy {
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
         }
 
+        /// Closes the position by withdrawing all available collateral.
+        /// For simple mock strategies without FlowALP positions, this just withdraws all available balance.
+        access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
+            pre {
+                self.isSupportedCollateralType(collateralType):
+                "Unsupported collateral type \(collateralType.identifier)"
+            }
+            let availableBalance = self.availableBalance(ofToken: collateralType)
+            return <- self.withdraw(maxAmount: availableBalance, ofToken: collateralType)
+        }
+
         access(contract) fun burnCallback() {} // no-op
 
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {

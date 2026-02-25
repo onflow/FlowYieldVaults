@@ -82,6 +82,70 @@ access(all) contract MockStrategies {
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
         }
+        /// Closes the underlying FlowALP position by preparing repayment funds and closing with them.
+        ///
+        /// This method:
+        /// 1. Calculates debt amount from position
+        /// 2. Withdraws YT from AutoBalancer
+        /// 3. Swaps YT → MOET via external swapper
+        /// 4. Closes position with prepared MOET vault
+        ///
+        /// This approach eliminates circular dependencies by preparing all funds externally
+        /// before calling the position's close method.
+        ///
+        access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
+            pre {
+                self.isSupportedCollateralType(collateralType):
+                "Unsupported collateral type \(collateralType.identifier)"
+            }
+
+            // Step 1: Get debt amount from position
+            let balances = self.position.getBalances()
+            var totalDebtAmount: UFix64 = 0.0
+
+            for balance in balances {
+                if balance.direction == FlowALPv0.BalanceDirection.Debit {
+                    totalDebtAmount = totalDebtAmount + UFix64(balance.balance)
+                }
+            }
+
+            // Step 2: If no debt, pass empty vault
+            if totalDebtAmount == 0.0 {
+                let emptyVault <- DeFiActionsUtils.getEmptyVault(Type<@MOET.Vault>())
+                return <- self.position.closePosition(
+                    repaymentVault: <-emptyVault,
+                    collateralType: collateralType
+                )
+            }
+
+            // Step 3: Create external YT source from AutoBalancer
+            let ytSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
+                ?? panic("Could not create external source from AutoBalancer")
+
+            // Step 4: Create YT→MOET swapper
+            let ytToMoetSwapper = MockSwapper.Swapper(
+                inVault: Type<@YieldToken.Vault>(),
+                outVault: Type<@MOET.Vault>(),
+                uniqueID: self.copyID()!
+            )
+
+            // Step 5: Wrap in SwapSource to automatically handle YT→MOET conversion
+            // SwapSource calculates the exact YT amount needed and handles the swap
+            let moetSource = SwapConnectors.SwapSource(
+                swapper: ytToMoetSwapper,
+                source: ytSource,
+                uniqueID: self.copyID()!
+            )
+
+            // Step 6: Withdraw exact MOET amount needed (SwapSource handles YT→MOET internally)
+            let moetVault <- moetSource.withdrawAvailable(maxAmount: totalDebtAmount)
+
+            // Step 7: Close position with prepared MOET vault
+            return <- self.position.closePosition(
+                repaymentVault: <-moetVault,
+                collateralType: collateralType
+            )
+        }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)

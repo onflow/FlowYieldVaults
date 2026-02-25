@@ -44,6 +44,32 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         return self.account.capabilities.borrow<&DeFiActions.AutoBalancer>(publicPath)
     }
 
+    /// Forces rebalancing on an AutoBalancer before close operations.
+    /// This ensures sufficient liquid funds are available without mid-operation rebalancing.
+    ///
+    /// @param id: The yield vault/AutoBalancer ID
+    ///
+    access(account) fun rebalanceAutoBalancer(id: UInt64) {
+        let storagePath = self.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
+        if let autoBalancer = self.account.storage.borrow<auth(DeFiActions.Auto) &DeFiActions.AutoBalancer>(from: storagePath) {
+            autoBalancer.rebalance(force: true)
+        }
+    }
+
+    /// Creates a source from an AutoBalancer for external use (e.g., position close operations).
+    /// This allows bypassing position topUpSource to avoid circular dependency issues.
+    ///
+    /// @param id: The yield vault/AutoBalancer ID
+    /// @return Source that can withdraw from the AutoBalancer, or nil if not found
+    ///
+    access(account) fun createExternalSource(id: UInt64): {DeFiActions.Source}? {
+        let storagePath = self.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
+        if let autoBalancer = self.account.storage.borrow<auth(DeFiActions.Get) &DeFiActions.AutoBalancer>(from: storagePath) {
+            return autoBalancer.createBalancerSource()
+        }
+        return nil
+    }
+
     /// Checks if an AutoBalancer has at least one active (Scheduled) transaction.
     /// Used by Supervisor to detect stuck yield vaults that need recovery.
     ///
