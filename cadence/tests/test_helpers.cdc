@@ -692,35 +692,20 @@ fun equalAmounts(a: UFix64, b: UFix64, tolerance: UFix64): Bool {
     return b - a <= tolerance
 }
 
-/// Sets a single BandOracle price
-///
-access(all)
-fun setBandOraclePrice(signer: Test.TestAccount, symbol: String, price: UFix64) {
-    // BandOracle uses 1e9 multiplier for prices
-    // e.g., $1.00 = 1_000_000_000, $0.50 = 500_000_000
-    let priceAsUInt64 = UInt64(price * 1_000_000_000.0)
-    let symbolsRates: {String: UInt64} = { symbol: priceAsUInt64 }
-    
-    let setRes = _executeTransaction(
-        "../../lib/FlowCreditMarket/FlowActions/cadence/tests/transactions/band-oracle/update_data.cdc",
-        [ symbolsRates ],
-        signer
-    )
-    Test.expect(setRes, Test.beSucceeded())
-}
-
 /// Sets multiple BandOracle prices at once
 ///
 access(all)
 fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}) {
     let symbolsRates: {String: UInt64} = {}
     for symbol in symbolPrices.keys {
+        // BandOracle uses 1e9 multiplier for prices
+        // e.g., $1.00 = 1_000_000_000, $0.50 = 500_000_000
         let price = symbolPrices[symbol]!
         symbolsRates[symbol] = UInt64(price * 1_000_000_000.0)
     }
     
     let setRes = _executeTransaction(
-        "../../lib/FlowCreditMarket/FlowActions/cadence/tests/transactions/band-oracle/update_data.cdc",
+        "../../lib/FlowALP/FlowActions/cadence/tests/transactions/band-oracle/update_data.cdc",
         [ symbolsRates ],
         signer
     )
