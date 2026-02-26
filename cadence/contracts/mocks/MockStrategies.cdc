@@ -123,19 +123,20 @@ access(all) contract MockStrategies {
                 uniqueID: self.copyID()!
             )
 
-            // Step 5: Wrap in SwapSource to automatically handle YT→MOET conversion
-            // SwapSource calculates the exact YT amount needed and handles the swap
-            let moetSource = SwapConnectors.SwapSource(
-                swapper: ytToMoetSwapper,
-                source: ytSource,
-                uniqueID: self.copyID()!
-            )
+            // Step 5: Use quoteIn to calculate exact YT input needed for desired MOET output
+            // This bypasses SwapSource's branch selection issue where minimumAvailable
+            // underestimates due to RoundDown in quoteOut, causing insufficient output
+            // quoteIn rounds UP the input to guarantee exact output delivery
+            let quote = ytToMoetSwapper.quoteIn(forDesired: totalDebtAmount, reverse: false)
 
-            // Step 6: Withdraw exact MOET amount needed
-            // SwapSource handles YT→MOET conversion, and MockSwapper rounds up output
-            let moetVault <- moetSource.withdrawAvailable(maxAmount: totalDebtAmount)
+            // Step 6: Withdraw the calculated YT amount
+            let ytVault <- ytSource.withdrawAvailable(maxAmount: quote.inAmount)
 
-            // Step 7: Close position with prepared MOET vault
+            // Step 7: Swap with quote to get exact MOET output
+            // Swap honors the quote and delivers exactly totalDebtAmount
+            let moetVault <- ytToMoetSwapper.swap(quote: quote, inVault: <-ytVault)
+
+            // Step 8: Close position with prepared MOET vault
             return <- self.position.closePosition(
                 repaymentVault: <-moetVault,
                 collateralType: collateralType

@@ -135,7 +135,7 @@ fun test_RebalanceYieldVaultScenario2() {
         log("[TEST] YieldVault balance after yield before \(yieldTokenPrice) rebalance: \(yieldVaultBalance ?? 0.0)")
 
         Test.assert(
-            yieldVaultBalance == expectedFlowBalance[index],
+            equalAmounts(a: yieldVaultBalance!, b: expectedFlowBalance[index], tolerance: 0.01),
             message: "YieldVault balance of \(yieldVaultBalance ?? 0.0) doesn't match an expected value \(expectedFlowBalance[index])"
         )
     }

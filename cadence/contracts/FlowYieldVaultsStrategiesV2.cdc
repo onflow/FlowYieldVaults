@@ -152,19 +152,20 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             let yieldTokenSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
-            // Step 4: Wrap in SwapSource to automatically handle YIELD→MOET conversion
-            // SwapSource calculates the exact yield token amount needed and handles the swap
-            let moetSource = SwapConnectors.SwapSource(
-                swapper: self.yieldToMoetSwapper,
-                source: yieldTokenSource,
-                uniqueID: self.copyID()!
-            )
+            // Step 4: Use quoteIn to calculate exact yield token input needed for desired MOET output
+            // This bypasses SwapSource's branch selection issue where minimumAvailable
+            // underestimates due to RoundDown in quoteOut, causing insufficient output
+            // quoteIn rounds UP the input to guarantee exact output delivery
+            let quote = self.yieldToMoetSwapper.quoteIn(forDesired: totalDebtAmount, reverse: false)
 
-            // Step 5: Withdraw exact MOET amount needed
-            // SwapSource handles YIELD→MOET conversion using the stored MultiSwapper
-            let moetVault <- moetSource.withdrawAvailable(maxAmount: totalDebtAmount)
+            // Step 5: Withdraw the calculated yield token amount
+            let yieldTokenVault <- yieldTokenSource.withdrawAvailable(maxAmount: quote.inAmount)
 
-            // Step 6: Close position with prepared MOET vault
+            // Step 6: Swap with quote to get exact MOET output
+            // Swap honors the quote and delivers exactly totalDebtAmount
+            let moetVault <- self.yieldToMoetSwapper.swap(quote: quote, inVault: <-yieldTokenVault)
+
+            // Step 7: Close position with prepared MOET vault
             return <- self.position.closePosition(
                 repaymentVault: <-moetVault,
                 collateralType: collateralType
