@@ -1,6 +1,5 @@
 // standards
 import "FungibleToken"
-import "Burner"
 import "FlowToken"
 import "EVM"
 // DeFiActions
