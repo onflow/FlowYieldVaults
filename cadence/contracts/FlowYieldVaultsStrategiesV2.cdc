@@ -367,8 +367,38 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 uniqueID: uniqueID
             )
 
+            // Create Position source with CONSERVATIVE settings
+            // pullFromTopUpSource: false ensures Position maintains health buffer
+            // This prevents Position from being pushed to minHealth (1.1) limit
+            let positionSource = position.createSourceWithOptions(
+                type: collateralType,
+                pullFromTopUpSource: false  // ← CONSERVATIVE: maintain safety buffer
+            )
+
+            // Create Collateral -> Yield swapper (reverse of yieldToCollateralSwapper)
+            // Allows AutoBalancer to pull collateral, swap to yield token
+            let collateralToYieldSwapper = self._createCollateralToYieldSwapper(
+                collateralConfig: collateralConfig,
+                yieldTokenEVMAddress: tokens.yieldTokenEVMAddress,
+                yieldTokenType: tokens.yieldTokenType,
+                collateralType: collateralType,
+                uniqueID: uniqueID
+            )
+
+            // Create Position swap source for AutoBalancer deficit recovery
+            // When AutoBalancer value drops below deposits, pulls collateral from Position
+            let positionSwapSource = SwapConnectors.SwapSource(
+                swapper: collateralToYieldSwapper,
+                source: positionSource,
+                uniqueID: uniqueID
+            )
+
             // Set AutoBalancer sink for overflow -> recollateralize
             balancerIO.autoBalancer.setSink(positionSwapSink, updateSinkID: true)
+
+            // Set AutoBalancer source for deficit recovery -> pull from Position
+            // CONSERVATIVE: pullFromTopUpSource=false means Position maintains health buffer
+            balancerIO.autoBalancer.setSource(positionSwapSource, updateSourceID: true)
 
             // Store yield→MOET swapper in contract config for later access during closePosition
             let swapperKey = "yieldToMoetSwapper_".concat(uniqueID.id.toString())
@@ -662,6 +692,50 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 feePath: collateralConfig.yieldToCollateralUniV3FeePath,
                 inVault: yieldTokenType,
                 outVault: collateralType,
+                uniqueID: uniqueID
+            )
+        }
+
+        /// Creates a Collateral -> Yield token swapper using UniswapV3
+        /// This is the REVERSE of _createYieldToCollateralSwapper
+        /// Used by AutoBalancer to pull collateral from Position and swap to yield tokens
+        ///
+        access(self) fun _createCollateralToYieldSwapper(
+            collateralConfig: FlowYieldVaultsStrategiesV2.CollateralConfig,
+            yieldTokenEVMAddress: EVM.EVMAddress,
+            yieldTokenType: Type,
+            collateralType: Type,
+            uniqueID: DeFiActions.UniqueIdentifier
+        ): UniswapV3SwapConnectors.Swapper {
+            // Reverse the swap path: collateral -> yield (opposite of yield -> collateral)
+            let forwardPath = collateralConfig.yieldToCollateralUniV3AddressPath
+            let reversedTokenPath: [EVM.EVMAddress] = []
+            var i = forwardPath.length
+            while i > 0 {
+                i = i - 1
+                reversedTokenPath.append(forwardPath[i])
+            }
+
+            // Reverse the fee path as well
+            let forwardFees = collateralConfig.yieldToCollateralUniV3FeePath
+            let reversedFeePath: [UInt32] = []
+            var j = forwardFees.length
+            while j > 0 {
+                j = j - 1
+                reversedFeePath.append(forwardFees[j])
+            }
+
+            // Verify the reversed path starts with collateral (ends with yield)
+            assert(
+                reversedTokenPath[reversedTokenPath.length - 1].equals(yieldTokenEVMAddress),
+                message: "Reversed path must end with yield token \(yieldTokenEVMAddress.toString())"
+            )
+
+            return self._createUniV3Swapper(
+                tokenPath: reversedTokenPath,
+                feePath: reversedFeePath,
+                inVault: collateralType,     // ← Input is collateral
+                outVault: yieldTokenType,    // ← Output is yield token
                 uniqueID: uniqueID
             )
         }

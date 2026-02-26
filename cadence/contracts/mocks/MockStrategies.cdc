@@ -1,5 +1,6 @@
 // standards
 import "FungibleToken"
+import "Burner"
 import "FlowToken"
 import "EVM"
 // DeFiActions
@@ -116,27 +117,50 @@ access(all) contract MockStrategies {
             let ytSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
-            // Step 4: Create YT→MOET swapper
+            // Step 4: Withdraw ALL YT from AutoBalancer to avoid losing funds when Strategy is destroyed
+            let totalYtVault <- ytSource.withdrawAvailable(maxAmount: UFix64.max)
+            let totalYtAmount = totalYtVault.balance
+
+            // Step 5: Create YT→MOET swapper
             let ytToMoetSwapper = MockSwapper.Swapper(
                 inVault: Type<@YieldToken.Vault>(),
                 outVault: Type<@MOET.Vault>(),
                 uniqueID: self.copyID()!
             )
 
-            // Step 5: Use quoteIn to calculate exact YT input needed for desired MOET output
-            // This bypasses SwapSource's branch selection issue where minimumAvailable
-            // underestimates due to RoundDown in quoteOut, causing insufficient output
-            // quoteIn rounds UP the input to guarantee exact output delivery
-            let quote = ytToMoetSwapper.quoteIn(forDesired: totalDebtAmount, reverse: false)
+            // Step 6: Swap ALL YT to MOET to see how much we can cover
+            var moetVault <- ytToMoetSwapper.swap(quote: nil, inVault: <-totalYtVault)
+            let moetFromYt = moetVault.balance
 
-            // Step 6: Withdraw the calculated YT amount
-            let ytVault <- ytSource.withdrawAvailable(maxAmount: quote.inAmount)
+            // Step 7: If YT didn't cover full debt, withdraw collateral to make up shortfall
+            if moetFromYt < totalDebtAmount {
+                let shortfall = totalDebtAmount - moetFromYt
 
-            // Step 7: Swap with quote to get exact MOET output
-            // Swap honors the quote and delivers exactly totalDebtAmount
-            let moetVault <- ytToMoetSwapper.swap(quote: quote, inVault: <-ytVault)
+                // Create collateral→MOET swapper to convert collateral for debt repayment
+                let collateralToMoetSwapper = MockSwapper.Swapper(
+                    inVault: collateralType,
+                    outVault: Type<@MOET.Vault>(),
+                    uniqueID: self.copyID()!
+                )
 
-            // Step 8: Close position with prepared MOET vault
+                // Calculate how much collateral we need to cover the shortfall
+                let collateralQuote = collateralToMoetSwapper.quoteIn(
+                    forDesired: shortfall,
+                    reverse: false
+                )
+
+                // Withdraw collateral from position to cover shortfall
+                let collateralForDebt <- self.source.withdrawAvailable(maxAmount: collateralQuote.inAmount)
+
+                // Swap collateral to MOET and add to repayment vault
+                let additionalMoet <- collateralToMoetSwapper.swap(
+                    quote: collateralQuote,
+                    inVault: <-collateralForDebt
+                )
+                moetVault.deposit(from: <-additionalMoet)
+            }
+
+            // Step 8: Close position with full MOET repayment
             return <- self.position.closePosition(
                 repaymentVault: <-moetVault,
                 collateralType: collateralType
@@ -264,9 +288,22 @@ access(all) contract MockStrategies {
             // allows for YieldToken to be deposited to the Position
             let positionSwapSink = SwapConnectors.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
 
+            // init FLOW -> YieldToken Swapper (reverse of yieldToFlowSwapper)
+            let flowToYieldSwapper = MockSwapper.Swapper(
+                inVault: collateralType,
+                outVault: yieldTokenType,
+                uniqueID: uniqueID
+            )
+            // allows AutoBalancer to pull FLOW from Position and swap to YieldToken
+            let positionSwapSource = SwapConnectors.SwapSource(swapper: flowToYieldSwapper, source: positionSource, uniqueID: uniqueID)
+
             // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value,
             // recollateralizing the position
             autoBalancer.setSink(positionSwapSink, updateSinkID: true)
+
+            // set the AutoBalancer's rebalance Source which it will use to pull funds when value drops below deposits,
+            // pulling FLOW from the position and swapping to YieldToken
+            autoBalancer.setSource(positionSwapSource, updateSourceID: true)
 
             // Use the same uniqueID passed to createStrategy so Strategy.burnCallback
             // calls _cleanupAutoBalancer with the correct ID
