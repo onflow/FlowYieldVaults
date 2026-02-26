@@ -42,7 +42,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     access(all) let univ3RouterEVMAddress: EVM.EVMAddress
     access(all) let univ3QuoterEVMAddress: EVM.EVMAddress
 
-    access(all) let config: {String: AnyStruct} 
+    access(all) let config: {String: AnyStruct}
 
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let IssuerStoragePath: StoragePath
@@ -80,19 +80,19 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         access(self) let position: @FlowALPv0.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
+
+        /// @TODO on the next iteration store yieldToMoetSwapper in the resource
         /// Swapper used to convert yield tokens back to MOET for debt repayment
-        access(self) let yieldToMoetSwapper: {DeFiActions.Swapper}
+        //access(self) let yieldToMoetSwapper: {DeFiActions.Swapper}
 
         init(
             id: DeFiActions.UniqueIdentifier,
             collateralType: Type,
-            position: @FlowALPv0.Position,
-            yieldToMoetSwapper: {DeFiActions.Swapper}
+            position: @FlowALPv0.Position
         ) {
             self.uniqueID = id
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
-            self.yieldToMoetSwapper = yieldToMoetSwapper
             self.position <-position
         }
 
@@ -152,20 +152,25 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             let yieldTokenSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
-            // Step 4: Use quoteIn to calculate exact yield token input needed for desired MOET output
+            // Step 4: Retrieve yield→MOET swapper from contract config
+            let swapperKey = "yieldToMoetSwapper_".concat(self.id()!.toString())
+            let yieldToMoetSwapper = FlowYieldVaultsStrategiesV2.config[swapperKey] as! {DeFiActions.Swapper}?
+                ?? panic("No yield→MOET swapper found for strategy \(self.id()!)")
+
+            // Step 5: Use quoteIn to calculate exact yield token input needed for desired MOET output
             // This bypasses SwapSource's branch selection issue where minimumAvailable
             // underestimates due to RoundDown in quoteOut, causing insufficient output
             // quoteIn rounds UP the input to guarantee exact output delivery
-            let quote = self.yieldToMoetSwapper.quoteIn(forDesired: totalDebtAmount, reverse: false)
+            let quote = yieldToMoetSwapper.quoteIn(forDesired: totalDebtAmount, reverse: false)
 
-            // Step 5: Withdraw the calculated yield token amount
+            // Step 6: Withdraw the calculated yield token amount
             let yieldTokenVault <- yieldTokenSource.withdrawAvailable(maxAmount: quote.inAmount)
 
-            // Step 6: Swap with quote to get exact MOET output
+            // Step 7: Swap with quote to get exact MOET output
             // Swap honors the quote and delivers exactly totalDebtAmount
-            let moetVault <- self.yieldToMoetSwapper.swap(quote: quote, inVault: <-yieldTokenVault)
+            let moetVault <- yieldToMoetSwapper.swap(quote: quote, inVault: <-yieldTokenVault)
 
-            // Step 7: Close position with prepared MOET vault
+            // Step 8: Close position with prepared MOET vault
             return <- self.position.closePosition(
                 repaymentVault: <-moetVault,
                 collateralType: collateralType
@@ -365,13 +370,16 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             // Set AutoBalancer sink for overflow -> recollateralize
             balancerIO.autoBalancer.setSink(positionSwapSink, updateSinkID: true)
 
+            // Store yield→MOET swapper in contract config for later access during closePosition
+            let swapperKey = "yieldToMoetSwapper_".concat(uniqueID.id.toString())
+            FlowYieldVaultsStrategiesV2.config[swapperKey] = yieldToMoetSwapper
+
             switch type {
             case Type<@FUSDEVStrategy>():
                 return <-create FUSDEVStrategy(
                     id: uniqueID,
                     collateralType: collateralType,
-                    position: <-position,
-                    yieldToMoetSwapper: yieldToMoetSwapper
+                    position: <-position
                 )
             default:
                 panic("Unsupported strategy type \(type.identifier)")
