@@ -46,7 +46,7 @@ access(all) let morphoVaultAddress = "0xd069d989e2F44B70c65347d1853C0c67e10a9F8D
 // PYUSD0 - Stablecoin (FUSDEV's underlying asset)
 access(all) let pyusd0Address = "0x99aF3EeA856556646C98c8B9b2548Fe815240750"
 
-// MOET - Flow Omni Token
+// MOET - Flow ALP USD
 access(all) let moetAddress = "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2"
 
 // WFLOW - Wrapped Flow
@@ -60,7 +60,7 @@ access(all) let wflowAddress = "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
 access(all) let moetBalanceSlot = 0 as UInt256
 access(all) let pyusd0BalanceSlot = 1 as UInt256
 access(all) let fusdevBalanceSlot = 12 as UInt256 
-access(all) let wflowBalanceSlot = 1 as UInt256
+access(all) let wflowBalanceSlot = 3 as UInt256
 
 // Morpho vault storage slots
 access(all) let morphoVaultTotalSupplySlot = 11 as UInt256
