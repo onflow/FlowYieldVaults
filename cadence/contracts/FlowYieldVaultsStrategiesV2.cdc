@@ -240,7 +240,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     }
 
     /// This StrategyComposer builds a Strategy that uses ERC4626 and MorphoERC4626 vaults
-    access(all) resource ERC4626StrategyComposer : FlowYieldVaults.StrategyComposer {
+    access(all) resource MorphoERC4626StrategyComposer : FlowYieldVaults.StrategyComposer {
         /// { Strategy Type: { Collateral Type: FlowYieldVaultsStrategiesV2.CollateralConfig } }
         access(self) let config: {Type: {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}}
 
@@ -712,12 +712,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
         access(all) view fun getSupportedComposers(): {Type: Bool} {
             return { 
-                Type<@ERC4626StrategyComposer>(): true
+                Type<@MorphoERC4626StrategyComposer>(): true
             }
         }
 
         access(self) view fun isSupportedComposer(_ type: Type): Bool {
-            return type == Type<@ERC4626StrategyComposer>()
+            return type == Type<@MorphoERC4626StrategyComposer>()
         }
         access(all) fun issueComposer(_ type: Type): @{FlowYieldVaults.StrategyComposer} {
             pre {
@@ -727,8 +727,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 "Could not find config for StrategyComposer \(type.identifier)"
             }
             switch type {
-            case Type<@ERC4626StrategyComposer>():
-                return <- create ERC4626StrategyComposer(self.configs[type]!)
+            case Type<@MorphoERC4626StrategyComposer>():
+                return <- create MorphoERC4626StrategyComposer(self.configs[type]!)
             default:
                 panic("Unsupported StrategyComposer \(type.identifier) requested")
             }
@@ -807,7 +807,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
         access(Configure) fun purgeConfig() {
             self.configs = {
-                Type<@ERC4626StrategyComposer>(): {
+                Type<@MorphoERC4626StrategyComposer>(): {
                     Type<@FUSDEVStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV2.CollateralConfig},
                     Type<@syWFLOWvStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}
                 }
@@ -894,7 +894,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
 
         let configs = {
-                Type<@ERC4626StrategyComposer>(): {
+                Type<@MorphoERC4626StrategyComposer>(): {
                     Type<@FUSDEVStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV2.CollateralConfig},
                     Type<@syWFLOWvStrategy>(): {} as {Type: FlowYieldVaultsStrategiesV2.CollateralConfig}
                 }
