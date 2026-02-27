@@ -39,8 +39,8 @@ flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connec
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/yieldTokenVault_0x045a1763c93006ca --signer emulator-flow-yield-vaults
 # add TracerStrategy as supported Strategy with the ability to initialize when new YieldVaults are created
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
-    'A.045a1763c93006ca.FlowYieldVaultsStrategies.TracerStrategy' \
-    'A.045a1763c93006ca.FlowYieldVaultsStrategies.TracerStrategyComposer' \
+    'A.045a1763c93006ca.MockStrategies.TracerStrategy' \
+    'A.045a1763c93006ca.MockStrategies.TracerStrategyComposer' \
     /storage/FlowYieldVaultsStrategyComposerIssuer_0x045a1763c93006ca \
     --signer emulator-flow-yield-vaults
 

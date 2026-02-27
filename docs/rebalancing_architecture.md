@@ -7,7 +7,7 @@
 - Each YieldVault wraps a **FlowYieldVaults Strategy** (e.g. `TracerStrategy`)
 - The YieldVault itself does **not** know about scheduling or FlowALP; it just holds a strategy resource
 
-### FlowYieldVaultsStrategies (TracerStrategy stack)
+### MockStrategies (TracerStrategy stack)
   - `TracerStrategyComposer` wires together:
   - A **DeFiActions.AutoBalancer** (manages Yield token exposure around deposits value)
   - A **FlowALP.Position** (borrow/lend position in the FlowALP pool)
@@ -56,7 +56,7 @@
 
 ## 2. How the Tracer Strategy Wires AutoBalancer and FlowALP Together
 
-Inside `FlowYieldVaultsStrategies.TracerStrategyComposer.createStrategy(...)`:
+Inside `MockStrategies.TracerStrategyComposer.createStrategy(...)`:
 
 ### Step 1: Create an AutoBalancer
    - Configured with:

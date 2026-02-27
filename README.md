@@ -18,7 +18,7 @@ The main contract that orchestrates the entire yield farming system:
 - **YieldVault Resource**: Represents a user's position in a specific strategy
 - **YieldVaultManager**: Manages multiple YieldVault positions for a user account
 
-#### 2. FlowYieldVaultsStrategies.cdc - Strategy Implementations
+#### 2. MockStrategies.cdc - Strategy Implementations
 
 Implements specific yield strategies:
 
@@ -973,7 +973,7 @@ flow transactions send cadence/transactions/mocks/swapper/set_liquidity_connecto
 # Step 5: Create YieldVault position
 echo "Creating YieldVault position with $INITIAL_DEPOSIT FLOW..."
 flow transactions send cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
-  "A.045a1763c93006ca.FlowYieldVaultsStrategies.TracerStrategy" \
+  "A.045a1763c93006ca.MockStrategies.TracerStrategy" \
   "A.0ae53cb6e3f42a79.FlowToken.Vault" \
   $INITIAL_DEPOSIT \
   --signer test-account

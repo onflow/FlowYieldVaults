@@ -4,10 +4,11 @@ on:
   push:
     branches:
       - main
-      - scheduled-rebalancing
+      - feature/*
   pull_request:
     branches:
       - main
+      - feature/*
 
 jobs:
   scheduled-rebalance-tests:
@@ -29,7 +30,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Install Flow CLI
-        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v2.14.2-evm-manipulation-poc.0
+        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v2.14.2-evm-manipulation-poc.1
       - name: Flow CLI Version
         run: flow version
       - name: Update PATH
