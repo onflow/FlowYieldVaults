@@ -1,5 +1,4 @@
-// this height guarantees enough liquidity for the test
-#test_fork(network: "mainnet-fork", height: 143186249)
+#test_fork(network: "mainnet-fork", height: 143292255)
 
 import Test
 import BlockchainHelpers
@@ -66,45 +65,10 @@ access(all) let wflowBalanceSlot = 3 as UInt256
 access(all) let morphoVaultTotalSupplySlot = 11 as UInt256
 access(all) let morphoVaultTotalAssetsSlot = 15 as UInt256
 
-// ============================================================================
-// FEE COMPENSATING CONSTANTS
-// ============================================================================
-
-// helps match expected values by increasing the amount of tokens we would get
-// normally amount of tokens we would get is true_price * (1 - fee_rate)
-// now we get true_price / (1 - fee_rate) * (1 - fee_rate) = true_price
-access(all) let fee3000Premium: UFix64 = 1.0 / (1.0-0.003)
-access(all) let fee100Premium: UFix64 = 1.0 / (1.0 - 0.0001)
-
 access(all)
 fun setup() {
     // Deploy all contracts for mainnet fork
     deployContractsForFork()
-// Upsert strategy config using mainnet addresses
-    let upsertRes = Test.executeTransaction(
-        Test.Transaction(
-            code: Test.readFile("../transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc"),
-            authorizers: [flowYieldVaultsAccount.address],
-            signers: [flowYieldVaultsAccount],
-            arguments: [
-                strategyIdentifier,
-                flowTokenIdentifier,
-                morphoVaultAddress,
-                [morphoVaultAddress, pyusd0Address, wflowAddress],
-                [100 as UInt32, 3000 as UInt32]
-            ]
-        )
-    )
-    Test.expect(upsertRes, Test.beSucceeded())
-
-    // Add mUSDFStrategyComposer AFTER config is set
-    addStrategyComposer(
-        signer: flowYieldVaultsAccount,
-        strategyIdentifier: strategyIdentifier,
-        composerIdentifier: Type<@FlowYieldVaultsStrategiesV2.MorphoERC4626StrategyComposer>().identifier,
-        issuerStoragePath: FlowYieldVaultsStrategiesV2.IssuerStoragePath,
-        beFailed: false
-    )
 
     // Setup Uniswap V3 pools with structurally valid state
     // This sets slot0, observations, liquidity, ticks, bitmap, positions, and POOL token balances
@@ -113,7 +77,7 @@ fun setup() {
         tokenAAddress: pyusd0Address,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
-        priceTokenBPerTokenA: fee100Premium,
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
@@ -124,7 +88,7 @@ fun setup() {
         tokenAAddress: pyusd0Address,
         tokenBAddress: wflowAddress,
         fee: 3000,
-        priceTokenBPerTokenA: fee3000Premium,
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 3000, reverse: false),
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: wflowBalanceSlot,
         signer: coaOwnerAccount
@@ -135,7 +99,7 @@ fun setup() {
         tokenAAddress: moetAddress,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
-        priceTokenBPerTokenA: fee100Premium,
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
@@ -146,7 +110,7 @@ fun setup() {
         tokenAAddress: moetAddress,
         tokenBAddress: pyusd0Address,
         fee: 100,
-        priceTokenBPerTokenA: fee100Premium,
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: pyusd0BalanceSlot,
         signer: coaOwnerAccount
@@ -217,14 +181,12 @@ fun test_RebalanceYieldVaultScenario2() {
     grantBeta(flowYieldVaultsAccount, user)
 
     // Set vault to baseline 1:1 price
-    // Use 1 billion (1e9) as base - large enough to prevent slippage, safe from UFix64 overflow
     setVaultSharePrice(
         vaultAddress: morphoVaultAddress,
         assetAddress: pyusd0Address,
         assetBalanceSlot: pyusd0BalanceSlot,
         totalSupplySlot: morphoVaultTotalSupplySlot,
         vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
-        baseAssets: 1000000000.0,  // 1 billion
         priceMultiplier: 1.0,
         signer: user
     )
@@ -264,29 +226,31 @@ fun test_RebalanceYieldVaultScenario2() {
             assetBalanceSlot: UInt256(1),
             totalSupplySlot: morphoVaultTotalSupplySlot,
             vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
-            baseAssets: 1000000000.0,  // 1 billion
             priceMultiplier: yieldTokenPrice,
             signer: user
         )
 
         // Update FUSDEV pools
+        // Since FUSDEV is increasing in value we want to sell FUSDEV on the rebalance
+        // FUSDEV -> PYUSD0 -> WFLOW
         setPoolToPrice(
             factoryAddress: factoryAddress,
             tokenAAddress: pyusd0Address,
             tokenBAddress: morphoVaultAddress,
             fee: 100,
-            priceTokenBPerTokenA: fee100Premium/yieldTokenPrice,
+            priceTokenBPerTokenA: feeAdjustedPrice(1.0 / UFix128(yieldTokenPrice), fee: 100, reverse: true),
             tokenABalanceSlot: pyusd0BalanceSlot,
             tokenBBalanceSlot: fusdevBalanceSlot,
             signer: coaOwnerAccount
         )
 
+        // MOET -> FUSDEV
         setPoolToPrice(
             factoryAddress: factoryAddress,
             tokenAAddress: moetAddress,
             tokenBAddress: morphoVaultAddress,
             fee: 100,
-            priceTokenBPerTokenA: fee100Premium/yieldTokenPrice,
+            priceTokenBPerTokenA: feeAdjustedPrice(1.0 / UFix128(yieldTokenPrice), fee: 100, reverse: false),
             tokenABalanceSlot: moetBalanceSlot,
             tokenBBalanceSlot: fusdevBalanceSlot,
             signer: coaOwnerAccount
@@ -343,9 +307,8 @@ fun test_RebalanceYieldVaultScenario2() {
 		log("YieldVault vs Position:       \(yieldVaultVsPositionSign)\(yieldVaultVsPositionDiff)")
 		log("===============================================\n")
 
-        let percentToleranceCheck = equalAmounts(a: yieldVaultPercentDiff, b: 0.0, tolerance: forkedPercentTolerance)
-        Test.assert(percentToleranceCheck, message: "Percent difference \(yieldVaultPercentDiff)% is not within tolerance \(forkedPercentTolerance)%")
-        log("Percent difference \(yieldVaultPercentDiff)% is within tolerance \(forkedPercentTolerance)%")
+        let percentToleranceCheck = equalAmounts(a: positionPercentDiff, b: 0.0, tolerance: 0.05)
+        Test.assert(percentToleranceCheck, message: "Percent difference \(positionPercentDiff)% is not within tolerance \(0.05)%")
 	}
 
 	// closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
@@ -362,62 +325,6 @@ fun test_RebalanceYieldVaultScenario2() {
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-// Setup Uniswap V3 pools with valid state at specified prices
-access(all) fun setupUniswapPools(signer: Test.TestAccount) {
-    log("\n=== Setting up Uniswap V3 pools ===")
-    
-    let fusdevDexPremium = 1.01
-    
-    let poolConfigs: [{String: AnyStruct}] = [
-        {
-            "name": "PYUSD0/FUSDEV",
-            "tokenA": pyusd0Address,
-            "tokenB": morphoVaultAddress,
-            "fee": 100 as UInt64,
-            "tokenABalanceSlot": pyusd0BalanceSlot,
-            "tokenBBalanceSlot": fusdevBalanceSlot,
-            "priceTokenBPerTokenA": fusdevDexPremium
-        },
-        {
-            "name": "PYUSD0/FLOW",
-            "tokenA": pyusd0Address,
-            "tokenB": wflowAddress,
-            "fee": 3000 as UInt64,
-            "tokenABalanceSlot": pyusd0BalanceSlot,
-            "tokenBBalanceSlot": wflowBalanceSlot,
-            "priceTokenBPerTokenA": 1.0
-        },
-        {
-            "name": "MOET/FUSDEV",
-            "tokenA": moetAddress,
-            "tokenB": morphoVaultAddress,
-            "fee": 100 as UInt64,
-            "tokenABalanceSlot": moetBalanceSlot,
-            "tokenBBalanceSlot": fusdevBalanceSlot,
-            "priceTokenBPerTokenA": fusdevDexPremium
-        }
-    ]
-    
-    for config in poolConfigs {
-        let name = config["name"]! as! String
-        log("Setting up ".concat(name))
-        
-        setPoolToPrice(
-            factoryAddress: factoryAddress,
-            tokenAAddress: config["tokenA"]! as! String,
-            tokenBAddress: config["tokenB"]! as! String,
-            fee: config["fee"]! as! UInt64,
-            priceTokenBPerTokenA: config["priceTokenBPerTokenA"]! as! UFix64,
-            tokenABalanceSlot: config["tokenABalanceSlot"]! as! UInt256,
-            tokenBBalanceSlot: config["tokenBBalanceSlot"]! as! UInt256,
-            signer: signer
-        )
-    }
-    
-    log("All pools seeded")
-}
-
 
 // Helper function to get Flow collateral from position
 access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
