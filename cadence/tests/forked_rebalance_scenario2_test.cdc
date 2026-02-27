@@ -263,6 +263,18 @@ fun test_RebalanceYieldVaultScenario2() {
 		rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: false, beFailed: false)
 		rebalancePosition(signer: flowALPAccount, pid: pid, force: false, beFailed: false)
 
+        // FUSDEV -> MOET for the yield balance check (we want to sell FUSDEV)
+        setPoolToPrice(
+            factoryAddress: factoryAddress,
+            tokenAAddress: moetAddress,
+            tokenBAddress: morphoVaultAddress,
+            fee: 100,
+            priceTokenBPerTokenA: feeAdjustedPrice(1.0 / UFix128(yieldTokenPrice), fee: 100, reverse: true),
+            tokenABalanceSlot: moetBalanceSlot,
+            tokenBBalanceSlot: fusdevBalanceSlot,
+            signer: coaOwnerAccount
+        )
+
 		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
 		log("[TEST] YieldVault balance after yield price \(yieldTokenPrice) rebalance: \(yieldVaultBalance ?? 0.0)")
@@ -307,8 +319,8 @@ fun test_RebalanceYieldVaultScenario2() {
 		log("YieldVault vs Position:       \(yieldVaultVsPositionSign)\(yieldVaultVsPositionDiff)")
 		log("===============================================\n")
 
-        let percentToleranceCheck = equalAmounts(a: positionPercentDiff, b: 0.0, tolerance: 0.05)
-        Test.assert(percentToleranceCheck, message: "Percent difference \(positionPercentDiff)% is not within tolerance \(0.05)%")
+        let percentToleranceCheck = equalAmounts(a: yieldVaultPercentDiff, b: 0.0, tolerance: 0.01)
+        Test.assert(percentToleranceCheck, message: "Percent difference \(yieldVaultPercentDiff)% is not within tolerance \(0.01)%")
 	}
 
 	// closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
