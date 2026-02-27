@@ -134,8 +134,12 @@ transaction(
         // TODO: Consider passing unrounded tick to slot0 if precision matters
         let targetTickAligned = (targetTick / tickSpacing) * tickSpacing
         
-        // Recalculate sqrtPriceX96 from the aligned tick so it matches slot0
-        targetSqrtPriceX96 = calculateSqrtPriceX96FromTick(tick: targetTickAligned)
+        // Keep sqrtPriceX96 from the unaligned tick so the pool's actual price
+        // retains full precision (e.g., fee premiums). In Uniswap V3, slot0.tick
+        // must be on tickSpacing boundaries only for initialized ticks with liquidity,
+        // but sqrtPriceX96 determines the actual swap rate.
+        // Only align for the boundary tick calculations below.
+        targetSqrtPriceX96 = calculateSqrtPriceX96FromTick(tick: targetTick)
         
         // Use FULL RANGE ticks (min/max for Uniswap V3)
         // This ensures liquidity is available at any price
