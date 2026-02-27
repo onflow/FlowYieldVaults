@@ -22,13 +22,13 @@ access(all) fun computeBalanceOfSlot(holderAddress: String, balanceSlot: UInt256
 
 // Atomically set ERC4626 vault share price
 // This manipulates both the underlying asset balance and vault's _totalAssets storage slot
+// priceMultiplier: share price as a multiplier (e.g. 2.0 for 2x price)
 transaction(
     vaultAddress: String,
     assetAddress: String,
     assetBalanceSlot: UInt256,
     totalSupplySlot: UInt256,
     vaultTotalAssetsSlot: UInt256,
-    baseAssets: UFix64,
     priceMultiplier: UFix64
 ) {
     prepare(signer: &Account) {}
@@ -61,14 +61,19 @@ transaction(
         assert(vaultDecimalsResult.status == EVM.Status.successful, message: "Failed to query vault decimals")
         let vaultDecimals = (EVM.decodeABI(types: [Type<UInt8>()], data: vaultDecimalsResult.data)[0] as! UInt8)
         
-        // Convert baseAssets to asset decimals and apply multiplier
-        let targetAssets = FlowEVMBridgeUtils.ufix64ToUInt256(value: baseAssets, decimals: assetDecimals)
+        // Use 2^120 as base — massive value to drown out interest accrual noise,
+        // with room for multipliers up to ~256x within 128-bit _totalAssets field
+        let targetAssets: UInt256 = 1 << 120
+        // Apply price multiplier via raw fixed-point arithmetic
+        // UFix64 internally stores value * 10^8, so we extract the raw representation
+        // and do: finalTargetAssets = targetAssets * rawMultiplier / 10^8
         let multiplierBytes = priceMultiplier.toBigEndianBytes()
-        var multiplierUInt64: UInt64 = 0
+        var rawMultiplier: UInt256 = 0
         for byte in multiplierBytes {
-            multiplierUInt64 = (multiplierUInt64 << 8) + UInt64(byte)
+            rawMultiplier = (rawMultiplier << 8) + UInt256(byte)
         }
-        let finalTargetAssets = (targetAssets * UInt256(multiplierUInt64)) / UInt256(100000000)
+        let scale: UInt256 = 100_000_000 // 10^8
+        let finalTargetAssets = (targetAssets * rawMultiplier) / scale
         
         // For a 1:1 price (1 share = 1 asset), we need:
         // totalAssets (in assetDecimals) / totalSupply (vault decimals) = 1
@@ -93,7 +98,6 @@ transaction(
         let maxRateBytes: [UInt8] = [0, 0, 0, 0, 0, 0, 0, 0]  // maxRate = 0
         
         // Pad finalTargetAssets to 16 bytes for the slot (bytes 16-31, 16 bytes in slot)
-        // Re-get bytes from finalTargetAssets to avoid using the 32-byte padded version
         let assetsBytesForSlot = finalTargetAssets.toBigEndianBytes()
         var paddedAssets: [UInt8] = []
         var assetsPadCount = 16 - assetsBytesForSlot.length
@@ -101,11 +105,9 @@ transaction(
             paddedAssets.append(0)
             assetsPadCount = assetsPadCount - 1
         }
-        // Only take last 16 bytes if assetsBytesForSlot is somehow longer than 16
         if assetsBytesForSlot.length <= 16 {
             paddedAssets.appendAll(assetsBytesForSlot)
         } else {
-            // Take last 16 bytes if longer
             paddedAssets.appendAll(assetsBytesForSlot.slice(from: assetsBytesForSlot.length - 16, upTo: assetsBytesForSlot.length))
         }
         

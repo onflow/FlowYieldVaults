@@ -1,5 +1,5 @@
 // Tests that EVM state helpers correctly set Uniswap V3 pool price and ERC4626 vault price
-#test_fork(network: "mainnet-fork", height: 142251136)
+#test_fork(network: "mainnet-fork", height: 143292255)
 
 import Test
 import BlockchainHelpers
@@ -9,9 +9,7 @@ import "evm_state_helpers.cdc"
 
 import "FlowToken"
 
-// Mainnet addresses (same as forked_rebalance_scenario3c_test.cdc)
 access(all) let whaleFlowAccount = Test.getAccount(0x92674150c9213fc9)
-access(all) let coaOwnerAccount = Test.getAccount(0xe467b9dd11fa00df)
 
 access(all) let factoryAddress = "0xca6d7Bb03334bBf135902e1d919a5feccb461632"
 access(all) let routerAddress = "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341"
@@ -27,123 +25,132 @@ access(all) let wflowBalanceSlot = 3 as UInt256
 access(all) let morphoVaultTotalSupplySlot = 11 as UInt256
 access(all) let morphoVaultTotalAssetsSlot = 15 as UInt256
 
-// Bridged vault type identifiers (service account prefix may vary; use deployment)
 access(all) let pyusd0VaultTypeId = "A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault"
-access(all) let fusdevVaultTypeId = "A.1e4aa0b87d10b141.EVMVMBridgedToken_d069d989e2f44b70c65347d1853c0c67e10a9f8d.Vault"
+
+// Vault public paths
+access(all) let pyusd0PublicPath = /public/EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750Vault
+access(all) let fusdevPublicPath = /public/EVMVMBridgedToken_d069d989e2f44b70c65347d1853c0c67e10a9f8dVault
+
+access(all) let univ3PoolFee: UInt64 = 3000
+
+access(all) var snapshot: UInt64 = 0
+access(all) var testAccount = Test.createAccount()
 
 access(all)
 fun setup() {
     deployContractsForFork()
-    transferFlow(signer: whaleFlowAccount, recipient: coaOwnerAccount.address, amount: 1000.0)
-
-    // Deposit FLOW to COA to cover bridge/gas fees for swaps (scheduled txs can consume some)
-    let depositFlowRes = Test.executeTransaction(
-        Test.Transaction(
-            code: Test.readFile("transactions/deposit_flow_to_coa.cdc"),
-            authorizers: [coaOwnerAccount.address],
-            signers: [coaOwnerAccount],
-            arguments: [5.0]
-        )
-    )
-    Test.expect(depositFlowRes, Test.beSucceeded())
-}
-
-access(all) let univ3PoolFee: UInt64 = 100
-
-access(all)
-fun test_UniswapV3PriceSetAndSwap() {
+    transferFlow(signer: whaleFlowAccount, recipient: testAccount.address, amount: 10000000.0)
+    createCOA(testAccount, fundingAmount: 5.0)
+    
+    // Set up a WFLOW/PYUSD0 pool at 1:1 so we can swap FLOW→PYUSD0 to fund the Cadence vault
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: wflowAddress,
         tokenBAddress: pyusd0Address,
         fee: univ3PoolFee,
-        priceTokenBPerTokenA: 2.0,
+        priceTokenBPerTokenA: 1.0,
         tokenABalanceSlot: wflowBalanceSlot,
         tokenBBalanceSlot: pyusd0BalanceSlot,
-        signer: coaOwnerAccount
+        signer: testAccount
     )
 
-    // Set COA WFLOW balance to 100.0 for the swap
-    let flowAmount = 100.0
-    let setBalanceRes = Test.executeTransaction(
-        Test.Transaction(
-            code: Test.readFile("transactions/set_coa_token_balance.cdc"),
-            authorizers: [coaOwnerAccount.address],
-            signers: [coaOwnerAccount],
-            arguments: [wflowAddress, wflowBalanceSlot, flowAmount]
-        )
-    )
-    Test.expect(setBalanceRes, Test.beSucceeded())
-
+    // Swap FLOW→PYUSD0 to create the Cadence-side PYUSD0 vault (needed for ERC4626 deposit test)
     let swapRes = Test.executeTransaction(
         Test.Transaction(
             code: Test.readFile("transactions/execute_univ3_swap.cdc"),
-            authorizers: [coaOwnerAccount.address],
-            signers: [coaOwnerAccount],
-            arguments: [factoryAddress, routerAddress, quoterAddress, wflowAddress, pyusd0Address, univ3PoolFee, flowAmount]
+            authorizers: [testAccount.address],
+            signers: [testAccount],
+            arguments: [factoryAddress, routerAddress, quoterAddress, wflowAddress, pyusd0Address, univ3PoolFee, 11000.0]
         )
     )
     Test.expect(swapRes, Test.beSucceeded())
 
-    let balanceRes = Test.executeScript(
-        Test.readFile("scripts/get_bridged_vault_balance.cdc"),
-        [coaOwnerAccount.address, pyusd0VaultTypeId]
-    )
-    Test.expect(balanceRes, Test.beSucceeded())
-    let pyusd0Balance = (balanceRes.returnValue as? UFix64) ?? 0.0
-    let expectedOut = flowAmount * 2.0
-    let tolerance = expectedOut * forkedPercentTolerance * 0.01
-    Test.assert(
-        equalAmounts(a: pyusd0Balance, b: expectedOut, tolerance: tolerance),
-        message: "PYUSD0 balance \(pyusd0Balance.toString()) not within tolerance of \(expectedOut.toString())"
-    )
+    snapshot = getCurrentBlockHeight()
+    Test.commitBlock()
+}
+
+access(all)
+fun test_UniswapV3PriceSetAndSwap() {
+    let prices = [0.5, 1.0, 2.0, 3.0, 5.0]
+    let flowAmount = 10000.0
+
+    for price in prices {
+        Test.reset(to: snapshot)
+
+        setPoolToPrice(
+            factoryAddress: factoryAddress,
+            tokenAAddress: wflowAddress,
+            tokenBAddress: pyusd0Address,
+            fee: univ3PoolFee,
+            priceTokenBPerTokenA: UFix128(price),
+            tokenABalanceSlot: wflowBalanceSlot,
+            tokenBBalanceSlot: pyusd0BalanceSlot,
+            signer: testAccount
+        )
+
+        let balanceBefore = getBalance(address: testAccount.address, vaultPublicPath: pyusd0PublicPath)!
+
+        let swapRes = Test.executeTransaction(
+            Test.Transaction(
+                code: Test.readFile("transactions/execute_univ3_swap.cdc"),
+                authorizers: [testAccount.address],
+                signers: [testAccount],
+                arguments: [factoryAddress, routerAddress, quoterAddress, wflowAddress, pyusd0Address, univ3PoolFee, flowAmount]
+            )
+        )
+        Test.expect(swapRes, Test.beSucceeded())
+
+        let balanceAfter = getBalance(address: testAccount.address, vaultPublicPath: pyusd0PublicPath)!
+        let swapOutput = balanceAfter - balanceBefore
+        let expectedOut = feeAdjustedPrice(UFix128(price), fee: univ3PoolFee, reverse: true) * UFix128(flowAmount)
+
+        // PYUSD0 has 6 decimals, so we need to use a tolerance of 1e-6
+        let tolerance = 0.000001
+        Test.assert(
+            equalAmounts(a: UFix64(swapOutput), b: UFix64(expectedOut), tolerance: tolerance),
+            message: "Pool price \(price): swap output \(swapOutput) not within \(tolerance) of expected \(expectedOut)"
+        )
+        log("Pool price \(price): expected=\(expectedOut) actual=\(swapOutput)")
+    }
 }
 
 access(all)
 fun test_ERC4626PriceSetAndDeposit() {
-    setVaultSharePrice(
-        vaultAddress: morphoVaultAddress,
-        assetAddress: pyusd0Address,
-        assetBalanceSlot: pyusd0BalanceSlot,
-        totalSupplySlot: morphoVaultTotalSupplySlot,
-        vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
-        baseAssets: 1000000000.0,
-        priceMultiplier: 2.0,
-        signer: coaOwnerAccount
-    )
+    let multipliers = [0.5, 1.0, 2.0, 3.0, 5.0]
+    let amountIn = 10000.0
 
-    // Set COA PYUSD0 balance to 1000000000.0 for the deposit
-    let fundRes = Test.executeTransaction(
-        Test.Transaction(
-            code: Test.readFile("transactions/set_coa_token_balance.cdc"),
-            authorizers: [coaOwnerAccount.address],
-            signers: [coaOwnerAccount],
-            arguments: [pyusd0Address, pyusd0BalanceSlot, 1000000000.0]
+    for multiplier in multipliers {
+        Test.reset(to: snapshot)
+
+        setVaultSharePrice(
+            vaultAddress: morphoVaultAddress,
+            assetAddress: pyusd0Address,
+            assetBalanceSlot: pyusd0BalanceSlot,
+            totalSupplySlot: morphoVaultTotalSupplySlot,
+            vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
+            priceMultiplier: multiplier,
+            signer: testAccount
         )
-    )
-    Test.expect(fundRes, Test.beSucceeded())
 
-    let amountIn = 1.0
-    let depositRes = Test.executeTransaction(
-        Test.Transaction(
-            code: Test.readFile("transactions/execute_morpho_deposit.cdc"),
-            authorizers: [coaOwnerAccount.address],
-            signers: [coaOwnerAccount],
-            arguments: [pyusd0VaultTypeId, morphoVaultAddress, amountIn]
+        let depositRes = Test.executeTransaction(
+            Test.Transaction(
+                code: Test.readFile("transactions/execute_morpho_deposit.cdc"),
+                authorizers: [testAccount.address],
+                signers: [testAccount],
+                arguments: [pyusd0VaultTypeId, morphoVaultAddress, amountIn]
+            )
         )
-    )
-    Test.expect(depositRes, Test.beSucceeded())
+        Test.expect(depositRes, Test.beSucceeded())
 
-    let balanceRes = Test.executeScript(
-        Test.readFile("scripts/get_bridged_vault_balance.cdc"),
-        [coaOwnerAccount.address, fusdevVaultTypeId]
-    )
-    Test.expect(balanceRes, Test.beSucceeded())
-    let fusdevBalance = (balanceRes.returnValue as? UFix64) ?? 0.0
-    let expectedShares = 0.5
-    let tolerance = expectedShares * forkedPercentTolerance * 0.01
-    Test.assert(
-        equalAmounts(a: fusdevBalance, b: expectedShares, tolerance: tolerance),
-        message: "FUSDEV shares \(fusdevBalance.toString()) not within tolerance of \(expectedShares.toString())"
-    )
+        let fusdevBalance = getBalance(address: testAccount.address, vaultPublicPath: fusdevPublicPath)!
+        let expectedShares = amountIn / multiplier
+
+        // FUSDEV has 18 decimals, so we need to use a tolerance of 1e-8 (Cadence UFix64 precision)
+        let tolerance: UFix64 = 0.00000001
+        Test.assert(
+            equalAmounts(a: fusdevBalance, b: expectedShares, tolerance: tolerance),
+            message: "Multiplier \(multiplier): FUSDEV shares \(fusdevBalance) not within \(tolerance) of expected \(expectedShares)"
+        )
+        log("Multiplier \(multiplier): expected=\(expectedShares) actual=\(fusdevBalance)")
+    }
 }

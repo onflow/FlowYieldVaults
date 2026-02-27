@@ -66,15 +66,6 @@ access(all) let wflowBalanceSlot = 3 as UInt256
 access(all) let morphoVaultTotalSupplySlot = 11 as UInt256
 access(all) let morphoVaultTotalAssetsSlot = 15 as UInt256
 
-// ============================================================================
-// FEE COMPENSATING CONSTANTS
-// ============================================================================
-
-// helps match expected values by increasing the amount of tokens we would get
-// normally amount of tokens we would get is true_price * (1 - fee_rate)
-// now we get true_price / (1 - fee_rate) * (1 - fee_rate) = true_price
-access(all) let fee3000Premium: UFix64 = 1.0 / (1.0-0.003)
-access(all) let fee100Premium: UFix64 = 1.0 / (1.0 - 0.0001)
 
 access(all)
 fun setup() {
@@ -88,7 +79,7 @@ fun setup() {
         tokenAAddress: pyusd0Address,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
-        priceTokenBPerTokenA: fee100Premium,
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
@@ -99,7 +90,7 @@ fun setup() {
         tokenAAddress: pyusd0Address,
         tokenBAddress: wflowAddress,
         fee: 3000,
-        priceTokenBPerTokenA: fee3000Premium,
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 3000, reverse: false),
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: wflowBalanceSlot,
         signer: coaOwnerAccount
@@ -110,7 +101,7 @@ fun setup() {
         tokenAAddress: moetAddress,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
-        priceTokenBPerTokenA: fee100Premium,
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
@@ -121,7 +112,7 @@ fun setup() {
         tokenAAddress: moetAddress,
         tokenBAddress: pyusd0Address,
         fee: 100,
-        priceTokenBPerTokenA: fee100Premium,
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: pyusd0BalanceSlot,
         signer: coaOwnerAccount
@@ -169,14 +160,12 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
     grantBeta(flowYieldVaultsAccount, user)
 
     // Set vault to baseline 1:1 price
-    // Use 1 billion (1e9) as base to prevent slippage, safe from UFix64 overflow
     setVaultSharePrice(
         vaultAddress: morphoVaultAddress,
         assetAddress: pyusd0Address,
         assetBalanceSlot: pyusd0BalanceSlot,
         totalSupplySlot: morphoVaultTotalSupplySlot,
         vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
-        baseAssets: 1000000000.0,
         priceMultiplier: 1.0,
         signer: user
     )
@@ -221,17 +210,31 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
             "USD": 1.0
         })
         
-        // Update PYUSD0/FLOW pool to match new Flow price
-        // priceTokenBPerTokenA = how many tokens of tokenB we get for 1 token of tokenA
-        // if flow price = 2.0 then priceTokenBPerTokenA = 1.0 / 2.0 = 0.5
+        // Update WFLOW/PYUSD0 pool to match new Flow price
+        // 1 WFLOW = flowPrice PYUSD0
+        // Recollat traverses PYUSD0→WFLOW (reverse on this pool)
         setPoolToPrice(
             factoryAddress: factoryAddress,
-            tokenAAddress: pyusd0Address,
-            tokenBAddress: wflowAddress,
+            tokenAAddress: wflowAddress,
+            tokenBAddress: pyusd0Address,
             fee: 3000,
-            priceTokenBPerTokenA: fee3000Premium / flowPrice,
-            tokenABalanceSlot: pyusd0BalanceSlot,
-            tokenBBalanceSlot: wflowBalanceSlot,
+            priceTokenBPerTokenA: feeAdjustedPrice(UFix128(flowPrice), fee: 3000, reverse: true),
+            tokenABalanceSlot: wflowBalanceSlot,
+            tokenBBalanceSlot: pyusd0BalanceSlot,
+            signer: coaOwnerAccount
+        )
+
+        // MOET/FUSDEV pool: fee adjustment direction depends on rebalance type
+        // Surplus (flowPrice > 1.0): swaps MOET→FUSDEV (forward)
+        // Deficit (flowPrice < 1.0): swaps FUSDEV→MOET (reverse)
+        setPoolToPrice(
+            factoryAddress: factoryAddress,
+            tokenAAddress: moetAddress,
+            tokenBAddress: morphoVaultAddress,
+            fee: 100,
+            priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: flowPrice < 1.0),
+            tokenABalanceSlot: moetBalanceSlot,
+            tokenBBalanceSlot: fusdevBalanceSlot,
             signer: coaOwnerAccount
         )
 
@@ -268,9 +271,10 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 		let percentDiff = expectedYieldTokens > 0.0 ? (precisionDiff / expectedYieldTokens) * 100.0 : 0.0
 		log("Percent Difference:    \(precisionSign)\(percentDiff)%")
         
-        // check if percent difference is within tolerance
-        let percentToleranceCheck = equalAmounts(a: percentDiff, b: 0.0, tolerance: forkedPercentTolerance)
-        Test.assert(percentToleranceCheck, message: "Percent difference \(percentDiff)% is not within tolerance \(forkedPercentTolerance)%")
+        Test.assert(
+            equalAmounts(a: yieldTokensAfter, b: expectedYieldTokens, tolerance: 0.01),
+            message: "Expected yield tokens for flow price \(flowPrice) to be \(expectedYieldTokens) but got \(yieldTokensAfter)"
+        )
 
 		let yieldChange = yieldTokensAfter > yieldTokensBefore ? yieldTokensAfter - yieldTokensBefore : yieldTokensBefore - yieldTokensAfter
 		let yieldSign = yieldTokensAfter > yieldTokensBefore ? "+" : "-"
