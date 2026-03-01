@@ -523,6 +523,16 @@ fun addSupportedTokenFixedRateInterestCurve(
 }
 
 access(all)
+fun setDepositLimitFraction(signer: Test.TestAccount, tokenTypeIdentifier: String, fraction: UFix64) {
+    let setRes = _executeTransaction(
+        "../../lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_deposit_limit_fraction.cdc",
+        [tokenTypeIdentifier, fraction],
+        signer
+    )
+    Test.expect(setRes, Test.beSucceeded())
+}
+
+access(all)
 fun rebalancePosition(signer: Test.TestAccount, pid: UInt64, force: Bool, beFailed: Bool) {
     let rebalanceRes = _executeTransaction(
         "../../lib/FlowALP/cadence/transactions/flow-alp/pool-management/rebalance_position.cdc",

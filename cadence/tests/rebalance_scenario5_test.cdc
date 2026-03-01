@@ -79,6 +79,10 @@ fun setup() {
 		depositCapacityCap: 1_000_000.0
 	)
 
+	// Set MOET deposit limit fraction to 1.0 (100%) to allow full debt repayment in one transaction
+	// Default is 0.05 (5%) which would limit deposits to 50,000 MOET per operation
+	setDepositLimitFraction(signer: protocolAccount, tokenTypeIdentifier: moetTokenIdentifier, fraction: 1.0)
+
 	// open wrapped position (pushToDrawDownSink)
 	// the equivalent of depositing reserves
 	let openRes = executeTransaction(
@@ -215,8 +219,30 @@ fun test_RebalanceYieldVaultScenario5() {
 	log("  MOET debt:       \(debtAfterYTRise) MOET")
 	log("  Health:          \(healthAfterYTRise)")
 
-	// Try to close - EXPECT IT TO FAIL due to precision residual
-	log("\n[Scenario5] Attempting to close yield vault...")
+	// Rebalance both position and yield vault before closing to ensure everything is settled
+	log("\n[Scenario5] Rebalancing position and yield vault before close...")
+	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
+	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
+
+	let ytBeforeClose = getAutoBalancerBalance(id: yieldVaultIDs![0])!
+	let debtBeforeClose = getMOETDebtFromPosition(pid: pid)
+	let collateralBeforeClose = getFlowCollateralFromPosition(pid: pid)
+	log("[Scenario5] After final rebalance before close:")
+	log("  YT balance:      \(ytBeforeClose) YT")
+	log("  FLOW collateral: \(collateralBeforeClose) FLOW")
+	log("  MOET debt:       \(debtBeforeClose) MOET")
+
+	// Debug: Check position 0 state before closing position 1
+	log("\n[Scenario5] Checking position 0 state...")
+	let pos0Details = getPositionDetails(pid: 0, beFailed: false)
+	log("Position 0 balances:")
+	for balance in pos0Details.balances {
+		let dirStr = balance.direction == FlowALPv0.BalanceDirection.Credit ? "Credit" : "Debit"
+		log("  Type: ".concat(balance.vaultType.identifier).concat(", Direction: ").concat(dirStr).concat(", Balance: ").concat(balance.balance.toString()))
+	}
+
+	// Close the yield vault
+	log("\n[Scenario5] Closing yield vault...")
 
 	closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
 }
