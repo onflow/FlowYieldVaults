@@ -100,38 +100,59 @@ access(all) contract MockStrategies {
             }
 
             // Step 1: Get debt amount from position using helper
-            let debtInfo = self.position.getTotalDebt()
-            let totalDebtAmount = debtInfo.amount
+            let debtInfos = self.position.getTotalDebt()
 
-            // Step 2: If no debt, pass empty vault
-            if totalDebtAmount == 0.0 {
-                let emptyVault <- DeFiActionsUtils.getEmptyVault(Type<@MOET.Vault>())
-                return <- self.position.closePosition(
-                    repaymentVault: <-emptyVault,
-                    collateralType: collateralType
-                )
+            // Step 2: Calculate total debt amount across all debt types
+            var totalDebtAmount: UFix64 = 0.0
+            for debtInfo in debtInfos {
+                totalDebtAmount = totalDebtAmount + debtInfo.amount
             }
 
-            // Step 3: Create external YT source from AutoBalancer
+            // Add a tiny buffer to ensure we overpay slightly and flip from Debit to Credit
+            // This works around FlowALPv0's recordDeposit logic where exact repayment keeps direction as Debit
+            let repaymentBuffer: UFix64 = 0.00000001  // 1e-8
+            totalDebtAmount = totalDebtAmount + repaymentBuffer
+
+            // Step 3: If no debt, pass empty vault array
+            if totalDebtAmount == 0.0 {
+                let emptyVaults: @[{FungibleToken.Vault}] <- []
+                let resultVaults <- self.position.closePosition(
+                    repaymentVaults: <-emptyVaults
+                )
+                // Extract the first vault (should be collateral)
+                assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
+                let collateralVault <- resultVaults.removeFirst()
+                destroy resultVaults
+                return <- collateralVault
+            }
+
+            // Step 4: Create external YT source from AutoBalancer
             let ytSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
-            // Step 4: Withdraw ALL YT from AutoBalancer to avoid losing funds when Strategy is destroyed
-            let totalYtVault <- ytSource.withdrawAvailable(maxAmount: UFix64.max)
+            // Step 5: Withdraw ALL available YT from AutoBalancer to avoid losing funds when Strategy is destroyed
+            // Use minimumAvailable() to get the actual available amount (UFix64.max might not work as expected)
+            let availableYt = ytSource.minimumAvailable()
+            let totalYtVault <- ytSource.withdrawAvailable(maxAmount: availableYt)
             let totalYtAmount = totalYtVault.balance
 
-            // Step 5: Create YT→MOET swapper
+            // Step 6: Create YT→MOET swapper
             let ytToMoetSwapper = MockSwapper.Swapper(
                 inVault: Type<@YieldToken.Vault>(),
                 outVault: Type<@MOET.Vault>(),
                 uniqueID: self.copyID()!
             )
 
-            // Step 6: Swap ALL YT to MOET to see how much we can cover
-            var moetVault <- ytToMoetSwapper.swap(quote: nil, inVault: <-totalYtVault)
+            // Step 7: Calculate how much MOET we can get from the available YT
+            // Use quoteOut to see how much MOET we'll get from all available YT
+            let ytQuote = ytToMoetSwapper.quoteOut(forProvided: totalYtAmount, reverse: false)
+            let estimatedMoetFromYt = ytQuote.outAmount
+
+            // Step 8: Swap ALL YT to MOET to see how much we can cover
+            var moetVault <- ytToMoetSwapper.swap(quote: ytQuote, inVault: <-totalYtVault)
             let moetFromYt = moetVault.balance
 
-            // Step 7: If YT didn't cover full debt, withdraw collateral to make up shortfall
+            // Step 8: If YT didn't cover full debt, withdraw collateral to make up shortfall
             if moetFromYt < totalDebtAmount {
                 let shortfall = totalDebtAmount - moetFromYt
 
@@ -159,11 +180,40 @@ access(all) contract MockStrategies {
                 moetVault.deposit(from: <-additionalMoet)
             }
 
-            // Step 8: Close position with full MOET repayment
-            return <- self.position.closePosition(
-                repaymentVault: <-moetVault,
-                collateralType: collateralType
+            // Step 9: Close position with full MOET repayment
+            let repaymentVaults: @[{FungibleToken.Vault}] <- [<-moetVault]
+            let resultVaults <- self.position.closePosition(
+                repaymentVaults: <-repaymentVaults
             )
+
+            // Extract all returned vaults
+            assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
+
+            // First vault should be collateral
+            var collateralVault <- resultVaults.removeFirst()
+
+            // Handle any overpayment dust (MOET) by swapping back to collateral
+            while resultVaults.length > 0 {
+                let dustVault <- resultVaults.removeFirst()
+                if dustVault.balance > 0.0 && dustVault.getType() != collateralType {
+                    // Swap overpayment back to collateral
+                    let dustToCollateralSwapper = MockSwapper.Swapper(
+                        inVault: dustVault.getType(),
+                        outVault: collateralType,
+                        uniqueID: self.copyID()!
+                    )
+                    let swappedCollateral <- dustToCollateralSwapper.swap(
+                        quote: nil,
+                        inVault: <-dustVault
+                    )
+                    collateralVault.deposit(from: <-swappedCollateral)
+                } else {
+                    destroy dustVault
+                }
+            }
+
+            destroy resultVaults
+            return <- collateralVault
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {

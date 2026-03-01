@@ -1,5 +1,17 @@
 {
 	"contracts": {
+		"AdversarialReentrancyConnectors": {
+			"source": "./lib/FlowALP/cadence/tests/contracts/AdversarialReentrancyConnectors.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
+		"AdversarialTypeSpoofingConnectors": {
+			"source": "./lib/FlowALP/cadence/tests/contracts/AdversarialTypeSpoofingConnectors.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
 		"BandOracleConnectors": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/band-oracle/BandOracleConnectors.cdc",
 			"aliases": {

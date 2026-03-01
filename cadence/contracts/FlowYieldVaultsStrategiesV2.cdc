@@ -136,45 +136,85 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
 
             // Step 1: Get debt amount from position using helper
-            let debtInfo = self.position.getTotalDebt()
-            let totalDebtAmount = debtInfo.amount
+            let debtInfos = self.position.getTotalDebt()
 
-            // Step 2: If no debt, pass empty vault
-            if totalDebtAmount == 0.0 {
-                let emptyVault <- DeFiActionsUtils.getEmptyVault(Type<@MOET.Vault>())
-                return <- self.position.closePosition(
-                    repaymentVault: <-emptyVault,
-                    collateralType: collateralType
-                )
+            // Step 2: Calculate total debt amount across all debt types
+            var totalDebtAmount: UFix64 = 0.0
+            for debtInfo in debtInfos {
+                totalDebtAmount = totalDebtAmount + debtInfo.amount
             }
 
-            // Step 3: Create external yield token source from AutoBalancer
+            // Add a tiny buffer to ensure we overpay slightly and flip from Debit to Credit
+            // This works around FlowALPv0's recordDeposit logic where exact repayment keeps direction as Debit
+            let repaymentBuffer: UFix64 = 0.00000001  // 1e-8
+            totalDebtAmount = totalDebtAmount + repaymentBuffer
+
+            // Step 3: If no debt, pass empty vault array
+            if totalDebtAmount == 0.0 {
+                let emptyVaults: @[{FungibleToken.Vault}] <- []
+                let resultVaults <- self.position.closePosition(
+                    repaymentVaults: <-emptyVaults
+                )
+                // Extract the first vault (should be collateral)
+                assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
+                let collateralVault <- resultVaults.removeFirst()
+                destroy resultVaults
+                return <- collateralVault
+            }
+
+            // Step 4: Create external yield token source from AutoBalancer
             let yieldTokenSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
-            // Step 4: Retrieve yield→MOET swapper from contract config
+            // Step 5: Retrieve yield→MOET swapper from contract config
             let swapperKey = "yieldToMoetSwapper_".concat(self.id()!.toString())
             let yieldToMoetSwapper = FlowYieldVaultsStrategiesV2.config[swapperKey] as! {DeFiActions.Swapper}?
                 ?? panic("No yield→MOET swapper found for strategy \(self.id()!)")
 
-            // Step 5: Use quoteIn to calculate exact yield token input needed for desired MOET output
+            // Step 6: Use quoteIn to calculate exact yield token input needed for desired MOET output
             // This bypasses SwapSource's branch selection issue where minimumAvailable
             // underestimates due to RoundDown in quoteOut, causing insufficient output
             // quoteIn rounds UP the input to guarantee exact output delivery
             let quote = yieldToMoetSwapper.quoteIn(forDesired: totalDebtAmount, reverse: false)
 
-            // Step 6: Withdraw the calculated yield token amount
+            // Step 7: Withdraw the calculated yield token amount
             let yieldTokenVault <- yieldTokenSource.withdrawAvailable(maxAmount: quote.inAmount)
 
-            // Step 7: Swap with quote to get exact MOET output
+            // Step 8: Swap with quote to get exact MOET output
             // Swap honors the quote and delivers exactly totalDebtAmount
             let moetVault <- yieldToMoetSwapper.swap(quote: quote, inVault: <-yieldTokenVault)
 
-            // Step 8: Close position with prepared MOET vault
-            return <- self.position.closePosition(
-                repaymentVault: <-moetVault,
-                collateralType: collateralType
+            // Step 9: Close position with prepared MOET vault
+            let repaymentVaults: @[{FungibleToken.Vault}] <- [<-moetVault]
+            let resultVaults <- self.position.closePosition(
+                repaymentVaults: <-repaymentVaults
             )
+
+            // Extract all returned vaults
+            assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
+
+            // First vault should be collateral
+            var collateralVault <- resultVaults.removeFirst()
+
+            // Handle any overpayment dust (MOET) by swapping back to collateral
+            while resultVaults.length > 0 {
+                let dustVault <- resultVaults.removeFirst()
+                if dustVault.balance > 0.0 && dustVault.getType() != collateralType {
+                    // Swap overpayment back to collateral using configured swapper
+                    let dustToCollateralSwapper = FlowYieldVaultsStrategiesV2.config["moetToCollateralSwapper_".concat(self.id()!.toString())] as! {DeFiActions.Swapper}?
+                        ?? panic("No MOET→collateral swapper found for strategy \(self.id()!)")
+                    let swappedCollateral <- dustToCollateralSwapper.swap(
+                        quote: nil,
+                        inVault: <-dustVault
+                    )
+                    collateralVault.deposit(from: <-swappedCollateral)
+                } else {
+                    destroy dustVault
+                }
+            }
+
+            destroy resultVaults
+            return <- collateralVault
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
