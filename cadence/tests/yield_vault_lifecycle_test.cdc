@@ -122,6 +122,10 @@ fun testLifecycle() {
     Test.assertEqual(flowTokenIdentifier, balanceView!.tokenTypeIdentifier)
     Test.assertEqual(getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultID)!, balanceView!.availableBalance)
 
+    let displayView = getYieldVaultDisplayView(address: user.address, yieldVaultID: yieldVaultID)
+    Test.assert(displayView != nil, message: "Expected MetadataViews.Display view to resolve")
+    Test.assertEqual("Yield Vault #\(yieldVaultID)", displayView!.name)
+
     let addedToManagerEvents = Test.eventsOfType(Type<FlowYieldVaults.AddedToManager>())
     Test.assert(addedToManagerEvents.length > 0, message: "Expected at least 1 FlowYieldVaults.AddedToManager event but found none")
     let addedToManagerEvent = addedToManagerEvents[addedToManagerEvents.length - 1] as! FlowYieldVaults.AddedToManager

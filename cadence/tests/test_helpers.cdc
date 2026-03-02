@@ -457,6 +457,13 @@ fun getYieldVaultBalanceView(address: Address, yieldVaultID: UInt64): FlowYieldV
 }
 
 access(all)
+fun getYieldVaultDisplayView(address: Address, yieldVaultID: UInt64): MetadataViews.Display? {
+    let res = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_display_view.cdc", [address, yieldVaultID])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! MetadataViews.Display?
+}
+
+access(all)
 fun getAutoBalancerBalance(id: UInt64): UFix64? {
     let res = _executeScript("../scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc", [id])
     Test.expect(res, Test.beSucceeded())

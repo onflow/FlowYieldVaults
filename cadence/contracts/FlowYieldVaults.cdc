@@ -2,6 +2,7 @@
 import "FungibleToken"
 import "Burner"
 import "ViewResolver"
+import "MetadataViews"
 // DeFiActions
 import "DeFiActions"
 import "FlowYieldVaultsClosedBeta"
@@ -321,12 +322,22 @@ access(all) contract FlowYieldVaults {
         }
         access(all) view fun getViews(): [Type] {
             return [
+                Type<MetadataViews.Display>(),
                 Type<YieldVaultInfo>(),
                 Type<YieldVaultBalance>()
             ]
         }
         access(all) fun resolveView(_ view: Type): AnyStruct? {
             switch view {
+                case Type<MetadataViews.Display>():
+                    return MetadataViews.Display(
+                        name: "Yield Vault #\(self.id())",
+                        description: "Yield vault for strategy \(self.getStrategyType()) and vault type \(self.getVaultTypeIdentifier())",
+                        // Temporary placeholder thumbnail; replace with the final hosted URL when available.
+                        thumbnail: MetadataViews.HTTPFile(
+                            url: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'/>"
+                        )
+                    )
                 case Type<YieldVaultInfo>():
                     return YieldVaultInfo(
                         id: self.id(),
