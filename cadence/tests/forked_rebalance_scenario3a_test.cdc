@@ -1,4 +1,4 @@
-#test_fork(network: "mainnet-fork", height: 143292300)
+#test_fork(network: "mainnet-fork", height: 143292255)
 
 import Test
 import BlockchainHelpers
