@@ -6,7 +6,7 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
-import "FlowYieldVaultsStrategies"
+import "MockStrategies"
 import "FlowYieldVaultsSchedulerV1"
 import "FlowTransactionScheduler"
 import "FlowYieldVaultsSchedulerRegistry"
@@ -16,7 +16,7 @@ access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@MockStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -56,21 +56,22 @@ fun setup() {
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
     log("Token liquidity setup")
 
-    // Setup FlowCreditMarket with a Pool & add FLOW as supported token
+    // Setup FlowALP with a Pool & add FLOW as supported token
     createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
-    addSupportedTokenSimpleInterestCurve(
+    addSupportedTokenFixedRateInterestCurve(
         signer: protocolAccount,
         tokenTypeIdentifier: flowTokenIdentifier,
         collateralFactor: 0.8,
         borrowFactor: 1.0,
+        yearlyRate: UFix128(0.1),
         depositRate: 1_000_000.0,
         depositCapacityCap: 1_000_000.0
     )
-    log("FlowCreditMarket pool configured")
+    log("FlowALP pool configured")
 
     // Open wrapped position
     let openRes = executeTransaction(
-        "../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
+        "../../lib/FlowALP/cadence/transactions/flow-alp/position/create_position.cdc",
         [reserveAmount/2.0, /storage/flowTokenVault, true],
         protocolAccount
     )
@@ -81,8 +82,8 @@ fun setup() {
     addStrategyComposer(
         signer: flowYieldVaultsAccount,
         strategyIdentifier: strategyIdentifier,
-        composerIdentifier: Type<@FlowYieldVaultsStrategies.TracerStrategyComposer>().identifier,
-        issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
+        composerIdentifier: Type<@MockStrategies.TracerStrategyComposer>().identifier,
+        issuerStoragePath: MockStrategies.IssuerStoragePath,
         beFailed: false
     )
     log("Strategy composer added")

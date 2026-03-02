@@ -6,15 +6,14 @@ import "test_helpers.cdc"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
+import "MockStrategies"
 import "FlowYieldVaults"
-import "FlowYieldVaultsStrategies"
-import "FlowCreditMarket"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
 access(all) let yieldTokenAccount = Test.getAccount(0x0000000000000010)
 
-access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategies.TracerStrategy>().identifier
+access(all) var strategyIdentifier = Type<@MockStrategies.TracerStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
@@ -47,13 +46,14 @@ fun setup() {
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: YieldToken.VaultStoragePath)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: /storage/flowTokenVault)
 
-    // setup FlowCreditMarket with a Pool & add FLOW as supported token
+    // setup FlowALP with a Pool & add FLOW as supported token
     createAndStorePool(signer: protocolAccount, defaultTokenIdentifier: moetTokenIdentifier, beFailed: false)
-    addSupportedTokenSimpleInterestCurve(
+    addSupportedTokenFixedRateInterestCurve(
         signer: protocolAccount,
         tokenTypeIdentifier: flowTokenIdentifier,
         collateralFactor: flowCollateralFactor,
         borrowFactor: flowBorrowFactor,
+        yearlyRate: UFix128(0.1),
         depositRate: 1_000_000.0,
         depositCapacityCap: 1_000_000.0
     )
@@ -61,7 +61,7 @@ fun setup() {
     // open wrapped position (pushToDrawDownSink)
     // the equivalent of depositing reserves
     let openRes = executeTransaction(
-        "../../lib/FlowCreditMarket/cadence/tests/transactions/mock-flow-credit-market-consumer/create_wrapped_position.cdc",
+        "../../lib/FlowALP/cadence/transactions/flow-alp/position/create_position.cdc",
         [reserveAmount/2.0, /storage/flowTokenVault, true],
         protocolAccount
     )
@@ -71,8 +71,8 @@ fun setup() {
     addStrategyComposer(
         signer: flowYieldVaultsAccount,
         strategyIdentifier: strategyIdentifier,
-        composerIdentifier: Type<@FlowYieldVaultsStrategies.TracerStrategyComposer>().identifier,
-        issuerStoragePath: FlowYieldVaultsStrategies.IssuerStoragePath,
+        composerIdentifier: Type<@MockStrategies.TracerStrategyComposer>().identifier,
+        issuerStoragePath: MockStrategies.IssuerStoragePath,
         beFailed: false
     )
     
@@ -122,6 +122,11 @@ fun testLifecycle() {
     Test.assertEqual(flowTokenIdentifier, balanceView!.tokenTypeIdentifier)
     Test.assertEqual(getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultID)!, balanceView!.availableBalance)
 
+    let addedToManagerEvents = Test.eventsOfType(Type<FlowYieldVaults.AddedToManager>())
+    Test.assert(addedToManagerEvents.length > 0, message: "Expected at least 1 FlowYieldVaults.AddedToManager event but found none")
+    let addedToManagerEvent = addedToManagerEvents[addedToManagerEvents.length - 1] as! FlowYieldVaults.AddedToManager
+    Test.assertEqual(flowTokenIdentifier, addedToManagerEvent.tokenType)
+
     // 2. Deposit to YieldVault
     depositToYieldVault(
         signer: user,
@@ -146,6 +151,11 @@ fun testLifecycle() {
     // 4. Close YieldVault
     closeYieldVault(signer: user, id: yieldVaultID, beFailed: false)
     log("✅ Closed YieldVault")
+
+    let burnedEvents = Test.eventsOfType(Type<FlowYieldVaults.BurnedYieldVault>())
+    Test.assert(burnedEvents.length > 0, message: "Expected at least 1 FlowYieldVaults.BurnedYieldVault event but found none")
+    let burnedEvent = burnedEvents[burnedEvents.length - 1] as! FlowYieldVaults.BurnedYieldVault
+    Test.assertEqual(flowTokenIdentifier, burnedEvent.tokenType)
 
     let finalYieldVaultIDs = getYieldVaultIDs(address: user.address)
     Test.assert(finalYieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil")

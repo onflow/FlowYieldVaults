@@ -96,8 +96,8 @@ The scheduled-rebalancing branch has been significantly refactored to address al
 
 | ID | Issue | Location | Impact |
 |----|-------|----------|--------|
-| L1 | `innerComponents` Regression | `FlowYieldVaultsStrategies.cdc` | Reduced observability |
-| L2 | mUSDCStrategyComposer Changes | `FlowYieldVaultsStrategies.cdc` | 4626 integration breakage |
+| L1 | `innerComponents` Regression | `MockStrategies.cdc` | Reduced observability |
+| L2 | mUSDCStrategyComposer Changes | `MockStrategies.cdc` | 4626 integration breakage |
 | L3 | Missing View Modifiers | Multiple files | Optimization opportunity |
 | L4 | `createSupervisor()` Access Level | `FlowYieldVaultsScheduler.cdc` | Could be more restrictive |
 
@@ -533,11 +533,11 @@ borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
 
 ## 6. Code Quality and Regression Analysis
 
-### 6.1 FlowYieldVaultsStrategies Regressions
+### 6.1 MockStrategies Regressions
 
 #### Issue L1: `innerComponents` Regression
 
-**Context**: Both `TracerStrategy` and `mUSDCStrategy` implement `getComponentInfo()` which returns a `DeFiActions.ComponentInfo` structure.
+**Context**: `TracerStrategy` implements `getComponentInfo()` which returns a `DeFiActions.ComponentInfo` structure.
 
 **Current State**: Returns `innerComponents: []` (empty array)
 
@@ -663,7 +663,7 @@ Same concerns apply. Both should be `access(self)` unless external callers legit
 
 | Priority | Action | Rationale |
 |----------|--------|-----------|
-| 1 | Revert `FlowYieldVaultsStrategies.cdc` changes | Restore Mainnet 4626 compatibility |
+| 1 | Revert `MockStrategies.cdc` changes | Restore Mainnet 4626 compatibility |
 | 2 | Decide architectural path (A or B) | Foundation for all other changes |
 | 3 | Restrict capability getter access | Security hardening |
 | 4 | Fix Supervisor initialization pattern | Resource efficiency |
@@ -822,7 +822,7 @@ Strategy creation via StrategyComposer
 | `FlowYieldVaultsScheduler.cdc` | Removed wrapper, added atomic scheduling, paginated Supervisor |
 | `FlowYieldVaultsSchedulerRegistry.cdc` | Added pending queue, bounded iteration, restricted access |
 | `FlowYieldVaultsAutoBalancers.cdc` | Added `recurringConfig` param, registration calls |
-| `FlowYieldVaultsStrategies.cdc` | Added `recurringConfig: nil` to AutoBalancer creation |
+| `MockStrategies.cdc` | Added `recurringConfig: nil` to AutoBalancer creation |
 | `FlowYieldVaults.cdc` | Removed scheduler calls (moved to AutoBalancers) |
 | `schedule_rebalancing.cdc` | Updated to use new API, fixed priority enum |
 | `has_wrapper_cap_for_yield_vault.cdc` | Updated to use `getHandlerCap` |
