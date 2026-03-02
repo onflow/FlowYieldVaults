@@ -97,7 +97,7 @@ access(all) contract FlowYieldVaults {
 
     /// YieldVaultBalance
     ///
-    /// Minimal view struct providing the YieldVault's current available balance for the vault's denomination.    ///
+    /// Minimal view struct providing the YieldVault's current available balance for the vault's denomination. 
     access(all) struct YieldVaultBalance {
         /// The type identifier of the Vault this YieldVault operates on
         access(all) let tokenTypeIdentifier: String
