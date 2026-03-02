@@ -76,7 +76,7 @@ access(all) contract PMStrategiesV1 {
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
         /// Returns the NAV-based balance by calling convertToAssets on the ERC-4626 vault
-        access(all) fun navBalance(ofToken: Type): UFix64 {
+        access(all) fun navBalance(ofToken: Type): UFix64? {
             return PMStrategiesV1._navBalanceFor(
                 strategyType: self.getType(),
                 collateralType: self.sink.getSinkType(),
@@ -150,7 +150,7 @@ access(all) contract PMStrategiesV1 {
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
         /// Returns the NAV-based balance by calling convertToAssets on the ERC-4626 vault
-        access(all) fun navBalance(ofToken: Type): UFix64 {
+        access(all) fun navBalance(ofToken: Type): UFix64? {
             return PMStrategiesV1._navBalanceFor(
                 strategyType: self.getType(),
                 collateralType: self.sink.getSinkType(),
@@ -224,7 +224,7 @@ access(all) contract PMStrategiesV1 {
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
         /// Returns the NAV-based balance by calling convertToAssets on the ERC-4626 vault
-        access(all) fun navBalance(ofToken: Type): UFix64 {
+        access(all) fun navBalance(ofToken: Type): UFix64? {
             return PMStrategiesV1._navBalanceFor(
                 strategyType: self.getType(),
                 collateralType: self.sink.getSinkType(),
@@ -568,29 +568,35 @@ access(all) contract PMStrategiesV1 {
 
     /// Shared NAV balance computation: reads Cadence-side share balance from AutoBalancer,
     /// converts to underlying asset value via ERC-4626 convertToAssets
-    access(contract) fun _navBalanceFor(strategyType: Type, collateralType: Type, ofToken: Type, id: UInt64): UFix64 {
-        if ofToken != collateralType { return 0.0 }
+    access(contract) fun _navBalanceFor(strategyType: Type, collateralType: Type, ofToken: Type, id: UInt64): UFix64? {
+        if ofToken != collateralType { return nil }
 
         let ab = FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: id)
-        if ab == nil { return 0.0 }
+        if ab == nil { return nil }
         let sharesBalance = ab!.vaultBalance()
         if sharesBalance == 0.0 { return 0.0 }
 
         let vaultAddr = self._getYieldTokenEVMAddress(forStrategy: strategyType, collateralType: collateralType)
-            ?? panic("No EVM vault address configured for \(strategyType.identifier)")
+        if vaultAddr == nil {
+            return nil
+        }
 
         let sharesWei = FlowEVMBridgeUtils.ufix64ToUInt256(
             value: sharesBalance,
-            decimals: FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: vaultAddr)
+            decimals: FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: vaultAddr!)
         )
 
-        let navWei = ERC4626Utils.convertToAssets(vault: vaultAddr, shares: sharesWei)
-            ?? panic("convertToAssets failed for vault ".concat(vaultAddr.toString()))
+        let navWei = ERC4626Utils.convertToAssets(vault: vaultAddr!, shares: sharesWei)
+        if navWei == nil {
+            return nil
+        }
 
-        let assetAddr = ERC4626Utils.underlyingAssetEVMAddress(vault: vaultAddr)
-            ?? panic("No underlying asset EVM address found for vault \(vaultAddr.toString())")
+        let assetAddr = ERC4626Utils.underlyingAssetEVMAddress(vault: vaultAddr!)
+        if assetAddr == nil {
+            return nil
+        }
 
-        return EVMAmountUtils.toCadenceOutForToken(navWei, erc20Address: assetAddr)
+        return EVMAmountUtils.toCadenceOutForToken(navWei!, erc20Address: assetAddr!)
     }
 
     /// Returns the COA capability for this account

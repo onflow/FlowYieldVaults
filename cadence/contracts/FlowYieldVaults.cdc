@@ -91,10 +91,10 @@ access(all) contract FlowYieldVaults {
         /// Returns the balance of the given token available for withdrawal. Note that this may be an estimate due to
         /// the lack of guarantees inherent to DeFiActions Sources
         access(all) fun availableBalance(ofToken: Type): UFix64
-        /// Returns the NAV-based balance of the given token. Defaults to availableBalance(); strategies backed by
-        /// ERC-4626 vaults should override to return convertToAssets(shares) instead of an AMM quote.
-        access(all) fun navBalance(ofToken: Type): UFix64 {
-            return self.availableBalance(ofToken: ofToken)
+        /// Returns the NAV-based balance of the given token, if available for this strategy.
+        /// Strategies that cannot provide a NAV measurement should return `nil`.
+        access(all) fun navBalance(ofToken: Type): UFix64? {
+            return nil
         }
         /// Deposits up to the balance of the referenced Vault into this Strategy
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
@@ -264,8 +264,8 @@ access(all) contract FlowYieldVaults {
         access(all) fun getYieldVaultBalance(): UFix64 {
             return self._borrowStrategy().availableBalance(ofToken: self.vaultType)
         }
-        /// Returns the NAV-based balance of the YieldVault's position via convertToAssets on the underlying ERC-4626 vault
-        access(all) fun getNAVBalance(): UFix64 {
+        /// Returns the NAV-based balance of the YieldVault's position when supported by the inner strategy.
+        access(all) fun getNAVBalance(): UFix64? {
             return self._borrowStrategy().navBalance(ofToken: self.vaultType)
         }
         /// Burner.Burnable conformance - emits the BurnedYieldVault event when burned
