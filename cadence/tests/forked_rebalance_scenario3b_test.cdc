@@ -154,10 +154,6 @@ fun setup() {
     transferFlow(signer: whaleFlowAccount, recipient: flowALPAccount.address, amount: reserveAmount)
     mintMoet(signer: flowALPAccount, to: flowALPAccount.address, amount: reserveAmount, beFailed: false)
 
- // Grant FlowALPv1 Pool capability to FlowYieldVaults account
-    let protocolBetaRes = grantProtocolBeta(flowALPAccount, flowYieldVaultsAccount)
-    Test.expect(protocolBetaRes, Test.beSucceeded())
-
     // Fund FlowYieldVaults account for scheduling fees
     transferFlow(signer: whaleFlowAccount, recipient: flowYieldVaultsAccount.address, amount: 100.0)
 }
@@ -382,7 +378,19 @@ fun test_RebalanceYieldVaultScenario3B() {
 		message: "Expected MOET debt after yield price increase to be \(expectedDebtValues[2]) but got \(debtAfterYieldIncrease)"
 	)
 
-	        	// Check getYieldVaultBalance vs actual available balance before closing
+    // FUSDEV -> MOET for the yield balance check (we want to sell FUSDEV)
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: moetAddress,
+        tokenBAddress: morphoVaultAddress,
+        fee: 100,
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0 / UFix128(yieldPriceIncrease), fee: 100, reverse: true),
+        tokenABalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: fusdevBalanceSlot,
+        signer: coaOwnerAccount
+    )
+
+    // Check getYieldVaultBalance vs actual available balance before closing
 	let yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
 	
 	// Get the actual available balance from the position
