@@ -692,6 +692,10 @@ fun equalAmounts(a: UFix64, b: UFix64, tolerance: UFix64): Bool {
 ///
 access(all)
 fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}) {
+    // Move time by 1 second to ensure that the resolve time is in the future
+    // This prevents race conditions between consecutive calls to setBandOraclePrices
+    Test.moveTime(by: 1.0)
+    
     let symbolsRates: {String: UInt64} = {}
     for symbol in symbolPrices.keys {
         // BandOracle uses 1e9 multiplier for prices
