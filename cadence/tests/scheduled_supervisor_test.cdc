@@ -279,7 +279,9 @@ fun testMultiYieldVaultIndependentExecution() {
 ///
 access(all)
 fun testPaginationStress() {
-    Test.reset(to: snapshot)
+    if snapshot != getCurrentBlockHeight() {
+        Test.reset(to: snapshot)
+    }
     // Calculate number of yield vaults: 3 * MAX_BATCH_SIZE + partial batch
     // MAX_BATCH_SIZE is 5 in FlowYieldVaultsSchedulerRegistry
     let maxBatchSize = 5
@@ -333,7 +335,8 @@ fun testPaginationStress() {
     // Test paginated access - request each page up to MAX_BATCH_SIZE
     var page = 0
     while page <= fullBatches {
-        let pageRes = executeScript("../scripts/flow-yield-vaults/get_pending_yield_vaults_paginated.cdc", [page, maxBatchSize])
+        let pageRes = executeScript("../scripts/flow-yield-vaults/get_pending_yield_vaults_paginated.cdc", [page, UInt(maxBatchSize)])
+        Test.expect(pageRes, Test.beSucceeded())
         let pageData = pageRes.returnValue! as! [UInt64]
         log("Page ".concat(page.toString()).concat(" of pending queue: ").concat(pageData.length.toString()).concat(" yield vaults"))
         page = page + 1
