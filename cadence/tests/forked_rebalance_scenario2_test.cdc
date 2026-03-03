@@ -167,12 +167,12 @@ fun test_RebalanceYieldVaultScenario2() {
 
 	let yieldPriceIncreases = [1.1, 1.2, 1.3, 1.5, 2.0, 3.0]
 	let expectedFlowBalance = [
-	1061.53846154,
-	1120.92522862,
-	1178.40857368,
-	1289.97388243,
-	1554.58390959,
-	2032.91742023
+		1061.53846154,
+		1120.92522862,
+		1178.40857368,
+		1289.97388243,
+		1554.58390959,
+		2032.91742023
 	]
 
 	// Likely 0.0
@@ -223,7 +223,7 @@ fun test_RebalanceYieldVaultScenario2() {
         setVaultSharePrice(
             vaultAddress: morphoVaultAddress,
             assetAddress: pyusd0Address,
-            assetBalanceSlot: UInt256(1),
+            assetBalanceSlot: pyusd0BalanceSlot,
             totalSupplySlot: morphoVaultTotalSupplySlot,
             vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
             priceMultiplier: yieldTokenPrice,
