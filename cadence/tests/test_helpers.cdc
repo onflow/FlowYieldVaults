@@ -529,6 +529,16 @@ fun positionAvailableBalance(
     return res.returnValue as! UFix64
 }
 
+access(all)
+fun setDepositLimitFraction(signer: Test.TestAccount, tokenTypeIdentifier: String, fraction: UFix64) {
+    let setRes = _executeTransaction(
+        "../../lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_deposit_limit_fraction.cdc",
+        [tokenTypeIdentifier, fraction],
+        signer
+    )
+    Test.expect(setRes, Test.beSucceeded())
+}
+
 /* --- Transaction Helpers --- */
 
 access(all)
@@ -699,9 +709,15 @@ fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}
     let symbolsRates: {String: UInt64} = {}
     for symbol in symbolPrices.keys {
         // BandOracle uses 1e9 multiplier for prices
-        // e.g., $1.00 = 1_000_000_000, $0.50 = 500_000_000
+        // convert UFix64 to UInt64 by extracting the raw representation and multiplying by 10
+        // this is to avoid overflow, supports prices up to ~$18.4 billion.
         let price = symbolPrices[symbol]!
-        symbolsRates[symbol] = UInt64(price * 1_000_000_000.0)
+        let priceBytes = price.toBigEndianBytes()
+        var rawPrice: UInt64 = 0
+        for byte in priceBytes {
+            rawPrice = (rawPrice << 8) + UInt64(byte)
+        }
+        symbolsRates[symbol] = rawPrice * 10
     }
     
     let setRes = _executeTransaction(
