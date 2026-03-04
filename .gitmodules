@@ -22,4 +22,4 @@
 [submodule "lib/FlowALP"]
 	path = lib/FlowALP
 	url = git@github.com:onflow/FlowALP.git
-	branch = nialexsan/pre-refactor
+	branch = v0
