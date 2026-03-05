@@ -114,11 +114,6 @@ access(all) contract MockStrategies {
                 totalDebtAmount = totalDebtAmount + debtAmount
             }
 
-            // Add a tiny buffer to ensure we overpay slightly and flip from Debit to Credit
-            // This works around FlowALPv0's recordDeposit logic where exact repayment keeps direction as Debit
-            let repaymentBuffer: UFix64 = 0.00000001  // 1e-8
-            totalDebtAmount = totalDebtAmount + repaymentBuffer
-
             // Step 3: If no debt, close with empty sources array
             if totalDebtAmount == 0.0 {
                 let resultVaults <- self.position.closePosition(
