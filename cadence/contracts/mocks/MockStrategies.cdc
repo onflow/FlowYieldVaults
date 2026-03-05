@@ -52,11 +52,16 @@ access(all) contract MockStrategies {
         access(self) let position: @FlowALPv0.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
+        /// Tracks whether the underlying FlowALP position has been closed. Once true,
+        /// availableBalance() returns 0.0 to avoid panicking when the pool no longer
+        /// holds the position (e.g. during YieldVault burnCallback after close).
+        access(self) var positionClosed: Bool
 
         init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowALPv0.Position) {
             self.uniqueID = id
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
+            self.positionClosed = false
             self.position <-position
         }
 
@@ -68,6 +73,7 @@ access(all) contract MockStrategies {
         }
         /// Returns the amount available for withdrawal via the inner Source
         access(all) fun availableBalance(ofToken: Type): UFix64 {
+            if self.positionClosed { return 0.0 }
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
@@ -99,13 +105,13 @@ access(all) contract MockStrategies {
                 "Unsupported collateral type \(collateralType.identifier)"
             }
 
-            // Step 1: Get debt amount from position using helper
-            let debtInfos = self.position.getTotalDebt()
+            // Step 1: Get debt amounts from position - returns {Type: UFix64} dictionary
+            let debtsByType = self.position.getTotalDebt()
 
             // Step 2: Calculate total debt amount across all debt types
             var totalDebtAmount: UFix64 = 0.0
-            for debtInfo in debtInfos {
-                totalDebtAmount = totalDebtAmount + debtInfo.amount
+            for debtAmount in debtsByType.values {
+                totalDebtAmount = totalDebtAmount + debtAmount
             }
 
             // Add a tiny buffer to ensure we overpay slightly and flip from Debit to Credit
@@ -113,11 +119,10 @@ access(all) contract MockStrategies {
             let repaymentBuffer: UFix64 = 0.00000001  // 1e-8
             totalDebtAmount = totalDebtAmount + repaymentBuffer
 
-            // Step 3: If no debt, pass empty vault array
+            // Step 3: If no debt, close with empty sources array
             if totalDebtAmount == 0.0 {
-                let emptyVaults: @[{FungibleToken.Vault}] <- []
                 let resultVaults <- self.position.closePosition(
-                    repaymentVaults: <-emptyVaults
+                    repaymentSources: []
                 )
                 // Extract the first vault (should be collateral)
                 assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
@@ -180,11 +185,18 @@ access(all) contract MockStrategies {
                 moetVault.deposit(from: <-additionalMoet)
             }
 
-            // Step 9: Close position with full MOET repayment
-            let repaymentVaults: @[{FungibleToken.Vault}] <- [<-moetVault]
-            let resultVaults <- self.position.closePosition(
-                repaymentVaults: <-repaymentVaults
-            )
+            // Step 9: Store MOET vault temporarily and create a VaultSource for closePosition.
+            // closePosition now takes [{DeFiActions.Source}] instead of @[{FungibleToken.Vault}].
+            let tempPath = StoragePath(identifier: "mockClosePositionMoet_\(self.uuid)")!
+            MockStrategies.account.storage.save(<-(moetVault as! @MOET.Vault), to: tempPath)
+            let moetCap = MockStrategies.account.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(tempPath)
+            let moetSource = FungibleTokenConnectors.VaultSource(min: nil, withdrawVault: moetCap, uniqueID: nil)
+
+            // Step 10: Close position - pool pulls exactly the debt amount from moetSource
+            let resultVaults <- self.position.closePosition(repaymentSources: [moetSource])
+
+            // Step 11: Recover any MOET not consumed by repayment from temp storage
+            let remainingMoet <- MockStrategies.account.storage.load<@MOET.Vault>(from: tempPath)!
 
             // Extract all returned vaults
             assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
@@ -192,11 +204,23 @@ access(all) contract MockStrategies {
             // First vault should be collateral
             var collateralVault <- resultVaults.removeFirst()
 
-            // Handle any overpayment dust (MOET) by swapping back to collateral
+            // Swap any remaining MOET (not consumed by repayment) back to collateral
+            if remainingMoet.balance > 0.0 {
+                let moetToCollateralSwapper = MockSwapper.Swapper(
+                    inVault: Type<@MOET.Vault>(),
+                    outVault: collateralType,
+                    uniqueID: self.copyID()!
+                )
+                let swappedCollateral <- moetToCollateralSwapper.swap(quote: nil, inVault: <-remainingMoet)
+                collateralVault.deposit(from: <-swappedCollateral)
+            } else {
+                destroy remainingMoet
+            }
+
+            // Handle any additional vaults in resultVaults (e.g., overpayment credits) by swapping back to collateral
             while resultVaults.length > 0 {
                 let dustVault <- resultVaults.removeFirst()
                 if dustVault.balance > 0.0 && dustVault.getType() != collateralType {
-                    // Swap overpayment back to collateral
                     let dustToCollateralSwapper = MockSwapper.Swapper(
                         inVault: dustVault.getType(),
                         outVault: collateralType,
@@ -213,6 +237,7 @@ access(all) contract MockStrategies {
             }
 
             destroy resultVaults
+            self.positionClosed = true
             return <- collateralVault
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer

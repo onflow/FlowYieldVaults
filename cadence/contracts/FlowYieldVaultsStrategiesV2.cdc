@@ -80,6 +80,10 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         access(self) let position: @FlowALPv0.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
+        /// Tracks whether the underlying FlowALP position has been closed. Once true,
+        /// availableBalance() returns 0.0 to avoid panicking when the pool no longer
+        /// holds the position (e.g. during YieldVault burnCallback after close).
+        access(self) var positionClosed: Bool
 
         /// @TODO on the next iteration store yieldToMoetSwapper in the resource
         /// Swapper used to convert yield tokens back to MOET for debt repayment
@@ -93,6 +97,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             self.uniqueID = id
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
+            self.positionClosed = false
             self.position <-position
         }
 
@@ -104,6 +109,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
         /// Returns the amount available for withdrawal via the inner Source
         access(all) fun availableBalance(ofToken: Type): UFix64 {
+            if self.positionClosed { return 0.0 }
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
@@ -135,25 +141,19 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 "Unsupported collateral type \(collateralType.identifier)"
             }
 
-            // Step 1: Get debt amount from position using helper
-            let debtInfos = self.position.getTotalDebt()
+            // Step 1: Get debt amounts - returns {Type: UFix64} dictionary
+            let debtsByType = self.position.getTotalDebt()
 
             // Step 2: Calculate total debt amount across all debt types
             var totalDebtAmount: UFix64 = 0.0
-            for debtInfo in debtInfos {
-                totalDebtAmount = totalDebtAmount + debtInfo.amount
+            for debtAmount in debtsByType.values {
+                totalDebtAmount = totalDebtAmount + debtAmount
             }
 
-            // Add a tiny buffer to ensure we overpay slightly and flip from Debit to Credit
-            // This works around FlowALPv0's recordDeposit logic where exact repayment keeps direction as Debit
-            let repaymentBuffer: UFix64 = 0.00000001  // 1e-8
-            totalDebtAmount = totalDebtAmount + repaymentBuffer
-
-            // Step 3: If no debt, pass empty vault array
+            // Step 3: If no debt, close with empty sources array
             if totalDebtAmount == 0.0 {
-                let emptyVaults: @[{FungibleToken.Vault}] <- []
                 let resultVaults <- self.position.closePosition(
-                    repaymentVaults: <-emptyVaults
+                    repaymentSources: []
                 )
                 // Extract the first vault (should be collateral)
                 assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
@@ -171,24 +171,17 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             let yieldToMoetSwapper = FlowYieldVaultsStrategiesV2.config[swapperKey] as! {DeFiActions.Swapper}?
                 ?? panic("No yield→MOET swapper found for strategy \(self.id()!)")
 
-            // Step 6: Use quoteIn to calculate exact yield token input needed for desired MOET output
-            // This bypasses SwapSource's branch selection issue where minimumAvailable
-            // underestimates due to RoundDown in quoteOut, causing insufficient output
-            // quoteIn rounds UP the input to guarantee exact output delivery
-            let quote = yieldToMoetSwapper.quoteIn(forDesired: totalDebtAmount, reverse: false)
-
-            // Step 7: Withdraw the calculated yield token amount
-            let yieldTokenVault <- yieldTokenSource.withdrawAvailable(maxAmount: quote.inAmount)
-
-            // Step 8: Swap with quote to get exact MOET output
-            // Swap honors the quote and delivers exactly totalDebtAmount
-            let moetVault <- yieldToMoetSwapper.swap(quote: quote, inVault: <-yieldTokenVault)
-
-            // Step 9: Close position with prepared MOET vault
-            let repaymentVaults: @[{FungibleToken.Vault}] <- [<-moetVault]
-            let resultVaults <- self.position.closePosition(
-                repaymentVaults: <-repaymentVaults
+            // Step 6: Create a SwapSource that converts yield tokens to MOET when pulled by closePosition.
+            // The pool will call source.withdrawAvailable(maxAmount: debtAmount) which internally uses
+            // quoteIn(forDesired: debtAmount) to compute the exact yield token input needed.
+            let moetSource = SwapConnectors.SwapSource(
+                swapper: yieldToMoetSwapper,
+                source: yieldTokenSource,
+                uniqueID: self.copyID()
             )
+
+            // Step 7: Close position - pool pulls exactly the debt amount from moetSource
+            let resultVaults <- self.position.closePosition(repaymentSources: [moetSource])
 
             // Extract all returned vaults
             assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
@@ -214,6 +207,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
 
             destroy resultVaults
+            self.positionClosed = true
             return <- collateralVault
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
