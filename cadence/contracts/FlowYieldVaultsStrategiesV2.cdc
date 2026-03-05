@@ -140,6 +140,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 self.isSupportedCollateralType(collateralType):
                 "Unsupported collateral type \(collateralType.identifier)"
             }
+            post {
+                result.getType() == collateralType: "Withdraw Vault (\(result.getType().identifier)) is not of a requested collateral type (\(collateralType.identifier))"
+            }
 
             // Step 1: Get debt amounts - returns {Type: UFix64} dictionary
             let debtsByType = self.position.getTotalDebt()
@@ -167,7 +170,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 ?? panic("Could not create external source from AutoBalancer")
 
             // Step 5: Retrieve yield→MOET swapper from contract config
-            let swapperKey = "yieldToMoetSwapper_".concat(self.id()!.toString())
+            let swapperKey = FlowYieldVaultsStrtegiesV2.getYieldToMoetSwapperConfigKey(self.id())
             let yieldToMoetSwapper = FlowYieldVaultsStrategiesV2.config[swapperKey] as! {DeFiActions.Swapper}?
                 ?? panic("No yield→MOET swapper found for strategy \(self.id()!)")
 
@@ -192,15 +195,22 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             // Handle any overpayment dust (MOET) by swapping back to collateral
             while resultVaults.length > 0 {
                 let dustVault <- resultVaults.removeFirst()
-                if dustVault.balance > 0.0 && dustVault.getType() != collateralType {
-                    // Swap overpayment back to collateral using configured swapper
-                    let dustToCollateralSwapper = FlowYieldVaultsStrategiesV2.config["moetToCollateralSwapper_".concat(self.id()!.toString())] as! {DeFiActions.Swapper}?
-                        ?? panic("No MOET→collateral swapper found for strategy \(self.id()!)")
-                    let swappedCollateral <- dustToCollateralSwapper.swap(
-                        quote: nil,
-                        inVault: <-dustVault
-                    )
-                    collateralVault.deposit(from: <-swappedCollateral)
+                if dustVault.balance > 0.0 
+                 if dustVault.getType == collateralType {
+                     collateralVault.deposit(from <- dustVault)
+                 } else {
+                    // @TODO implement swapping moet to collateral
+
+                    // // Swap overpayment back to collateral using configured swapper
+                    // let moetToCollateralSwapperKey = FlowYieldVaultsStrategiesV2.getMoetToCollateralSwapperConfigKey(self.id()!)
+                    // let dustToCollateralSwapper = FlowYieldVaultsStrategiesV2.config[moetToCollateralSwapperKey] as! {DeFiActions.Swapper}?
+                    //     ?? panic("No MOET→collateral swapper found for strategy \(self.id()!)")
+                    // let swappedCollateral <- dustToCollateralSwapper.swap(
+                    //     quote: nil,
+                    //     inVault: <-dustVault
+                    // )
+                    // collateralVault.deposit(from: <-swappedCollateral)
+                    destroy dustVault
                 } else {
                     destroy dustVault
                 }
@@ -435,8 +445,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             balancerIO.autoBalancer.setSource(positionSwapSource, updateSourceID: true)
 
             // Store yield→MOET swapper in contract config for later access during closePosition
-            let swapperKey = "yieldToMoetSwapper_".concat(uniqueID.id.toString())
-            FlowYieldVaultsStrategiesV2.config[swapperKey] = yieldToMoetSwapper
+            let yieldToMoetSwapperKey = FlowYieldVaultsStrategiesV2.getYieldToMoetSwapperConfigKey(uniqueID)
+            FlowYieldVaultsStrategiesV2.config[yieldToMoetSwapperKey] = yieldToMoetSwapper
+
+            let moetToCollateralSwapperKey = FlowYieldVaultsStrategiesV2.getMoetToCollateralSwapperConfigKey(uniqueID)
+
+            FlowYieldVaultsStrategiesV2.config[moetToCollateralSwapperKey] = moetToCollateralSwapper
 
             switch type {
             case Type<@FUSDEVStrategy>():
@@ -646,6 +660,16 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     uniqueID: uniqueID
                 )
             }
+        }
+
+        /// @TODO
+        /// implement moet to collateral swapper
+        access(self) fun _createMoetToCollateralSwapper(
+            strategyType: Type,
+            tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
+            uniqueID: DeFiActions.UniqueIdentifier
+        ): SwapConnectors.MultiSwapper {
+            // Direct MOET -> underlying via AMM
         }
 
         access(self) fun _initAutoBalancerAndIO(
@@ -986,6 +1010,21 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             vault: vaultCap,
             uniqueID: withID
         )
+    }
+
+    access(self) fun getYieldToMoetSwapperConfigKey(_ uniqueID: DeFiActions.UniqueIdentifier?): String {
+        pre {
+            uniqueID != nil: "Missing UniqueIdentifier for swapper config key")
+        }
+        return "yieldToMoetSwapper_\(uniqueID!.id.toString())"
+    }
+
+    access(self) fun getMoetToCollateralSwapperConfigKey(_ uniqueID: DeFiActions.UniqueIdentifier?): String {
+        pre {
+            uniqueID != nil: "Missing UniqueIdentifier for swapper config key")
+        }
+        let id = uniqueID ?? panic("Missing UniqueIdentifier for swapper config key")
+        return "moetToCollateralSwapper_\(uniqueID!.id.toString())"
     }
 
     init(
