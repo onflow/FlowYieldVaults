@@ -105,9 +105,9 @@ access(all) contract FlowYieldVaults {
                 "Invalid Vault returns - requests \(ofToken.identifier) but returned \(result.getType().identifier)"
             }
         }
-        /// Closes the underlying position by repaying all debt and returning all collateral.
-        /// This method uses the AutoBalancer as a repayment source to swap yield tokens to debt tokens as needed.
-        /// Returns a Vault containing all collateral including any dust residuals.
+        /// Closes the underlying position and returns a Vault of the requested collateral type.
+        /// Strategy implementations are responsible for reconciling any close residuals into that collateral Vault
+        /// before returning.
         access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault}
     }
 
@@ -344,9 +344,8 @@ access(all) contract FlowYieldVaults {
 
             return <- res
         }
-        /// Closes the YieldVault by repaying all debt on the underlying position and returning all collateral.
-        /// This method properly closes the FlowALP position by using the AutoBalancer to swap yield tokens
-        /// to MOET for debt repayment, then returns all collateral including any dust residuals.
+        /// Closes the YieldVault by repaying all debt on the underlying position and returning a Vault of this
+        /// YieldVault's collateral type.
         access(FungibleToken.Withdraw) fun close(): @{FungibleToken.Vault} {
             let collateral <- self._borrowStrategy().closePosition(collateralType: self.vaultType)
 
