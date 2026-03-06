@@ -42,7 +42,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     access(all) let univ3RouterEVMAddress: EVM.EVMAddress
     access(all) let univ3QuoterEVMAddress: EVM.EVMAddress
 
-    access(all) let config: {String: AnyStruct}
+    access(contract) let config: {String: AnyStruct}
 
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let IssuerStoragePath: StoragePath
