@@ -1015,14 +1015,14 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         )
     }
 
-    access(self) fun getYieldToMoetSwapperConfigKey(_ uniqueID: DeFiActions.UniqueIdentifier?): String {
+    access(self) view fun getYieldToMoetSwapperConfigKey(_ uniqueID: DeFiActions.UniqueIdentifier?): String {
         pre {
             uniqueID != nil: "Missing UniqueIdentifier for swapper config key"
         }
         return "yieldToMoetSwapper_\(uniqueID!.id.toString())"
     }
 
-    access(self) fun getMoetToCollateralSwapperConfigKey(_ uniqueID: DeFiActions.UniqueIdentifier?): String {
+    access(self) view fun getMoetToCollateralSwapperConfigKey(_ uniqueID: DeFiActions.UniqueIdentifier?): String {
         pre {
             uniqueID != nil: "Missing UniqueIdentifier for swapper config key"
         }
