@@ -15,7 +15,7 @@ access(all) struct DeploymentConfig {
     access(all) let pyusd0Address: String
     access(all) let morphoVaultAddress: String
     access(all) let wflowAddress: String
-    
+
     init(
         uniswapFactoryAddress: String,
         uniswapRouterAddress: String,
@@ -176,13 +176,13 @@ access(all) fun deployContracts() {
         morphoVaultAddress: "0x0000000000000000000000000000000000000000",
         wflowAddress: "0x0000000000000000000000000000000000000000"
     )
-    
+
     // TODO: remove this step once the VM bridge templates are updated for test env
     // see https://github.com/onflow/flow-go/issues/8184
     tempUpsertBridgeTemplateChunks(serviceAccount)
-    
+
     _deploy(config: config)
-    
+
     var err = Test.deployContract(
         name: "MockStrategies",
         path: "../contracts/mocks/MockStrategies.cdc",
@@ -196,7 +196,7 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    
+
     // Emulator-specific setup (already exists on mainnet fork)
     let wflowAddress = getEVMAddressAssociated(withType: Type<@FlowToken.Vault>().identifier)
         ?? panic("Failed to get WFLOW address via VM Bridge association with FlowToken.Vault")
@@ -216,7 +216,8 @@ access(all) fun deployContractsForFork() {
 
     // Deploy EVM mock
     var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
-    
+    Test.expect(err, Test.beNil())
+
     _deploy(config: config)
 }
 
@@ -695,7 +696,7 @@ fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}
     // Move time by 1 second to ensure that the resolve time is in the future
     // This prevents race conditions between consecutive calls to setBandOraclePrices
     Test.moveTime(by: 1.0)
-    
+
     let symbolsRates: {String: UInt64} = {}
     for symbol in symbolPrices.keys {
         // BandOracle uses 1e9 multiplier for prices
@@ -703,7 +704,7 @@ fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}
         let price = symbolPrices[symbol]!
         symbolsRates[symbol] = UInt64(price * 1_000_000_000.0)
     }
-    
+
     let setRes = _executeTransaction(
         "../../lib/FlowALP/FlowActions/cadence/tests/transactions/band-oracle/update_data.cdc",
         [ symbolsRates ],
