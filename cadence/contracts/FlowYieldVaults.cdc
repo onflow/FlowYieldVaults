@@ -485,9 +485,8 @@ access(all) contract FlowYieldVaults {
             let yieldVault = (&self.yieldVaults[id] as auth(FungibleToken.Withdraw) &YieldVault?)!
             return <- yieldVault.withdraw(amount: amount)
         }
-        /// Closes the YieldVault by repaying all debt and returning all collateral, then destroys the YieldVault.
-        /// This properly closes the underlying FlowALP position by using the AutoBalancer to swap yield tokens
-        /// to MOET for debt repayment, ensuring all collateral (including dust) is returned to the caller.
+        /// Closes the YieldVault by repaying all debt, returning a Vault of the YieldVault's collateral type,
+        /// and then destroying the YieldVault.
         access(FungibleToken.Withdraw) fun closeYieldVault(_ id: UInt64): @{FungibleToken.Vault} {
             pre {
                 self.yieldVaults[id] != nil:
