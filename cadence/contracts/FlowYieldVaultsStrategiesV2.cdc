@@ -162,6 +162,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
                 let collateralVault <- resultVaults.removeFirst()
                 destroy resultVaults
+                self.positionClosed = true
                 return <- collateralVault
             }
 
