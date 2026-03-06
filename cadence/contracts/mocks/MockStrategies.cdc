@@ -119,10 +119,10 @@ access(all) contract MockStrategies {
                 let resultVaults <- self.position.closePosition(
                     repaymentSources: []
                 )
-                // Extract the first vault (should be collateral)
-                assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
-                let collateralVault <- resultVaults.removeFirst()
-                destroy resultVaults
+                let collateralVault <- self._extractCollateralFromClosedPosition(
+                    returnedVaults: <-resultVaults,
+                    collateralType: collateralType
+                )
                 return <- collateralVault
             }
 
@@ -193,11 +193,10 @@ access(all) contract MockStrategies {
             // Step 11: Recover any MOET not consumed by repayment from temp storage
             let remainingMoet <- MockStrategies.account.storage.load<@MOET.Vault>(from: tempPath)!
 
-            // Extract all returned vaults
-            assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
-
-            // First vault should be collateral
-            var collateralVault <- resultVaults.removeFirst()
+            var collateralVault <- self._extractCollateralFromClosedPosition(
+                returnedVaults: <-resultVaults,
+                collateralType: collateralType
+            )
 
             // Swap any remaining MOET (not consumed by repayment) back to collateral
             if remainingMoet.balance > 0.0 {
@@ -212,27 +211,36 @@ access(all) contract MockStrategies {
                 destroy remainingMoet
             }
 
-            // Handle any additional vaults in resultVaults (e.g., overpayment credits) by swapping back to collateral
-            while resultVaults.length > 0 {
-                let dustVault <- resultVaults.removeFirst()
-                if dustVault.balance > 0.0 && dustVault.getType() != collateralType {
+            self.positionClosed = true
+            return <- collateralVault
+        }
+        access(self) fun _extractCollateralFromClosedPosition(
+            returnedVaults: @[{FungibleToken.Vault}],
+            collateralType: Type
+        ): @{FungibleToken.Vault} {
+            var collateralVault <- DeFiActionsUtils.getEmptyVault(collateralType)
+
+            while returnedVaults.length > 0 {
+                let returnedVault <- returnedVaults.removeFirst()
+                if returnedVault.balance == 0.0 {
+                    destroy returnedVault
+                } else if returnedVault.getType() == collateralType {
+                    collateralVault.deposit(from: <-returnedVault)
+                } else {
                     let dustToCollateralSwapper = MockSwapper.Swapper(
-                        inVault: dustVault.getType(),
+                        inVault: returnedVault.getType(),
                         outVault: collateralType,
                         uniqueID: self.copyID()!
                     )
                     let swappedCollateral <- dustToCollateralSwapper.swap(
                         quote: nil,
-                        inVault: <-dustVault
+                        inVault: <-returnedVault
                     )
                     collateralVault.deposit(from: <-swappedCollateral)
-                } else {
-                    destroy dustVault
                 }
             }
 
-            destroy resultVaults
-            self.positionClosed = true
+            destroy returnedVaults
             return <- collateralVault
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer

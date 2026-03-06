@@ -131,9 +131,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         /// 2. Creates external yield token source from AutoBalancer
         /// 3. Swaps yield tokens → MOET via stored swapper
         /// 4. Closes position with prepared MOET vault
+        /// 5. Reconciles returned vaults into a single collateral Vault
         ///
         /// This approach eliminates circular dependencies by preparing all funds externally
-        /// before calling the position's close method.
+        /// before calling the position's close method. Returned vault ordering is not assumed:
+        /// collateral is merged by type and any MOET close residuals are swapped back to collateral.
         ///
         access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
             pre {
@@ -158,10 +160,10 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 let resultVaults <- self.position.closePosition(
                     repaymentSources: []
                 )
-                // Extract the first vault (should be collateral)
-                assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
-                let collateralVault <- resultVaults.removeFirst()
-                destroy resultVaults
+                let collateralVault <- self._extractCollateralFromClosedPosition(
+                    returnedVaults: <-resultVaults,
+                    collateralType: collateralType
+                )
                 self.positionClosed = true
                 return <- collateralVault
             }
@@ -187,43 +189,57 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             // Step 7: Close position - pool pulls exactly the debt amount from moetSource
             let resultVaults <- self.position.closePosition(repaymentSources: [moetSource])
 
-            // Extract all returned vaults
-            assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
-
-            // First vault should be collateral
-            var collateralVault <- resultVaults.removeFirst()
-
-            // Handle any overpayment dust (MOET) by swapping back to collateral
-            while resultVaults.length > 0 {
-                let dustVault <- resultVaults.removeFirst()
-                if dustVault.balance > 0.0 {
-                    if dustVault.getType() == collateralType {
-                        collateralVault.deposit(from: <-dustVault)
-                    } else {
-                        // @TODO implement swapping moet to collateral
-
-                        // // Swap overpayment back to collateral using configured swapper
-                        // let moetToCollateralSwapperKey = FlowYieldVaultsStrategiesV2.getMoetToCollateralSwapperConfigKey(self.id()!)
-                        // let dustToCollateralSwapper = FlowYieldVaultsStrategiesV2.config[moetToCollateralSwapperKey] as! {DeFiActions.Swapper}?
-                        //     ?? panic("No MOET→collateral swapper found for strategy \(self.id()!)")
-                        // let swappedCollateral <- dustToCollateralSwapper.swap(
-                        //     quote: nil,
-                        //     inVault: <-dustVault
-                        // )
-                        // collateralVault.deposit(from: <-swappedCollateral)
-                        destroy dustVault
-                    }
-                } else {
-                    destroy dustVault
-                }
-            }
-
-            destroy resultVaults
+            let collateralVault <- self._extractCollateralFromClosedPosition(
+                returnedVaults: <-resultVaults,
+                collateralType: collateralType
+            )
             self.positionClosed = true
             return <- collateralVault
         }
+        access(self) fun _extractCollateralFromClosedPosition(
+            returnedVaults: @[{FungibleToken.Vault}],
+            collateralType: Type
+        ): @{FungibleToken.Vault} {
+            var collateralVault <- DeFiActionsUtils.getEmptyVault(collateralType)
+
+            while returnedVaults.length > 0 {
+                let returnedVault <- returnedVaults.removeFirst()
+                if returnedVault.balance == 0.0 {
+                    destroy returnedVault
+                } else if returnedVault.getType() == collateralType {
+                    collateralVault.deposit(from: <- returnedVault)
+                } else if returnedVault.getType() == Type<@MOET.Vault>() {
+                    let moetToCollateralSwapperKey = FlowYieldVaultsStrategiesV2.getMoetToCollateralSwapperConfigKey(self.uniqueID)!
+                    let moetToCollateralSwapper = FlowYieldVaultsStrategiesV2.config[moetToCollateralSwapperKey] as! {DeFiActions.Swapper}?
+                        ?? panic("No MOET→collateral swapper found for strategy \(self.id()!)")
+                    let swappedCollateral <- moetToCollateralSwapper.swap(
+                        quote: nil,
+                        inVault: <-returnedVault
+                    )
+                    assert(
+                        swappedCollateral.getType() == collateralType,
+                        message: "MOET→collateral swapper returned \(swappedCollateral.getType().identifier), expected \(collateralType.identifier)"
+                    )
+                    collateralVault.deposit(from: <-swappedCollateral)
+                } else {
+                    panic(
+                        "closePosition returned unsupported residual token \(returnedVault.getType().identifier); expected \(collateralType.identifier) or \(Type<@MOET.Vault>().identifier)"
+                    )
+                }
+            }
+
+            destroy returnedVaults
+            return <- collateralVault
+        }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
+        /// and any config-backed swappers associated with the Strategy.
         access(contract) fun burnCallback() {
+            let yieldToMoetSwapperKey = FlowYieldVaultsStrategiesV2.getYieldToMoetSwapperConfigKey(self.uniqueID)!
+            FlowYieldVaultsStrategiesV2.config.remove(key: yieldToMoetSwapperKey)
+
+            let moetToCollateralSwapperKey = FlowYieldVaultsStrategiesV2.getMoetToCollateralSwapperConfigKey(self.uniqueID)
+            FlowYieldVaultsStrategiesV2.config.remove(key: moetToCollateralSwapperKey)
+
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
@@ -375,6 +391,13 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             let moetToYieldSwapper = self._createMoetToYieldSwapper(strategyType: type, tokens: tokens, uniqueID: uniqueID)
 
             let yieldToMoetSwapper = self._createYieldToMoetSwapper(strategyType: type, tokens: tokens, uniqueID: uniqueID)
+            let moetToCollateralSwapper = self._createMoetToCollateralSwapper(
+                strategyType: type,
+                tokens: tokens,
+                collateralConfig: collateralConfig,
+                collateralType: collateralType,
+                uniqueID: uniqueID
+            )
 
             // AutoBalancer-directed swap IO
             let abaSwapSink = SwapConnectors.SwapSink(
@@ -450,11 +473,10 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             let yieldToMoetSwapperKey = FlowYieldVaultsStrategiesV2.getYieldToMoetSwapperConfigKey(uniqueID)!
             FlowYieldVaultsStrategiesV2.config[yieldToMoetSwapperKey] = yieldToMoetSwapper
 
-            // @TODO implement moet to collateral swapper
-            // let moetToCollateralSwapperKey = FlowYieldVaultsStrategiesV2.getMoetToCollateralSwapperConfigKey(uniqueID)
-            //
-            // FlowYieldVaultsStrategiesV2.config[moetToCollateralSwapperKey] = moetToCollateralSwapper
-            //
+            // Store MOET→collateral swapper so closePosition can reconcile MOET residuals safely.
+            let moetToCollateralSwapperKey = FlowYieldVaultsStrategiesV2.getMoetToCollateralSwapperConfigKey(uniqueID)
+            FlowYieldVaultsStrategiesV2.config[moetToCollateralSwapperKey] = moetToCollateralSwapper
+
             switch type {
             case Type<@FUSDEVStrategy>():
                 return <-create FUSDEVStrategy(
@@ -665,15 +687,31 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
         }
 
-        /// @TODO
-        /// implement moet to collateral swapper
-        // access(self) fun _createMoetToCollateralSwapper(
-        //     strategyType: Type,
-        //     tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
-        //     uniqueID: DeFiActions.UniqueIdentifier
-        // ): SwapConnectors.MultiSwapper {
-        //     // Direct MOET -> underlying via AMM
-        // }
+        access(self) fun _createMoetToCollateralSwapper(
+            strategyType: Type,
+            tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
+            collateralConfig: FlowYieldVaultsStrategiesV2.CollateralConfig,
+            collateralType: Type,
+            uniqueID: DeFiActions.UniqueIdentifier
+        ): SwapConnectors.SequentialSwapper {
+            let moetToYield = self._createMoetToYieldSwapper(
+                strategyType: strategyType,
+                tokens: tokens,
+                uniqueID: uniqueID
+            )
+            let yieldToCollateral = self._createYieldToCollateralSwapper(
+                collateralConfig: collateralConfig,
+                yieldTokenEVMAddress: tokens.yieldTokenEVMAddress,
+                yieldTokenType: tokens.yieldTokenType,
+                collateralType: collateralType,
+                uniqueID: uniqueID
+            )
+
+            return SwapConnectors.SequentialSwapper(
+                swappers: [moetToYield, yieldToCollateral],
+                uniqueID: uniqueID
+            )
+        }
 
         access(self) fun _initAutoBalancerAndIO(
             oracle: {DeFiActions.PriceOracle},
