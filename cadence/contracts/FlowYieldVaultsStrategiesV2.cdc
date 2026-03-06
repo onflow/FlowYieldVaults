@@ -232,7 +232,14 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             return <- collateralVault
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
+        /// and any config-backed swappers associated with the Strategy.
         access(contract) fun burnCallback() {
+            let yieldToMoetSwapperKey = FlowYieldVaultsStrategiesV2.getYieldToMoetSwapperConfigKey(self.uniqueID)!
+            FlowYieldVaultsStrategiesV2.config.remove(key: yieldToMoetSwapperKey)
+
+            let moetToCollateralSwapperKey = FlowYieldVaultsStrategiesV2.getMoetToCollateralSwapperConfigKey(self.uniqueID)
+            FlowYieldVaultsStrategiesV2.config.remove(key: moetToCollateralSwapperKey)
+
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
