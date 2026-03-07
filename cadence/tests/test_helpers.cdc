@@ -161,6 +161,7 @@ access(all) fun deployContracts() {
         path: "../../lib/FlowALP/cadence/lib/FlowALPMath.cdc",
         arguments: []
     )
+    Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "DeFiActions",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
