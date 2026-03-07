@@ -8,6 +8,8 @@ import "FlowYieldVaults"
 import "PMStrategiesV1"
 import "FlowYieldVaultsClosedBeta"
 
+import "test_helpers.cdc"
+
 /// Fork test for PMStrategiesV1 syWFLOWv strategy — validates the full YieldVault lifecycle
 /// (create, deposit, withdraw, close) against real mainnet state.
 ///
@@ -52,11 +54,6 @@ access(all) let swapFeeTier: UInt32 = 100
 access(all) var syWFLOWvYieldVaultID: UInt64 = 0
 
 /* --- Test Helpers --- */
-
-access(all)
-fun _executeScript(_ path: String, _ args: [AnyStruct]): Test.ScriptResult {
-    return Test.executeScript(Test.readFile(path), args)
-}
 
 access(all)
 fun _executeTransactionFile(_ path: String, _ args: [AnyStruct], _ signers: [Test.TestAccount]): Test.TransactionResult {
@@ -188,10 +185,18 @@ access(all) fun testCreateSyWFLOWvYieldVault() {
 }
 
 access(all) fun testDepositToSyWFLOWvYieldVault() {
+    let balBeforeResult = _executeScript(
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        [userAccount.address, syWFLOWvYieldVaultID]
+    )
+    Test.expect(balBeforeResult, Test.beSucceeded())
+    let balanceBefore = balBeforeResult.returnValue! as! UFix64? ?? 0.0
+
+    let depositAmount: UFix64 = 0.5
     log("Depositing 0.5 FLOW to syWFLOWv yield vault...")
     let result = _executeTransactionFile(
         "../transactions/flow-yield-vaults/deposit_to_yield_vault.cdc",
-        [syWFLOWvYieldVaultID, 0.5],
+        [syWFLOWvYieldVaultID, depositAmount],
         [userAccount]
     )
     Test.expect(result, Test.beSucceeded())
@@ -202,15 +207,26 @@ access(all) fun testDepositToSyWFLOWvYieldVault() {
     )
     Test.expect(balResult, Test.beSucceeded())
     let balance = balResult.returnValue! as! UFix64?
-    Test.assert(balance != nil && balance! > 0.0, message: "Expected positive balance after additional deposit")
+    Test.assert(
+        equalAmounts(a: balance!, b: balanceBefore + depositAmount, tolerance: 0.01),
+        message: "Expected balance to increase by the deposit amount"
+    )
     log("syWFLOWv vault balance after deposit: ".concat(balance!.toString()))
 }
 
 access(all) fun testWithdrawFromSyWFLOWvYieldVault() {
+    let balBeforeResult = _executeScript(
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        [userAccount.address, syWFLOWvYieldVaultID]
+    )
+    Test.expect(balBeforeResult, Test.beSucceeded())
+    let balanceBefore = balBeforeResult.returnValue! as! UFix64? ?? 0.0
+
+    let withdrawAmount: UFix64 = 0.3
     log("Withdrawing 0.3 FLOW from syWFLOWv yield vault...")
     let result = _executeTransactionFile(
         "../transactions/flow-yield-vaults/withdraw_from_yield_vault.cdc",
-        [syWFLOWvYieldVaultID, 0.3],
+        [syWFLOWvYieldVaultID, withdrawAmount],
         [userAccount]
     )
     Test.expect(result, Test.beSucceeded())
@@ -221,11 +237,28 @@ access(all) fun testWithdrawFromSyWFLOWvYieldVault() {
     )
     Test.expect(balResult, Test.beSucceeded())
     let balance = balResult.returnValue! as! UFix64?
-    Test.assert(balance != nil && balance! > 0.0, message: "Expected positive balance after withdrawal")
+    Test.assert(
+        equalAmounts(a: balance!, b: balanceBefore - withdrawAmount, tolerance: 0.01),
+        message: "Expected balance to decrease by the withdrawn amount"
+    )
     log("syWFLOWv vault balance after withdrawal: ".concat(balance!.toString()))
 }
 
 access(all) fun testCloseSyWFLOWvYieldVault() {
+    let vaultBalBeforeResult = _executeScript(
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        [userAccount.address, syWFLOWvYieldVaultID]
+    )
+    Test.expect(vaultBalBeforeResult, Test.beSucceeded())
+    let vaultBalanceBefore = vaultBalBeforeResult.returnValue! as! UFix64? ?? 0.0
+
+    let flowBalBeforeResult = _executeScript(
+        "../scripts/flow-yield-vaults/get_flow_balance.cdc",
+        [userAccount.address]
+    )
+    Test.expect(flowBalBeforeResult, Test.beSucceeded())
+    let flowBalanceBefore = flowBalBeforeResult.returnValue! as! UFix64
+
     log("Closing syWFLOWv yield vault...")
     let result = _executeTransactionFile(
         "../transactions/flow-yield-vaults/close_yield_vault.cdc",
@@ -233,5 +266,25 @@ access(all) fun testCloseSyWFLOWvYieldVault() {
         [userAccount]
     )
     Test.expect(result, Test.beSucceeded())
+
+    // Vault balance should now be nil (vault no longer exists)
+    let vaultBalAfterResult = _executeScript(
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        [userAccount.address, syWFLOWvYieldVaultID]
+    )
+    Test.expect(vaultBalAfterResult, Test.beSucceeded())
+    Test.assert(vaultBalAfterResult.returnValue == nil, message: "Expected vault to no longer exist after close")
+
+    // User's FLOW balance should have increased by approximately the vault's pre-close balance
+    let flowBalAfterResult = _executeScript(
+        "../scripts/flow-yield-vaults/get_flow_balance.cdc",
+        [userAccount.address]
+    )
+    Test.expect(flowBalAfterResult, Test.beSucceeded())
+    let flowBalanceAfter = flowBalAfterResult.returnValue! as! UFix64
+    Test.assert(
+        equalAmounts(a: flowBalanceAfter, b: flowBalanceBefore + vaultBalanceBefore, tolerance: 0.01),
+        message: "Expected user FLOW balance to increase by approximately the vault balance"
+    )
     log("syWFLOWv yield vault closed successfully")
 }

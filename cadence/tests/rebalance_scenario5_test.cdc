@@ -20,34 +20,6 @@ access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
 access(all) var snapshot: UInt64 = 0
 
-// Helper function to get Flow collateral from position
-access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    for balance in positionDetails.balances {
-        if balance.vaultType == Type<@FlowToken.Vault>() {
-            // Credit means it's a deposit (collateral)
-            if balance.direction == FlowALPv0.BalanceDirection.Credit {
-                return balance.balance
-            }
-        }
-    }
-    return 0.0
-}
-
-// Helper function to get MOET debt from position
-access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    for balance in positionDetails.balances {
-        if balance.vaultType == Type<@MOET.Vault>() {
-            // Debit means it's borrowed (debt)
-            if balance.direction == FlowALPv0.BalanceDirection.Debit {
-                return balance.balance
-            }
-        }
-    }
-    return 0.0
-}
-
 access(all)
 fun setup() {
 	deployContracts()
@@ -166,11 +138,12 @@ fun test_RebalanceYieldVaultScenario5() {
 	log("  MOET debt:       \(debtBefore) MOET")
 	log("  Health:          \(healthBeforeRebalance)")
 
-	if healthBeforeRebalance < 1.0 {
-		log("  ⚠️  WARNING: Health dropped below 1.0! Position is at liquidation risk!")
-		log("  ⚠️  Health = (100 FLOW × 0.8 × $800) / $72,727 = $64,000 / $72,727 = \(healthBeforeRebalance)")
-		log("  ⚠️  A 20% price drop causes ~20% health drop from 1.1 → \(healthBeforeRebalance)")
-	}
+	// A 20% FLOW price drop from $1000 → $800 pushes health from targetHealth (1.3) down to ~1.04:
+	// below targetHealth (triggering rebalance) but still above 1.0 (not insolvent).
+	Test.assert(healthBeforeRebalance < 1.3,
+		message: "Expected health to drop below targetHealth (1.3) after 20% FLOW price drop, got \(healthBeforeRebalance)")
+	Test.assert(healthBeforeRebalance > 1.0,
+		message: "Expected health to remain above 1.0 after 20% FLOW price drop, got \(healthBeforeRebalance)")
 
 	// Rebalance to restore health to targetHealth (1.3)
 	log("[Scenario5] Rebalancing position and yield vault...")
@@ -191,13 +164,18 @@ fun test_RebalanceYieldVaultScenario5() {
 	log("  MOET debt:       \(debtAfterFlowDrop) MOET")
 	log("  Health:          \(healthAfterRebalance)")
 
-	if healthAfterRebalance >= 1.3 {
-		log("  ✅ Health restored to targetHealth (1.3)")
-	} else if healthAfterRebalance >= 1.1 {
-		log("  ✅ Health above minHealth (1.1) but below targetHealth (1.3)")
-	} else {
-		log("  ❌ Health still below minHealth!")
-	}
+	// The position was undercollateralized (health < targetHealth) after the FLOW price drop,
+	// so the topUpSource (AutoBalancer YT → MOET) should have repaid some debt.
+	Test.assert(debtAfterFlowDrop < debtBefore,
+		message: "Expected MOET debt to decrease after rebalancing undercollateralized position, got \(debtAfterFlowDrop) (was \(debtBefore))")
+	Test.assert(ytAfterFlowDrop < ytBefore,
+		message: "Expected AutoBalancer YT to decrease after using topUpSource to repay debt, got \(ytAfterFlowDrop) (was \(ytBefore))")
+	// Debt repayment only affects the MOET debit — FLOW collateral is untouched.
+	Test.assert(collateralAfterFlowDrop == collateralBefore,
+		message: "Expected FLOW collateral to be unchanged after debt repayment, got \(collateralAfterFlowDrop) (was \(collateralBefore))")
+	// The AutoBalancer has sufficient YT to cover the full repayment needed to reach targetHealth (1.3).
+    Test.assert(equalAmounts(a: healthAfterRebalance, b: 1.3, tolerance: 0.00000001),
+		message: "Expected health to be fully restored to targetHealth (1.3) after rebalance, got \(healthAfterRebalance)")
 
 	// --- Phase 2: YT price rises from $1.0 to $1.5 ---
 	log("[Scenario5] Phase 2: YT price increases to $\(yieldPriceIncrease)")
@@ -219,6 +197,13 @@ fun test_RebalanceYieldVaultScenario5() {
 	log("  MOET debt:       \(debtAfterYTRise) MOET")
 	log("  Health:          \(healthAfterYTRise)")
 
+	// The AutoBalancer's YT is now worth 50% more, exceeding the upper threshold.
+	// It pushes excess YT → FLOW into the position, reducing YT and increasing FLOW collateral.
+	Test.assert(ytAfterYTRise < ytAfterFlowDrop,
+		message: "Expected AutoBalancer YT to decrease after pushing excess value to position, got \(ytAfterYTRise) (was \(ytAfterFlowDrop))")
+	Test.assert(collateralAfterYTRise > collateralAfterFlowDrop,
+		message: "Expected FLOW collateral to increase after AutoBalancer pushed YT→FLOW to position, got \(collateralAfterYTRise) (was \(collateralAfterFlowDrop))")
+
 	// Rebalance both position and yield vault before closing to ensure everything is settled
 	log("\n[Scenario5] Rebalancing position and yield vault before close...")
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
@@ -232,17 +217,18 @@ fun test_RebalanceYieldVaultScenario5() {
 	log("  FLOW collateral: \(collateralBeforeClose) FLOW")
 	log("  MOET debt:       \(debtBeforeClose) MOET")
 
-	// Debug: Check position 0 state before closing position 1
-	log("\n[Scenario5] Checking position 0 state...")
-	let pos0Details = getPositionDetails(pid: 0, beFailed: false)
-	log("Position 0 balances:")
-	for balance in pos0Details.balances {
-		let dirStr = balance.direction == FlowALPv0.BalanceDirection.Credit ? "Credit" : "Debit"
-		log("  Type: ".concat(balance.vaultType.identifier).concat(", Direction: ").concat(dirStr).concat(", Balance: ").concat(balance.balance.toString()))
-	}
+	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 
 	// Close the yield vault
 	log("\n[Scenario5] Closing yield vault...")
-
 	closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
+
+	// User should receive their collateral back; vault should be destroyed.
+	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	Test.assert(flowBalanceAfter > flowBalanceBefore,
+		message: "Expected user FLOW balance to increase after closing vault, got \(flowBalanceAfter) (was \(flowBalanceBefore))")
+
+	yieldVaultIDs = getYieldVaultIDs(address: user.address)
+	Test.assert(yieldVaultIDs == nil || yieldVaultIDs!.length == 0,
+		message: "Expected no yield vaults after close but found \(yieldVaultIDs?.length ?? 0)")
 }

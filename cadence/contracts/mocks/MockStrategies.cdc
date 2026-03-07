@@ -131,7 +131,6 @@ access(all) contract MockStrategies {
                 ?? panic("Could not create external source from AutoBalancer")
 
             // Step 5: Withdraw ALL available YT from AutoBalancer to avoid losing funds when Strategy is destroyed
-            // Use minimumAvailable() to get the actual available amount (UFix64.max might not work as expected)
             let availableYt = ytSource.minimumAvailable()
             let totalYtVault <- ytSource.withdrawAvailable(maxAmount: availableYt)
             let totalYtAmount = totalYtVault.balance

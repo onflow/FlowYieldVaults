@@ -944,3 +944,31 @@ fun setupPunchswap(deployer: Test.TestAccount, wflowAddress: String): {String: S
         punchswapV3FactoryAddress: punchswapV3FactoryAddress
     }
 }
+
+// Helper function to get Flow collateral from position
+access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
+    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
+    for balance in positionDetails.balances {
+        if balance.vaultType == Type<@FlowToken.Vault>() {
+            // Credit means it's a deposit (collateral)
+            if balance.direction == FlowALPv0.BalanceDirection.Credit {
+                return balance.balance
+            }
+        }
+    }
+    return 0.0
+}
+
+// Helper function to get MOET debt from position
+access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
+    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
+    for balance in positionDetails.balances {
+        if balance.vaultType == Type<@MOET.Vault>() {
+            // Debit means it's borrowed (debt)
+            if balance.direction == FlowALPv0.BalanceDirection.Debit {
+                return balance.balance
+            }
+        }
+    }
+    return 0.0
+}

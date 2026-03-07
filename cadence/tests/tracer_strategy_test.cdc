@@ -358,14 +358,9 @@ fun test_RebalanceYieldVaultSucceedsAfterYieldPriceDecrease() {
 	//
 	// This is significantly better than without rebalanceSource (would be ~94% loss)
 	// but still substantial due to the extreme 90% price crash.
-	let expectedMaxBalance = fundingAmount * 0.9  // Allow for up to 10-20% loss
-	Test.assert((flowBalanceAfter-flowBalanceBefore) <= expectedMaxBalance,
-	message: "Expected user's Flow balance after rebalance to be less than \(expectedMaxBalance) due to decrease in yield price but got \(flowBalanceAfter)")
-
-	Test.assert(
-		(flowBalanceAfter-flowBalanceBefore) > 0.1,
-		message: "Expected user's Flow balance after rebalance to be more than zero but got \(flowBalanceAfter)"
-	)
+	let returned = flowBalanceAfter - flowBalanceBefore
+	Test.assert(equalAmounts(a: returned, b: fundingAmount * 0.65, tolerance: 1.0),
+		message: "Expected ~65-70 FLOW returned after 90% YT crash (got \(returned))")
 }
 
 access(all)

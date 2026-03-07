@@ -413,7 +413,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 uniqueID: uniqueID
             )
 
-            // Create Position source with CONSERVATIVE settings
             // pullFromTopUpSource: false ensures Position maintains health buffer
             // This prevents Position from being pushed to minHealth (1.1) limit
             let positionSource = position.createSourceWithOptions(
@@ -443,7 +442,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             balancerIO.autoBalancer.setSink(positionSwapSink, updateSinkID: true)
 
             // Set AutoBalancer source for deficit recovery -> pull from Position
-            // CONSERVATIVE: pullFromTopUpSource=false means Position maintains health buffer
             balancerIO.autoBalancer.setSource(positionSwapSource, updateSourceID: true)
 
             // Store yield→MOET swapper in contract config for later access during closePosition
@@ -770,21 +768,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         ): UniswapV3SwapConnectors.Swapper {
             // Reverse the swap path: collateral -> yield (opposite of yield -> collateral)
             let forwardPath = collateralConfig.yieldToCollateralUniV3AddressPath
-            let reversedTokenPath: [EVM.EVMAddress] = []
-            var i = forwardPath.length
-            while i > 0 {
-                i = i - 1
-                reversedTokenPath.append(forwardPath[i])
-            }
+            let reversedTokenPath = forwardPath.reverse()
 
             // Reverse the fee path as well
             let forwardFees = collateralConfig.yieldToCollateralUniV3FeePath
-            let reversedFeePath: [UInt32] = []
-            var j = forwardFees.length
-            while j > 0 {
-                j = j - 1
-                reversedFeePath.append(forwardFees[j])
-            }
+            let reversedFeePath = forwardFees.reverse()
 
             // Verify the reversed path starts with collateral (ends with yield)
             assert(

@@ -20,34 +20,6 @@ access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
 access(all) var snapshot: UInt64 = 0
 
-// Helper function to get Flow collateral from position
-access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    for balance in positionDetails.balances {
-        if balance.vaultType == Type<@FlowToken.Vault>() {
-            // Credit means it's a deposit (collateral)
-            if balance.direction == FlowALPv0.BalanceDirection.Credit {
-                return balance.balance
-            }
-        }
-    }
-    return 0.0
-}
-
-// Helper function to get MOET debt from position
-access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    for balance in positionDetails.balances {
-        if balance.vaultType == Type<@MOET.Vault>() {
-            // Debit means it's borrowed (debt)
-            if balance.direction == FlowALPv0.BalanceDirection.Debit {
-                return balance.balance
-            }
-        }
-    }
-    return 0.0
-}
-
 access(all)
 fun setup() {
 	deployContracts()
@@ -153,6 +125,16 @@ fun test_RebalanceYieldVaultScenario4() {
 	log("  FLOW collateral: \(collateralAfterFlowDrop) FLOW (value: \(collateralAfterFlowDrop * flowPriceDecrease) MOET)")
 	log("  MOET debt:       \(debtAfterFlowDrop) MOET")
 
+	// The position was undercollateralized after FLOW price drop, so the topUpSource
+	// (AutoBalancer YT → MOET) should have repaid some debt, reducing both YT and MOET debt.
+	Test.assert(debtAfterFlowDrop < debtBefore,
+		message: "Expected MOET debt to decrease after rebalancing undercollateralized position, got \(debtAfterFlowDrop) (was \(debtBefore))")
+	Test.assert(ytAfterFlowDrop < ytBefore,
+		message: "Expected AutoBalancer YT to decrease after using topUpSource to repay debt, got \(ytAfterFlowDrop) (was \(ytBefore))")
+	// FLOW collateral is not touched by debt repayment
+	Test.assert(collateralAfterFlowDrop == collateralBefore,
+		message: "Expected FLOW collateral to be unchanged after debt repayment rebalance, got \(collateralAfterFlowDrop) (was \(collateralBefore))")
+
 	// --- Phase 2: YT price rises from $1000.0 to $1500.0 ---
 	setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: yieldPriceIncrease)
 
@@ -167,7 +149,25 @@ fun test_RebalanceYieldVaultScenario4() {
 	log("  FLOW collateral: \(collateralAfterYTRise) FLOW (value: \(collateralAfterYTRise * flowPriceDecrease) MOET)")
 	log("  MOET debt:       \(debtAfterYTRise) MOET")
 
+	// The AutoBalancer's YT is now worth 50% more, making its value exceed the deposit threshold.
+	// It should push excess YT → FLOW into the position, increasing collateral and reducing YT.
+	Test.assert(ytAfterYTRise < ytAfterFlowDrop,
+		message: "Expected AutoBalancer YT to decrease after pushing excess value to position, got \(ytAfterYTRise) (was \(ytAfterFlowDrop))")
+	Test.assert(collateralAfterYTRise > collateralAfterFlowDrop,
+		message: "Expected FLOW collateral to increase after AutoBalancer pushed YT→FLOW to position, got \(collateralAfterYTRise) (was \(collateralAfterFlowDrop))")
+
+	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+
 	closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
+
+	// After close, the vault should no longer exist and the user should have received their FLOW back
+	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	Test.assert(flowBalanceAfter > flowBalanceBefore,
+		message: "Expected user FLOW balance to increase after closing vault, got \(flowBalanceAfter) (was \(flowBalanceBefore))")
+
+	yieldVaultIDs = getYieldVaultIDs(address: user.address)
+	Test.assert(yieldVaultIDs == nil || yieldVaultIDs!.length == 0,
+		message: "Expected no yield vaults after close but found \(yieldVaultIDs?.length ?? 0)")
 
 	log("\n[Scenario4] Test complete")
 }

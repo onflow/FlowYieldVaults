@@ -24,7 +24,7 @@ access(all) contract MockFlowALPConsumer {
         repaymentSource: {DeFiActions.Source}?,
         pushToDrawDownSink: Bool
     ): @PositionWrapper {
-        let poolCap = MockFlowALPConsumer.account.storage.load<Capability<auth(FlowALPv0.EParticipant, FlowALPv0.EPosition) &FlowALPv0.Pool>>(
+        let poolCap = MockFlowALPConsumer.account.storage.load<Capability<auth(FlowALPv0.EParticipant) &FlowALPv0.Pool>>(
             from: FlowALPv0.PoolCapStoragePath
         ) ?? panic("Missing pool capability - ensure MockFlowALPConsumer account has a pool capability stored at FlowALPv0.PoolCapStoragePath")
         let poolRef = poolCap.borrow() ?? panic("Invalid Pool Capability")
