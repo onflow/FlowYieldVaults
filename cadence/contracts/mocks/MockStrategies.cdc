@@ -130,88 +130,39 @@ access(all) contract MockStrategies {
             let ytSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
-            // Step 5: Withdraw ALL available YT from AutoBalancer to avoid losing funds when Strategy is destroyed
-            let availableYt = ytSource.minimumAvailable()
-            let totalYtVault <- ytSource.withdrawAvailable(maxAmount: availableYt)
-            let totalYtAmount = totalYtVault.balance
-
-            // Step 6: Create YT→MOET swapper
-            let ytToMoetSwapper = MockSwapper.Swapper(
-                inVault: Type<@YieldToken.Vault>(),
-                outVault: Type<@MOET.Vault>(),
-                uniqueID: self.copyID()!
-            )
-
-            // Step 7: Calculate how much MOET we can get from the available YT
-            // Use quoteOut to see how much MOET we'll get from all available YT
-            let ytQuote = ytToMoetSwapper.quoteOut(forProvided: totalYtAmount, reverse: false)
-            let estimatedMoetFromYt = ytQuote.outAmount
-
-            // Step 8: Swap ALL YT to MOET to see how much we can cover
-            var moetVault <- ytToMoetSwapper.swap(quote: ytQuote, inVault: <-totalYtVault)
-            let moetFromYt = moetVault.balance
-
-            // Step 8: If YT didn't cover full debt, withdraw collateral to make up shortfall
-            if moetFromYt < totalDebtAmount {
-                let shortfall = totalDebtAmount - moetFromYt
-
-                // Create collateral→MOET swapper to convert collateral for debt repayment
-                let collateralToMoetSwapper = MockSwapper.Swapper(
-                    inVault: collateralType,
-                    outVault: Type<@MOET.Vault>(),
+            // Step 5: Build one SwapSource per debt type, each drawing from the AutoBalancer's YT.
+            // ytSource is a struct (capability-backed), so each copy references the same underlying vault.
+            // The pool drains each source sequentially to repay each debt type.
+            var repaymentSources: [{DeFiActions.Source}] = []
+            for debtType in debtsByType.keys {
+                let ytToDebtSwapper = MockSwapper.Swapper(
+                    inVault: Type<@YieldToken.Vault>(),
+                    outVault: debtType,
                     uniqueID: self.copyID()!
                 )
-
-                // Calculate how much collateral we need to cover the shortfall
-                let collateralQuote = collateralToMoetSwapper.quoteIn(
-                    forDesired: shortfall,
-                    reverse: false
-                )
-
-                // Withdraw collateral from position to cover shortfall
-                let collateralForDebt <- self.source.withdrawAvailable(maxAmount: collateralQuote.inAmount)
-
-                // Swap collateral to MOET and add to repayment vault
-                let additionalMoet <- collateralToMoetSwapper.swap(
-                    quote: collateralQuote,
-                    inVault: <-collateralForDebt
-                )
-                moetVault.deposit(from: <-additionalMoet)
+                repaymentSources.append(SwapConnectors.SwapSource(swapper: ytToDebtSwapper, source: ytSource, uniqueID: nil))
             }
 
-            // Step 9: Store MOET vault temporarily and create a VaultSource for closePosition.
-            // closePosition now takes [{DeFiActions.Source}] instead of @[{FungibleToken.Vault}].
-            let tempPath = StoragePath(identifier: "mockClosePositionMoet_\(self.uuid)")!
-            MockStrategies.account.storage.save(<-(moetVault as! @MOET.Vault), to: tempPath)
-            let moetCap = MockStrategies.account.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(tempPath)
-            let moetSource = FungibleTokenConnectors.VaultSource(min: nil, withdrawVault: moetCap, uniqueID: nil)
+            // Step 6: Close position - pool pulls each debt type's amount from its corresponding SwapSource
+            let resultVaults <- self.position.closePosition(repaymentSources: repaymentSources)
 
-            // Step 10: Close position - pool pulls exactly the debt amount from moetSource
-            let resultVaults <- self.position.closePosition(repaymentSources: [moetSource])
-
-            // Step 11: Recover any MOET not consumed by repayment from temp storage
-            let remainingMoet <- MockStrategies.account.storage.load<@MOET.Vault>(from: tempPath)!
-
-            // Extract all returned vaults
+            // Step 7: Extract collateral vault (first returned vault)
             assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
-
-            // First vault should be collateral
             var collateralVault <- resultVaults.removeFirst()
 
-            // Swap any remaining MOET (not consumed by repayment) back to collateral
-            if remainingMoet.balance > 0.0 {
-                let moetToCollateralSwapper = MockSwapper.Swapper(
-                    inVault: Type<@MOET.Vault>(),
+            // Step 8: Recover any remaining YT from the AutoBalancer and swap back to collateral
+            let remainingYtAmount = ytSource.minimumAvailable()
+            if remainingYtAmount > 0.0 {
+                let remainingYt <- ytSource.withdrawAvailable(maxAmount: remainingYtAmount)
+                let ytToCollateralSwapper = MockSwapper.Swapper(
+                    inVault: Type<@YieldToken.Vault>(),
                     outVault: collateralType,
                     uniqueID: self.copyID()!
                 )
-                let swappedCollateral <- moetToCollateralSwapper.swap(quote: nil, inVault: <-remainingMoet)
-                collateralVault.deposit(from: <-swappedCollateral)
-            } else {
-                destroy remainingMoet
+                collateralVault.deposit(from: <-ytToCollateralSwapper.swap(quote: nil, inVault: <-remainingYt))
             }
 
-            // Handle any additional vaults in resultVaults (e.g., overpayment credits) by swapping back to collateral
+            // Step 9: Handle any additional vaults returned by closePosition (overpayments) by swapping to collateral
             while resultVaults.length > 0 {
                 let dustVault <- resultVaults.removeFirst()
                 if dustVault.balance > 0.0 && dustVault.getType() != collateralType {
@@ -220,11 +171,7 @@ access(all) contract MockStrategies {
                         outVault: collateralType,
                         uniqueID: self.copyID()!
                     )
-                    let swappedCollateral <- dustToCollateralSwapper.swap(
-                        quote: nil,
-                        inVault: <-dustVault
-                    )
-                    collateralVault.deposit(from: <-swappedCollateral)
+                    collateralVault.deposit(from: <-dustToCollateralSwapper.swap(quote: nil, inVault: <-dustVault))
                 } else {
                     destroy dustVault
                 }
