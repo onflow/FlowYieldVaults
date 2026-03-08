@@ -146,9 +146,13 @@ access(all) contract MockStrategies {
             // Step 6: Close position - pool pulls each debt type's amount from its corresponding SwapSource
             let resultVaults <- self.position.closePosition(repaymentSources: repaymentSources)
 
-            // Step 7: Extract collateral vault (first returned vault)
+            // Step 7: Extract collateral vault (first returned vault) and optional overpayment vault(s)
             assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
             var collateralVault <- resultVaults.removeFirst()
+            assert(
+                collateralVault.getType() == collateralType,
+                message: "First vault returned from closePosition must be collateral (\(collateralType.identifier)), got \(collateralVault.getType().identifier)"
+            )
 
             // Step 8: Recover any remaining YT from the AutoBalancer and swap back to collateral
             let remainingYtAmount = ytSource.minimumAvailable()
