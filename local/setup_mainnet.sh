@@ -22,7 +22,7 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-factory/
 flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/update_oracle.cdc --network mainnet --signer mainnet-flow-alp-deployer
 
 # add FLOW as supported token - params: collateralFactor, borrowFactor, depositRate, depositCapacityCap
-flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.1654653399040a61.FlowToken.Vault' \
     0.8 \
     1.0 \
@@ -34,11 +34,8 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governan
 # add WBTC to band oracle
 cd ./lib/FlowALP/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "BTC" "A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault" --network mainnet --signer mainnet-band-oracle-connectors && cd ../../..
 
-# add WETH to band oracle
-cd ./lib/FlowALP/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "ETH" "A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault" --network mainnet --signer mainnet-band-oracle-connectors && cd ../../..
-
 # WBTC simple curve
-flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault' \
     0.8 \
     1.0 \
@@ -47,8 +44,18 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governan
     --network mainnet \
     --signer mainnet-flow-alp-deployer
 
+# set minimum deposit for WBTC ~ 0.005 USD
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_minimum_token_balance_per_position.cdc \
+	'A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault' \
+	0.0000001 \
+	--network mainnet \
+	--signer mainnet-flow-alp-deployer
+
+# add WETH to band oracle
+cd ./lib/FlowALP/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "ETH" "A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault" --network mainnet --signer mainnet-band-oracle-connectors && cd ../../..
+
 # WETH simple curve
-flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_zero_rate_curve.cdc \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault' \
     0.8 \
     1.0 \
@@ -56,6 +63,33 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governan
     1_000_000.0 \
     --network mainnet \
     --signer mainnet-flow-alp-deployer
+
+# set minimum deposit for WETH ~ 0.01 USD
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_minimum_token_balance_per_position.cdc \
+	'A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault' \
+	0.00001 \
+	--network mainnet \
+	--signer mainnet-flow-alp-deployer
+
+# add PYUSD0 to band oracle
+cd ./lib/FlowALP/FlowActions && flow transactions send ./cadence/transactions/band-oracle-connector/add_symbol.cdc "PYUSD" "A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault" --network mainnet --signer mainnet-band-oracle-connectors && cd ../../..
+
+# PYUSD0 simple curve
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_zero_rate_curve.cdc \
+    'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
+    0.8 \
+    1.0 \
+    1_000_000.0 \
+    1_000_000.0 \
+    --network mainnet \
+    --signer mainnet-flow-alp-deployer
+
+# set minimum deposit for PYUSD0 ~ 0.01 USD
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_minimum_token_balance_per_position.cdc \
+	'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
+	0.01 \
+	--network mainnet \
+	--signer mainnet-flow-alp-deployer
 
 # kink interest curve setup
 # enable when FCM_V1 is deployed
@@ -146,6 +180,15 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_str
 	--network mainnet \
 	--signer mainnet-admin
 #
+# Setup UniV3 path FUSDEV -> PYUSD0
+flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc \
+	'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
+	'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
+	"0xd069d989e2F44B70c65347d1853C0c67e10a9F8D" \
+	'["0xd069d989e2F44B70c65347d1853C0c67e10a9F8D","0x99aF3EeA856556646C98c8B9b2548Fe815240750"]' \
+	'[100]' \
+	--network mainnet \
+	--signer mainnet-admin
 
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
@@ -164,14 +207,6 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert-pm-
     --signer mainnet-admin
 
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert-pm-strategy-config.cdc \
-    'A.b1d63873c3cc9f79.PMStrategiesV1.tauUSDFvStrategy' \
-    'A.1e4aa0b87d10b141.EVMVMBridgedToken_2aabea2058b5ac2d339b163c6ab6f2b6d53aabed.Vault' \
-    '0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c' \
-    100 \
-    --network mainnet \
-    --signer mainnet-admin
-
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert-pm-strategy-config.cdc \
     'A.b1d63873c3cc9f79.PMStrategiesV1.FUSDEVStrategy' \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
     '0xd069d989e2F44B70c65347d1853C0c67e10a9F8D' \
@@ -181,13 +216,6 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert-pm-
 
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
     'A.b1d63873c3cc9f79.PMStrategiesV1.syWFLOWvStrategy' \
-    'A.b1d63873c3cc9f79.PMStrategiesV1.ERC4626VaultStrategyComposer' \
-    /storage/PMStrategiesV1ComposerIssuer_0xb1d63873c3cc9f79 \
-    --network mainnet \
-    --signer mainnet-admin
-
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
-    'A.b1d63873c3cc9f79.PMStrategiesV1.tauUSDFvStrategy' \
     'A.b1d63873c3cc9f79.PMStrategiesV1.ERC4626VaultStrategyComposer' \
     /storage/PMStrategiesV1ComposerIssuer_0xb1d63873c3cc9f79 \
     --network mainnet \
@@ -222,7 +250,8 @@ flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-ma
 #   --proposer <TEST_USER>
 
 # test FlowYieldVault strategy
-
+#
+# WFLOW (FLOW)
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
 #   A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.FUSDEVStrategy \
 #   A.1654653399040a61.FlowToken.Vault \
@@ -230,7 +259,6 @@ flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-ma
 #   --compute-limit 9999 \
 #   --network mainnet \
 #   --signer <TEST_USER>
-#
 #
 # WBTC (BTCf)
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
@@ -250,6 +278,14 @@ flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-ma
 #   --network mainnet \
 #   --signer <TEST_USER>
 #
+# PYUSD0
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.FUSDEVStrategy \
+#   A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault \
+#   0.01 \
+#   --compute-limit 9999 \
+#   --network mainnet \
+#   --signer <TEST_USER>
 #
 # test PEAK MONEY strategy
 #
