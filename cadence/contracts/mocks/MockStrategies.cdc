@@ -52,11 +52,16 @@ access(all) contract MockStrategies {
         access(self) let position: @FlowALPv0.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
+        /// Tracks whether the underlying FlowALP position has been closed. Once true,
+        /// availableBalance() returns 0.0 to avoid panicking when the pool no longer
+        /// holds the position (e.g. during YieldVault burnCallback after close).
+        access(self) var positionClosed: Bool
 
         init(id: DeFiActions.UniqueIdentifier, collateralType: Type, position: @FlowALPv0.Position) {
             self.uniqueID = id
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
+            self.positionClosed = false
             self.position <-position
         }
 
@@ -68,6 +73,7 @@ access(all) contract MockStrategies {
         }
         /// Returns the amount available for withdrawal via the inner Source
         access(all) fun availableBalance(ofToken: Type): UFix64 {
+            if self.positionClosed { return 0.0 }
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
@@ -81,6 +87,152 @@ access(all) contract MockStrategies {
                 return <- DeFiActionsUtils.getEmptyVault(ofToken)
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
+        }
+        /// Closes the underlying FlowALP position by preparing repayment funds and closing with them.
+        ///
+        /// This method:
+        /// 1. Calculates debt amount from position
+        /// 2. Withdraws YT from AutoBalancer
+        /// 3. Swaps YT → MOET via external swapper
+        /// 4. Closes position with prepared MOET vault
+        ///
+        /// This approach eliminates circular dependencies by preparing all funds externally
+        /// before calling the position's close method.
+        ///
+        access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
+            pre {
+                self.isSupportedCollateralType(collateralType):
+                "Unsupported collateral type \(collateralType.identifier)"
+            }
+
+            // Step 1: Get debt amounts from position - returns {Type: UFix64} dictionary
+            let debtsByType = self.position.getTotalDebt()
+
+            // Step 2: Calculate total debt amount across all debt types
+            var totalDebtAmount: UFix64 = 0.0
+            for debtAmount in debtsByType.values {
+                totalDebtAmount = totalDebtAmount + debtAmount
+            }
+
+            // Step 3: If no debt, close with empty sources array
+            if totalDebtAmount == 0.0 {
+                let resultVaults <- self.position.closePosition(
+                    repaymentSources: []
+                )
+                // Extract the first vault (should be collateral)
+                assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
+                let collateralVault <- resultVaults.removeFirst()
+                destroy resultVaults
+                return <- collateralVault
+            }
+
+            // Step 4: Create external YT source from AutoBalancer
+            let ytSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
+                ?? panic("Could not create external source from AutoBalancer")
+            let ytType = Type<@YieldToken.Vault>()
+
+            // Step 5: Build one repayment source per debt type.
+            // If the debt token is the same as YT, use ytSource directly (no swap needed).
+            // Otherwise, use MockSwapper.quoteIn to pre-swap YT → debt token and wrap in a VaultSource.
+            // Pre-swapping with quoteIn guarantees the exact debt amount is delivered to the pool.
+            var repaymentSources: [{DeFiActions.Source}] = []
+            var debtCaps: [Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>] = []
+            var debtPaths: [StoragePath] = []
+
+            for debtType in debtsByType.keys {
+                let debtAmount = debtsByType[debtType]!
+                let swapper = MockSwapper.Swapper(inVault: ytType, outVault: debtType, uniqueID: self.copyID()!)
+                let ytAvailable = ytSource.minimumAvailable()
+                let ytNeededQuote = swapper.quoteIn(forDesired: debtAmount, reverse: false)
+
+                let debtVault <- DeFiActionsUtils.getEmptyVault(debtType)
+                if ytAvailable >= ytNeededQuote.inAmount {
+                    // Sufficient YT: quoteIn guarantees exactly debtAmount out
+                    let ytPortion <- ytSource.withdrawAvailable(maxAmount: ytNeededQuote.inAmount)
+                    debtVault.deposit(from: <-swapper.swap(quote: ytNeededQuote, inVault: <-ytPortion))
+                } else {
+                    // Insufficient YT: swap all available YT, then cover shortfall from collateral
+                    let ytAllQuote = swapper.quoteOut(forProvided: ytAvailable, reverse: false)
+                    let ytPortion <- ytSource.withdrawAvailable(maxAmount: ytAvailable)
+                    debtVault.deposit(from: <-swapper.swap(quote: ytAllQuote, inVault: <-ytPortion))
+                    let shortfall = debtAmount - debtVault.balance
+                    if shortfall > 0.0 {
+                        let collateralToDebtSwapper = MockSwapper.Swapper(
+                            inVault: collateralType, outVault: debtType, uniqueID: self.copyID()!)
+                        let collateralQuote = collateralToDebtSwapper.quoteIn(forDesired: shortfall, reverse: false)
+                        let collateralForDebt <- self.source.withdrawAvailable(maxAmount: collateralQuote.inAmount)
+                        debtVault.deposit(from: <-collateralToDebtSwapper.swap(quote: collateralQuote, inVault: <-collateralForDebt))
+                    }
+                }
+
+                let debtTempPath = StoragePath(identifier: "mockCloseDebt_\(self.uuid)_\(debtType.identifier)")!
+                MockStrategies.account.storage.save(<-debtVault, to: debtTempPath)
+                let debtCap = MockStrategies.account.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(debtTempPath)
+                repaymentSources.append(FungibleTokenConnectors.VaultSource(min: nil, withdrawVault: debtCap, uniqueID: nil))
+                debtCaps.append(debtCap)
+                debtPaths.append(debtTempPath)
+            }
+
+            // Step 6: Close position - pool pulls each debt type's exact amount from its source
+            let resultVaults <- self.position.closePosition(repaymentSources: repaymentSources)
+
+            // Step 7: Extract collateral vault (first returned vault) and optional overpayment vault(s)
+            assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
+            var collateralVault <- resultVaults.removeFirst()
+            assert(
+                collateralVault.getType() == collateralType,
+                message: "First vault returned from closePosition must be collateral (\(collateralType.identifier)), got \(collateralVault.getType().identifier)"
+            )
+
+            // Step 8: Recover any remaining YT from the AutoBalancer and swap back to collateral
+            let remainingYtAmount = ytSource.minimumAvailable()
+            if remainingYtAmount > 0.0 {
+                let remainingYt <- ytSource.withdrawAvailable(maxAmount: remainingYtAmount)
+                let ytToCollateralSwapper = MockSwapper.Swapper(
+                    inVault: ytType,
+                    outVault: collateralType,
+                    uniqueID: self.copyID()!
+                )
+                collateralVault.deposit(from: <-ytToCollateralSwapper.swap(quote: nil, inVault: <-remainingYt))
+            }
+
+            // Step 9: Recover any un-consumed balance from pre-swapped debt temp vaults, then
+            // remove the now-empty vaults from storage to avoid accumulating stale state.
+            var capIdx = 0
+            while capIdx < debtCaps.length {
+                let debtRef = debtCaps[capIdx].borrow()!
+                let remaining = debtRef.balance
+                if remaining > 0.0 {
+                    let remainingDebt <- debtRef.withdraw(amount: remaining)
+                    let swapper = MockSwapper.Swapper(
+                        inVault: remainingDebt.getType(),
+                        outVault: collateralType,
+                        uniqueID: self.copyID()!
+                    )
+                    collateralVault.deposit(from: <-swapper.swap(quote: nil, inVault: <-remainingDebt))
+                }
+                destroy MockStrategies.account.storage.load<@{FungibleToken.Vault}>(from: debtPaths[capIdx])!
+                capIdx = capIdx + 1
+            }
+
+            // Step 10: Handle any additional vaults returned by closePosition (overpayments)
+            while resultVaults.length > 0 {
+                let dustVault <- resultVaults.removeFirst()
+                if dustVault.balance > 0.0 && dustVault.getType() != collateralType {
+                    let dustToCollateralSwapper = MockSwapper.Swapper(
+                        inVault: dustVault.getType(),
+                        outVault: collateralType,
+                        uniqueID: self.copyID()!
+                    )
+                    collateralVault.deposit(from: <-dustToCollateralSwapper.swap(quote: nil, inVault: <-dustVault))
+                } else {
+                    destroy dustVault
+                }
+            }
+
+            destroy resultVaults
+            self.positionClosed = true
+            return <- collateralVault
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
@@ -204,9 +356,22 @@ access(all) contract MockStrategies {
             // allows for YieldToken to be deposited to the Position
             let positionSwapSink = SwapConnectors.SwapSink(swapper: yieldToFlowSwapper, sink: positionSink, uniqueID: uniqueID)
 
+            // init FLOW -> YieldToken Swapper (reverse of yieldToFlowSwapper)
+            let flowToYieldSwapper = MockSwapper.Swapper(
+                inVault: collateralType,
+                outVault: yieldTokenType,
+                uniqueID: uniqueID
+            )
+            // allows AutoBalancer to pull FLOW from Position and swap to YieldToken
+            let positionSwapSource = SwapConnectors.SwapSource(swapper: flowToYieldSwapper, source: positionSource, uniqueID: uniqueID)
+
             // set the AutoBalancer's rebalance Sink which it will use to deposit overflown value,
             // recollateralizing the position
             autoBalancer.setSink(positionSwapSink, updateSinkID: true)
+
+            // set the AutoBalancer's rebalance Source which it will use to pull funds when value drops below deposits,
+            // pulling FLOW from the position and swapping to YieldToken
+            autoBalancer.setSource(positionSwapSource, updateSourceID: true)
 
             // Use the same uniqueID passed to createStrategy so Strategy.burnCallback
             // calls _cleanupAutoBalancer with the correct ID
