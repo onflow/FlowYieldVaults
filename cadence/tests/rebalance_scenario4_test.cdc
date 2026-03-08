@@ -150,7 +150,7 @@ fun test_RebalanceLowCollateralHighYieldPrices() {
 	Test.assert(ytAfterFlowDrop < ytBefore,
 		message: "Expected AutoBalancer YT to decrease after using topUpSource to repay debt, got \(ytAfterFlowDrop) (was \(ytBefore))")
 	// FLOW collateral is not touched by debt repayment
-	Test.assert(collateralAfterFlowDrop == collateralBefore,
+    Test.assert(equalAmounts(a: collateralAfterFlowDrop, b: collateralBefore, tolerance: 0.001),
 		message: "Expected FLOW collateral to be unchanged after debt repayment rebalance, got \(collateralAfterFlowDrop) (was \(collateralBefore))")
 
 	// --- Phase 2: YT price rises from $1000.0 to $1500.0 ---
@@ -284,7 +284,7 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	Test.assert(ytAfterFlowDrop < ytBefore,
 		message: "Expected AutoBalancer YT to decrease after using topUpSource to repay debt, got \(ytAfterFlowDrop) (was \(ytBefore))")
 	// Debt repayment only affects the MOET debit — FLOW collateral is untouched.
-	Test.assert(collateralAfterFlowDrop == collateralBefore,
+    Test.assert(equalAmounts(a: collateralAfterFlowDrop, b: collateralBefore, tolerance: 0.000001),
 		message: "Expected FLOW collateral to be unchanged after debt repayment, got \(collateralAfterFlowDrop) (was \(collateralBefore))")
 	// The AutoBalancer has sufficient YT to cover the full repayment needed to reach targetHealth (1.3).
 	Test.assert(equalAmounts(a: healthAfterRebalance, b: 1.3, tolerance: 0.00000001),

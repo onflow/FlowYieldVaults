@@ -72,7 +72,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
     }
 
-    /// This strategy uses FUSDEV vault (Morpho ERC4626)
+    /// This strategy uses FUSDEV vault (Morpho ERC4626).
+    /// Deposits collateral into a single FlowALP position, borrowing MOET as debt.
+    /// MOET is swapped to PYUSD0 and deposited into the Morpho FUSDEV ERC4626 vault.
+    /// Each strategy instance holds exactly one collateral type and one debt type (MOET).
+    /// PYUSD0 (the FUSDEV vault's underlying asset) cannot be used as collateral.
     access(all) resource FUSDEVStrategy : FlowYieldVaults.Strategy, DeFiActions.IdentifiableResource {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
         /// specific Identifier to associated connectors on construction
@@ -84,10 +88,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         /// availableBalance() returns 0.0 to avoid panicking when the pool no longer
         /// holds the position (e.g. during YieldVault burnCallback after close).
         access(self) var positionClosed: Bool
-
-        /// @TODO on the next iteration store yieldToMoetSwapper in the resource
-        /// Swapper used to convert yield tokens back to MOET for debt repayment
-        //access(self) let yieldToMoetSwapper: {DeFiActions.Swapper}
 
         init(
             id: DeFiActions.UniqueIdentifier,
@@ -112,8 +112,13 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             if self.positionClosed { return 0.0 }
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
-        /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
+        /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference.
+        /// Only the single configured collateral type is accepted — one collateral type per position.
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
+            pre {
+                from.getType() == self.sink.getSinkType():
+                    "FUSDEVStrategy position only accepts \(self.sink.getSinkType().identifier) as collateral, got \(from.getType().identifier)"
+            }
             self.sink.depositCapacity(from: from)
         }
         /// Withdraws up to the max amount, returning the withdrawn Vault. If the requested token type is unsupported,
@@ -147,7 +152,13 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             // Step 1: Get debt amounts - returns {Type: UFix64} dictionary
             let debtsByType = self.position.getTotalDebt()
 
-            // Step 2: Calculate total debt amount across all debt types
+            // Enforce: one debt type per position
+            assert(
+                debtsByType.length <= 1,
+                message: "FUSDEVStrategy position must have at most one debt type, found \(debtsByType.length)"
+            )
+
+            // Step 2: Calculate total debt amount
             var totalDebtAmount: UFix64 = 0.0
             for debtAmount in debtsByType.values {
                 totalDebtAmount = totalDebtAmount + debtAmount
@@ -158,8 +169,19 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 let resultVaults <- self.position.closePosition(
                     repaymentSources: []
                 )
-                // Extract the first vault (should be collateral)
-                assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
+                // With one collateral type and no debt the pool returns at most one vault.
+                // Zero vaults is possible when the collateral balance is dust that rounds down
+                // to zero (e.g. drawDownSink had no capacity, or token reserves were empty).
+                assert(
+                    resultVaults.length <= 1,
+                    message: "Expected 0 or 1 collateral vault from closePosition, got \(resultVaults.length)"
+                )
+                // Zero vaults: dust collateral rounded down to zero — return an empty vault
+                if resultVaults.length == 0 {
+                    destroy resultVaults
+                    self.positionClosed = true
+                    return <- DeFiActionsUtils.getEmptyVault(collateralType)
+                }
                 let collateralVault <- resultVaults.removeFirst()
                 destroy resultVaults
                 self.positionClosed = true
@@ -187,13 +209,20 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             // Step 7: Close position - pool pulls exactly the debt amount from moetSource
             let resultVaults <- self.position.closePosition(repaymentSources: [moetSource])
 
-            // Extract all returned vaults
-            assert(resultVaults.length > 0, message: "No vaults returned from closePosition")
+            // With one collateral type and one debt type, the pool returns at most two vaults:
+            // the collateral vault and optionally a MOET overpayment dust vault.
+            assert(
+                resultVaults.length >= 1 && resultVaults.length <= 2,
+                message: "Expected 1 or 2 vaults from closePosition, got \(resultVaults.length)"
+            )
 
-            // First vault should be collateral
             var collateralVault <- resultVaults.removeFirst()
+            assert(
+                collateralVault.getType() == collateralType,
+                message: "First vault returned from closePosition must be collateral (\(collateralType.identifier)), got \(collateralVault.getType().identifier)"
+            )
 
-            // Handle any overpayment dust (MOET) by swapping back to collateral
+            // Handle any overpayment dust (MOET) returned as the second vault
             while resultVaults.length > 0 {
                 let dustVault <- resultVaults.removeFirst()
                 if dustVault.balance > 0.0 {
@@ -201,16 +230,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                         collateralVault.deposit(from: <-dustVault)
                     } else {
                         // @TODO implement swapping moet to collateral
-
-                        // // Swap overpayment back to collateral using configured swapper
-                        // let moetToCollateralSwapperKey = FlowYieldVaultsStrategiesV2.getMoetToCollateralSwapperConfigKey(self.id()!)
-                        // let dustToCollateralSwapper = FlowYieldVaultsStrategiesV2.config[moetToCollateralSwapperKey] as! {DeFiActions.Swapper}?
-                        //     ?? panic("No MOET→collateral swapper found for strategy \(self.id()!)")
-                        // let swappedCollateral <- dustToCollateralSwapper.swap(
-                        //     quote: nil,
-                        //     inVault: <-dustVault
-                        // )
-                        // collateralVault.deposit(from: <-swappedCollateral)
                         destroy dustVault
                     }
                 } else {
