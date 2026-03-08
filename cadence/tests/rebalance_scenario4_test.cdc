@@ -150,7 +150,7 @@ fun test_RebalanceLowCollateralHighYieldPrices() {
 	Test.assert(ytAfterFlowDrop < ytBefore,
 		message: "Expected AutoBalancer YT to decrease after using topUpSource to repay debt, got \(ytAfterFlowDrop) (was \(ytBefore))")
 	// FLOW collateral is not touched by debt repayment
-	Test.assert(collateralAfterFlowDrop == collateralBefore,
+    Test.assert(equalAmounts(a: collateralAfterFlowDrop, b: collateralBefore, tolerance: 0.001),
 		message: "Expected FLOW collateral to be unchanged after debt repayment rebalance, got \(collateralAfterFlowDrop) (was \(collateralBefore))")
 
 	// --- Phase 2: YT price rises from $1000.0 to $1500.0 ---

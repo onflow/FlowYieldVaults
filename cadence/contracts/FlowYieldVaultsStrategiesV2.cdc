@@ -176,9 +176,13 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     resultVaults.length <= 1,
                     message: "Expected 0 or 1 collateral vault from closePosition, got \(resultVaults.length)"
                 )
-                let collateralVault <- resultVaults.length == 1
-                    ? resultVaults.removeFirst()
-                    : <- DeFiActionsUtils.getEmptyVault(collateralType)
+                // Zero vaults: dust collateral rounded down to zero — return an empty vault
+                if resultVaults.length == 0 {
+                    destroy resultVaults
+                    self.positionClosed = true
+                    return <- DeFiActionsUtils.getEmptyVault(collateralType)
+                }
+                let collateralVault <- resultVaults.removeFirst()
                 destroy resultVaults
                 self.positionClosed = true
                 return <- collateralVault
