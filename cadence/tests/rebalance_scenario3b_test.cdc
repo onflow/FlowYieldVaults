@@ -7,7 +7,6 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "MockStrategies"
-import "FlowALPv0"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
@@ -22,34 +21,6 @@ access(all) let collateralFactor = 0.8
 access(all) let targetHealthFactor = 1.3
 
 access(all) var snapshot: UInt64 = 0
-
-// Helper function to get Flow collateral from position
-access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    for balance in positionDetails.balances {
-        if balance.vaultType == Type<@FlowToken.Vault>() {
-            // Credit means it's a deposit (collateral)
-            if balance.direction.rawValue == 0 {  // Credit = 0
-                return balance.balance
-            }
-        }
-    }
-    return 0.0
-}
-
-// Helper function to get MOET debt from position
-access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    for balance in positionDetails.balances {
-        if balance.vaultType == Type<@MOET.Vault>() {
-            // Debit means it's borrowed (debt)
-            if balance.direction.rawValue == 1 {  // Debit = 1
-                return balance.balance
-            }
-        }
-    }
-    return 0.0
-}
 
 access(all)
 fun setup() {
@@ -266,21 +237,11 @@ fun test_RebalanceYieldVaultScenario3B() {
 		equalAmounts(a:debtAfterYieldIncrease, b:expectedDebtValues[2], tolerance:0.01),
 		message: "Expected MOET debt after yield price increase to be \(expectedDebtValues[2]) but got \(debtAfterYieldIncrease)"
 	)
-	
-
-
-	        	// Check getYieldVaultBalance vs actual available balance before closing
+	// Check getYieldVaultBalance vs actual available balance before closing
 	let yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
 	
 	// Get the actual available balance from the position
-	let positionDetails = getPositionDetails(pid: 1, beFailed: false)
-	var positionFlowBalance = 0.0
-	for balance in positionDetails.balances {
-		if balance.vaultType == Type<@FlowToken.Vault>() && balance.direction == FlowALPv0.BalanceDirection.Credit {
-			positionFlowBalance = balance.balance
-			break
-		}
-	}
+	let positionFlowBalance = getFlowCollateralFromPosition(pid: pid)
 	
 	log("\n=== DIAGNOSTIC: YieldVault Balance vs Position Available ===")
 	log("getYieldVaultBalance() reports: \(yieldVaultBalance)")
@@ -293,5 +254,4 @@ fun test_RebalanceYieldVaultScenario3B() {
         
         log("\n=== TEST COMPLETE ===")
 }
-
 

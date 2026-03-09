@@ -23,22 +23,6 @@ access(all) let targetHealthFactor = 1.3
 
 access(all) var snapshot: UInt64 = 0
 
-// Helper function to get Flow collateral from position
-access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    for balance in positionDetails.balances {
-        if balance.vaultType == Type<@FlowToken.Vault>() {
-            // Credit means it's a deposit (collateral)
-            if balance.direction.rawValue == 0 {  // Credit = 0
-                return balance.balance
-            }
-        }
-    }
-    return 0.0
-}
-
-
-
 // Enhanced diagnostic precision tracking function with full call stack tracing
 access(all) fun performDiagnosticPrecisionTrace(
     yieldVaultID: UInt64,
@@ -48,16 +32,7 @@ access(all) fun performDiagnosticPrecisionTrace(
     userAddress: Address
 ) {
     // Get position ground truth
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    var flowAmount: UFix64 = 0.0
-    
-    for balance in positionDetails.balances {
-        if balance.vaultType.identifier == flowTokenIdentifier { 
-            if balance.direction.rawValue == 0 {  // Credit
-                flowAmount = balance.balance
-            }
-        }
-    }
+    let flowAmount = getFlowCollateralFromPosition(pid: pid)
     
     // Values at different layers
     let positionValue = flowAmount * 1.0  // Flow price = 1.0 in Scenario 2
@@ -287,4 +262,3 @@ fun test_RebalanceYieldVaultScenario2() {
 		message: "Expected user's Flow balance after rebalance to be more than zero but got \(flowBalanceAfter)"
 	)
 }
-
