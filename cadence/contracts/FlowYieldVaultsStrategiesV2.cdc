@@ -1057,15 +1057,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             )
         }
 
-        /// @TODO
-        /// implement moet to collateral swapper
-        // access(self) fun _createMoetToCollateralSwapper(
-        //     tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
-        //     uniqueID: DeFiActions.UniqueIdentifier
-        // ): SwapConnectors.MultiSwapper {
-        //     // Direct MOET -> underlying via AMM
-        // }
-
         access(self) fun _createYieldToCollateralSwapper(
             collateralConfig: FlowYieldVaultsStrategiesV2.CollateralConfig,
             yieldTokenEVMAddress: EVM.EVMAddress,
