@@ -88,13 +88,8 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         if !(self.yieldVaultRegistry[yieldVaultID] ?? false) {
             return
         }
-        var i = 0
-        while i < self.stuckScanOrder.length {
-            if self.stuckScanOrder[i] == yieldVaultID {
-                self.stuckScanOrder.remove(at: i)
-                break
-            }
-            i = i + 1
+        if let index = self.stuckScanOrder.firstIndex(of: yieldVaultID) {
+            let _ = self.stuckScanOrder.remove(at: index)
         }
         self.stuckScanOrder.append(yieldVaultID)
     }
@@ -121,13 +116,8 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         self.handlerCaps.remove(key: yieldVaultID)
         self.scheduleCaps.remove(key: yieldVaultID)
         let pending = self.pendingQueue.remove(key: yieldVaultID)
-        var i = 0
-        while i < self.stuckScanOrder.length {
-            if self.stuckScanOrder[i] == yieldVaultID {
-                self.stuckScanOrder.remove(at: i)
-                break
-            }
-            i = i + 1
+        if let index = self.stuckScanOrder.firstIndex(of: yieldVaultID) {
+            let _ = self.stuckScanOrder.remove(at: index)
         }
         emit YieldVaultUnregistered(yieldVaultID: yieldVaultID, wasInPendingQueue: pending != nil)
     }
@@ -186,11 +176,11 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
 
     /// Get paginated pending yield vault IDs
     /// @param page: The page number (0-indexed)
-    /// @param size: The page size (defaults to MAX_BATCH_SIZE if nil)
-    access(all) view fun getPendingYieldVaultIDsPaginated(page: Int, size: UInt?): [UInt64] {
-        let pageSize = size ?? Int(self.MAX_BATCH_SIZE)
+    /// @param size: The page size (defaults to MAX_BATCH_SIZE if 0)
+    access(all) view fun getPendingYieldVaultIDsPaginated(page: Int, size: UInt): [UInt64] {
+        let pageSize = size == 0 ? self.MAX_BATCH_SIZE : Int(size)
         let allPending = self.pendingQueue.keys
-        let startIndex = page * Int(pageSize)
+        let startIndex = page * pageSize
 
         if startIndex >= allPending.length {
             return []

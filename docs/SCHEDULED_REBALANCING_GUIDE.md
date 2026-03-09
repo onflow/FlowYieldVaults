@@ -161,10 +161,11 @@ flow scripts execute cadence/scripts/flow-yield-vaults/get_pending_count.cdc
 
 ### What It Does
 
-The Supervisor handles yield vaults that failed to self-schedule:
-- Processes bounded `pendingQueue` (MAX 50 yield vaults per run)
-- Schedules failed yield vaults
-- Self-reschedules if more work remains
+The Supervisor handles two recovery scenarios per run:
+1. **Stuck detection**: Scans up to `MAX_BATCH_SIZE` vault candidates using `getStuckScanCandidates()`, which returns vaults ordered least-recently-executed first (LRU). Stuck vaults are enqueued in `pendingQueue`.
+2. **Pending processing**: Seeds vaults from `pendingQueue` (up to `MAX_BATCH_SIZE` per run). Self-reschedules if more work remains.
+
+Each AutoBalancer reports back to the registry after every execution via `RegistryReportCallback`, which calls `reportExecution()` to move the vault to the end of the stuck-scan order. This ensures the Supervisor always prioritises the longest-idle vaults.
 
 ### When It's Needed
 
@@ -311,5 +312,5 @@ A: No, one schedule per yield vault. Cancel to reschedule.
 
 ---
 
-**Last Updated**: November 26, 2025  
-**Version**: 2.0.0
+**Last Updated**: March 9, 2026
+**Version**: 2.1.0

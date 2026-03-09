@@ -196,7 +196,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
             }
 
             // STEP 2: Process pending yield vaults - recover them via Schedule capability
-            let pendingYieldVaults = FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDsPaginated(page: 0, size: nil)
+            let pendingYieldVaults = FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDsPaginated(page: 0, size: UInt(FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE))
 
             for yieldVaultID in pendingYieldVaults {
                 // Get Schedule capability for this yield vault

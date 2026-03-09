@@ -45,6 +45,7 @@
   - `yieldVaultRegistry`: registered yield vault IDs
   - `handlerCaps`: direct capabilities to AutoBalancers (no wrapper)
   - `pendingQueue`: yield vaults needing (re)seeding (bounded by MAX_BATCH_SIZE=50)
+  - `stuckScanOrder`: LRU-ordered list of vault IDs for stuck detection; vaults call `reportExecution()` on each run to move themselves to the end, so the Supervisor always scans the longest-idle vaults first
   - `supervisorCap`: capability for Supervisor self-scheduling
 - **FlowYieldVaultsScheduler** provides:
   - `registerYieldVault()`: atomic registration + initial scheduling
@@ -154,31 +155,40 @@ fun executeTransaction(id: UInt64, data: AnyStruct?) {
 
 ### Supervisor Recovery (Bounded)
 
-The Supervisor handles failed schedules via a bounded pending queue:
+The Supervisor runs two steps per execution:
+
+**Step 1 – Stuck detection** (when `scanForStuck == true`):
+Fetches up to `MAX_BATCH_SIZE` candidates from `getStuckScanCandidates(limit:)`, which returns the LRU head of `stuckScanOrder`. Vaults that are stuck (recurring config set, no active schedule, overdue) are enqueued into `pendingQueue`.
+
+**Step 2 – Pending processing**:
+Seeds vaults from `pendingQueue` (up to `MAX_BATCH_SIZE` per run via `getPendingYieldVaultIDsPaginated(page: 0, size: nil)`).
 
   ```cadence
 access(FlowTransactionScheduler.Execute)
 fun executeTransaction(id: UInt64, data: AnyStruct?) {
-    // Process only pending yield vaults (MAX 50 per run)
-    let pendingYieldVaultIDs = FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDs()
-    
-    for yieldVaultID in pendingYieldVaults {
-        if manager.hasScheduled(yieldVaultID: yieldVaultID) {
-            FlowYieldVaultsSchedulerRegistry.dequeuePending(yieldVaultID: yieldVaultID)
-            continue
+    // STEP 1: scan least-recently-executed vaults for stuck detection
+    let candidates = FlowYieldVaultsSchedulerRegistry.getStuckScanCandidates(
+        limit: UInt(FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE))
+    for yieldVaultID in candidates {
+        if FlowYieldVaultsAutoBalancers.isStuckYieldVault(id: yieldVaultID) {
+            FlowYieldVaultsSchedulerRegistry.enqueuePending(yieldVaultID: yieldVaultID)
         }
-        
-        // Schedule and dequeue
-        let handlerCap = FlowYieldVaultsSchedulerRegistry.getHandlerCap(yieldVaultID: yieldVaultID)
-        // ... estimate fees, schedule, dequeue ...
     }
-    
-    // Self-reschedule if more pending work
+
+    // STEP 2: process pending queue (MAX_BATCH_SIZE per run)
+    let pendingYieldVaults = FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDsPaginated(page: 0, size: nil)
+    for yieldVaultID in pendingYieldVaults {
+        // ... estimate fees, schedule via scheduleCap, dequeue ...
+    }
+
+    // Self-reschedule if more pending work remains
     if FlowYieldVaultsSchedulerRegistry.getPendingCount() > 0 {
         // Schedule next Supervisor run
-      }
-  }
+    }
+}
   ```
+
+Each AutoBalancer sets a `RegistryReportCallback` at creation time. On every execution it calls `FlowYieldVaultsSchedulerRegistry.reportExecution(yieldVaultID:)`, which moves the vault to the tail of `stuckScanOrder`.
 
 ---
 
@@ -233,7 +243,7 @@ fun executeTransaction(id: UInt64, data: AnyStruct?) {
 | AutoBalancer | Manages Yield exposure, executes rebalance |
 | FlowALP Position | Manages collateral/debt health |
 | FlowYieldVaultsScheduler | Registration, atomic initial scheduling |
-| FlowYieldVaultsSchedulerRegistry | Stores registry, pending queue |
-| Supervisor | Recovery for failed schedules (bounded) |
+| FlowYieldVaultsSchedulerRegistry | Stores registry, pending queue, stuck-scan order |
+| Supervisor | Stuck detection (LRU scan) + pending queue recovery (bounded) |
 
-**Last Updated**: November 26, 2025
+**Last Updated**: March 9, 2026
