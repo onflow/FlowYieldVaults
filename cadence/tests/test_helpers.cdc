@@ -488,6 +488,16 @@ fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowALPv0.PositionDetails {
 }
 
 access(all)
+fun getPositionHealth(pid: UInt64, beFailed: Bool): UFix128 {
+    let res = _executeScript("../../lib/FlowALP/cadence/scripts/flow-alp/position_health.cdc",
+        [pid]
+    )
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+
+    return res.returnValue as! UFix128
+}
+
+access(all)
 fun getReserveBalanceForType(vaultIdentifier: String): UFix64 {
     let res = _executeScript(
         "../../lib/FlowALP/cadence/scripts/flow-alp/get_reserve_balance_for_type.cdc",
@@ -674,6 +684,14 @@ fun setMockSwapperLiquidityConnector(signer: Test.TestAccount, vaultStoragePath:
 
 access(all)
 fun equalAmounts(a: UFix64, b: UFix64, tolerance: UFix64): Bool {
+    if a > b {
+        return a - b <= tolerance
+    }
+    return b - a <= tolerance
+}
+
+access(all)
+fun equalAmounts128(a: UFix128, b: UFix128, tolerance: UFix128): Bool {
     if a > b {
         return a - b <= tolerance
     }

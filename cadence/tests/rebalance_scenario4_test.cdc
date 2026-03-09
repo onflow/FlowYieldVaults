@@ -19,6 +19,8 @@ access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
 access(all) var snapshot: UInt64 = 0
+access(all) let targetHealth: UFix128 = 1.3
+access(all) let solventHealthFloor: UFix128 = 1.0
 
 access(all)
 fun safeReset() {
@@ -221,14 +223,14 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	Test.assertEqual(1, yieldVaultIDs!.length)
 	log("[Scenario5] YieldVault ID: \(yieldVaultIDs![0]), position ID: \(pid)")
 
-	// Calculate initial health
-	let initialCollateralValue = fundingAmount * initialFlowPrice
-	let initialDebt = initialCollateralValue * 0.8 / 1.1  // CF=0.8, minHealth=1.1
-	let initialHealth = (fundingAmount * 0.8 * initialFlowPrice) / initialDebt
+	let initialCollateral = getFlowCollateralFromPosition(pid: pid)
+	let initialDebt = getMOETDebtFromPosition(pid: pid)
+	let initialHealth = getPositionHealth(pid: pid, beFailed: false)
+	let initialCollateralValue = initialCollateral * initialFlowPrice
 	log("[Scenario5] Initial state (FLOW=$\(initialFlowPrice), YT=$1.0)")
-	log("  Funding: \(fundingAmount) FLOW")
+	log("  Funding: \(initialCollateral) FLOW")
 	log("  Collateral value: $\(initialCollateralValue)")
-	log("  Expected debt: $\(initialDebt) MOET")
+	log("  Actual debt: $\(initialDebt) MOET")
 	log("  Initial health: \(initialHealth)")
 
 	// --- Phase 1: FLOW price drops from $1000 to $800 (20% drop) ---
@@ -238,10 +240,8 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	let debtBefore = getMOETDebtFromPosition(pid: pid)
 	let collateralBefore = getFlowCollateralFromPosition(pid: pid)
 
-	// Calculate health before rebalance (avoid division by zero)
-	let healthBeforeRebalance = debtBefore > 0.0
-		? (collateralBefore * 0.8 * flowPriceDecrease) / debtBefore
-		: 0.0
+	// Read health from FlowALP so this test tracks protocol configuration changes.
+	let healthBeforeRebalance = getPositionHealth(pid: pid, beFailed: false)
 	let collateralValueBefore = collateralBefore * flowPriceDecrease
 
 	log("[Scenario5] After price drop to $\(flowPriceDecrease) (BEFORE rebalance)")
@@ -251,14 +251,13 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	log("  MOET debt:       \(debtBefore) MOET")
 	log("  Health:          \(healthBeforeRebalance)")
 
-	// A 20% FLOW price drop from $1000 → $800 pushes health from targetHealth (1.3) down to ~1.04:
-	// below targetHealth (triggering rebalance) but still above 1.0 (not insolvent).
-	Test.assert(healthBeforeRebalance < 1.3,
-		message: "Expected health to drop below targetHealth (1.3) after 20% FLOW price drop, got \(healthBeforeRebalance)")
-	Test.assert(healthBeforeRebalance > 1.0,
-		message: "Expected health to remain above 1.0 after 20% FLOW price drop, got \(healthBeforeRebalance)")
+	// The price drop should push health below the rebalance target while keeping the position solvent.
+	Test.assert(healthBeforeRebalance < targetHealth,
+		message: "Expected health to drop below targetHealth (\(targetHealth)) after 20% FLOW price drop, got \(healthBeforeRebalance)")
+	Test.assert(healthBeforeRebalance > solventHealthFloor,
+		message: "Expected health to remain above \(solventHealthFloor) after 20% FLOW price drop, got \(healthBeforeRebalance)")
 
-	// Rebalance to restore health to targetHealth (1.3)
+	// Rebalance to restore health to the strategy target.
 	log("[Scenario5] Rebalancing position and yield vault...")
 	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
@@ -266,9 +265,7 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	let ytAfterFlowDrop = getAutoBalancerBalance(id: yieldVaultIDs![0])!
 	let debtAfterFlowDrop = getMOETDebtFromPosition(pid: pid)
 	let collateralAfterFlowDrop = getFlowCollateralFromPosition(pid: pid)
-	let healthAfterRebalance = debtAfterFlowDrop > 0.0
-		? (collateralAfterFlowDrop * 0.8 * flowPriceDecrease) / debtAfterFlowDrop
-		: 0.0
+	let healthAfterRebalance = getPositionHealth(pid: pid, beFailed: false)
 
 	log("[Scenario5] After rebalance (FLOW=$\(flowPriceDecrease), YT=$1.0)")
 	log("  YT balance:      \(ytAfterFlowDrop) YT")
@@ -284,11 +281,11 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	Test.assert(ytAfterFlowDrop < ytBefore,
 		message: "Expected AutoBalancer YT to decrease after using topUpSource to repay debt, got \(ytAfterFlowDrop) (was \(ytBefore))")
 	// Debt repayment only affects the MOET debit — FLOW collateral is untouched.
-    Test.assert(equalAmounts(a: collateralAfterFlowDrop, b: collateralBefore, tolerance: 0.000001),
+	Test.assert(equalAmounts(a: collateralAfterFlowDrop, b: collateralBefore, tolerance: 0.000001),
 		message: "Expected FLOW collateral to be unchanged after debt repayment, got \(collateralAfterFlowDrop) (was \(collateralBefore))")
-	// The AutoBalancer has sufficient YT to cover the full repayment needed to reach targetHealth (1.3).
-	Test.assert(equalAmounts(a: healthAfterRebalance, b: 1.3, tolerance: 0.00000001),
-		message: "Expected health to be fully restored to targetHealth (1.3) after rebalance, got \(healthAfterRebalance)")
+	// The AutoBalancer has sufficient YT to cover the full repayment needed to reach the target.
+	Test.assert(equalAmounts128(a: healthAfterRebalance, b: targetHealth, tolerance: 0.00000001),
+		message: "Expected health to be fully restored to targetHealth (\(targetHealth)) after rebalance, got \(healthAfterRebalance)")
 
 	// --- Phase 2: YT price rises from $1.0 to $1.5 ---
 	log("[Scenario5] Phase 2: YT price increases to $\(yieldPriceIncrease)")
@@ -299,9 +296,7 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	let ytAfterYTRise = getAutoBalancerBalance(id: yieldVaultIDs![0])!
 	let debtAfterYTRise = getMOETDebtFromPosition(pid: pid)
 	let collateralAfterYTRise = getFlowCollateralFromPosition(pid: pid)
-	let healthAfterYTRise = debtAfterYTRise > 0.0
-		? (collateralAfterYTRise * 0.8 * flowPriceDecrease) / debtAfterYTRise
-		: 0.0
+	let healthAfterYTRise = getPositionHealth(pid: pid, beFailed: false)
 
 	log("[Scenario5] After YT rise (FLOW=$\(flowPriceDecrease), YT=$\(yieldPriceIncrease))")
 	log("  YT balance:      \(ytAfterYTRise) YT")
