@@ -513,3 +513,44 @@ access(all) fun testCloseSyWFLOWvYieldVault_WETH() {
     Test.assert(vaultBalAfter.returnValue == nil, message: "WETH vault should no longer exist after close")
     log("WETH yield vault closed successfully")
 }
+
+/* =========================================================
+   Negative tests
+   ========================================================= */
+
+/// FLOW is the underlying / debt asset of syWFLOWvStrategy — it must be rejected as collateral.
+access(all) fun testCannotCreateYieldVaultWithFLOWAsCollateral() {
+    let flowVaultIdentifier = "A.1654653399040a61.FlowToken.Vault"
+    log("Attempting to create syWFLOWvStrategy vault with FLOW (debt asset) as collateral — expecting failure...")
+    let result = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        [syWFLOWvStrategyIdentifier, flowVaultIdentifier, 1.0],
+        [pyusd0User]
+    )
+    Test.expect(result, Test.beFailed())
+    log("Correctly rejected FLOW as collateral")
+}
+
+/// Depositing the wrong token type into an existing YieldVault must be rejected.
+/// Here wethUser owns both WETH and WBTC (set up in setup()).
+/// We create a WETH vault, then attempt to deposit WBTC into it — the strategy pre-condition should panic.
+access(all) fun testCannotDepositWrongTokenToYieldVault() {
+    log("Creating a fresh WETH vault for wrong-token deposit test...")
+    let createResult = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        [syWFLOWvStrategyIdentifier, wethVaultIdentifier, 0.001],
+        [wethUser]
+    )
+    Test.expect(createResult, Test.beSucceeded())
+    let freshWethVaultID = _latestVaultID(wethUser)
+    log("Created WETH vault ID: ".concat(freshWethVaultID.toString()).concat(" — now attempting to deposit WBTC into it..."))
+
+    // Attempt to deposit WBTC (wrong type) into the WETH vault — must fail
+    let depositResult = _executeTransactionFile(
+        "transactions/deposit_wrong_token.cdc",
+        [freshWethVaultID, wbtcVaultIdentifier, 0.00001],
+        [wethUser]
+    )
+    Test.expect(depositResult, Test.beFailed())
+    log("Correctly rejected wrong-token deposit (WBTC into WETH vault)")
+}
