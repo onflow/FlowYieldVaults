@@ -495,7 +495,7 @@ access(all) contract MockStrategies {
     }
 
     init() {
-        self.IssuerStoragePath = StoragePath(identifier: "MockStrategyComposerIssuer_\(self.account.address)")!
+        self.IssuerStoragePath = StoragePath(identifier: "MockStrategiesComposerIssuer_\(self.account.address)")!
 
         let initialCollateralType = Type<@FlowToken.Vault>()
 
