@@ -85,7 +85,7 @@ The AutoBalancer self-schedules each subsequent execution at creation and after 
 
 | Parameter | Value | Notes |
 |-----------|-------|-------|
-| Minimum deposit | ⚠️ TBD | No contract-enforced minimum found |
+| Minimum deposit | ⚠️ ??? | No contract-enforced minimum found |
 | Maximum deposit capacity | 1,000,000 FLOW (default) | Governance-configurable cap |
 | Deposit rate limit | 1,000,000 FLOW (default) | Per-block rate limiting via FlowALP |
 
@@ -98,8 +98,8 @@ The AutoBalancer self-schedules each subsequent execution at creation and after 
 | Scheduling / rebalancing fee | Paid in FLOW from AutoBalancer fee source | Min fallback: governance-set |
 | Protocol / interest fee | Dynamic (utilization-based via FlowALP) | |
 | Insurance reserve | 0.1% of credit balance | Taken before distributing credit interest |
-| Management / performance fee | ⚠️ TBD | Confirm if any protocol-level fee applies |
-| Withdrawal fee | ⚠️ TBD | Not observed in contracts — confirm |
+| Management / performance fee | ⚠️ ??? | Confirm if any protocol-level fee applies |
+| Withdrawal fee | ⚠️ ??? | Not observed in contracts — confirm |
 
 ---
 
