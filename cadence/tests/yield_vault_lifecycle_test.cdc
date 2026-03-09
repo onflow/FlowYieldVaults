@@ -110,6 +110,22 @@ fun testLifecycle() {
 
     log("✅ YieldVault created with ID: \(yieldVaultID)")
 
+    // Validate minimal YieldVault views
+    let info = getYieldVaultInfoView(address: user.address, yieldVaultID: yieldVaultID)
+    Test.assert(info != nil, message: "Expected YieldVaultInfo view to resolve")
+    Test.assertEqual(yieldVaultID, info!.id)
+    Test.assertEqual(flowTokenIdentifier, info!.vaultTypeIdentifier)
+    Test.assertEqual(strategyIdentifier, info!.strategyTypeIdentifier)
+
+    let balanceView = getYieldVaultBalanceView(address: user.address, yieldVaultID: yieldVaultID)
+    Test.assert(balanceView != nil, message: "Expected YieldVaultBalance view to resolve")
+    Test.assertEqual(flowTokenIdentifier, balanceView!.tokenTypeIdentifier)
+    Test.assertEqual(getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultID)!, balanceView!.availableBalance)
+
+    let displayView = getYieldVaultDisplayView(address: user.address, yieldVaultID: yieldVaultID)
+    Test.assert(displayView != nil, message: "Expected MetadataViews.Display view to resolve")
+    Test.assertEqual("Yield Vault #\(yieldVaultID)", displayView!.name)
+
     let addedToManagerEvents = Test.eventsOfType(Type<FlowYieldVaults.AddedToManager>())
     Test.assert(addedToManagerEvents.length > 0, message: "Expected at least 1 FlowYieldVaults.AddedToManager event but found none")
     let addedToManagerEvent = addedToManagerEvents[addedToManagerEvents.length - 1] as! FlowYieldVaults.AddedToManager
