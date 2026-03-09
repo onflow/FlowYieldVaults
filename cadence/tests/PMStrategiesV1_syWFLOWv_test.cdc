@@ -8,8 +8,6 @@ import "FlowYieldVaults"
 import "PMStrategiesV1"
 import "FlowYieldVaultsClosedBeta"
 
-import "test_helpers.cdc"
-
 /// Fork test for PMStrategiesV1 syWFLOWv strategy — validates the full YieldVault lifecycle
 /// (create, deposit, withdraw, close) against real mainnet state.
 ///
@@ -56,6 +54,11 @@ access(all) var syWFLOWvYieldVaultID: UInt64 = 0
 /* --- Test Helpers --- */
 
 access(all)
+fun _executeScript(_ path: String, _ args: [AnyStruct]): Test.ScriptResult {
+    return Test.executeScript(Test.readFile(path), args)
+}
+
+access(all)
 fun _executeTransactionFile(_ path: String, _ args: [AnyStruct], _ signers: [Test.TestAccount]): Test.TransactionResult {
     let txn = Test.Transaction(
         code: Test.readFile(path),
@@ -64,6 +67,14 @@ fun _executeTransactionFile(_ path: String, _ args: [AnyStruct], _ signers: [Tes
         arguments: args
     )
     return Test.executeTransaction(txn)
+}
+
+access(all)
+fun equalAmounts(a: UFix64, b: UFix64, tolerance: UFix64): Bool {
+    if a > b {
+        return a - b <= tolerance
+    }
+    return b - a <= tolerance
 }
 
 /* --- Setup --- */
