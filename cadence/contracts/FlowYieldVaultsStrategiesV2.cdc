@@ -625,8 +625,30 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
         /// Withdraws up to the max amount, returning the withdrawn Vault. If the requested token type is unsupported,
         /// an empty Vault is returned.
+        ///
+        /// For the PYUSD0 pre-swap case: the internal source type is MOET but the external collateral
+        /// type is PYUSD0. We convert MOET→PYUSD0 via the moetToCollateralSwapper.
         access(FungibleToken.Withdraw) fun withdraw(maxAmount: UFix64, ofToken: Type): @{FungibleToken.Vault} {
-            if ofToken != self.source.getSourceType() {
+            let effectiveSourceType = self.source.getSourceType()
+            if ofToken != effectiveSourceType {
+                // For pre-swap case: ofToken is external collateral (e.g. PYUSD0), source is MOET.
+                if let id = self.uniqueID {
+                    if let originalType = FlowYieldVaultsStrategiesV2._getOriginalCollateralType(id.id) {
+                        if ofToken == originalType {
+                            if let moetToOrigSwapper = FlowYieldVaultsStrategiesV2._getMoetToCollateralSwapper(id.id) {
+                                // Quote MOET in to get maxAmount PYUSD0 out
+                                let quote = moetToOrigSwapper.quoteIn(forDesired: maxAmount, reverse: false)
+                                if quote.inAmount > 0.0 {
+                                    let moetVault <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
+                                    if moetVault.balance > 0.0 {
+                                        return <- moetToOrigSwapper.swap(quote: nil, inVault: <-moetVault)
+                                    }
+                                    Burner.burn(<-moetVault)
+                                }
+                            }
+                        }
+                    }
+                }
                 return <- DeFiActionsUtils.getEmptyVault(ofToken)
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
@@ -1608,13 +1630,19 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     balancerIO.autoBalancer.setSink(positionDebtSwapSinkPre, updateSinkID: true)
                     balancerIO.autoBalancer.setSource(positionDebtSwapSourcePre, updateSourceID: true)
 
-                    // FLOW→MOET: converts FLOW dust back to MOET (internal collateral) in closePosition
+                    // FLOW→MOET: converts FLOW dust back to MOET (internal collateral) in closePosition.
+                    // Path: FLOW → collateral (debtToCollateral) → MOET (pre-swap reversed hop).
+                    // e.g. for PYUSD0: WFLOW→(fee 500)→PYUSD0→(fee 100)→MOET (2-hop).
+                    var flowToMoetPath = collateralConfig.debtToCollateralUniV3AddressPath
+                    flowToMoetPath.append(preswapCfg.collateralToMoetAddressPath[preswapCfg.collateralToMoetAddressPath.length - 1])
+                    var flowToMoetFees = collateralConfig.debtToCollateralUniV3FeePath
+                    flowToMoetFees.append(preswapCfg.collateralToMoetFeePath[preswapCfg.collateralToMoetFeePath.length - 1])
                     let flowToMoet = UniswapV3SwapConnectors.Swapper(
                         factoryAddress: FlowYieldVaultsStrategiesV2.univ3FactoryEVMAddress,
                         routerAddress: FlowYieldVaultsStrategiesV2.univ3RouterEVMAddress,
                         quoterAddress: FlowYieldVaultsStrategiesV2.univ3QuoterEVMAddress,
-                        tokenPath: collateralConfig.debtToCollateralUniV3AddressPath,
-                        feePath: collateralConfig.debtToCollateralUniV3FeePath,
+                        tokenPath: flowToMoetPath,
+                        feePath: flowToMoetFees,
                         inVault: tokens.underlying4626AssetType,   // FLOW
                         outVault: tokens.moetTokenType,            // MOET
                         coaCapability: FlowYieldVaultsStrategiesV2._getCOACapability(),
