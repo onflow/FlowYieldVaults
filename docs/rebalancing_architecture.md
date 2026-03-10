@@ -44,14 +44,12 @@
 - **FlowYieldVaultsSchedulerRegistry** stores:
   - `yieldVaultRegistry`: registered yield vault IDs
   - `handlerCaps`: direct capabilities to AutoBalancers (no wrapper)
-  - `pendingQueue`: yield vaults needing (re)seeding (bounded by MAX_BATCH_SIZE=50)
-  - `stuckScanOrder`: LRU-ordered list of vault IDs for stuck detection; vaults call `reportExecution()` on each run to move themselves to the end, so the Supervisor always scans the longest-idle vaults first
+  - `pendingQueue`: yield vaults needing (re)seeding; processing is bounded by `MAX_BATCH_SIZE = 5` per Supervisor run
+  - `stuckScanOrder`: LRU-ordered list of vault IDs for stuck detection; vaults call `reportExecution()` on each run to move themselves to the most-recently-executed end, so the Supervisor always scans the longest-idle vaults first
   - `supervisorCap`: capability for Supervisor self-scheduling
-- **FlowYieldVaultsScheduler** provides:
-  - `registerYieldVault()`: atomic registration + initial scheduling
-  - `unregisterYieldVault()`: cleanup and fee refund
-  - `SchedulerManager`: tracks scheduled transactions
+- **FlowYieldVaultsSchedulerV1** provides:
   - `Supervisor`: recovery handler for failed schedules
+  - Scheduling cost estimation and Supervisor configuration helpers
 
 ---
 
@@ -64,7 +62,7 @@ Inside `MockStrategies.TracerStrategyComposer.createStrategy(...)`:
   - Oracle: `MockOracle.PriceOracle()`
   - Vault type: `YieldToken.Vault`
   - Thresholds: `lowerThreshold = 0.95`, `upperThreshold = 1.05`
-  - Recurring config: `nil` (scheduling handled by FlowYieldVaultsScheduler)
+  - Recurring config: non-`nil` (enables native AutoBalancer self-scheduling)
    - Saved via `FlowYieldVaultsAutoBalancers._initNewAutoBalancer(...)`, which:
   - Stores the AutoBalancer
   - Issues public capability
@@ -111,7 +109,7 @@ Inside `MockStrategies.TracerStrategyComposer.createStrategy(...)`:
 The capability is issued directly to the AutoBalancer at its storage path:
 
    ```cadence
-// In registerYieldVault():
+// In _initNewAutoBalancer():
 let abPath = FlowYieldVaultsAutoBalancers.deriveAutoBalancerPath(id: yieldVaultID, storage: true) as! StoragePath
 let handlerCap = self.account.capabilities.storage
     .issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(abPath)
@@ -122,16 +120,22 @@ let handlerCap = self.account.capabilities.storage
 When `_initNewAutoBalancer()` is called:
 
    ```cadence
-// Register with scheduler and schedule first execution atomically
+// Register with the registry and schedule first execution atomically
 // This panics if scheduling fails, reverting AutoBalancer creation
-FlowYieldVaultsScheduler.registerYieldVault(yieldVaultID: uniqueID.id)
+FlowYieldVaultsSchedulerRegistry.register(
+    yieldVaultID: uniqueID.id,
+    handlerCap: handlerCap,
+    scheduleCap: scheduleCap
+)
+autoBalancerRef.scheduleNextRebalance(whileExecuting: nil)
 ```
 
-`registerYieldVault()` atomically:
-1. Issues capability to AutoBalancer
-2. Registers in FlowYieldVaultsSchedulerRegistry
-3. Schedules first execution via SchedulerManager
-4. If any step fails, entire transaction reverts
+`_initNewAutoBalancer()` atomically:
+1. Issues capabilities to the AutoBalancer
+2. Registers the vault in `FlowYieldVaultsSchedulerRegistry`
+3. Sets the shared execution callback used to report successful runs
+4. Schedules the first execution directly on the AutoBalancer
+5. If any step fails, the entire transaction reverts
 
 ### Self-Scheduling AutoBalancers
 
@@ -158,10 +162,10 @@ fun executeTransaction(id: UInt64, data: AnyStruct?) {
 The Supervisor runs two steps per execution:
 
 **Step 1 – Stuck detection** (when `scanForStuck == true`):
-Fetches up to `MAX_BATCH_SIZE` candidates from `getStuckScanCandidates(limit:)`, which returns the LRU head of `stuckScanOrder`. Vaults that are stuck (recurring config set, no active schedule, overdue) are enqueued into `pendingQueue`.
+Fetches up to `MAX_BATCH_SIZE` candidates from `getStuckScanCandidates(limit:)`, which returns vault IDs starting from the least-recently-executed tail of `stuckScanOrder`. Vaults that are stuck (recurring config set, no active schedule, overdue) are enqueued into `pendingQueue`.
 
 **Step 2 – Pending processing**:
-Seeds vaults from `pendingQueue` (up to `MAX_BATCH_SIZE` per run via `getPendingYieldVaultIDsPaginated(page: 0, size: nil)`).
+Seeds vaults from `pendingQueue` (up to `MAX_BATCH_SIZE` per run via `getPendingYieldVaultIDsPaginated(page: 0, size: UInt(MAX_BATCH_SIZE))`).
 
   ```cadence
 access(FlowTransactionScheduler.Execute)
@@ -176,19 +180,22 @@ fun executeTransaction(id: UInt64, data: AnyStruct?) {
     }
 
     // STEP 2: process pending queue (MAX_BATCH_SIZE per run)
-    let pendingYieldVaults = FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDsPaginated(page: 0, size: nil)
+    let pendingYieldVaults = FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDsPaginated(
+        page: 0,
+        size: UInt(FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE)
+    )
     for yieldVaultID in pendingYieldVaults {
-        // ... estimate fees, schedule via scheduleCap, dequeue ...
+        // ... schedule via scheduleCap, dequeue ...
     }
 
-    // Self-reschedule if more pending work remains
-    if FlowYieldVaultsSchedulerRegistry.getPendingCount() > 0 {
+    // Self-reschedule if recurringInterval was provided
+    if recurringInterval != nil {
         // Schedule next Supervisor run
     }
 }
   ```
 
-Each AutoBalancer sets a `RegistryReportCallback` at creation time. On every execution it calls `FlowYieldVaultsSchedulerRegistry.reportExecution(yieldVaultID:)`, which moves the vault to the tail of `stuckScanOrder`.
+Each AutoBalancer sets a shared `RegistryReportCallback` capability at creation time. On every execution it calls `FlowYieldVaultsSchedulerRegistry.reportExecution(yieldVaultID:)`, which moves the vault to the head of `stuckScanOrder` so the least-recently-executed tail remains the next stuck-scan priority.
 
 ---
 
