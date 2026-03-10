@@ -19,8 +19,8 @@ access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
 access(all) var snapshot: UInt64 = 0
-access(all) let targetHealth: UFix128 = 1.3
-access(all) let solventHealthFloor: UFix128 = 1.0
+access(all) let TARGET_HEALTH: UFix128 = 1.3
+access(all) let SOLVENT_HEALTH_FLOOR: UFix128 = 1.0
 
 access(all)
 fun safeReset() {
@@ -252,10 +252,10 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	log("  Health:          \(healthBeforeRebalance)")
 
 	// The price drop should push health below the rebalance target while keeping the position solvent.
-	Test.assert(healthBeforeRebalance < targetHealth,
-		message: "Expected health to drop below targetHealth (\(targetHealth)) after 20% FLOW price drop, got \(healthBeforeRebalance)")
-	Test.assert(healthBeforeRebalance > solventHealthFloor,
-		message: "Expected health to remain above \(solventHealthFloor) after 20% FLOW price drop, got \(healthBeforeRebalance)")
+	Test.assert(healthBeforeRebalance < TARGET_HEALTH,
+		message: "Expected health to drop below TARGET_HEALTH (\(TARGET_HEALTH)) after 20% FLOW price drop, got \(healthBeforeRebalance)")
+	Test.assert(healthBeforeRebalance > SOLVENT_HEALTH_FLOOR,
+		message: "Expected health to remain above \(SOLVENT_HEALTH_FLOOR) after 20% FLOW price drop, got \(healthBeforeRebalance)")
 
 	// Rebalance to restore health to the strategy target.
 	log("[Scenario5] Rebalancing position and yield vault...")
@@ -274,7 +274,7 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	log("  MOET debt:       \(debtAfterFlowDrop) MOET")
 	log("  Health:          \(healthAfterRebalance)")
 
-	// The position was undercollateralized (health < targetHealth) after the FLOW price drop,
+	// The position was undercollateralized (health < TARGET_HEALTH) after the FLOW price drop,
 	// so the topUpSource (AutoBalancer YT → MOET) should have repaid some debt.
 	Test.assert(debtAfterFlowDrop < debtBefore,
 		message: "Expected MOET debt to decrease after rebalancing undercollateralized position, got \(debtAfterFlowDrop) (was \(debtBefore))")
@@ -284,8 +284,8 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	Test.assert(equalAmounts(a: collateralAfterFlowDrop, b: collateralBefore, tolerance: 0.000001),
 		message: "Expected FLOW collateral to be unchanged after debt repayment, got \(collateralAfterFlowDrop) (was \(collateralBefore))")
 	// The AutoBalancer has sufficient YT to cover the full repayment needed to reach the target.
-	Test.assert(equalAmounts128(a: healthAfterRebalance, b: targetHealth, tolerance: 0.00000001),
-		message: "Expected health to be fully restored to targetHealth (\(targetHealth)) after rebalance, got \(healthAfterRebalance)")
+	Test.assert(equalAmounts128(a: healthAfterRebalance, b: TARGET_HEALTH, tolerance: 0.00000001),
+		message: "Expected health to be fully restored to TARGET_HEALTH (\(TARGET_HEALTH)) after rebalance, got \(healthAfterRebalance)")
 
 	// --- Phase 2: YT price rises from $1.0 to $1.5 ---
 	log("[Scenario5] Phase 2: YT price increases to $\(yieldPriceIncrease)")
