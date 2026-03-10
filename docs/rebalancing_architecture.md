@@ -19,9 +19,9 @@
   - Storing AutoBalancer resources in the FlowYieldVaults account (per YieldVault/UniqueID)
   - Publishing public/private capabilities
   - Setting the AutoBalancer's **self capability** (for scheduling)
-  - **Registering/unregistering with FlowYieldVaultsScheduler**
+  - **Registering/unregistering with FlowYieldVaultsSchedulerRegistry**
 - On `_initNewAutoBalancer()`: registers yield vault and schedules first execution atomically
-- On `_cleanupAutoBalancer()`: unregisters and cancels pending schedules
+- On `_cleanupAutoBalancer()`: unregisters the vault, deletes AutoBalancer capability controllers, and burns the AutoBalancer
 
 ### DeFiActions.AutoBalancer (from FlowActions)
 - Holds a vault of some asset (here: `YieldToken`)
@@ -40,7 +40,7 @@
   - If undercollateralized and there is a `topUpSource`, pulls extra collateral
   - If overcollateralized and there is a `drawDownSink`, withdraws collateral
 
-### FlowYieldVaultsScheduler + FlowYieldVaultsSchedulerRegistry
+### FlowYieldVaultsSchedulerV1 + FlowYieldVaultsSchedulerRegistry
 - **FlowYieldVaultsSchedulerRegistry** stores:
   - `yieldVaultRegistry`: registered yield vault IDs
   - `handlerCaps`: direct capabilities to AutoBalancers (no wrapper)
@@ -249,7 +249,7 @@ Each AutoBalancer sets a shared `RegistryReportCallback` capability at creation 
 | TracerStrategy | Wires AutoBalancer <-> FlowALP |
 | AutoBalancer | Manages Yield exposure, executes rebalance |
 | FlowALP Position | Manages collateral/debt health |
-| FlowYieldVaultsScheduler | Registration, atomic initial scheduling |
+| FlowYieldVaultsSchedulerV1 | Supervisor recovery, fee estimation, configuration |
 | FlowYieldVaultsSchedulerRegistry | Stores registry, pending queue, stuck-scan order |
 | Supervisor | Stuck detection (LRU scan) + pending queue recovery (bounded) |
 
