@@ -258,9 +258,9 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
             return []
         }
 
-        let endIndex = startIndex + Int(pageSize) > allPending.length
+        let endIndex = startIndex + pageSize > allPending.length
             ? allPending.length
-            : startIndex + Int(pageSize)
+            : startIndex + pageSize
 
         return allPending.slice(from: startIndex, upTo: endIndex)
     }

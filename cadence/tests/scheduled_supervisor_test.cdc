@@ -1014,7 +1014,7 @@ fun testSupervisorHandlesManyStuckVaults() {
         Test.commitBlock()
         run = run + 1
     }
-    log("testSupervisorHandlesManyStuckVaults: ran \(supervisorRunsNeeded + 10).toString()) supervisor ticks")
+    log("testSupervisorHandlesManyStuckVaults: ran \((supervisorRunsNeeded + 10).toString()) supervisor ticks")
 
     let recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
     Test.assert(recoveredEvents.length >= n, message: "expected at least \(n.toString()) recovered, got \(recoveredEvents.length.toString())")
