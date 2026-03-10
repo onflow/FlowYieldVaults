@@ -45,9 +45,16 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
     /// Partitioned config map. Each key is a partition name; each value is a typed nested map keyed by
     /// strategy UniqueIdentifier ID (UInt64). Current partitions:
-    ///   "yieldToMoetSwappers"      → {UInt64: {DeFiActions.Swapper}}
-    ///   "debtToCollateralSwappers" → {UInt64: {DeFiActions.Swapper}}
-    ///   "closedPositions"          → {UInt64: Bool}
+    ///   "yieldToMoetSwappers"        → {UInt64: {DeFiActions.Swapper}}
+    ///   "debtToCollateralSwappers"   → {UInt64: {DeFiActions.Swapper}}
+    ///   "collateralToDebtSwappers"   → {UInt64: {DeFiActions.Swapper}}
+    ///   "closedPositions"            → {UInt64: Bool}
+    ///   "syWFLOWvDebtTokenTypes"     → {UInt64: Type}
+    ///   "moreERC4626Configs"         → {Type: {Type: {Type: MoreERC4626CollateralConfig}}}
+    ///   "moetPreswapConfigs"         → {Type: {Type: MoetPreswapConfig}}
+    ///   "originalCollateralTypes"    → {UInt64: Type}
+    ///   "collateralPreSwappers"      → {UInt64: {DeFiActions.Swapper}}
+    ///   "moetToCollateralSwappers"   → {UInt64: {DeFiActions.Swapper}}
     access(contract) let config: {String: AnyStruct}
 
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
@@ -145,6 +152,35 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
     }
 
+    /// Configuration for pre-swapping a stablecoin collateral to MOET before depositing into
+    /// FlowALP. Required when the collateral type is not directly supported by FlowALP (e.g.
+    /// PYUSD0 must be swapped to MOET since FlowALP only supports MOET as its stablecoin).
+    ///
+    /// The path is collateral → MOET (e.g. [PYUSD0_addr, MOET_addr] for a 1-hop swap, or
+    /// [PYUSD0_addr, WFLOW_addr, MOET_addr] for a 2-hop swap). The reverse (MOET→collateral)
+    /// is derived automatically by reversing both arrays.
+    access(all) struct MoetPreswapConfig {
+        /// Full UniV3 swap path: collateral EVM address → ... → MOET EVM address.
+        /// First element is the collateral, last element must be MOET.
+        access(all) let collateralToMoetAddressPath: [EVM.EVMAddress]
+        /// UniV3 fee tiers for each hop (length must equal addressPath.length - 1).
+        access(all) let collateralToMoetFeePath: [UInt32]
+
+        init(
+            collateralToMoetAddressPath: [EVM.EVMAddress],
+            collateralToMoetFeePath: [UInt32]
+        ) {
+            pre {
+                collateralToMoetAddressPath.length > 1:
+                    "MoetPreswapConfig: path must have at least 2 elements (collateral + MOET)"
+                collateralToMoetFeePath.length == collateralToMoetAddressPath.length - 1:
+                    "MoetPreswapConfig: fee path length must equal address path length - 1"
+            }
+            self.collateralToMoetAddressPath = collateralToMoetAddressPath
+            self.collateralToMoetFeePath = collateralToMoetFeePath
+        }
+    }
+
     /// Collateral configuration for strategies that borrow the vault's underlying asset directly,
     /// using a standard ERC4626 deposit for the forward path (underlying → yield token) and a
     /// UniV3 AMM swap for the reverse path (yield token → underlying). This applies to "More"
@@ -204,19 +240,58 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         // access(all) view fun isSupportedCollateralType(_ type: Type): Bool
 
         access(all) view fun getSupportedCollateralTypes(): {Type: Bool} {
+            // If this strategy was initialized with a stablecoin pre-swap (e.g. PYUSD0→MOET),
+            // expose the original (external) collateral type to callers, not the internal MOET type.
+            if let id = self.uniqueID {
+                if let originalType = FlowYieldVaultsStrategiesV2._getOriginalCollateralType(id.id) {
+                    return { originalType: true }
+                }
+            }
             return { self.sink.getSinkType(): true }
         }
         /// Returns the amount available for withdrawal via the inner Source
         access(all) fun availableBalance(ofToken: Type): UFix64 {
             if FlowYieldVaultsStrategiesV2._isPositionClosed(self.uniqueID) { return 0.0 }
-            return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
+            // If stablecoin pre-swap is in effect, match against the original (external) collateral type.
+            // MOET and PYUSD0 are both stablecoins with approximately equal value (1:1), so the MOET
+            // balance is a reasonable approximation of the PYUSD0-denominated collateral balance.
+            var effectiveSourceType = self.source.getSourceType()
+            if let id = self.uniqueID {
+                if let originalType = FlowYieldVaultsStrategiesV2._getOriginalCollateralType(id.id) {
+                    effectiveSourceType = originalType
+                }
+            }
+            return ofToken == effectiveSourceType ? self.source.minimumAvailable() : 0.0
         }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference.
-        /// Only the single configured collateral type is accepted — one collateral type per position.
+        /// Accepts both the internal collateral type (MOET) and, when a pre-swap is configured,
+        /// the original external collateral type (e.g. PYUSD0) — which is swapped to MOET first.
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
             pre {
-                from.getType() == self.sink.getSinkType():
+                from.getType() == self.sink.getSinkType()
+                    || (self.uniqueID != nil && FlowYieldVaultsStrategiesV2._getOriginalCollateralType(self.uniqueID!.id) == from.getType()):
                     "FUSDEVStrategy position only accepts \(self.sink.getSinkType().identifier) as collateral, got \(from.getType().identifier)"
+            }
+            // If depositing the original stablecoin collateral (e.g. PYUSD0), pre-swap to MOET
+            if let id = self.uniqueID {
+                if from.getType() != self.sink.getSinkType() {
+                    if let preSwapper = FlowYieldVaultsStrategiesV2._getCollateralPreSwapper(id.id) {
+                        let incoming <- from.withdraw(amount: from.balance)
+                        if incoming.balance > 0.0 {
+                            let quote = preSwapper.quoteOut(forProvided: incoming.balance, reverse: false)
+                            if quote.outAmount > 0.0 {
+                                let moetVault <- preSwapper.swap(quote: quote, inVault: <-incoming)
+                                self.sink.depositCapacity(from: &moetVault as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
+                                Burner.burn(<-moetVault)
+                            } else {
+                                Burner.burn(<-incoming)
+                            }
+                        } else {
+                            Burner.burn(<-incoming)
+                        }
+                        return
+                    }
+                }
             }
             self.sink.depositCapacity(from: from)
         }
@@ -281,8 +356,24 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
                     return <- DeFiActionsUtils.getEmptyVault(collateralType)
                 }
-                let collateralVault <- resultVaults.removeFirst()
+                var collateralVault <- resultVaults.removeFirst()
                 destroy resultVaults
+                // Convert internal collateral (MOET) → external collateral (e.g. PYUSD0) if needed
+                if let id = self.uniqueID {
+                    if let moetToOrigSwapper = FlowYieldVaultsStrategiesV2._getMoetToCollateralSwapper(id.id) {
+                        if collateralVault.balance > 0.0 {
+                            let quote = moetToOrigSwapper.quoteOut(forProvided: collateralVault.balance, reverse: false)
+                            if quote.outAmount > 0.0 {
+                                let extVault <- moetToOrigSwapper.swap(quote: quote, inVault: <-collateralVault)
+                                FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
+                                return <- extVault
+                            }
+                        }
+                        Burner.burn(<-collateralVault)
+                        FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
+                        return <- DeFiActionsUtils.getEmptyVault(collateralType)
+                    }
+                }
                 FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
                 return <- collateralVault
             }
@@ -331,6 +422,21 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                             }
                         } else {
                             Burner.burn(<-extraCollateral)
+                        }
+                    }
+                } else {
+                    if let id = self.uniqueID {
+                        if FlowYieldVaultsStrategiesV2._getOriginalCollateralType(id.id) != nil {
+                            // Stablecoin pre-swap case: position collateral IS MOET (same as debt token).
+                            // Pull MOET directly from the collateral source to pre-reduce debt — no swap needed.
+                            let shortfall = totalDebtAmount - expectedMOET
+                            let buffered = shortfall + shortfall / 100.0
+                            let extraMOET <- self.source.withdrawAvailable(maxAmount: buffered)
+                            if extraMOET.balance > 0.0 {
+                                self.position.deposit(from: <-extraMOET)
+                            } else {
+                                Burner.burn(<-extraMOET)
+                            }
                         }
                     }
                 }
@@ -386,6 +492,13 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         access(contract) fun burnCallback() {
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
             FlowYieldVaultsStrategiesV2._cleanupPositionClosed(self.uniqueID)
+            // Clean up stablecoin pre-swap config entries (no-op if not set)
+            if let id = self.uniqueID {
+                FlowYieldVaultsStrategiesV2._removeOriginalCollateralType(id.id)
+                FlowYieldVaultsStrategiesV2._removeCollateralPreSwapper(id.id)
+                FlowYieldVaultsStrategiesV2._removeMoetToCollateralSwapper(id.id)
+                FlowYieldVaultsStrategiesV2._removeDebtToCollateralSwapper(id.id)
+            }
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
             return DeFiActions.ComponentInfo(
@@ -447,18 +560,36 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         // access(all) view fun isSupportedCollateralType(_ type: Type): Bool
 
         access(all) view fun getSupportedCollateralTypes(): {Type: Bool} {
+            // If this strategy was initialized with a stablecoin pre-swap (e.g. PYUSD0→MOET),
+            // expose the original (external) collateral type to callers, not the internal MOET type.
+            if let id = self.uniqueID {
+                if let originalType = FlowYieldVaultsStrategiesV2._getOriginalCollateralType(id.id) {
+                    return { originalType: true }
+                }
+            }
             return { self.sink.getSinkType(): true }
         }
         /// Returns the amount available for withdrawal via the inner Source
         access(all) fun availableBalance(ofToken: Type): UFix64 {
             if self.positionClosed { return 0.0 }
-            return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
+            // If stablecoin pre-swap is in effect, match against the original (external) collateral type.
+            // MOET and the stablecoin collateral (e.g. PYUSD0) have approximately equal value (1:1).
+            var effectiveSourceType = self.source.getSourceType()
+            if let id = self.uniqueID {
+                if let originalType = FlowYieldVaultsStrategiesV2._getOriginalCollateralType(id.id) {
+                    effectiveSourceType = originalType
+                }
+            }
+            return ofToken == effectiveSourceType ? self.source.minimumAvailable() : 0.0
         }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference.
+        /// Accepts both the internal collateral type and, when a pre-swap is configured, the original
+        /// external collateral type (e.g. PYUSD0) — which is swapped to MOET first.
         /// FLOW cannot be used as collateral — it is the vault's underlying asset (the debt token).
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
             pre {
-                from.getType() == self.sink.getSinkType():
+                from.getType() == self.sink.getSinkType()
+                    || (self.uniqueID != nil && FlowYieldVaultsStrategiesV2._getOriginalCollateralType(self.uniqueID!.id) == from.getType()):
                     "syWFLOWvStrategy position only accepts \(self.sink.getSinkType().identifier) as collateral, got \(from.getType().identifier)"
             }
             // Reject the debt token (FLOW) as collateral — looked up from contract-level config
@@ -468,6 +599,27 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     debtTokenType == nil || from.getType() != debtTokenType!,
                     message: "syWFLOWvStrategy: FLOW cannot be used as collateral — it is the vault's underlying asset"
                 )
+            }
+            // If depositing the original stablecoin collateral (e.g. PYUSD0), pre-swap to MOET
+            if let id = self.uniqueID {
+                if from.getType() != self.sink.getSinkType() {
+                    if let preSwapper = FlowYieldVaultsStrategiesV2._getCollateralPreSwapper(id.id) {
+                        let incoming <- from.withdraw(amount: from.balance)
+                        if incoming.balance > 0.0 {
+                            let quote = preSwapper.quoteOut(forProvided: incoming.balance, reverse: false)
+                            if quote.outAmount > 0.0 {
+                                let moetVault <- preSwapper.swap(quote: quote, inVault: <-incoming)
+                                self.sink.depositCapacity(from: &moetVault as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
+                                Burner.burn(<-moetVault)
+                            } else {
+                                Burner.burn(<-incoming)
+                            }
+                        } else {
+                            Burner.burn(<-incoming)
+                        }
+                        return
+                    }
+                }
             }
             self.sink.depositCapacity(from: from)
         }
@@ -480,7 +632,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
         }
         /// Closes the underlying FlowALP position by preparing FLOW repayment funds from AutoBalancer
-        /// (via the stored yield→FLOW swapper) and closing with them.
+        /// (via the stored yield→FLOW swapper) and closing with them. When a stablecoin pre-swap is
+        /// configured (e.g. PYUSD0→MOET), the returned MOET collateral is swapped back to the
+        /// original stablecoin before returning.
         access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
             pre {
                 self.isSupportedCollateralType(collateralType):
@@ -488,6 +642,14 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
             post {
                 result.getType() == collateralType: "Withdraw Vault (\(result.getType().identifier)) is not of a requested collateral type (\(collateralType.identifier))"
+            }
+
+            // Determine the internal collateral type (may be MOET if a pre-swap was applied)
+            var internalCollateralType = collateralType
+            if let id = self.uniqueID {
+                if FlowYieldVaultsStrategiesV2._getOriginalCollateralType(id.id) != nil {
+                    internalCollateralType = self.sink.getSinkType()  // MOET
+                }
             }
 
             // Step 1: Get debt amounts
@@ -515,8 +677,29 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     self.positionClosed = true
                     return <- DeFiActionsUtils.getEmptyVault(collateralType)
                 }
-                let collateralVault <- resultVaults.removeFirst()
+                var collateralVault <- resultVaults.removeFirst()
                 destroy resultVaults
+                // Convert internal collateral (MOET) → external collateral (e.g. PYUSD0) if needed
+                if internalCollateralType != collateralType {
+                    if let id = self.uniqueID {
+                        if let moetToOrigSwapper = FlowYieldVaultsStrategiesV2._getMoetToCollateralSwapper(id.id) {
+                            if collateralVault.balance > 0.0 {
+                                let quote = moetToOrigSwapper.quoteOut(forProvided: collateralVault.balance, reverse: false)
+                                if quote.outAmount > 0.0 {
+                                    let extVault <- moetToOrigSwapper.swap(quote: quote, inVault: <-collateralVault)
+                                    self.positionClosed = true
+                                    return <- extVault
+                                }
+                            }
+                            Burner.burn(<-collateralVault)
+                            self.positionClosed = true
+                            return <- DeFiActionsUtils.getEmptyVault(collateralType)
+                        }
+                    }
+                    Burner.burn(<-collateralVault)
+                    self.positionClosed = true
+                    return <- DeFiActionsUtils.getEmptyVault(collateralType)
+                }
                 self.positionClosed = true
                 return <- collateralVault
             }
@@ -542,15 +725,15 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
             var collateralVault <- resultVaults.removeFirst()
             assert(
-                collateralVault.getType() == collateralType,
-                message: "First vault returned from closePosition must be collateral (\(collateralType.identifier)), got \(collateralVault.getType().identifier)"
+                collateralVault.getType() == internalCollateralType,
+                message: "First vault returned from closePosition must be internal collateral (\(internalCollateralType.identifier)), got \(collateralVault.getType().identifier)"
             )
 
             // Handle any overpayment dust (FLOW) returned as the second vault.
             while resultVaults.length > 0 {
                 let dustVault <- resultVaults.removeFirst()
                 if dustVault.balance > 0.0 {
-                    if dustVault.getType() == collateralType {
+                    if dustVault.getType() == internalCollateralType {
                         collateralVault.deposit(from: <-dustVault)
                     } else {
                         // Quote first — if dust is too small to route, destroy it
@@ -568,6 +751,26 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
 
             destroy resultVaults
+
+            // Convert internal collateral (MOET) → external collateral (e.g. PYUSD0) if needed
+            if internalCollateralType != collateralType {
+                if let id = self.uniqueID {
+                    if let moetToOrigSwapper = FlowYieldVaultsStrategiesV2._getMoetToCollateralSwapper(id.id) {
+                        if collateralVault.balance > 0.0 {
+                            let quote = moetToOrigSwapper.quoteOut(forProvided: collateralVault.balance, reverse: false)
+                            if quote.outAmount > 0.0 {
+                                let extVault <- moetToOrigSwapper.swap(quote: quote, inVault: <-collateralVault)
+                                self.positionClosed = true
+                                return <- extVault
+                            }
+                        }
+                    }
+                }
+                Burner.burn(<-collateralVault)
+                self.positionClosed = true
+                return <- DeFiActionsUtils.getEmptyVault(collateralType)
+            }
+
             self.positionClosed = true
             return <- collateralVault
         }
@@ -575,6 +778,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         access(contract) fun burnCallback() {
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
             FlowYieldVaultsStrategiesV2._removeSyWFLOWvDebtTokenType(self.uniqueID?.id)
+            // Clean up stablecoin pre-swap config entries (no-op if not set)
+            if let id = self.uniqueID {
+                FlowYieldVaultsStrategiesV2._removeOriginalCollateralType(id.id)
+                FlowYieldVaultsStrategiesV2._removeCollateralPreSwapper(id.id)
+                FlowYieldVaultsStrategiesV2._removeMoetToCollateralSwapper(id.id)
+            }
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
             return DeFiActions.ComponentInfo(
@@ -850,6 +1059,80 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     uniqueID: uniqueID
                 )
 
+                // Store yield→MOET swapper for later access during closePosition
+                FlowYieldVaultsStrategiesV2._setYieldToMoetSwapper(uniqueID.id, yieldToDebtSwapper)
+
+                // --- Stablecoin pre-swap path (e.g. PYUSD0 → MOET) ---
+                // When configured, swap collateral to MOET before depositing into FlowALP, since
+                // FlowALP only supports MOET as its stablecoin collateral (not PYUSD0 etc.).
+                if let preswapCfg = FlowYieldVaultsStrategiesV2._getMoetPreswapConfig(
+                    composer: Type<@MorphoERC4626StrategyComposer>(),
+                    collateral: collateralType
+                ) {
+                    let preSwapper = self._createUniV3Swapper(
+                        tokenPath: preswapCfg.collateralToMoetAddressPath,
+                        feePath: preswapCfg.collateralToMoetFeePath,
+                        inVault: collateralType,
+                        outVault: tokens.moetTokenType,
+                        uniqueID: uniqueID
+                    )
+                    let preSwapQuote = preSwapper.quoteOut(forProvided: withFunds.balance, reverse: false)
+                    let moetFunds <- preSwapper.swap(quote: preSwapQuote, inVault: <-withFunds)
+
+                    // Open FlowALPv0 position with MOET as collateral
+                    let position <- FlowYieldVaultsStrategiesV2._openCreditPosition(
+                        funds: <-moetFunds,
+                        issuanceSink: abaSwapSink,
+                        repaymentSource: abaSwapSource
+                    )
+
+                    // AutoBalancer rebalancing via MOET collateral:
+                    // Overflow: sell FUSDEV → MOET → add to position collateral
+                    // Deficit:  pull MOET from position → buy FUSDEV
+                    let positionSink = position.createSinkWithOptions(type: tokens.moetTokenType, pushToDrawDownSink: true)
+                    let positionSwapSink = SwapConnectors.SwapSink(
+                        swapper: yieldToDebtSwapper,   // FUSDEV → MOET
+                        sink: positionSink,
+                        uniqueID: uniqueID
+                    )
+                    let positionSource = position.createSourceWithOptions(type: tokens.moetTokenType, pullFromTopUpSource: false)
+                    let positionSwapSource = SwapConnectors.SwapSource(
+                        swapper: debtToYieldSwapper,   // MOET → FUSDEV
+                        source: positionSource,
+                        uniqueID: uniqueID
+                    )
+                    balancerIO.autoBalancer.setSink(positionSwapSink, updateSinkID: true)
+                    balancerIO.autoBalancer.setSource(positionSwapSource, updateSourceID: true)
+
+                    // Store original collateral type (PYUSD0) and pre-swapper for deposit/close
+                    FlowYieldVaultsStrategiesV2._setOriginalCollateralType(uniqueID.id, collateralType)
+                    FlowYieldVaultsStrategiesV2._setCollateralPreSwapper(uniqueID.id, preSwapper)
+
+                    // MOET → collateral (e.g. PYUSD0): use the preswap path in reverse.
+                    // Per design: "use the same swapper in reverse during close position".
+                    let moetToOrigCollateral = self._createUniV3Swapper(
+                        tokenPath: preswapCfg.collateralToMoetAddressPath.reverse(),
+                        feePath: preswapCfg.collateralToMoetFeePath.reverse(),
+                        inVault: tokens.moetTokenType,
+                        outVault: collateralType,
+                        uniqueID: uniqueID
+                    )
+                    // Store under both partitions: moetToCollateralSwappers (for the no-debt close
+                    // path) and debtToCollateralSwappers (for the regular close path MOET dust).
+                    FlowYieldVaultsStrategiesV2._setMoetToCollateralSwapper(uniqueID.id, moetToOrigCollateral)
+                    FlowYieldVaultsStrategiesV2._setDebtToCollateralSwapper(uniqueID.id, moetToOrigCollateral)
+                    // Note: _setCollateralToDebtSwapper is NOT set for stablecoin (MOET) collateral.
+                    // The MOET-direct pre-supplement path in closePosition handles this case.
+
+                    return <-create FUSDEVStrategy(
+                        id: uniqueID,
+                        collateralType: tokens.moetTokenType,
+                        position: <-position
+                    )
+                }
+
+                // --- Standard path (WBTC, WETH — directly supported by FlowALP) ---
+
                 // Open FlowALPv0 position
                 let position <- FlowYieldVaultsStrategiesV2._openCreditPosition(
                     funds: <-withFunds,
@@ -898,9 +1181,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
                 balancerIO.autoBalancer.setSink(positionSwapSink, updateSinkID: true)
                 balancerIO.autoBalancer.setSource(positionSwapSource, updateSourceID: true)
-
-                // Store yield→MOET swapper for later access during closePosition
-                FlowYieldVaultsStrategiesV2._setYieldToMoetSwapper(uniqueID.id, yieldToDebtSwapper)
 
                 // Store collateral→MOET swapper for pre-supplement in closePosition.
                 // Used to cover the ~0.02% round-trip fee shortfall when yield hasn't accrued.
@@ -1244,7 +1524,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 )
 
                 // For syWFLOWvStrategy the debt token IS the underlying asset (FLOW), not MOET.
-                // Use tokens.underlying4626AssetType directly wherever the debt token type is needed.
                 let flowDebtTokenType = tokens.underlying4626AssetType
 
                 // FLOW → syWFLOWv: standard ERC4626 deposit (More vault, not Morpho — no AMM needed)
@@ -1280,6 +1559,96 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     source: balancerIO.source,
                     uniqueID: uniqueID
                 )
+
+                // --- Stablecoin pre-swap path (e.g. PYUSD0 → MOET) ---
+                if let preswapCfg = FlowYieldVaultsStrategiesV2._getMoetPreswapConfig(
+                    composer: Type<@MoreERC4626StrategyComposer>(),
+                    collateral: collateralType
+                ) {
+                    let preSwapper = UniswapV3SwapConnectors.Swapper(
+                        factoryAddress: FlowYieldVaultsStrategiesV2.univ3FactoryEVMAddress,
+                        routerAddress: FlowYieldVaultsStrategiesV2.univ3RouterEVMAddress,
+                        quoterAddress: FlowYieldVaultsStrategiesV2.univ3QuoterEVMAddress,
+                        tokenPath: preswapCfg.collateralToMoetAddressPath,
+                        feePath: preswapCfg.collateralToMoetFeePath,
+                        inVault: collateralType,
+                        outVault: tokens.moetTokenType,
+                        coaCapability: FlowYieldVaultsStrategiesV2._getCOACapability(),
+                        uniqueID: uniqueID
+                    )
+                    let preSwapQuote = preSwapper.quoteOut(forProvided: withFunds.balance, reverse: false)
+                    let moetFunds <- preSwapper.swap(quote: preSwapQuote, inVault: <-withFunds)
+
+                    // Open FlowALP position with MOET as collateral
+                    let positionPreswap <- FlowYieldVaultsStrategiesV2._openCreditPosition(
+                        funds: <-moetFunds,
+                        issuanceSink: abaSwapSinkFlow,
+                        repaymentSource: abaSwapSourceFlow
+                    )
+
+                    // AutoBalancer debt management: same as WBTC/WETH (manages FLOW borrow/repay)
+                    let positionDebtSinkPre = positionPreswap.createSinkWithOptions(
+                        type: flowDebtTokenType,
+                        pushToDrawDownSink: false
+                    )
+                    let positionDebtSwapSinkPre = SwapConnectors.SwapSink(
+                        swapper: syWFLOWvToFlow,
+                        sink: positionDebtSinkPre,
+                        uniqueID: uniqueID
+                    )
+                    let positionDebtSourcePre = positionPreswap.createSourceWithOptions(
+                        type: flowDebtTokenType,
+                        pullFromTopUpSource: false
+                    )
+                    let positionDebtSwapSourcePre = SwapConnectors.SwapSource(
+                        swapper: flowToSyWFLOWv,
+                        source: positionDebtSourcePre,
+                        uniqueID: uniqueID
+                    )
+                    balancerIO.autoBalancer.setSink(positionDebtSwapSinkPre, updateSinkID: true)
+                    balancerIO.autoBalancer.setSource(positionDebtSwapSourcePre, updateSourceID: true)
+
+                    // FLOW→MOET: converts FLOW dust back to MOET (internal collateral) in closePosition
+                    let flowToMoet = UniswapV3SwapConnectors.Swapper(
+                        factoryAddress: FlowYieldVaultsStrategiesV2.univ3FactoryEVMAddress,
+                        routerAddress: FlowYieldVaultsStrategiesV2.univ3RouterEVMAddress,
+                        quoterAddress: FlowYieldVaultsStrategiesV2.univ3QuoterEVMAddress,
+                        tokenPath: collateralConfig.debtToCollateralUniV3AddressPath,
+                        feePath: collateralConfig.debtToCollateralUniV3FeePath,
+                        inVault: tokens.underlying4626AssetType,   // FLOW
+                        outVault: tokens.moetTokenType,            // MOET
+                        coaCapability: FlowYieldVaultsStrategiesV2._getCOACapability(),
+                        uniqueID: uniqueID
+                    )
+
+                    // MOET→collateral (e.g. PYUSD0): final conversion in closePosition
+                    let moetToCollateral = UniswapV3SwapConnectors.Swapper(
+                        factoryAddress: FlowYieldVaultsStrategiesV2.univ3FactoryEVMAddress,
+                        routerAddress: FlowYieldVaultsStrategiesV2.univ3RouterEVMAddress,
+                        quoterAddress: FlowYieldVaultsStrategiesV2.univ3QuoterEVMAddress,
+                        tokenPath: preswapCfg.collateralToMoetAddressPath.reverse(),
+                        feePath: preswapCfg.collateralToMoetFeePath.reverse(),
+                        inVault: tokens.moetTokenType,
+                        outVault: collateralType,
+                        coaCapability: FlowYieldVaultsStrategiesV2._getCOACapability(),
+                        uniqueID: uniqueID
+                    )
+
+                    FlowYieldVaultsStrategiesV2._setSyWFLOWvDebtTokenType(uniqueID.id, flowDebtTokenType)
+                    FlowYieldVaultsStrategiesV2._setOriginalCollateralType(uniqueID.id, collateralType)
+                    FlowYieldVaultsStrategiesV2._setCollateralPreSwapper(uniqueID.id, preSwapper)
+                    FlowYieldVaultsStrategiesV2._setMoetToCollateralSwapper(uniqueID.id, moetToCollateral)
+
+                    return <-create syWFLOWvStrategy(
+                        id: uniqueID,
+                        collateralType: tokens.moetTokenType,
+                        position: <-positionPreswap,
+                        yieldToDebtSwapper: syWFLOWvToFlow,
+                        debtToCollateralSwapper: flowToMoet
+                    )
+                }
+
+                // --- Standard path (WBTC, WETH — directly supported by FlowALP) ---
 
                 // Open FlowALP position with collateral; drawDownSink accepts FLOW
                 let positionFlow <- FlowYieldVaultsStrategiesV2._openCreditPosition(
@@ -1554,6 +1923,39 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             self.upsertMoreERC4626Config(config: { strategyType: { collateralVaultType: cfg } })
         }
 
+        /// Configures a stablecoin collateral type to use MOET pre-swap before depositing into
+        /// FlowALP. Required for stablecoins like PYUSD0 that FlowALP does not support directly
+        /// as collateral (it only accepts MOET as its stablecoin).
+        ///
+        /// collateralToMoetAddressPath: full UniV3 path from collateral EVM address → MOET EVM address
+        /// collateralToMoetFeePath:     UniV3 fee tiers for each hop (length = path length - 1)
+        access(Configure) fun upsertMoetPreswapConfig(
+            composer: Type,
+            collateralVaultType: Type,
+            collateralToMoetAddressPath: [EVM.EVMAddress],
+            collateralToMoetFeePath: [UInt32]
+        ) {
+            pre {
+                composer == Type<@MorphoERC4626StrategyComposer>()
+                    || composer == Type<@MoreERC4626StrategyComposer>():
+                    "composer must be MorphoERC4626StrategyComposer or MoreERC4626StrategyComposer"
+                collateralVaultType.isSubtype(of: Type<@{FungibleToken.Vault}>()):
+                    "collateralVaultType must be a FungibleToken.Vault"
+                collateralToMoetAddressPath.length > 1:
+                    "Path must have at least 2 elements"
+                collateralToMoetFeePath.length == collateralToMoetAddressPath.length - 1:
+                    "Fee path length must equal address path length - 1"
+            }
+            FlowYieldVaultsStrategiesV2._setMoetPreswapConfig(
+                composer: composer,
+                collateral: collateralVaultType,
+                cfg: FlowYieldVaultsStrategiesV2.MoetPreswapConfig(
+                    collateralToMoetAddressPath: collateralToMoetAddressPath,
+                    collateralToMoetFeePath: collateralToMoetFeePath
+                )
+            )
+        }
+
         access(Configure) fun purgeConfig() {
             self.configs = {
                 Type<@MorphoERC4626StrategyComposer>(): {
@@ -1561,6 +1963,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 }
             }
             FlowYieldVaultsStrategiesV2._purgeMoreERC4626Configs()
+            FlowYieldVaultsStrategiesV2.config["moetPreswapConfigs"] = {} as {Type: {Type: FlowYieldVaultsStrategiesV2.MoetPreswapConfig}}
         }
     }
 
@@ -1662,6 +2065,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     access(contract) fun _setDebtToCollateralSwapper(_ id: UInt64, _ swapper: {DeFiActions.Swapper}) {
         var partition = FlowYieldVaultsStrategiesV2.config["debtToCollateralSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
         partition[id] = swapper
+        FlowYieldVaultsStrategiesV2.config["debtToCollateralSwappers"] = partition
+    }
+
+    access(contract) fun _removeDebtToCollateralSwapper(_ id: UInt64) {
+        var partition = FlowYieldVaultsStrategiesV2.config["debtToCollateralSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
+        partition.remove(key: id)
         FlowYieldVaultsStrategiesV2.config["debtToCollateralSwappers"] = partition
     }
 
@@ -1773,6 +2182,98 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
     access(contract) fun _purgeMoreERC4626Configs() {
         FlowYieldVaultsStrategiesV2.config["moreERC4626Configs"] = {} as {Type: {Type: {Type: MoreERC4626CollateralConfig}}}
+    }
+
+    // --- "originalCollateralTypes" partition ---
+    // Stores the original (external) collateral type per strategy uniqueID when a MOET pre-swap
+    // is in effect. E.g. PYUSD0 when the position internally holds MOET.
+
+    access(contract) view fun _getOriginalCollateralType(_ id: UInt64): Type? {
+        let partition = FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] as! {UInt64: Type}? ?? {}
+        return partition[id]
+    }
+
+    access(contract) fun _setOriginalCollateralType(_ id: UInt64, _ t: Type) {
+        var partition = FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] as! {UInt64: Type}? ?? {}
+        partition[id] = t
+        FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] = partition
+    }
+
+    access(contract) fun _removeOriginalCollateralType(_ id: UInt64) {
+        var partition = FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] as! {UInt64: Type}? ?? {}
+        partition.remove(key: id)
+        FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] = partition
+    }
+
+    // --- "collateralPreSwappers" partition ---
+    // Stores a collateral→MOET swapper per strategy uniqueID.
+    // Used in deposit() to pre-swap incoming stablecoin collateral (e.g. PYUSD0) to MOET.
+
+    access(contract) view fun _getCollateralPreSwapper(_ id: UInt64): {DeFiActions.Swapper}? {
+        let partition = FlowYieldVaultsStrategiesV2.config["collateralPreSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
+        return partition[id]
+    }
+
+    access(contract) fun _setCollateralPreSwapper(_ id: UInt64, _ swapper: {DeFiActions.Swapper}) {
+        var partition = FlowYieldVaultsStrategiesV2.config["collateralPreSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
+        partition[id] = swapper
+        FlowYieldVaultsStrategiesV2.config["collateralPreSwappers"] = partition
+    }
+
+    access(contract) fun _removeCollateralPreSwapper(_ id: UInt64) {
+        var partition = FlowYieldVaultsStrategiesV2.config["collateralPreSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
+        partition.remove(key: id)
+        FlowYieldVaultsStrategiesV2.config["collateralPreSwappers"] = partition
+    }
+
+    // --- "moetToCollateralSwappers" partition ---
+    // Stores a MOET→original-collateral swapper per strategy uniqueID (FUSDEVStrategy and
+    // syWFLOWvStrategy). Built from the reversed MoetPreswapConfig path (same path in reverse).
+    // Used in closePosition to convert returned MOET collateral back to the original stablecoin
+    // (e.g. PYUSD0) for the no-debt path. The regular close path uses debtToCollateralSwappers.
+
+    access(contract) view fun _getMoetToCollateralSwapper(_ id: UInt64): {DeFiActions.Swapper}? {
+        let partition = FlowYieldVaultsStrategiesV2.config["moetToCollateralSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
+        return partition[id]
+    }
+
+    access(contract) fun _setMoetToCollateralSwapper(_ id: UInt64, _ swapper: {DeFiActions.Swapper}) {
+        var partition = FlowYieldVaultsStrategiesV2.config["moetToCollateralSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
+        partition[id] = swapper
+        FlowYieldVaultsStrategiesV2.config["moetToCollateralSwappers"] = partition
+    }
+
+    access(contract) fun _removeMoetToCollateralSwapper(_ id: UInt64) {
+        var partition = FlowYieldVaultsStrategiesV2.config["moetToCollateralSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
+        partition.remove(key: id)
+        FlowYieldVaultsStrategiesV2.config["moetToCollateralSwappers"] = partition
+    }
+
+    // --- "moetPreswapConfigs" partition ---
+    // Static admin config: keyed by composerType → collateralType → MoetPreswapConfig.
+    // Checked during createStrategy to determine whether a collateral needs MOET pre-swap.
+
+    access(contract) view fun _getMoetPreswapConfig(
+        composer: Type,
+        collateral: Type
+    ): MoetPreswapConfig? {
+        let partition = FlowYieldVaultsStrategiesV2.config["moetPreswapConfigs"]
+            as! {Type: {Type: MoetPreswapConfig}}? ?? {}
+        let p = partition[composer] ?? {}
+        return p[collateral]
+    }
+
+    access(contract) fun _setMoetPreswapConfig(
+        composer: Type,
+        collateral: Type,
+        cfg: MoetPreswapConfig
+    ) {
+        var partition = FlowYieldVaultsStrategiesV2.config["moetPreswapConfigs"]
+            as! {Type: {Type: MoetPreswapConfig}}? ?? {}
+        var p = partition[composer] ?? {}
+        p[collateral] = cfg
+        partition[composer] = p
+        FlowYieldVaultsStrategiesV2.config["moetPreswapConfigs"] = partition
     }
 
     init(
