@@ -106,26 +106,31 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     }
 
     /// Remove `id` from wherever it sits in the list in O(1).
-    access(self) fun _listRemove(id: UInt64) {
-        let node = self.listNodes.remove(key: id) ?? panic("Node not found")
+    /// Returns false if the id is not currently linked.
+    access(self) fun _listRemove(id: UInt64): Bool {
+        let node = self.listNodes.remove(key: id)
+        if node == nil {
+            return false
+        }
 
-        if let prevID = node.prev {
+        if let prevID = node!.prev {
             var prevNode = self.listNodes[prevID]!
-            prevNode.setNext(next: node.next)
+            prevNode.setNext(next: node!.next)
             self.listNodes[prevID] = prevNode
         } else {
             // id was the head
-            self.listHead = node.next
+            self.listHead = node!.next
         }
 
-        if let nextID = node.next {
+        if let nextID = node!.next {
             var nextNode = self.listNodes[nextID]!
-            nextNode.setPrev(prev: node.prev)
+            nextNode.setPrev(prev: node!.prev)
             self.listNodes[nextID] = nextNode
         } else {
             // id was the tail
-            self.listTail = node.prev
+            self.listTail = node!.prev
         }
+        return true
     }
 
     /* --- ACCOUNT-LEVEL FUNCTIONS --- */
@@ -154,11 +159,12 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
 
     /// Called on every execution. Moves yieldVaultID to the head (most recently executed)
     /// so the Supervisor scans from the tail (least recently executed) for stuck detection — O(1).
+    /// If the list entry is unexpectedly missing, reinsert it to restore the ordering structure.
     access(account) fun reportExecution(yieldVaultID: UInt64) {
         if !(self.yieldVaultRegistry[yieldVaultID] ?? false) {
             return
         }
-        self._listRemove(id: yieldVaultID)
+        let _ = self._listRemove(id: yieldVaultID)
         self._listInsertAtHead(id: yieldVaultID)
     }
 
@@ -184,7 +190,7 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         let _h = self.handlerCaps.remove(key: yieldVaultID)
         let _s = self.scheduleCaps.remove(key: yieldVaultID)
         let pending = self.pendingQueue.remove(key: yieldVaultID)
-        self._listRemove(id: yieldVaultID)
+        let _ = self._listRemove(id: yieldVaultID)
         emit YieldVaultUnregistered(yieldVaultID: yieldVaultID, wasInPendingQueue: pending != nil)
     }
 
@@ -252,9 +258,9 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
             return []
         }
 
-        let endIndex = startIndex + Int(pageSize) > allPending.length
+        let endIndex = startIndex + pageSize > allPending.length
             ? allPending.length
-            : startIndex + Int(pageSize)
+            : startIndex + pageSize
 
         return allPending.slice(from: startIndex, upTo: endIndex)
     }

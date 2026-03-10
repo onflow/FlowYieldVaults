@@ -29,10 +29,10 @@ access(all) contract FlowYieldVaultsAutoBalancers {
     /// The path prefix used for StoragePath & PublicPath derivations
     access(all) let pathPrefix: String
 
-    /// Storage path for the shared execution callback that reports to the registry (one per account)
+    /// Storage path for the shared execution callback resource that reports to the registry (one per account)
     access(self) let registryReportCallbackStoragePath: StoragePath
 
-    /// Callback resource invoked by each AutoBalancer after execution; calls Registry.reportExecutionFromCallback with its id
+    /// Callback resource invoked by each AutoBalancer after execution; calls Registry.reportExecution with its id
     access(all) resource RegistryReportCallback: DeFiActions.AutoBalancerExecutionCallback {
         access(all) fun onExecuted(balancerUUID: UInt64) {
             FlowYieldVaultsSchedulerRegistry.reportExecution(yieldVaultID: balancerUUID)
@@ -160,7 +160,19 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         assert(!publishedCap,
             message: "Published Capability collision found when publishing AutoBalancer for UniqueIdentifier.id \(uniqueID.id) at path \(publicPath)")
 
-        let reportCap = self.account.capabilities.storage.issue<&{DeFiActions.AutoBalancerExecutionCallback}>(self.registryReportCallbackStoragePath)
+        let registryReportCallbackCapabilityStoragePath =
+            StoragePath(identifier: "FlowYieldVaultsRegistryReportCallbackCapability")!
+        if self.account.storage.type(at: registryReportCallbackCapabilityStoragePath) == nil {
+            let sharedReportCap = self.account.capabilities.storage.issue<&{DeFiActions.AutoBalancerExecutionCallback}>(
+                self.registryReportCallbackStoragePath
+            )
+            self.account.storage.save(sharedReportCap, to: registryReportCallbackCapabilityStoragePath)
+        }
+        let reportCap = self.account.storage.copy<Capability<&{DeFiActions.AutoBalancerExecutionCallback}>>(
+            from: registryReportCallbackCapabilityStoragePath
+        ) ?? panic(
+            "Missing shared registry report callback capability at \(registryReportCallbackCapabilityStoragePath)"
+        )
 
         // create & save AutoBalancer with optional recurring config
         let autoBalancer <- DeFiActions.createAutoBalancer(
@@ -268,6 +280,5 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         if self.account.storage.type(at: self.registryReportCallbackStoragePath) == nil {
             self.account.storage.save(<-self.createRegistryReportCallbackImpl(), to: self.registryReportCallbackStoragePath)
         }
-
     }
 }

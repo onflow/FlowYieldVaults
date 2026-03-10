@@ -413,6 +413,9 @@ fun testPaginationStress() {
 ///
 access(all)
 fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
+    // Start from the post-setup snapshot so global event history and stuck state from other
+    // tests cannot make this "healthy/no-op Supervisor" assertion pass accidentally.
+    Test.reset(to: snapshot)
     log("\n Testing Supervisor with healthy yield vaults (nothing to recover)...")
 
     let user = Test.createAccount()
@@ -457,6 +460,12 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
     log("Pending queue size: ".concat(pendingCount.toString()))
     Test.assertEqual(0, pendingCount)
 
+    // Capture event baselines after verifying this test is in a clean healthy state.
+    // The assertions below check that this Supervisor run emits no *new* recovery or
+    // stuck-detection events, instead of tolerating unrelated events from prior tests.
+    let recoveredEventsBefore = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>()).length
+    let stuckDetectedEventsBefore = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.StuckYieldVaultDetected>()).length
+
     // Supervisor is automatically configured when FlowYieldVaultsSchedulerV1 is deployed (in init)
     Test.commitBlock()
 
@@ -477,11 +486,20 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
 
     // 7. Verify Supervisor ran but found nothing to recover (healthy yield vault)
     let recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
+    let stuckDetectedEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.StuckYieldVaultDetected>())
     log("YieldVaultRecovered events: ".concat(recoveredEvents.length.toString()))
-
-    // Healthy yield vaults don't need recovery
-    // Note: recoveredEvents might be > 0 if there were stuck yield vaults from previous tests
-    // The key verification is that our yield vault continues to execute
+    log("StuckYieldVaultDetected events: ".concat(stuckDetectedEvents.length.toString()))
+    // A healthy vault should not cause the Supervisor to enqueue recovery work or emit
+    // recovery events. These checks make the test prove "Supervisor was a no-op" rather
+    // than only proving the vault kept executing afterward.
+    Test.assert(
+        recoveredEvents.length == recoveredEventsBefore,
+        message: "Supervisor should not emit recovery events for a healthy yield vault. Before: \(recoveredEventsBefore.toString()), After: \(recoveredEvents.length.toString())"
+    )
+    Test.assert(
+        stuckDetectedEvents.length == stuckDetectedEventsBefore,
+        message: "Supervisor should not detect stuck yield vaults in a clean healthy test. Before: \(stuckDetectedEventsBefore.toString()), After: \(stuckDetectedEvents.length.toString())"
+    )
 
     // 8. Verify yield vault continues executing
     log("Step 7: Verifying yield vault continues executing...")
@@ -1014,7 +1032,7 @@ fun testSupervisorHandlesManyStuckVaults() {
         Test.commitBlock()
         run = run + 1
     }
-    log("testSupervisorHandlesManyStuckVaults: ran \(supervisorRunsNeeded + 10).toString()) supervisor ticks")
+    log("testSupervisorHandlesManyStuckVaults: ran \((supervisorRunsNeeded + 10).toString()) supervisor ticks")
 
     let recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
     Test.assert(recoveredEvents.length >= n, message: "expected at least \(n.toString()) recovered, got \(recoveredEvents.length.toString())")

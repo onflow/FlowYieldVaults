@@ -172,7 +172,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
         ///   "priority": UInt8 (0=High,1=Medium,2=Low) - for Supervisor self-rescheduling
         ///   "executionEffort": UInt64 - for Supervisor self-rescheduling
         ///   "recurringInterval": UFix64 (for Supervisor self-rescheduling)
-        ///   "scanForStuck": Bool (default true - scan all registered yield vaults for stuck ones)
+        ///   "scanForStuck": Bool (default true - scan up to MAX_BATCH_SIZE least-recently-executed vaults for stuck ones)
         /// }
         access(FlowTransactionScheduler.Execute) fun executeTransaction(id: UInt64, data: AnyStruct?) {
             let cfg = data as? {String: AnyStruct} ?? {}
