@@ -13,6 +13,27 @@ import "DeFiActions"
 ///
 access(all) contract FlowYieldVaultsSchedulerRegistry {
 
+    /* --- TYPES --- */
+
+    /// Node in the simulated doubly-linked list used for O(1) stuck-scan ordering.
+    /// `prev` points toward the head (most recently executed); `next` points toward the tail (oldest/least recently executed).
+    access(all) struct ListNode {
+        access(all) var prev: UInt64?
+        access(all) var next: UInt64?
+        init(prev: UInt64?, next: UInt64?) {
+            self.prev = prev
+            self.next = next
+        }
+
+        access(all) fun setPrev(prev: UInt64?) {
+            self.prev = prev
+        }
+
+        access(all) fun setNext(next: UInt64?) {
+            self.next = next
+        }
+    }
+
     /* --- EVENTS --- */
 
     /// Emitted when a yield vault is registered with its handler capability
@@ -58,10 +79,54 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /// Stored as a dictionary for O(1) add/remove; iteration gives the pending set
     access(self) var pendingQueue: {UInt64: Bool}
 
-    /// Order for stuck scanning: least recently reported (executed) first.
-    /// Vaults call reportExecution() on each run (remove id from array, append to end).
-    /// Supervisor scans only the first MAX_BATCH_SIZE entries for stuck detection.
-    access(self) var stuckScanOrder: [UInt64]
+    /// Simulated doubly-linked list for O(1) stuck-scan ordering.
+    /// listHead = most recently executed vault ID (or nil if empty).
+    /// listTail = least recently executed vault ID — getStuckScanCandidates walks from here.
+    /// On reportExecution a vault is snipped from its current position and moved to head in O(1).
+    access(self) var listNodes: {UInt64: ListNode}
+    access(self) var listHead: UInt64?
+    access(self) var listTail: UInt64?
+
+    /* --- PRIVATE LIST HELPERS --- */
+
+    /// Insert `id` at the head of the list (most-recently-executed end).
+    /// Caller must ensure `id` is not already in the list.
+    access(self) fun _listInsertAtHead(id: UInt64) {
+        let node = ListNode(prev: nil, next: self.listHead)
+        if let oldHeadID = self.listHead {
+            var oldHead = self.listNodes[oldHeadID]!
+            oldHead.setPrev(prev: id)
+            self.listNodes[oldHeadID] = oldHead
+        } else {
+            // List was empty — id is also the tail
+            self.listTail = id
+        }
+        self.listNodes[id] = node
+        self.listHead = id
+    }
+
+    /// Remove `id` from wherever it sits in the list in O(1).
+    access(self) fun _listRemove(id: UInt64) {
+        let node = self.listNodes.remove(key: id) ?? panic("Node not found")
+
+        if let prevID = node.prev {
+            var prevNode = self.listNodes[prevID]!
+            prevNode.setNext(next: node.next)
+            self.listNodes[prevID] = prevNode
+        } else {
+            // id was the head
+            self.listHead = node.next
+        }
+
+        if let nextID = node.next {
+            var nextNode = self.listNodes[nextID]!
+            nextNode.setPrev(prev: node.prev)
+            self.listNodes[nextID] = nextNode
+        } else {
+            // id was the tail
+            self.listTail = node.prev
+        }
+    }
 
     /* --- ACCOUNT-LEVEL FUNCTIONS --- */
 
@@ -78,20 +143,23 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         self.yieldVaultRegistry[yieldVaultID] = true
         self.handlerCaps[yieldVaultID] = handlerCap
         self.scheduleCaps[yieldVaultID] = scheduleCap
-        self.stuckScanOrder.append(yieldVaultID)
+        // New vaults go to the head; they haven't executed yet but are freshly registered.
+        // If already in the list (idempotent re-register), remove first to avoid duplicates.
+        if self.listNodes[yieldVaultID] != nil {
+            self._listRemove(id: yieldVaultID)
+        }
+        self._listInsertAtHead(id: yieldVaultID)
         emit YieldVaultRegistered(yieldVaultID: yieldVaultID)
     }
 
-    /// Called by the account that holds this contract (e.g. from the wrapper) on every execution. Removes yieldVaultID from stuckScanOrder (if present)
-    /// and appends it to the end so the Supervisor only scans the first N (least recently executed) for stuck.
+    /// Called on every execution. Moves yieldVaultID to the head (most recently executed)
+    /// so the Supervisor scans from the tail (least recently executed) for stuck detection — O(1).
     access(account) fun reportExecution(yieldVaultID: UInt64) {
         if !(self.yieldVaultRegistry[yieldVaultID] ?? false) {
             return
         }
-        if let index = self.stuckScanOrder.firstIndex(of: yieldVaultID) {
-            let _ = self.stuckScanOrder.remove(at: index)
-        }
-        self.stuckScanOrder.append(yieldVaultID)
+        self._listRemove(id: yieldVaultID)
+        self._listInsertAtHead(id: yieldVaultID)
     }
 
     /// Adds a yield vault to the pending queue for seeding by the Supervisor
@@ -110,15 +178,13 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         }
     }
 
-    /// Unregister a YieldVault (idempotent) - removes from registry, capabilities, pending queue, and stuckScanOrder
+    /// Unregister a YieldVault (idempotent) - removes from registry, capabilities, pending queue, and linked list
     access(account) fun unregister(yieldVaultID: UInt64) {
-        self.yieldVaultRegistry.remove(key: yieldVaultID)
-        self.handlerCaps.remove(key: yieldVaultID)
-        self.scheduleCaps.remove(key: yieldVaultID)
+        let _r = self.yieldVaultRegistry.remove(key: yieldVaultID)
+        let _h = self.handlerCaps.remove(key: yieldVaultID)
+        let _s = self.scheduleCaps.remove(key: yieldVaultID)
         let pending = self.pendingQueue.remove(key: yieldVaultID)
-        if let index = self.stuckScanOrder.firstIndex(of: yieldVaultID) {
-            let _ = self.stuckScanOrder.remove(at: index)
-        }
+        self._listRemove(id: yieldVaultID)
         emit YieldVaultUnregistered(yieldVaultID: yieldVaultID, wasInPendingQueue: pending != nil)
     }
 
@@ -198,12 +264,23 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         return self.pendingQueue.length
     }
 
-    /// Returns the first n yield vault IDs from the stuck-scan order (least recently executed first).
+    /// Returns up to `limit` vault IDs starting from the tail (least recently executed).
     /// Supervisor should only scan these for stuck detection instead of all registered vaults.
     /// @param limit: Maximum number of IDs to return (caller typically passes MAX_BATCH_SIZE)
-    access(all) view fun getStuckScanCandidates(limit: UInt): [UInt64] {
-        let end = limit > UInt(self.stuckScanOrder.length) ? self.stuckScanOrder.length : limit
-        return self.stuckScanOrder.slice(from: 0, upTo: Int(end))
+    access(all) fun getStuckScanCandidates(limit: UInt): [UInt64] {
+        var result: [UInt64] = []
+        var current = self.listTail
+        var count: UInt = 0
+        while count < limit {
+            if let id = current {
+                result.append(id)
+                current = self.listNodes[id]?.prev
+                count = count + 1
+            } else {
+                break
+            }
+        }
+        return result
     }
 
     /// Get global Supervisor capability, if set
@@ -222,8 +299,8 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         self.handlerCaps = {}
         self.scheduleCaps = {}
         self.pendingQueue = {}
-        self.stuckScanOrder = []
+        self.listNodes = {}
+        self.listHead = nil
+        self.listTail = nil
     }
 }
-
-
