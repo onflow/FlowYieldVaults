@@ -1,4 +1,4 @@
-#test_fork(network: "mainnet", height: nil)
+#test_fork(network: "mainnet", height: 144698401)
 
 import Test
 
@@ -288,6 +288,28 @@ access(all) fun setup() {
         "../transactions/flow-yield-vaults/admin/grant_beta.cdc",
         [],
         [adminAccount, wbtcUser]
+    )
+    Test.expect(result, Test.beSucceeded())
+
+    // Add FLOW reserves to the FlowALP pool.
+    // The mainnet pool at 0x6b00ff876c299c61 only has ~12 FLOW at the fork height —
+    // not enough for WBTC/WETH vaults (WBTC ~$9 needs ~125 FLOW; WETH ~$2.5 needs ~35 FLOW).
+    // wbtcUser holds 1.38M FLOW in Cadence storage, so we grant them pool access and
+    // have them create a 10,000-FLOW reserve position.
+    let alpAdmin = Test.getAccount(0x6b00ff876c299c61)
+    log("Granting wbtcUser FlowALP pool cap for reserve position...")
+    result = _executeTransactionFile(
+        "../../lib/FlowALP/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc",
+        [],
+        [alpAdmin, wbtcUser]
+    )
+    Test.expect(result, Test.beSucceeded())
+
+    log("Creating 10,000 FLOW reserve position in FlowALP pool...")
+    result = _executeTransactionFile(
+        "../../lib/FlowALP/cadence/transactions/flow-alp/position/create_position.cdc",
+        [10000.0 as UFix64, /storage/flowTokenVault, true as Bool],
+        [wbtcUser]
     )
     Test.expect(result, Test.beSucceeded())
 
