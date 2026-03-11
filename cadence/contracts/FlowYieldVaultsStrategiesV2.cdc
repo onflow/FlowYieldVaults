@@ -1441,7 +1441,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
             // collateral EVM address = last element of yieldToCollateral path
             // underlying (PYUSD0) EVM address = second element of yieldToCollateral path
-            assert(yieldToCollPath.length >= 3, message: "yieldToCollateral path must have at least 3 elements")
+            assert(yieldToCollPath.length >= 2, message: "yieldToCollateral path must have at least 2 elements")
             let collateralEVMAddress = yieldToCollPath[yieldToCollPath.length - 1]
             let underlyingEVMAddress = tokens.underlying4626AssetEVMAddress
 
