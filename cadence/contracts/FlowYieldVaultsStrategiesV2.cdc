@@ -497,6 +497,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 FlowYieldVaultsStrategiesV2._removeOriginalCollateralType(id.id)
                 FlowYieldVaultsStrategiesV2._removeCollateralPreSwapper(id.id)
                 FlowYieldVaultsStrategiesV2._removeMoetToCollateralSwapper(id.id)
+                FlowYieldVaultsStrategiesV2._removeYieldToMoetSwapper(id.id)
+                FlowYieldVaultsStrategiesV2._removeCollateralToDebtSwapper(id.id)
                 FlowYieldVaultsStrategiesV2._removeDebtToCollateralSwapper(id.id)
             }
         }
@@ -2090,6 +2092,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         FlowYieldVaultsStrategiesV2.config["yieldToMoetSwappers"] = partition
     }
 
+    access(contract) fun _removeYieldToMoetSwapper(_ id: UInt64) {
+        var partition = FlowYieldVaultsStrategiesV2.config["yieldToMoetSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
+        partition.remove(key: id)
+        FlowYieldVaultsStrategiesV2.config["yieldToMoetSwappers"] = partition
+    }
+
     // --- "debtToCollateralSwappers" partition ---
 
     access(contract) view fun _getDebtToCollateralSwapper(_ id: UInt64): {DeFiActions.Swapper}? {
@@ -2122,6 +2130,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     access(contract) fun _setCollateralToDebtSwapper(_ id: UInt64, _ swapper: {DeFiActions.Swapper}) {
         var partition = FlowYieldVaultsStrategiesV2.config["collateralToDebtSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
         partition[id] = swapper
+        FlowYieldVaultsStrategiesV2.config["collateralToDebtSwappers"] = partition
+    }
+
+    access(contract) fun _removeCollateralToDebtSwapper(_ id: UInt64) {
+        var partition = FlowYieldVaultsStrategiesV2.config["collateralToDebtSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
+        partition.remove(key: id)
         FlowYieldVaultsStrategiesV2.config["collateralToDebtSwappers"] = partition
     }
 
