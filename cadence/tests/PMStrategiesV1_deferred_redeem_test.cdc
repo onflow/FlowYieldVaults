@@ -32,7 +32,6 @@ access(all) let userAccount = Test.getAccount(0x443472749ebdaac8)
 
 access(all) let syWFLOWvStrategyIdentifier = "A.b1d63873c3cc9f79.PMStrategiesV1.syWFLOWvStrategy"
 access(all) let flowVaultIdentifier = "A.1654653399040a61.FlowToken.Vault"
-access(all) let syWFLOWvEVMAddress = "0xCBf9a7753F9D2d0e8141ebB36d99f87AcEf98597"
 access(all) let schedulingFee: UFix64 = 0.5
 
 // --- Test State ---
@@ -236,7 +235,7 @@ access(all) fun testRequestRedeem() {
     log("Requesting deferred redeem for 1.0 FLOW worth of shares...")
     let result = _executeTransactionFile(
         "../transactions/flow-yield-vaults/request_redeem.cdc",
-        [yieldVaultID, 1.0 as UFix64?, syWFLOWvEVMAddress, schedulingFee],
+        [yieldVaultID, 1.0 as UFix64?, schedulingFee],
         [userAccount]
     )
     Test.expect(result, Test.beSucceeded())
@@ -285,7 +284,7 @@ access(all) fun testDuplicateRequestRedeemFails() {
     log("Attempting duplicate requestRedeem (should fail)...")
     let result = _executeTransactionFile(
         "../transactions/flow-yield-vaults/request_redeem.cdc",
-        [yieldVaultID, 0.5 as UFix64?, syWFLOWvEVMAddress, schedulingFee],
+        [yieldVaultID, 0.5 as UFix64?, schedulingFee],
         [userAccount]
     )
     Test.expect(result, Test.beFailed())

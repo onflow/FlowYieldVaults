@@ -8,13 +8,11 @@ import "PMStrategiesV1"
 ///
 /// @param yieldVaultID: The user's YieldVault ID
 /// @param amount: Underlying asset amount to redeem (nil = all)
-/// @param vaultEVMAddress: The More Vaults Diamond vault EVM address (hex string)
 /// @param schedulingFeeAmount: FlowToken amount for FlowTransactionScheduler fees
 ///
 transaction(
     yieldVaultID: UInt64,
     amount: UFix64?,
-    vaultEVMAddress: String,
     schedulingFeeAmount: UFix64
 ) {
     let userCOA: auth(EVM.Call) &EVM.CadenceOwnedAccount
@@ -38,7 +36,6 @@ transaction(
             yieldVaultID: yieldVaultID,
             amount: amount,
             userCOA: self.userCOA,
-            vaultEVMAddress: EVM.addressFromString(vaultEVMAddress),
             userFlowAddress: self.userAddress,
             fees: <-self.fees
         )

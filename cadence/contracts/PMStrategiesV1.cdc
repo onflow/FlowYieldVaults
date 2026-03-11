@@ -872,14 +872,12 @@ access(all) contract PMStrategiesV1 {
     /// @param yieldVaultID The user's YieldVault ID (also the AutoBalancer ID)
     /// @param amount Underlying asset amount to redeem (e.g., FLOW). Nil = redeem all.
     /// @param userCOA User's CadenceOwnedAccount reference for EVM calls
-    /// @param vaultEVMAddress The More Vaults Diamond vault address on EVM
     /// @param userFlowAddress User's Flow address for claim delivery
     /// @param fees FlowToken vault to pay FlowTransactionScheduler scheduling fees
     access(all) fun requestRedeem(
         yieldVaultID: UInt64,
         amount: UFix64?,
         userCOA: auth(EVM.Call) &EVM.CadenceOwnedAccount,
-        vaultEVMAddress: EVM.EVMAddress,
         userFlowAddress: Address,
         fees: @FlowToken.Vault
     ) {
@@ -893,17 +891,13 @@ access(all) contract PMStrategiesV1 {
         let yieldVault = managerRef.borrowYieldVault(id: yieldVaultID)
             ?? panic("User does not own vault \(yieldVaultID)")
 
-        // Validate vaultEVMAddress matches the strategy's configured yield token EVM address
+        // Derive the vault EVM address from on-chain strategy config
         let strategyType = CompositeType(yieldVault.getStrategyType())
             ?? panic("Invalid strategy type \(yieldVault.getStrategyType())")
         let collateralType = CompositeType(yieldVault.getVaultTypeIdentifier())
             ?? panic("Invalid collateral type \(yieldVault.getVaultTypeIdentifier())")
-        let expectedAddr = self._getYieldTokenEVMAddress(forStrategy: strategyType, collateralType: collateralType)
+        let vaultEVMAddress = self._getYieldTokenEVMAddress(forStrategy: strategyType, collateralType: collateralType)
             ?? panic("No EVM vault address configured for \(strategyType.identifier)")
-        assert(
-            expectedAddr.bytes == vaultEVMAddress.bytes,
-            message: "Provided vaultEVMAddress does not match strategy config"
-        )
 
         // Validate COA ownership: the provided COA must belong to userFlowAddress
         let publicCOA = getAccount(userFlowAddress).capabilities
