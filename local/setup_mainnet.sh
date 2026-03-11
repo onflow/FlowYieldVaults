@@ -197,9 +197,11 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
     --network mainnet \
     --signer mainnet-admin
 
-# configure syWFLOWvStrategy (MoreERC4626) collateral configs
+# configure FlowYieldVaultsStrategiesV2 syWFLOWv strategy configs
 #
-# PYUSD0: yieldToUnderlying = syWFLOWv→WFLOW (fee 100), debtToCollateral = WFLOW→PYUSD0 (fee 500)
+# syWFLOWv -> WFLOW is the same for all collaterals (UniV3 fee 100).
+# WFLOW -> collateral differs per collateral type.
+# PYUSD0 uses a direct WFLOW -> PYUSD0 route (fee 500).
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.syWFLOWvStrategy' \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
@@ -211,11 +213,12 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mor
     --network mainnet \
     --signer mainnet-admin
 
-# MOET pre-swap: PYUSD0→MOET via UniV3 fee 100 (FlowALP only accepts MOET as stablecoin collateral)
+# Configure PYUSD0 -> MOET pre-swap for syWFLOWvStrategy. The strategy internally uses
+# MOET as FlowALP collateral, so incoming PYUSD0 must be swapped before opening/updating positions.
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_moet_preswap_config.cdc \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.MoreERC4626StrategyComposer' \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
-    '["0x99aF3EeA856556646C98c8B9b2548Fe815240750","0x213979bb8a9a86966999b3aa797c1fcf3b967ae2"]' \
+    '["0x99aF3EeA856556646C98c8B9b2548Fe815240750","0x213979bB8A9A86966999b3AA797C1fcf3B967ae2"]' \
     '[100]' \
     --network mainnet \
     --signer mainnet-admin
