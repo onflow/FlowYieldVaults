@@ -745,34 +745,41 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 message: "Expected 1 or 2 vaults from closePosition, got \(resultVaults.length)"
             )
 
-            var collateralVault <- resultVaults.removeFirst()
-            assert(
-                collateralVault.getType() == internalCollateralType,
-                message: "First vault returned from closePosition must be internal collateral (\(internalCollateralType.identifier)), got \(collateralVault.getType().identifier)"
-            )
-
-            // Handle any overpayment dust (FLOW) returned as the second vault.
+            // closePosition returns vaults in dict-iteration order, so do not assume the
+            // collateral vault is first. Identify it by type and route any remaining vault
+            // as overpayment dust.
+            var collateralVault <- DeFiActionsUtils.getEmptyVault(internalCollateralType)
+            var foundCollateral = false
             while resultVaults.length > 0 {
-                let dustVault <- resultVaults.removeFirst()
-                if dustVault.balance > 0.0 {
-                    if dustVault.getType() == internalCollateralType {
-                        collateralVault.deposit(from: <-dustVault)
+                let returnedVault <- resultVaults.removeFirst()
+                if returnedVault.getType() == internalCollateralType {
+                    foundCollateral = true
+                    collateralVault.deposit(from: <-returnedVault)
+                } else if returnedVault.balance > 0.0 {
+                    // Handle overpayment dust (FLOW) returned by closePosition.
+                    let quote = self.debtToCollateralSwapper.quoteOut(
+                        forProvided: returnedVault.balance,
+                        reverse: false
+                    )
+                    if quote.outAmount > 0.0 {
+                        let swapped <- self.debtToCollateralSwapper.swap(
+                            quote: quote,
+                            inVault: <-returnedVault
+                        )
+                        collateralVault.deposit(from: <-swapped)
                     } else {
-                        // Quote first — if dust is too small to route, destroy it
-                        let quote = self.debtToCollateralSwapper.quoteOut(forProvided: dustVault.balance, reverse: false)
-                        if quote.outAmount > 0.0 {
-                            let swapped <- self.debtToCollateralSwapper.swap(quote: quote, inVault: <-dustVault)
-                            collateralVault.deposit(from: <-swapped)
-                        } else {
-                            Burner.burn(<-dustVault)
-                        }
+                        Burner.burn(<-returnedVault)
                     }
                 } else {
-                    Burner.burn(<-dustVault)
+                    Burner.burn(<-returnedVault)
                 }
             }
 
             destroy resultVaults
+            assert(
+                foundCollateral,
+                message: "closePosition did not return internal collateral of type \(internalCollateralType.identifier)"
+            )
 
             // Convert internal collateral (MOET) → external collateral (e.g. PYUSD0) if needed
             if internalCollateralType != collateralType {
