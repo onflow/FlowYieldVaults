@@ -16,6 +16,7 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /* --- TYPES --- */
 
     /// Node in the simulated doubly-linked list used for O(1) stuck-scan ordering.
+    /// Only recurring, scan-eligible vaults participate in this list.
     /// `prev` points toward the head (most recently executed); `next` points toward the tail (oldest/least recently executed).
     access(all) struct ListNode {
         access(all) var prev: UInt64?
@@ -79,10 +80,11 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /// Stored as a dictionary for O(1) add/remove; iteration gives the pending set
     access(self) var pendingQueue: {UInt64: Bool}
 
-    /// Simulated doubly-linked list for O(1) stuck-scan ordering.
-    /// listHead = most recently executed vault ID (or nil if empty).
-    /// listTail = least recently executed vault ID — getStuckScanCandidates walks from here.
-    /// On reportExecution a vault is snipped from its current position and moved to head in O(1).
+    /// Simulated doubly-linked list for O(1) stuck-scan ordering across recurring scan participants.
+    /// listHead = most recently executed recurring vault ID (or nil if empty).
+    /// listTail = least recently executed recurring vault ID — getStuckScanCandidates walks from here.
+    /// On reportExecution a recurring participant is snipped from its current position and moved to head in O(1).
+    /// If a vault later disables recurring config, its stale list entry is pruned lazily during candidate walks.
     access(self) var listNodes: {UInt64: ListNode}
     access(self) var listHead: UInt64?
     access(self) var listTail: UInt64?
@@ -136,10 +138,12 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /* --- ACCOUNT-LEVEL FUNCTIONS --- */
 
     /// Register a YieldVault and store its handler and schedule capabilities (idempotent)
+    /// `participatesInStuckScan` should be true only for vaults that currently have recurring config.
     access(account) fun register(
         yieldVaultID: UInt64,
         handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>,
-        scheduleCap: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>
+        scheduleCap: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>,
+        participatesInStuckScan: Bool
     ) {
         pre {
             handlerCap.check(): "Invalid handler capability provided for yieldVaultID \(yieldVaultID)"
@@ -148,20 +152,23 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         self.yieldVaultRegistry[yieldVaultID] = true
         self.handlerCaps[yieldVaultID] = handlerCap
         self.scheduleCaps[yieldVaultID] = scheduleCap
-        // New vaults go to the head; they haven't executed yet but are freshly registered.
+
+        // Only recurring vaults participate in stuck-scan ordering.
         // If already in the list (idempotent re-register), remove first to avoid duplicates.
         if self.listNodes[yieldVaultID] != nil {
             self._listRemove(id: yieldVaultID)
         }
-        self._listInsertAtHead(id: yieldVaultID)
+        if participatesInStuckScan {
+            self._listInsertAtHead(id: yieldVaultID)
+        }
         emit YieldVaultRegistered(yieldVaultID: yieldVaultID)
     }
 
-    /// Called on every execution. Moves yieldVaultID to the head (most recently executed)
-    /// so the Supervisor scans from the tail (least recently executed) for stuck detection — O(1).
-    /// If the list entry is unexpectedly missing, reinsert it to restore the ordering structure.
+    /// Called on every execution. Moves scan-participating yieldVaultID to the head
+    /// (most recently executed) so the Supervisor scans recurring participants from the tail
+    /// (least recently executed) for stuck detection — O(1).
     access(account) fun reportExecution(yieldVaultID: UInt64) {
-        if !(self.yieldVaultRegistry[yieldVaultID] ?? false) {
+        if !(self.yieldVaultRegistry[yieldVaultID] ?? false) || self.listNodes[yieldVaultID] == nil {
             return
         }
         let _ = self._listRemove(id: yieldVaultID)
@@ -270,18 +277,30 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         return self.pendingQueue.length
     }
 
-    /// Returns up to `limit` vault IDs starting from the tail (least recently executed).
+    /// Returns up to `limit` recurring scan participants starting from the tail
+    /// (least recently executed among recurring participants).
+    /// Stale entries whose recurring config has been removed are pruned lazily as the walk proceeds.
     /// Supervisor should only scan these for stuck detection instead of all registered vaults.
     /// @param limit: Maximum number of IDs to return (caller typically passes MAX_BATCH_SIZE)
     access(all) fun getStuckScanCandidates(limit: UInt): [UInt64] {
         var result: [UInt64] = []
         var current = self.listTail
-        var count: UInt = 0
-        while count < limit {
+        while UInt(result.length) < limit {
             if let id = current {
-                result.append(id)
-                current = self.listNodes[id]?.prev
-                count = count + 1
+                let previous = self.listNodes[id]?.prev
+                let scheduleCap = self.scheduleCaps[id]
+                let isRecurringParticipant =
+                    scheduleCap != nil
+                    && scheduleCap!.check()
+                    && scheduleCap!.borrow()?.getRecurringConfig() != nil
+
+                if isRecurringParticipant {
+                    result.append(id)
+                } else {
+                    self.dequeuePending(yieldVaultID: id)
+                    let _ = self._listRemove(id: id)
+                }
+                current = previous
             } else {
                 break
             }

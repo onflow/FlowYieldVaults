@@ -160,7 +160,8 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
         /// Detects and recovers stuck yield vaults by directly calling their scheduleNextRebalance().
         ///
         /// Detection methods:
-        /// 1. State-based: Scans for registered yield vaults with no active schedule that are overdue
+        /// 1. State-based: Scans recurring yield vaults in stuck-scan order for candidates with
+        ///    no active schedule that are overdue
         ///
         /// Recovery method:
         /// - Uses Schedule capability to call AutoBalancer.scheduleNextRebalance() directly
@@ -172,7 +173,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
         ///   "priority": UInt8 (0=High,1=Medium,2=Low) - for Supervisor self-rescheduling
         ///   "executionEffort": UInt64 - for Supervisor self-rescheduling
         ///   "recurringInterval": UFix64 (for Supervisor self-rescheduling)
-        ///   "scanForStuck": Bool (default true - scan up to MAX_BATCH_SIZE least-recently-executed vaults for stuck ones)
+        ///   "scanForStuck": Bool (default true - scan up to MAX_BATCH_SIZE least-recently-executed recurring scan participants for stuck ones)
         /// }
         access(FlowTransactionScheduler.Execute) fun executeTransaction(id: UInt64, data: AnyStruct?) {
             let cfg = data as? {String: AnyStruct} ?? {}
