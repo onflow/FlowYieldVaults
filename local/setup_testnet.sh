@@ -62,6 +62,13 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governan
     --network testnet \
     --signer testnet-flow-alp-deployer
 
+# set minimum deposit for WBTC
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_minimum_token_balance_per_position.cdc \
+    'A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault' \
+    0.0001 \
+    --network testnet \
+    --signer testnet-flow-alp-deployer
+
 # add WETH as supported token
 flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/add_supported_token_simple_interest_curve.cdc \
     'A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault' \
@@ -69,6 +76,13 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governan
     1.0 \
     1_000_000.0 \
     1_000_000.0 \
+    --network testnet \
+    --signer testnet-flow-alp-deployer
+
+# set minimum deposit for WETH
+flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_minimum_token_balance_per_position.cdc \
+    'A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault' \
+    0.001 \
     --network testnet \
     --signer testnet-flow-alp-deployer
 
