@@ -153,7 +153,6 @@ fun test_RebalanceYieldVaultScenario3B() {
 		message: "Expected MOET debt to be \(expectedDebtValues[0]) but got \(debtBefore)"
 	)
 
-	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
 	let yieldTokensAfterFlowPriceIncrease = getAutoBalancerBalance(id: yieldVaultIDs![0])!
