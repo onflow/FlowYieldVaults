@@ -219,7 +219,7 @@ access(all) fun setup() {
     // yieldToUnderlying path is the same for all collaterals: syWFLOWv → WFLOW via UniV3 fee 100 (0.01%)
     // debtToCollateral paths differ per collateral: WFLOW → <collateral>
 
-    log("Configuring MoreERC4626CollateralConfig: syWFLOWvStrategy + PYUSD0 (WFLOW→PYUSD0 fee 500)...")
+    log("Configuring MoreERC4626CollateralConfig: syWFLOWvStrategy + PYUSD0 (WFLOW→PYUSD0 fee 3000)...")
     result = _executeTransactionFile(
         "../transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc",
         [
@@ -229,7 +229,7 @@ access(all) fun setup() {
             [syWFLOWvEVMAddress, wflowEVMAddress],  // yieldToUnderlying
             [100 as UInt32],
             [wflowEVMAddress, pyusd0EVMAddress],     // debtToCollateral
-            [500 as UInt32]
+            [3000 as UInt32]
         ],
         [adminAccount]
     )

@@ -179,16 +179,6 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_str
 	'[100,3000]' \
 	--network mainnet \
 	--signer mainnet-admin
-#
-# Setup UniV3 path FUSDEV -> PYUSD0
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc \
-	'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
-	'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
-	"0xd069d989e2F44B70c65347d1853C0c67e10a9F8D" \
-	'["0xd069d989e2F44B70c65347d1853C0c67e10a9F8D","0x99aF3EeA856556646C98c8B9b2548Fe815240750"]' \
-	'[100]' \
-	--network mainnet \
-	--signer mainnet-admin
 
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
@@ -199,7 +189,8 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
 
 # configure syWFLOWvStrategy (MoreERC4626) collateral configs
 #
-# PYUSD0: yieldToUnderlying = syWFLOWv→WFLOW (fee 100), debtToCollateral = WFLOW→PYUSD0 (fee 500)
+# PYUSD0: yieldToUnderlying = syWFLOWv→WFLOW (fee 100), debtToCollateral = WFLOW→PYUSD0 (fee 3000)
+# Note: no WFLOW/PYUSD0 fee500 pool exists on mainnet — use fee3000 (pool 0x0fdba612...).
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.syWFLOWvStrategy' \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
@@ -207,7 +198,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mor
     '["0xCBf9a7753F9D2d0e8141ebB36d99f87AcEf98597","0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"]' \
     '[100]' \
     '["0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e","0x99aF3EeA856556646C98c8B9b2548Fe815240750"]' \
-    '[500]' \
+    '[3000]' \
     --network mainnet \
     --signer mainnet-admin
 
