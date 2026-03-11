@@ -68,11 +68,20 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         return nil
     }
 
-    /// Checks if an AutoBalancer has at least one active (Scheduled) transaction.
+    /// Checks if an AutoBalancer has at least one active internally-managed transaction.
     /// Used by Supervisor to detect stuck yield vaults that need recovery.
     ///
+    /// A transaction is considered active when it is:
+    /// - still `Scheduled`, or
+    /// - already marked `Executed` by FlowTransactionScheduler, but the AutoBalancer has not
+    ///   yet advanced its last rebalance timestamp past that transaction's scheduled time.
+    ///
+    /// The second case matters because FlowTransactionScheduler flips status to `Executed`
+    /// before the handler actually runs. Without treating that in-flight window as active,
+    /// the Supervisor can falsely classify healthy vaults as stuck and recover them twice.
+    ///
     /// @param id: The yield vault/AutoBalancer ID
-    /// @return Bool: true if there's at least one Scheduled transaction, false otherwise
+    /// @return Bool: true if there's at least one active internally-managed transaction, false otherwise
     ///
     access(all) fun hasActiveSchedule(id: UInt64): Bool {
         let autoBalancer = self.borrowAutoBalancer(id: id)
@@ -80,10 +89,20 @@ access(all) contract FlowYieldVaultsAutoBalancers {
             return false
         }
 
+        let lastRebalanceTimestamp = autoBalancer!.getLastRebalanceTimestamp()
         let txnIDs = autoBalancer!.getScheduledTransactionIDs()
         for txnID in txnIDs {
-            if autoBalancer!.borrowScheduledTransaction(id: txnID)?.status() == FlowTransactionScheduler.Status.Scheduled {
-                return true
+            if let scheduledTxn = autoBalancer!.borrowScheduledTransaction(id: txnID) {
+                if let status = scheduledTxn.status() {
+                    if status == FlowTransactionScheduler.Status.Scheduled {
+                        return true
+                    }
+
+                    if status == FlowTransactionScheduler.Status.Executed
+                        && scheduledTxn.timestamp > lastRebalanceTimestamp {
+                        return true
+                    }
+                }
             }
         }
         return false
@@ -110,7 +129,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
             return false // Not configured for recurring, can't be "stuck"
         }
 
-        // Check if there's an active schedule
+        // Check if there's an active schedule or an in-flight due execution
         if self.hasActiveSchedule(id: id) {
             return false // Has active schedule, not stuck
         }
