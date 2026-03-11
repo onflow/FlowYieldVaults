@@ -609,9 +609,8 @@ access(all) contract PMStrategiesV1 {
 
         var nav = 0.0
 
-        let ab = FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: id)
-        if ab != nil {
-            let sharesBalance = ab!.vaultBalance()
+        if let ab = FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: id) {
+            let sharesBalance = ab.vaultBalance()
             if sharesBalance > 0.0 {
                 let vaultAddr = self._getYieldTokenEVMAddress(forStrategy: strategyType, collateralType: collateralType)
                     ?? panic("No EVM vault address configured for \(strategyType.identifier)")
@@ -634,30 +633,40 @@ access(all) contract PMStrategiesV1 {
         return nav + self.getPendingRedeemNAVBalance(yieldVaultID: id)
     }
 
-    /// Returns the COA capability for this account
+    /// Returns the COA capability for this account, issuing once and storing for reuse.
     /// TODO: this is temporary until we have a better way to pass user's COAs to inner connectors
     access(self)
     fun _getCOACapability(): Capability<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount> {
-        let coaCap = self.account.capabilities.storage.issue<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
-        assert(coaCap.check(), message: "Could not issue COA capability")
-        return coaCap
+        let capPath = /storage/strategiesCOACap
+        if self.account.storage.type(at: capPath) == nil {
+            let coaCap = self.account.capabilities.storage.issue<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
+            assert(coaCap.check(), message: "Could not issue COA capability")
+            self.account.storage.save(coaCap, to: capPath)
+        }
+        return self.account.storage.copy<Capability<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount>>(from: capPath)
+            ?? panic("Could not load COA capability from storage")
+    }
+
+    /// Returns the FlowToken vault capability for fee payment, issuing once and storing for reuse.
+    access(self)
+    fun _getFeeSourceCap(): Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}> {
+        let capPath = /storage/strategiesFeeSource
+        if self.account.storage.type(at: capPath) == nil {
+            let cap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(/storage/flowTokenVault)
+            self.account.storage.save(cap, to: capPath)
+        }
+        return self.account.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: capPath)
+            ?? panic("Could not load fee source capability")
     }
 
     /// Returns a FungibleTokenConnectors.VaultSinkAndSource used to subsidize cross VM token movement in contract-
     /// defined strategies.
     access(self)
     fun _createFeeSource(withID: DeFiActions.UniqueIdentifier?): {DeFiActions.Sink, DeFiActions.Source} {
-        let capPath = /storage/strategiesFeeSource
-        if self.account.storage.type(at: capPath) == nil {
-            let cap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(/storage/flowTokenVault)
-            self.account.storage.save(cap, to: capPath)
-        }
-        let vaultCap = self.account.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: capPath)
-            ?? panic("Could not find fee source Capability at \(capPath)")
         return FungibleTokenConnectors.VaultSinkAndSource(
             min: nil,
             max: nil,
-            vault: vaultCap,
+            vault: self._getFeeSourceCap(),
             uniqueID: withID
         )
     }
@@ -773,12 +782,16 @@ access(all) contract PMStrategiesV1 {
         access(all) fun resolveView(_ view: Type): AnyStruct? { return nil }
 
         /// Called by FlowTransactionScheduler when the timelock expires.
+        /// No-ops gracefully if the pending redeem was already cleared.
         access(FlowTransactionScheduler.Execute) fun executeTransaction(id: UInt64, data: AnyStruct?) {
             let dataDict = data as? {String: AnyStruct}
                 ?? panic("PendingRedeemHandler: invalid data format")
             let yieldVaultID = dataDict["yieldVaultID"] as? UInt64
                 ?? panic("PendingRedeemHandler: missing yieldVaultID in data")
 
+            if self.pendingRedeems[yieldVaultID] == nil {
+                return
+            }
             PMStrategiesV1._claimRedeem(yieldVaultID: yieldVaultID)
         }
 
@@ -802,8 +815,13 @@ access(all) contract PMStrategiesV1 {
         }
 
         access(contract) fun removeScheduledTx(id: UInt64) {
-            if let old <- self.scheduledTxns.remove(key: id) {
-                destroy old
+            if let tx <- self.scheduledTxns.remove(key: id) {
+                // Properly cancel with the scheduler if still scheduled; otherwise just destroy
+                if tx.status() == FlowTransactionScheduler.Status.Scheduled {
+                    destroy FlowTransactionScheduler.cancel(scheduledTx: <-tx)
+                } else {
+                    destroy tx
+                }
             }
         }
     }
@@ -813,7 +831,7 @@ access(all) contract PMStrategiesV1 {
         return StoragePath(identifier: "PMStrategiesV1PendingRedeemHandler")!
     }
 
-    access(self) view fun _handlerCapPath(): StoragePath {
+    access(self) view fun _handlerCapStoragePath(): StoragePath {
         return StoragePath(identifier: "PMStrategiesV1PendingRedeemHandlerCap")!
     }
 
@@ -825,7 +843,7 @@ access(all) contract PMStrategiesV1 {
 
     /// Returns the reusable handler capability for FlowTransactionScheduler, issuing once on first call.
     access(self) fun _getHandlerCap(): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}> {
-        let capPath = self._handlerCapPath()
+        let capPath = self._handlerCapStoragePath()
         if self.account.storage.type(at: capPath) == nil {
             let cap = self.account.capabilities.storage.issue<
                 auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}
@@ -840,15 +858,8 @@ access(all) contract PMStrategiesV1 {
 
     /// Creates a ScopedFTProvider for bridge fee payment from the contract's FlowToken vault.
     access(self) fun _createBridgeFeeProvider(): @ScopedFTProviders.ScopedFTProvider {
-        let capPath = /storage/strategiesFeeSource
-        if self.account.storage.type(at: capPath) == nil {
-            let cap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(/storage/flowTokenVault)
-            self.account.storage.save(cap, to: capPath)
-        }
-        let vaultCap = self.account.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: capPath)
-            ?? panic("Could not find fee source Capability")
         return <- ScopedFTProviders.createScopedFTProvider(
-            provider: vaultCap,
+            provider: self._getFeeSourceCap(),
             filters: [ScopedFTProviders.AllowanceFilter(FlowEVMBridgeUtils.calculateBridgeFee(bytes: 400_000))],
             expiration: getCurrentBlock().timestamp + 1.0
         )
@@ -879,7 +890,20 @@ access(all) contract PMStrategiesV1 {
         let managerRef = getAccount(userFlowAddress).capabilities.borrow<&FlowYieldVaults.YieldVaultManager>(
             FlowYieldVaults.YieldVaultManagerPublicPath
         ) ?? panic("User has no YieldVaultManager")
-        assert(managerRef.borrowYieldVault(id: yieldVaultID) != nil, message: "User does not own vault \(yieldVaultID)")
+        let yieldVault = managerRef.borrowYieldVault(id: yieldVaultID)
+            ?? panic("User does not own vault \(yieldVaultID)")
+
+        // Validate vaultEVMAddress matches the strategy's configured yield token EVM address
+        let strategyType = CompositeType(yieldVault.getStrategyType())
+            ?? panic("Invalid strategy type \(yieldVault.getStrategyType())")
+        let collateralType = CompositeType(yieldVault.getVaultTypeIdentifier())
+            ?? panic("Invalid collateral type \(yieldVault.getVaultTypeIdentifier())")
+        let expectedAddr = self._getYieldTokenEVMAddress(forStrategy: strategyType, collateralType: collateralType)
+            ?? panic("No EVM vault address configured for \(strategyType.identifier)")
+        assert(
+            expectedAddr.bytes == vaultEVMAddress.bytes,
+            message: "Provided vaultEVMAddress does not match strategy config"
+        )
 
         // Validate COA ownership: the provided COA must belong to userFlowAddress
         let publicCOA = getAccount(userFlowAddress).capabilities
@@ -1041,6 +1065,15 @@ access(all) contract PMStrategiesV1 {
         assert(
             userCOA.address().bytes == info.userCOAEVMAddress.bytes,
             message: "COA address does not match pending redeem requester"
+        )
+
+        // Extra safety: verify the COA is published by the original requester's Flow account
+        let publicCOA = getAccount(info.userFlowAddress).capabilities
+            .borrow<&EVM.CadenceOwnedAccount>(/public/evm)
+            ?? panic("Original requester has no public COA at /public/evm")
+        assert(
+            publicCOA.address().bytes == userCOA.address().bytes,
+            message: "Provided COA does not belong to original requester at \(info.userFlowAddress)"
         )
 
         // 1. Clear request on EVM
