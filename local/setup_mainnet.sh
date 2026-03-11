@@ -197,9 +197,11 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
     --network mainnet \
     --signer mainnet-admin
 
-# configure syWFLOWvStrategy (MoreERC4626) collateral configs
+# configure FlowYieldVaultsStrategiesV2 syWFLOWv strategy configs
 #
-# PYUSD0: yieldToUnderlying = syWFLOWv→WFLOW (fee 100), debtToCollateral = WFLOW→PYUSD0 (fee 500)
+# syWFLOWv -> WFLOW is the same for all collaterals (UniV3 fee 100).
+# WFLOW -> collateral differs per collateral type.
+# PYUSD0 uses a direct WFLOW -> PYUSD0 route (fee 500).
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.syWFLOWvStrategy' \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
@@ -211,16 +213,19 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mor
     --network mainnet \
     --signer mainnet-admin
 
-# MOET pre-swap: PYUSD0→MOET via UniV3 fee 100 (FlowALP only accepts MOET as stablecoin collateral)
+# Configure PYUSD0 -> MOET pre-swap for syWFLOWvStrategy. FlowALP only accepts
+# MOET as stablecoin collateral, so incoming PYUSD0 must be swapped before opening
+# or updating positions.
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_moet_preswap_config.cdc \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.MoreERC4626StrategyComposer' \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
-    '["0x99aF3EeA856556646C98c8B9b2548Fe815240750","0x213979bb8a9a86966999b3aa797c1fcf3b967ae2"]' \
+    '["0x99aF3EeA856556646C98c8B9b2548Fe815240750","0x213979bB8A9A86966999b3AA797C1fcf3B967ae2"]' \
     '[100]' \
     --network mainnet \
     --signer mainnet-admin
 
-# WBTC: no WFLOW/WBTC pool — use 2-hop WFLOW→WETH→WBTC (fees 3000/3000)
+# WBTC uses a 2-hop WFLOW -> WETH -> WBTC route (fees 3000/3000) because no
+# direct WFLOW/WBTC pool is configured here.
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.syWFLOWvStrategy' \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault' \
@@ -232,7 +237,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mor
     --network mainnet \
     --signer mainnet-admin
 
-# WETH: yieldToUnderlying = syWFLOWv→WFLOW (fee 100), debtToCollateral = WFLOW→WETH (fee 3000)
+# WETH uses a direct WFLOW -> WETH route (fee 3000).
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.syWFLOWvStrategy' \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault' \

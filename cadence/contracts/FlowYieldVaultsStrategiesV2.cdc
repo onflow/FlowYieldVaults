@@ -323,6 +323,14 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 result.getType() == collateralType: "Withdraw Vault (\(result.getType().identifier)) is not of a requested collateral type (\(collateralType.identifier))"
             }
 
+            // Determine the internal collateral type (may be MOET if a pre-swap was applied).
+            var internalCollateralType = collateralType
+            if let id = self.uniqueID {
+                if FlowYieldVaultsStrategiesV2._getOriginalCollateralType(id.id) != nil {
+                    internalCollateralType = self.sink.getSinkType()
+                }
+            }
+
             // Step 1: Get debt amounts - returns {Type: UFix64} dictionary
             let debtsByType = self.position.getTotalDebt()
 
@@ -331,6 +339,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 debtsByType.length <= 1,
                 message: "FUSDEVStrategy position must have at most one debt type, found \(debtsByType.length)"
             )
+
+            var debtType: Type? = nil
+            for currentDebtType in debtsByType.keys {
+                debtType = currentDebtType
+            }
 
             // Step 2: Calculate total debt amount
             var totalDebtAmount: UFix64 = 0.0
@@ -358,21 +371,27 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 }
                 var collateralVault <- resultVaults.removeFirst()
                 destroy resultVaults
+                assert(
+                    collateralVault.getType() == internalCollateralType,
+                    message: "closePosition returned unexpected collateral type \(collateralVault.getType().identifier); expected \(internalCollateralType.identifier)"
+                )
                 // Convert internal collateral (MOET) → external collateral (e.g. PYUSD0) if needed
-                if let id = self.uniqueID {
-                    if let moetToOrigSwapper = FlowYieldVaultsStrategiesV2._getMoetToCollateralSwapper(id.id) {
-                        if collateralVault.balance > 0.0 {
-                            let quote = moetToOrigSwapper.quoteOut(forProvided: collateralVault.balance, reverse: false)
-                            if quote.outAmount > 0.0 {
-                                let extVault <- moetToOrigSwapper.swap(quote: quote, inVault: <-collateralVault)
-                                FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
-                                return <- extVault
+                if internalCollateralType != collateralType {
+                    if let id = self.uniqueID {
+                        if let moetToOrigSwapper = FlowYieldVaultsStrategiesV2._getMoetToCollateralSwapper(id.id) {
+                            if collateralVault.balance > 0.0 {
+                                let quote = moetToOrigSwapper.quoteOut(forProvided: collateralVault.balance, reverse: false)
+                                if quote.outAmount > 0.0 {
+                                    let extVault <- moetToOrigSwapper.swap(quote: quote, inVault: <-collateralVault)
+                                    FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
+                                    return <- extVault
+                                }
                             }
                         }
-                        Burner.burn(<-collateralVault)
-                        FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
-                        return <- DeFiActionsUtils.getEmptyVault(collateralType)
                     }
+                    Burner.burn(<-collateralVault)
+                    FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
+                    return <- DeFiActionsUtils.getEmptyVault(collateralType)
                 }
                 FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
                 return <- collateralVault
@@ -454,37 +473,78 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             // Step 8: Close position - pool pulls up to the (now pre-reduced) debt from moetSource
             let resultVaults <- self.position.closePosition(repaymentSources: [moetSource])
 
-            // With one collateral type and one debt type, the pool returns at most two vaults:
-            // the collateral vault and optionally a MOET overpayment dust vault.
-            // closePosition returns vaults in dict-iteration order (hash-based), so we cannot
-            // assume the collateral vault is first. Find it by type and convert any non-collateral
-            // vaults (MOET overpayment dust) back to collateral via the stored swapper.
+            assert(
+                resultVaults.length >= 1 && resultVaults.length <= 2,
+                message: "Expected 1 or 2 vaults from closePosition, got \(resultVaults.length)"
+            )
+
+            // With one collateral type and one debt type, closePosition returns the internal
+            // collateral vault and may also return a debt-token overpayment dust vault.
+            // In the stablecoin pre-swap path, the internal collateral is also MOET, so both
+            // returned vaults may share the same token type. Aggregate every internal-collateral
+            // vault; any remaining non-empty vault must match the debt type and is routed back
+            // into collateral via the stored debt→collateral swapper.
             let debtToCollateralSwapper = FlowYieldVaultsStrategiesV2._getDebtToCollateralSwapper(self.uniqueID!.id)
 
-            var collateralVault <- DeFiActionsUtils.getEmptyVault(collateralType)
+            var collateralVault <- DeFiActionsUtils.getEmptyVault(internalCollateralType)
+            var foundCollateral = false
             while resultVaults.length > 0 {
-                let v <- resultVaults.removeFirst()
-                if v.getType() == collateralType {
-                    collateralVault.deposit(from: <-v)
-                } else if v.balance > 0.0 {
-                    if let swapper = debtToCollateralSwapper {
-                        // Quote first — if dust is too small to route, destroy it
-                        let quote = swapper.quoteOut(forProvided: v.balance, reverse: false)
+                let returnedVault <- resultVaults.removeFirst()
+                if returnedVault.getType() == internalCollateralType {
+                    foundCollateral = true
+                    collateralVault.deposit(from: <-returnedVault)
+                } else {
+                    let expectedDebtType = debtType
+                        ?? panic(
+                            "FUSDEVStrategy closePosition returned non-collateral vault \(returnedVault.getType().identifier) with no recorded debt type"
+                        )
+                    assert(
+                        returnedVault.getType() == expectedDebtType,
+                        message: "closePosition returned unexpected vault type \(returnedVault.getType().identifier); expected \(expectedDebtType.identifier)"
+                    )
+                    if returnedVault.balance > 0.0 {
+                        let swapper = debtToCollateralSwapper
+                            ?? panic(
+                                "No debt→collateral swapper found for non-zero \(returnedVault.getType().identifier) dust"
+                            )
+                        // Quote first — if dust is too small to route, destroy it.
+                        let quote = swapper.quoteOut(forProvided: returnedVault.balance, reverse: false)
                         if quote.outAmount > 0.0 {
-                            let swapped <- swapper.swap(quote: quote, inVault: <-v)
+                            let swapped <- swapper.swap(quote: quote, inVault: <-returnedVault)
                             collateralVault.deposit(from: <-swapped)
                         } else {
-                            Burner.burn(<-v)
+                            Burner.burn(<-returnedVault)
                         }
                     } else {
-                        Burner.burn(<-v)
+                        Burner.burn(<-returnedVault)
                     }
-                } else {
-                    Burner.burn(<-v)
                 }
             }
 
             destroy resultVaults
+            assert(
+                foundCollateral,
+                message: "closePosition did not return internal collateral of type \(internalCollateralType.identifier)"
+            )
+
+            if internalCollateralType != collateralType {
+                if let id = self.uniqueID {
+                    if let moetToOrigSwapper = FlowYieldVaultsStrategiesV2._getMoetToCollateralSwapper(id.id) {
+                        if collateralVault.balance > 0.0 {
+                            let quote = moetToOrigSwapper.quoteOut(forProvided: collateralVault.balance, reverse: false)
+                            if quote.outAmount > 0.0 {
+                                let extVault <- moetToOrigSwapper.swap(quote: quote, inVault: <-collateralVault)
+                                FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
+                                return <- extVault
+                            }
+                        }
+                    }
+                }
+                Burner.burn(<-collateralVault)
+                FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
+                return <- DeFiActionsUtils.getEmptyVault(collateralType)
+            }
+
             FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
             return <- collateralVault
         }
@@ -497,6 +557,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 FlowYieldVaultsStrategiesV2._removeOriginalCollateralType(id.id)
                 FlowYieldVaultsStrategiesV2._removeCollateralPreSwapper(id.id)
                 FlowYieldVaultsStrategiesV2._removeMoetToCollateralSwapper(id.id)
+                FlowYieldVaultsStrategiesV2._removeYieldToMoetSwapper(id.id)
+                FlowYieldVaultsStrategiesV2._removeCollateralToDebtSwapper(id.id)
                 FlowYieldVaultsStrategiesV2._removeDebtToCollateralSwapper(id.id)
             }
         }
@@ -745,34 +807,41 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 message: "Expected 1 or 2 vaults from closePosition, got \(resultVaults.length)"
             )
 
-            var collateralVault <- resultVaults.removeFirst()
-            assert(
-                collateralVault.getType() == internalCollateralType,
-                message: "First vault returned from closePosition must be internal collateral (\(internalCollateralType.identifier)), got \(collateralVault.getType().identifier)"
-            )
-
-            // Handle any overpayment dust (FLOW) returned as the second vault.
+            // closePosition returns vaults in dict-iteration order, so do not assume the
+            // collateral vault is first. Identify it by type and route any remaining vault
+            // as overpayment dust.
+            var collateralVault <- DeFiActionsUtils.getEmptyVault(internalCollateralType)
+            var foundCollateral = false
             while resultVaults.length > 0 {
-                let dustVault <- resultVaults.removeFirst()
-                if dustVault.balance > 0.0 {
-                    if dustVault.getType() == internalCollateralType {
-                        collateralVault.deposit(from: <-dustVault)
+                let returnedVault <- resultVaults.removeFirst()
+                if returnedVault.getType() == internalCollateralType {
+                    foundCollateral = true
+                    collateralVault.deposit(from: <-returnedVault)
+                } else if returnedVault.balance > 0.0 {
+                    // Handle overpayment dust (FLOW) returned by closePosition.
+                    let quote = self.debtToCollateralSwapper.quoteOut(
+                        forProvided: returnedVault.balance,
+                        reverse: false
+                    )
+                    if quote.outAmount > 0.0 {
+                        let swapped <- self.debtToCollateralSwapper.swap(
+                            quote: quote,
+                            inVault: <-returnedVault
+                        )
+                        collateralVault.deposit(from: <-swapped)
                     } else {
-                        // Quote first — if dust is too small to route, destroy it
-                        let quote = self.debtToCollateralSwapper.quoteOut(forProvided: dustVault.balance, reverse: false)
-                        if quote.outAmount > 0.0 {
-                            let swapped <- self.debtToCollateralSwapper.swap(quote: quote, inVault: <-dustVault)
-                            collateralVault.deposit(from: <-swapped)
-                        } else {
-                            Burner.burn(<-dustVault)
-                        }
+                        Burner.burn(<-returnedVault)
                     }
                 } else {
-                    Burner.burn(<-dustVault)
+                    Burner.burn(<-returnedVault)
                 }
             }
 
             destroy resultVaults
+            assert(
+                foundCollateral,
+                message: "closePosition did not return internal collateral of type \(internalCollateralType.identifier)"
+            )
 
             // Convert internal collateral (MOET) → external collateral (e.g. PYUSD0) if needed
             if internalCollateralType != collateralType {
@@ -2083,6 +2152,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         FlowYieldVaultsStrategiesV2.config["yieldToMoetSwappers"] = partition
     }
 
+    access(contract) fun _removeYieldToMoetSwapper(_ id: UInt64) {
+        var partition = FlowYieldVaultsStrategiesV2.config["yieldToMoetSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
+        partition.remove(key: id)
+        FlowYieldVaultsStrategiesV2.config["yieldToMoetSwappers"] = partition
+    }
+
     // --- "debtToCollateralSwappers" partition ---
 
     access(contract) view fun _getDebtToCollateralSwapper(_ id: UInt64): {DeFiActions.Swapper}? {
@@ -2115,6 +2190,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     access(contract) fun _setCollateralToDebtSwapper(_ id: UInt64, _ swapper: {DeFiActions.Swapper}) {
         var partition = FlowYieldVaultsStrategiesV2.config["collateralToDebtSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
         partition[id] = swapper
+        FlowYieldVaultsStrategiesV2.config["collateralToDebtSwappers"] = partition
+    }
+
+    access(contract) fun _removeCollateralToDebtSwapper(_ id: UInt64) {
+        var partition = FlowYieldVaultsStrategiesV2.config["collateralToDebtSwappers"] as! {UInt64: {DeFiActions.Swapper}}? ?? {}
+        partition.remove(key: id)
         FlowYieldVaultsStrategiesV2.config["collateralToDebtSwappers"] = partition
     }
 
