@@ -285,6 +285,16 @@
 				"testnet": "71144a1aff6b7148"
 			}
 		},
+		"PMStrategies": {
+			"source": "cadence/contracts/deprecated/PMStrategies.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
+				"mainnet-fork": "b1d63873c3cc9f79",
+				"testing": "0000000000000009",
+				"testnet": "d2580caf2ef07c2f"
+			}
+		},
 		"PMStrategiesV1": {
 			"source": "cadence/contracts/PMStrategiesV1.cdc",
 			"aliases": {
@@ -1124,6 +1134,23 @@
 							"type": "String"
 						}
 					]
+				},
+				{
+					"name": "PMStrategies",
+					"args": [
+						{
+							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+							"type": "String"
+						},
+						{
+							"value": "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+							"type": "String"
+						},
+						{
+							"value": "0x370A8DF17742867a44e56223EC20D82092242C85",
+							"type": "String"
+						}
+					]
 				}
 			]
 		},
@@ -1164,6 +1191,23 @@
 				},
 				{
 					"name": "PMStrategiesV1",
+					"args": [
+						{
+							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+							"type": "String"
+						},
+						{
+							"value": "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+							"type": "String"
+						},
+						{
+							"value": "0x370A8DF17742867a44e56223EC20D82092242C85",
+							"type": "String"
+						}
+					]
+				},
+				{
+					"name": "PMStrategies",
 					"args": [
 						{
 							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
