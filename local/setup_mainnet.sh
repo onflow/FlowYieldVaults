@@ -296,6 +296,8 @@ flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-ma
 
 # test FlowYieldVault strategy
 #
+# FUSDEV Strategy
+#
 # WFLOW (FLOW)
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
 #   A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.FUSDEVStrategy \
@@ -323,9 +325,47 @@ flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-ma
 #   --network mainnet \
 #   --signer <TEST_USER>
 #
-# PYUSD0
+# PYUSD0 - should fail
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
 #   A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.FUSDEVStrategy \
+#   A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault \
+#   0.01 \
+#   --compute-limit 9999 \
+#   --network mainnet \
+#   --signer <TEST_USER>
+#
+# syWFLOWv Strategy
+#
+# WFLOW (FLOW) - should fail
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.syWFLOWvStrategy \
+#   A.1654653399040a61.FlowToken.Vault \
+#   1.0 \
+#   --compute-limit 9999 \
+#   --network mainnet \
+#   --signer alex
+#
+# WBTC (BTCf)
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.syWFLOWvStrategy \
+#   A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault \
+#   0.0000001 \
+#   --compute-limit 9999 \
+#   --network mainnet \
+#   --signer <TEST_USER>
+#
+# WETH (ETHf)
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.syWFLOWvStrategy \
+#   A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault \
+#   0.00001 \
+#   --compute-limit 9999 \
+#   --network mainnet \
+#   --signer <TEST_USER>
+#
+# PYUSD0
+# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+#   A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.syWFLOWvStrategy \
 #   A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault \
 #   0.01 \
 #   --compute-limit 9999 \
