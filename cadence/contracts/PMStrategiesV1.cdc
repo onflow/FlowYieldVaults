@@ -40,6 +40,24 @@ import "FungibleTokenMetadataViews"
 ///
 access(all) contract PMStrategiesV1 {
 
+    access(all) event RedeemRequested(
+        yieldVaultID: UInt64,
+        userAddress: Address,
+        shares: UFix64,
+        vaultEVMAddressHex: String
+    )
+    access(all) event RedeemClaimed(
+        yieldVaultID: UInt64,
+        userAddress: Address,
+        assetsReceivedEVM: UInt256,
+        vaultEVMAddressHex: String
+    )
+    access(all) event RedeemCancelled(
+        yieldVaultID: UInt64,
+        userAddress: Address,
+        vaultEVMAddressHex: String
+    )
+
     access(all) let univ3FactoryEVMAddress: EVM.EVMAddress
     access(all) let univ3RouterEVMAddress: EVM.EVMAddress
     access(all) let univ3QuoterEVMAddress: EVM.EVMAddress
@@ -770,12 +788,22 @@ access(all) contract PMStrategiesV1 {
     access(all) resource PendingRedeemHandler: FlowTransactionScheduler.TransactionHandler {
         /// Keyed by yieldVaultID. Each user's YieldVault has a globally unique ID.
         access(contract) let pendingRedeems: {UInt64: PendingRedeemInfo}
-        /// Scheduled transaction resources for cancellation support.
-        access(contract) var scheduledTxns: @{UInt64: FlowTransactionScheduler.ScheduledTransaction}
+        /// Keyed by yieldVaultID. Holds scheduled claim resources for status queries and cancellation.
+        access(contract) let scheduledTxns: @{UInt64: FlowTransactionScheduler.ScheduledTransaction}
+        /// Safety margin added after the EVM timelock to ensure the claim executes after expiry.
+        access(all) var schedulerBufferSeconds: UFix64
+        /// Extensibility.
+        access(all) let metadata: {String: AnyStruct}
 
         init() {
             self.pendingRedeems = {}
             self.scheduledTxns <- {}
+            self.schedulerBufferSeconds = 30.0
+            self.metadata = {}
+        }
+
+        access(Configure) fun setSchedulerBufferSeconds(_ seconds: UFix64) {
+            self.schedulerBufferSeconds = seconds
         }
 
         access(all) view fun getViews(): [Type] { return [] }
@@ -824,6 +852,14 @@ access(all) contract PMStrategiesV1 {
                 }
             }
         }
+
+        access(contract) view fun getScheduledClaim(id: UInt64): &FlowTransactionScheduler.ScheduledTransaction? {
+            return &self.scheduledTxns[id]
+        }
+
+        access(contract) view fun getAllPendingRedeemIDs(): [UInt64] {
+            return self.pendingRedeems.keys
+        }
     }
 
     /// Computes the storage path for the PendingRedeemHandler.
@@ -835,14 +871,13 @@ access(all) contract PMStrategiesV1 {
         return StoragePath(identifier: "PMStrategiesV1PendingRedeemHandlerCap")!
     }
 
-    /// Borrows the PendingRedeemHandler from contract account storage.
-    access(self) fun _borrowHandler(): &PendingRedeemHandler {
+    /// Borrows the PendingRedeemHandler from contract account storage, or nil if not yet initialized.
+    access(self) view fun _borrowHandler(): &PendingRedeemHandler? {
         return self.account.storage.borrow<&PendingRedeemHandler>(from: self._pendingRedeemHandlerPath())
-            ?? panic("PendingRedeemHandler not found — run setup transaction first")
     }
 
     /// Returns the reusable handler capability for FlowTransactionScheduler, issuing once on first call.
-    access(self) fun _getHandlerCap(): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}> {
+    access(self) fun _getHandlerSchedulerCap(): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}> {
         let capPath = self._handlerCapStoragePath()
         if self.account.storage.type(at: capPath) == nil {
             let cap = self.account.capabilities.storage.issue<
@@ -882,6 +917,7 @@ access(all) contract PMStrategiesV1 {
         fees: @FlowToken.Vault
     ) {
         let handler = self._borrowHandler()
+            ?? panic("PendingRedeemHandler not initialized")
         assert(handler.getPendingRedeem(id: yieldVaultID) == nil, message: "Pending redeem already exists for vault \(yieldVaultID)")
 
         // Validate vault ownership: the user at userFlowAddress must own this YieldVault
@@ -957,28 +993,35 @@ access(all) contract PMStrategiesV1 {
             vaultEVMAddress: vaultEVMAddress
         ))
 
-        // 6. Schedule automated claim after timelock expires
+        // 6. Schedule automated claim after timelock expires.
+        // FlowTransactionScheduler.Scheduled event carries the exact execution timestamp for backend ingestion.
         let timelockSeconds = self._evmGetWithdrawalTimelock(vault: vaultEVMAddress)
             ?? panic("Could not query withdrawal timelock")
-        let bufferSeconds = 300.0
-        let claimTimestamp = getCurrentBlock().timestamp + UFix64(timelockSeconds) + bufferSeconds
 
         let scheduledTx <- FlowTransactionScheduler.schedule(
-            handlerCap: self._getHandlerCap(),
+            handlerCap: self._getHandlerSchedulerCap(),
             data: {"yieldVaultID": yieldVaultID},
-            timestamp: claimTimestamp,
+            timestamp: getCurrentBlock().timestamp + UFix64(timelockSeconds) + handler.schedulerBufferSeconds,
             priority: FlowTransactionScheduler.Priority.Low,
             executionEffort: 2500,
             fees: <-fees
         )
 
         handler.setScheduledTx(id: yieldVaultID, tx: <-scheduledTx)
+
+        emit RedeemRequested(
+            yieldVaultID: yieldVaultID,
+            userAddress: userFlowAddress,
+            shares: shares,
+            vaultEVMAddressHex: vaultEVMAddress.toString()
+        )
     }
 
     /// Called by PendingRedeemHandler.executeTransaction when the timelock has expired.
     /// Redeems shares via service COA, converts underlying ERC-20 to Cadence, deposits to user's wallet.
     access(self) fun _claimRedeem(yieldVaultID: UInt64) {
         let handler = self._borrowHandler()
+            ?? panic("PendingRedeemHandler not initialized")
         let info = handler.getPendingRedeem(id: yieldVaultID)
             ?? panic("No pending redeem for vault \(yieldVaultID)")
 
@@ -1039,6 +1082,12 @@ access(all) contract PMStrategiesV1 {
         }
 
         // 3. Cleanup
+        emit RedeemClaimed(
+            yieldVaultID: yieldVaultID,
+            userAddress: info.userFlowAddress,
+            assetsReceivedEVM: assetsReceived,
+            vaultEVMAddressHex: info.vaultEVMAddress.toString()
+        )
         handler.removePendingRedeem(id: yieldVaultID)
         handler.removeScheduledTx(id: yieldVaultID)
     }
@@ -1053,6 +1102,7 @@ access(all) contract PMStrategiesV1 {
         userCOA: auth(EVM.Call) &EVM.CadenceOwnedAccount
     ) {
         let handler = self._borrowHandler()
+            ?? panic("PendingRedeemHandler not initialized")
         let info = handler.getPendingRedeem(id: yieldVaultID)
             ?? panic("No pending redeem for vault \(yieldVaultID)")
 
@@ -1106,6 +1156,11 @@ access(all) contract PMStrategiesV1 {
         destroy yieldTokenVault
 
         // 5. Cancel scheduled transaction and cleanup
+        emit RedeemCancelled(
+            yieldVaultID: yieldVaultID,
+            userAddress: info.userFlowAddress,
+            vaultEVMAddressHex: info.vaultEVMAddress.toString()
+        )
         handler.removeScheduledTx(id: yieldVaultID)
         handler.removePendingRedeem(id: yieldVaultID)
     }
@@ -1114,8 +1169,7 @@ access(all) contract PMStrategiesV1 {
     /// Converts shares → underlying via ERC-4626 convertToAssets, matching the same
     /// conversion used by _navBalanceFor (which calls this function).
     access(all) fun getPendingRedeemNAVBalance(yieldVaultID: UInt64): UFix64 {
-        let handlerPath = self._pendingRedeemHandlerPath()
-        if let handler = self.account.storage.borrow<&PendingRedeemHandler>(from: handlerPath) {
+        if let handler = self._borrowHandler() {
             if let info = handler.getPendingRedeem(id: yieldVaultID) {
                 let navWei = ERC4626Utils.convertToAssets(vault: info.vaultEVMAddress, shares: info.sharesEVM)
                     ?? panic("convertToAssets failed for pending redeem")
@@ -1129,9 +1183,33 @@ access(all) contract PMStrategiesV1 {
 
     /// Returns the full PendingRedeemInfo for a given yield vault, or nil if none.
     access(all) view fun getPendingRedeemInfo(yieldVaultID: UInt64): PendingRedeemInfo? {
-        let handlerPath = self._pendingRedeemHandlerPath()
-        if let handler = self.account.storage.borrow<&PendingRedeemHandler>(from: handlerPath) {
+        if let handler = self._borrowHandler() {
             return handler.getPendingRedeem(id: yieldVaultID)
+        }
+        return nil
+    }
+
+    /// Returns all yield vault IDs with active pending redeems; intended for operational audit and debugging.
+    access(all) view fun getAllPendingRedeemIDs(): [UInt64] {
+        if let handler = self._borrowHandler() {
+            return handler.getAllPendingRedeemIDs()
+        }
+        return []
+    }
+
+    /// Returns the scheduled claim transaction for a yield vault, or nil if none.
+    /// Callers can read .id, .timestamp, and .status() on the returned reference.
+    access(all) view fun getScheduledClaim(yieldVaultID: UInt64): &FlowTransactionScheduler.ScheduledTransaction? {
+        if let handler = self._borrowHandler() {
+            return handler.getScheduledClaim(id: yieldVaultID)
+        }
+        return nil
+    }
+
+    /// Returns the current scheduler buffer (seconds added after EVM timelock), or nil if handler not initialized.
+    access(all) view fun getSchedulerBufferSeconds(): UFix64? {
+        if let handler = self._borrowHandler() {
+            return handler.schedulerBufferSeconds
         }
         return nil
     }

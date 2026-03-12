@@ -8,11 +8,13 @@ import Test
 /// Tests:
 ///   1. Create a syWFLOWv yield vault and deposit FLOW
 ///   2. Initialize PendingRedeemHandler
-///   3. Request a deferred redemption (requestRedeem)
+///   3. Request a deferred redemption (requestRedeem) with specific amount
 ///   4. Query pending state (getPendingRedeemInfo, getPendingRedeemNAVBalance)
 ///   5. Verify navBalance includes pending shares
-///   6. Cancel the deferred redemption (clearRedeemRequest)
-///   7. Verify shares restored and pending state cleared
+///   6. View functions while pending (getAllPendingRedeemIDs, getScheduledClaim, getSchedulerBufferSeconds)
+///   7. Negative: wrong COA on clearRedeemRequest, no-pending clearRedeemRequest
+///   8. Cancel the deferred redemption (clearRedeemRequest), verify state cleared
+///   9. Redeem all (nil amount) after cancel — exercises minimumAvailable() path, verifies lifecycle repeatability
 ///
 /// claimRedeem is not fork-testable: moveTime() advances block.timestamp past
 /// the 48h timelock but EVM oracle/yield state stays frozen, causing redeem() to
@@ -32,7 +34,7 @@ access(all) let userAccount = Test.getAccount(0x443472749ebdaac8)
 
 access(all) let syWFLOWvStrategyIdentifier = "A.b1d63873c3cc9f79.PMStrategiesV1.syWFLOWvStrategy"
 access(all) let flowVaultIdentifier = "A.1654653399040a61.FlowToken.Vault"
-access(all) let schedulingFee: UFix64 = 0.5
+access(all) let schedulingFee = 0.5
 
 // --- Test State ---
 
@@ -195,7 +197,7 @@ access(all) fun testCreateYieldVaultForDeferredRedeem() {
     let ids = idsResult.returnValue! as! [UInt64]?
     Test.assert(ids != nil && ids!.length > 0, message: "Expected at least one yield vault")
     yieldVaultID = ids![ids!.length - 1]
-    log("Created yield vault ID: ".concat(yieldVaultID.toString()))
+    log("Created yield vault ID: \(yieldVaultID)")
 
     let balResult = _executeScript(
         "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
@@ -204,19 +206,19 @@ access(all) fun testCreateYieldVaultForDeferredRedeem() {
     Test.expect(balResult, Test.beSucceeded())
     let balance = balResult.returnValue! as! UFix64?
     Test.assert(balance != nil && balance! > 0.0, message: "Expected positive balance after deposit")
-    log("Vault balance: ".concat(balance!.toString()))
+    log("Vault balance: \(balance!)")
 }
 
 access(all) fun testNoPendingRedeemInitially() {
     let infoResult = _executeScript(
-        "../scripts/flow-yield-vaults/get_pending_redeem_info.cdc",
+        "scripts/pm-strategies/get_pending_redeem_info.cdc",
         [yieldVaultID]
     )
     Test.expect(infoResult, Test.beSucceeded())
     Test.assert(infoResult.returnValue == nil, message: "Expected no pending redeem initially")
 
     let navResult = _executeScript(
-        "../scripts/flow-yield-vaults/get_pending_redeem_nav_balance.cdc",
+        "scripts/pm-strategies/get_pending_redeem_nav_balance.cdc",
         [yieldVaultID]
     )
     Test.expect(navResult, Test.beSucceeded())
@@ -227,14 +229,14 @@ access(all) fun testNoPendingRedeemInitially() {
 
 access(all) fun testRequestRedeem() {
     let navBefore = (_executeScript(
-        "../scripts/flow-yield-vaults/get_yield_vault_nav_balance.cdc",
+        "scripts/pm-strategies/get_yield_vault_nav_balance.cdc",
         [userAccount.address, yieldVaultID]
     ).returnValue! as! UFix64?)!
-    log("NAV balance before requestRedeem: ".concat(navBefore.toString()))
+    log("NAV balance before requestRedeem: \(navBefore)")
 
     log("Requesting deferred redeem for 1.0 FLOW worth of shares...")
     let result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/request_redeem.cdc",
+        "transactions/pm-strategies/request_redeem.cdc",
         [yieldVaultID, 1.0 as UFix64?, schedulingFee],
         [userAccount]
     )
@@ -243,7 +245,7 @@ access(all) fun testRequestRedeem() {
 
     // Verify pending state exists
     let infoResult = _executeScript(
-        "../scripts/flow-yield-vaults/get_pending_redeem_info.cdc",
+        "scripts/pm-strategies/get_pending_redeem_info.cdc",
         [yieldVaultID]
     )
     Test.expect(infoResult, Test.beSucceeded())
@@ -252,20 +254,20 @@ access(all) fun testRequestRedeem() {
 
     // Verify pending NAV > 0
     let navResult = _executeScript(
-        "../scripts/flow-yield-vaults/get_pending_redeem_nav_balance.cdc",
+        "scripts/pm-strategies/get_pending_redeem_nav_balance.cdc",
         [yieldVaultID]
     )
     Test.expect(navResult, Test.beSucceeded())
     let pendingNAV = navResult.returnValue! as! UFix64
     Test.assert(pendingNAV > 0.0, message: "Expected positive pending NAV")
-    log("Pending NAV: ".concat(pendingNAV.toString()))
+    log("Pending NAV: \(pendingNAV)")
 
     // NAV balance (via navBalance()) should include pending shares
     let navAfter = (_executeScript(
-        "../scripts/flow-yield-vaults/get_yield_vault_nav_balance.cdc",
+        "scripts/pm-strategies/get_yield_vault_nav_balance.cdc",
         [userAccount.address, yieldVaultID]
     ).returnValue! as! UFix64?)!
-    log("NAV balance after requestRedeem (should include pending): ".concat(navAfter.toString()))
+    log("NAV balance after requestRedeem (should include pending): \(navAfter)")
     Test.assert(
         equalAmounts(a: navAfter, b: navBefore, tolerance: 0.05),
         message: "NAV balance should still include pending shares"
@@ -276,14 +278,14 @@ access(all) fun testRequestRedeem() {
         "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
         [userAccount.address, yieldVaultID]
     ).returnValue! as! UFix64?)!
-    log("Available balance after requestRedeem: ".concat(availAfter.toString()))
+    log("Available balance after requestRedeem: \(availAfter)")
     Test.assert(availAfter < navBefore, message: "Available balance should drop after requestRedeem")
 }
 
 access(all) fun testDuplicateRequestRedeemFails() {
     log("Attempting duplicate requestRedeem (should fail)...")
     let result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/request_redeem.cdc",
+        "transactions/pm-strategies/request_redeem.cdc",
         [yieldVaultID, 0.5 as UFix64?, schedulingFee],
         [userAccount]
     )
@@ -291,16 +293,61 @@ access(all) fun testDuplicateRequestRedeemFails() {
     log("Duplicate requestRedeem correctly rejected")
 }
 
+access(all) fun testViewFunctionsWhilePending() {
+    // getAllPendingRedeemIDs — should contain exactly our yieldVaultID
+    let idsResult = _executeScript(
+        "scripts/pm-strategies/get_all_pending_redeem_ids.cdc",
+        []
+    )
+    Test.expect(idsResult, Test.beSucceeded())
+    let ids = idsResult.returnValue! as! [UInt64]
+    Test.assert(ids.length == 1, message: "Expected exactly one pending redeem ID")
+    Test.assert(ids[0] == yieldVaultID, message: "Pending ID should match yieldVaultID")
+    log("getAllPendingRedeemIDs: \(yieldVaultID)")
+
+    // getScheduledClaim — should return a future timestamp
+    let tsResult = _executeScript(
+        "scripts/pm-strategies/get_scheduled_claim_timestamp.cdc",
+        [yieldVaultID]
+    )
+    Test.expect(tsResult, Test.beSucceeded())
+    let ts = tsResult.returnValue! as! UFix64?
+    Test.assert(ts != nil, message: "Expected scheduled claim timestamp")
+    Test.assert(ts! > getCurrentBlock().timestamp, message: "Scheduled timestamp should be in the future")
+    log("getScheduledClaim timestamp: \(ts!)")
+
+    // getSchedulerBufferSeconds — should be non-nil
+    let bufResult = _executeScript(
+        "scripts/pm-strategies/get_scheduler_buffer_seconds.cdc",
+        []
+    )
+    Test.expect(bufResult, Test.beSucceeded())
+    let buf = bufResult.returnValue! as! UFix64?
+    Test.assert(buf != nil, message: "Expected scheduler buffer seconds")
+    log("getSchedulerBufferSeconds: \(buf!)")
+}
+
+access(all) fun testClearRedeemRequestWrongCOAFails() {
+    log("Attempting clearRedeemRequest with admin COA (should fail)...")
+    let result = _executeTransactionFile(
+        "transactions/pm-strategies/clear_redeem_request.cdc",
+        [yieldVaultID],
+        [adminAccount]
+    )
+    Test.expect(result, Test.beFailed())
+    log("clearRedeemRequest with wrong COA correctly rejected")
+}
+
 access(all) fun testClearRedeemRequest() {
     let navBefore = (_executeScript(
-        "../scripts/flow-yield-vaults/get_yield_vault_nav_balance.cdc",
+        "scripts/pm-strategies/get_yield_vault_nav_balance.cdc",
         [userAccount.address, yieldVaultID]
     ).returnValue! as! UFix64?)!
-    log("NAV balance before clearRedeemRequest: ".concat(navBefore.toString()))
+    log("NAV balance before clearRedeemRequest: \(navBefore)")
 
     log("Clearing redeem request...")
     let result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/clear_redeem_request.cdc",
+        "transactions/pm-strategies/clear_redeem_request.cdc",
         [yieldVaultID],
         [userAccount]
     )
@@ -309,14 +356,14 @@ access(all) fun testClearRedeemRequest() {
 
     // Pending state should be cleared
     let infoResult = _executeScript(
-        "../scripts/flow-yield-vaults/get_pending_redeem_info.cdc",
+        "scripts/pm-strategies/get_pending_redeem_info.cdc",
         [yieldVaultID]
     )
     Test.expect(infoResult, Test.beSucceeded())
     Test.assert(infoResult.returnValue == nil, message: "Expected no pending redeem after clear")
 
     let navResult = _executeScript(
-        "../scripts/flow-yield-vaults/get_pending_redeem_nav_balance.cdc",
+        "scripts/pm-strategies/get_pending_redeem_nav_balance.cdc",
         [yieldVaultID]
     )
     Test.expect(navResult, Test.beSucceeded())
@@ -325,13 +372,100 @@ access(all) fun testClearRedeemRequest() {
 
     // NAV balance should be preserved (shares returned to AutoBalancer)
     let navAfter = (_executeScript(
-        "../scripts/flow-yield-vaults/get_yield_vault_nav_balance.cdc",
+        "scripts/pm-strategies/get_yield_vault_nav_balance.cdc",
         [userAccount.address, yieldVaultID]
     ).returnValue! as! UFix64?)!
-    log("NAV balance after clearRedeemRequest: ".concat(navAfter.toString()))
+    log("NAV balance after clearRedeemRequest: \(navAfter)")
     Test.assert(
         equalAmounts(a: navAfter, b: navBefore, tolerance: 0.05),
         message: "NAV balance should be preserved after clearing redeem request"
     )
     log("Shares restored to AutoBalancer — confirmed")
+
+    // View functions should reflect cleared state
+    let idsResult = _executeScript(
+        "scripts/pm-strategies/get_all_pending_redeem_ids.cdc",
+        []
+    )
+    Test.expect(idsResult, Test.beSucceeded())
+    let clearedIds = idsResult.returnValue! as! [UInt64]
+    Test.assert(clearedIds.length == 0, message: "Expected no pending redeem IDs after clear")
+
+    let tsResult = _executeScript(
+        "scripts/pm-strategies/get_scheduled_claim_timestamp.cdc",
+        [yieldVaultID]
+    )
+    Test.expect(tsResult, Test.beSucceeded())
+    Test.assert(tsResult.returnValue == nil, message: "Expected no scheduled claim after clear")
+    log("View functions confirm cleared state")
+}
+
+access(all) fun testClearRedeemRequestNoPendingFails() {
+    log("Attempting clearRedeemRequest with no pending redeem (should fail)...")
+    let result = _executeTransactionFile(
+        "transactions/pm-strategies/clear_redeem_request.cdc",
+        [yieldVaultID],
+        [userAccount]
+    )
+    Test.expect(result, Test.beFailed())
+    log("clearRedeemRequest with no pending redeem correctly rejected")
+}
+
+access(all) fun testRedeemAllAfterCancel() {
+    let navBefore = (_executeScript(
+        "scripts/pm-strategies/get_yield_vault_nav_balance.cdc",
+        [userAccount.address, yieldVaultID]
+    ).returnValue! as! UFix64?)!
+    log("NAV before redeem-all: \(navBefore)")
+
+    // Request redeem with nil amount (redeem all shares)
+    log("Requesting deferred redeem for ALL shares (nil amount)...")
+    var result = _executeTransactionFile(
+        "transactions/pm-strategies/request_redeem.cdc",
+        [yieldVaultID, nil as UFix64?, schedulingFee],
+        [userAccount]
+    )
+    Test.expect(result, Test.beSucceeded())
+    log("requestRedeem (all) succeeded")
+
+    // Available balance should be ~0 (all shares moved to pending)
+    let availAfter = (_executeScript(
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        [userAccount.address, yieldVaultID]
+    ).returnValue! as! UFix64?)!
+    Test.assert(
+        equalAmounts(a: availAfter, b: 0.0, tolerance: 0.01),
+        message: "Available balance should be ~0 after redeem-all"
+    )
+    log("Available balance after redeem-all: \(availAfter)")
+
+    // Pending NAV should approximate the full vault NAV
+    let pendingNAV = (_executeScript(
+        "scripts/pm-strategies/get_pending_redeem_nav_balance.cdc",
+        [yieldVaultID]
+    ).returnValue! as! UFix64)
+    Test.assert(pendingNAV > 0.0, message: "Expected positive pending NAV for redeem-all")
+    Test.assert(
+        equalAmounts(a: pendingNAV, b: navBefore, tolerance: 0.05),
+        message: "Pending NAV should approximate full vault NAV"
+    )
+    log("Pending NAV (all): \(pendingNAV)")
+
+    // Cancel to leave clean state
+    log("Cancelling re-request...")
+    result = _executeTransactionFile(
+        "transactions/pm-strategies/clear_redeem_request.cdc",
+        [yieldVaultID],
+        [userAccount]
+    )
+    Test.expect(result, Test.beSucceeded())
+
+    let idsResult = _executeScript(
+        "scripts/pm-strategies/get_all_pending_redeem_ids.cdc",
+        []
+    )
+    Test.expect(idsResult, Test.beSucceeded())
+    let clearedIds = idsResult.returnValue! as! [UInt64]
+    Test.assert(clearedIds.length == 0, message: "Expected no pending redeems after re-cancel")
+    log("Re-request → cancel lifecycle complete")
 }
