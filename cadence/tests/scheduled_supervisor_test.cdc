@@ -599,6 +599,25 @@ fun testStuckYieldVaultDetectionLogic() {
     log("PASS: Stuck yield vault detection correctly identifies healthy yield vaults")
 }
 
+/// Returns per-yield-vault recovery event counts from YieldVaultRecovered events.
+///
+/// This is used by stress tests to distinguish "all vaults recovered at least once"
+/// from "lots of recovery events happened", which can otherwise hide duplicate
+/// recovery churn for the same vault IDs.
+///
+/// Example: 240 recovery events for 200 vaults can look healthy if the test only
+/// checks `events.length >= 200`, even though 40 of those events may be repeats.
+access(all)
+fun getRecoveredYieldVaultCounts(): {UInt64: Int} {
+    let counts: {UInt64: Int} = {}
+    let recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
+    for recoveredAny in recoveredEvents {
+        let recovered = recoveredAny as! FlowYieldVaultsSchedulerV1.YieldVaultRecovered
+        counts[recovered.yieldVaultID] = (counts[recovered.yieldVaultID] ?? 0) + 1
+    }
+    return counts
+}
+
 /// COMPREHENSIVE TEST: Insufficient Funds -> Failure -> Recovery
 ///
 /// This test validates the COMPLETE failure and recovery cycle:
@@ -939,9 +958,21 @@ fun testInsufficientFundsAndRecovery() {
 ///
 /// Flow: create 200 yield vaults, run 2 scheduling rounds, drain FLOW so executions fail,
 /// wait for vaults to be marked stuck, refund FLOW, schedule the supervisor, then advance
-/// time for ceil(200/MAX_BATCH_SIZE)+10 supervisor ticks. Asserts all 200 vaults are
-/// recovered (YieldVaultRecovered events), none still stuck, and all have active schedules.
-/// The +10 extra ticks are a buffer so every vault is processed despite scheduler timing.
+/// time for enough supervisor ticks to recover all unique vault IDs, plus a short
+/// stabilization window. This asserts:
+/// - every one of the 200 vault IDs is recovered at least once,
+/// - no recovery failures occur,
+/// - no vault emits more than one recovery event,
+/// - once all vaults are recovered and healthy, extra supervisor ticks do not emit
+///   additional recovery events,
+/// - none remain stuck, and all have active schedules.
+///
+/// Why this was tightened:
+/// the earlier version only checked `YieldVaultRecovered.length >= n` after
+/// `ceil(n / MAX_BATCH_SIZE) + 10` supervisor ticks. That allowed the test to pass
+/// even when some vaults recovered more than once while others had not yet been
+/// uniquely validated. This version keeps the same tick budget, but uses it as a
+/// timeout ceiling instead of treating it as proof that the recovery set is clean.
 access(all)
 fun testSupervisorHandlesManyStuckVaults() {
     let n = 200
@@ -1024,19 +1055,75 @@ fun testSupervisorHandlesManyStuckVaults() {
     )
     Test.expect(schedSupRes, Test.beSucceeded())
 
-    // 7. Advance time for supervisor ticks (ceil(n/MAX_BATCH_SIZE)+10); each tick processes a batch
+    // 7. Advance time until every target vault has emitted at least one recovery event.
+    //
+    // We still compute ceil(n / MAX_BATCH_SIZE) + 10, but it now acts as a maximum
+    // allowed budget for supervisor ticks. The loop stops early once all 200 vault IDs
+    // have been seen at least once. This makes the assertion sensitive to duplicate
+    // recoveries: repeated events for the same vault no longer help the test finish.
+    //
+    // After all unique IDs are observed, run a short stabilization window to check
+    // that a healthy supervisor does not continue to emit recovery events.
     let supervisorRunsNeeded = (UInt(n) + UInt(maxBatchSize) - 1) / UInt(maxBatchSize)
+    let maxSupervisorTicks = supervisorRunsNeeded + 10
     var run = 0 as UInt
-    while run < supervisorRunsNeeded + 10 {
+    var recoveredCounts = getRecoveredYieldVaultCounts()
+    while run < maxSupervisorTicks && recoveredCounts.length < n {
         Test.moveTime(by: 60.0 * 10.0 + 10.0)
         Test.commitBlock()
         run = run + 1
+        recoveredCounts = getRecoveredYieldVaultCounts()
     }
-    log("testSupervisorHandlesManyStuckVaults: ran \((supervisorRunsNeeded + 10).toString()) supervisor ticks")
+    log("testSupervisorHandlesManyStuckVaults: ran \(run.toString()) supervisor ticks to reach \(recoveredCounts.length.toString()) unique recovered vaults")
 
-    let recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
-    Test.assert(recoveredEvents.length >= n, message: "expected at least \(n.toString()) recovered, got \(recoveredEvents.length.toString())")
-    log("testSupervisorHandlesManyStuckVaults: recovered \(recoveredEvents.length.toString()) vaults")
+    let recoveryFailures = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecoveryFailed>())
+    Test.assertEqual(0, recoveryFailures.length)
+
+    // Split the validation into:
+    // - missing recoveries: some vaults never emitted YieldVaultRecovered at all
+    // - duplicate recoveries: some vaults emitted YieldVaultRecovered more than once
+    //
+    // Both matter. Missing recoveries means the supervisor did not cover the whole set.
+    // Duplicate recoveries means event volume was inflated by churn, which the old
+    // `recoveredEvents.length >= n` assertion could not distinguish from success.
+    var missingRecoveries = 0
+    var duplicatedRecoveries = 0
+    var duplicatedVaults = 0
+    for yieldVaultID in yieldVaultIDs {
+        let recoveryCount = recoveredCounts[yieldVaultID] ?? 0
+        if recoveryCount == 0 {
+            missingRecoveries = missingRecoveries + 1
+        } else if recoveryCount > 1 {
+            duplicatedRecoveries = duplicatedRecoveries + (recoveryCount - 1)
+            duplicatedVaults = duplicatedVaults + 1
+        }
+    }
+    Test.assert(
+        missingRecoveries == 0,
+        message: "expected every vault to recover at least once, but \(missingRecoveries.toString()) vaults emitted no YieldVaultRecovered event"
+    )
+    Test.assert(
+        duplicatedRecoveries == 0,
+        message: "expected exactly one recovery per vault, but saw \(duplicatedRecoveries.toString()) duplicate recoveries across \(duplicatedVaults.toString()) vaults"
+    )
+
+    // This second guard catches late churn that may start only after the full unique
+    // set has already been recovered. The duplicate-per-vault check above inspects the
+    // state up to this point; the stabilization window verifies the system stays quiet
+    // once recovery should be complete.
+    let recoveredEventsBeforeStabilization = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>()).length
+    var stabilizationTick = 0
+    while stabilizationTick < 2 {
+        Test.moveTime(by: 60.0 * 10.0 + 10.0)
+        Test.commitBlock()
+        stabilizationTick = stabilizationTick + 1
+    }
+    let recoveredEventsAfterStabilization = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>()).length
+    Test.assert(
+        recoveredEventsAfterStabilization == recoveredEventsBeforeStabilization,
+        message: "expected no additional recovery churn after all vaults were recovered; before stabilization: \(recoveredEventsBeforeStabilization.toString()), after: \(recoveredEventsAfterStabilization.toString())"
+    )
+    log("testSupervisorHandlesManyStuckVaults: stable recovery set of \(recoveredCounts.length.toString()) unique vaults with \(recoveredEventsAfterStabilization.toString()) total recovery events")
 
     // 8. Health check: none stuck, all have active schedules
     var stillStuck = 0

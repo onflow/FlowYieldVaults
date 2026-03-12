@@ -2,7 +2,7 @@
 
 > Historical note: this proposal describes the recovery design that was later implemented.
 > Current code names are `FlowYieldVaultsSchedulerV1` and `FlowYieldVaultsSchedulerRegistry`.
-> Current stuck detection scans up to `MAX_BATCH_SIZE` least-recently-executed vaults from
+> Current stuck detection scans up to `MAX_BATCH_SIZE` least-recently-executed recurring scan participants from
 > the registry's LRU ordering, not the full registered set.
 
 ## Problem Statement
