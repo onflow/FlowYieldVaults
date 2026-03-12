@@ -2,6 +2,7 @@
 import "FungibleToken"
 import "Burner"
 import "ViewResolver"
+import "MetadataViews"
 // DeFiActions
 import "DeFiActions"
 import "FlowYieldVaultsClosedBeta"
@@ -63,6 +64,53 @@ access(all) contract FlowYieldVaults {
         owner: Address?
     )
 
+    /* --- VIEWS --- */
+
+    /// YieldVaultInfo
+    ///
+    /// Minimal view struct providing basic identification and configuration details for a YieldVault
+    access(all) struct YieldVaultInfo {
+        /// The YieldVault's ID (DeFiActions.UniqueIdentifier.id)
+        access(all) let id: UInt64
+        /// The YieldVault resource uuid
+        access(all) let uuid: UInt64
+        /// The type identifier of the Vault this YieldVault operates on
+        access(all) let vaultTypeIdentifier: String
+        /// The strategy type identifier for this YieldVault
+        access(all) let strategyTypeIdentifier: String
+        /// The YieldVault owner's address if available
+        access(all) let owner: Address?
+
+        init(
+            id: UInt64,
+            uuid: UInt64,
+            vaultTypeIdentifier: String,
+            strategyTypeIdentifier: String,
+            owner: Address?
+        ) {
+            self.id = id
+            self.uuid = uuid
+            self.vaultTypeIdentifier = vaultTypeIdentifier
+            self.strategyTypeIdentifier = strategyTypeIdentifier
+            self.owner = owner
+        }
+    }
+
+    /// YieldVaultBalance
+    ///
+    /// Minimal view struct providing the YieldVault's current available balance for the vault's denomination. 
+    access(all) struct YieldVaultBalance {
+        /// The type identifier of the Vault this YieldVault operates on
+        access(all) let tokenTypeIdentifier: String
+        /// The current available balance for withdrawal
+        access(all) let availableBalance: UFix64
+
+        init(tokenTypeIdentifier: String, availableBalance: UFix64) {
+            self.tokenTypeIdentifier = tokenTypeIdentifier
+            self.availableBalance = availableBalance
+        }
+    }
+
     /* --- CONSTRUCTS --- */
 
     /// Strategy
@@ -91,6 +139,11 @@ access(all) contract FlowYieldVaults {
         /// Returns the balance of the given token available for withdrawal. Note that this may be an estimate due to
         /// the lack of guarantees inherent to DeFiActions Sources
         access(all) fun availableBalance(ofToken: Type): UFix64
+        /// Returns the NAV-based balance of the given token. Defaults to availableBalance(); strategies backed by
+        /// ERC-4626 vaults should override to return convertToAssets(shares) instead of an AMM quote.
+        access(all) fun navBalance(ofToken: Type): UFix64 {
+            return self.availableBalance(ofToken: ofToken)
+        }
         /// Deposits up to the balance of the referenced Vault into this Strategy
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
             pre {
@@ -105,6 +158,10 @@ access(all) contract FlowYieldVaults {
                 "Invalid Vault returns - requests \(ofToken.identifier) but returned \(result.getType().identifier)"
             }
         }
+        /// Closes the underlying position by repaying all debt and returning all collateral.
+        /// This method uses the AutoBalancer as a repayment source to swap yield tokens to debt tokens as needed.
+        /// Returns a Vault containing all collateral including any dust residuals.
+        access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault}
     }
 
     /// StrategyComposer
@@ -259,6 +316,10 @@ access(all) contract FlowYieldVaults {
         access(all) fun getYieldVaultBalance(): UFix64 {
             return self._borrowStrategy().availableBalance(ofToken: self.vaultType)
         }
+        /// Returns the NAV-based balance of the YieldVault's position via convertToAssets on the underlying ERC-4626 vault
+        access(all) fun getNAVBalance(): UFix64 {
+            return self._borrowStrategy().navBalance(ofToken: self.vaultType)
+        }
         /// Burner.Burnable conformance - emits the BurnedYieldVault event when burned
         access(contract) fun burnCallback() {
             emit BurnedYieldVault(
@@ -272,12 +333,38 @@ access(all) contract FlowYieldVaults {
             // Force unwrap to ensure burnCallback is called on the Strategy
             Burner.burn(<-_strategy!)
         }
-        /// TODO: FlowYieldVaults specific views
         access(all) view fun getViews(): [Type] {
-            return []
+            return [
+                Type<MetadataViews.Display>(),
+                Type<YieldVaultInfo>(),
+                Type<YieldVaultBalance>()
+            ]
         }
-        /// TODO: FlowYieldVaults specific view resolution
         access(all) fun resolveView(_ view: Type): AnyStruct? {
+            switch view {
+                case Type<MetadataViews.Display>():
+                    return MetadataViews.Display(
+                        name: "Yield Vault #\(self.id())",
+                        description: "Yield vault for strategy \(self.getStrategyType()) and vault type \(self.getVaultTypeIdentifier())",
+                        // Temporary placeholder thumbnail; replace with the final hosted URL when available.
+                        thumbnail: MetadataViews.HTTPFile(
+                            url: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1' height='1'/>"
+                        )
+                    )
+                case Type<YieldVaultInfo>():
+                    return YieldVaultInfo(
+                        id: self.id(),
+                        uuid: self.uuid,
+                        vaultTypeIdentifier: self.vaultType.identifier,
+                        strategyTypeIdentifier: self.getStrategyType(),
+                        owner: self.owner?.address
+                    )
+                case Type<YieldVaultBalance>():
+                    return YieldVaultBalance(
+                        tokenTypeIdentifier: self.vaultType.identifier,
+                        availableBalance: self.getYieldVaultBalance()
+                    )
+            }
             return nil
         }
         /// Deposits the provided Vault to the Strategy
@@ -312,7 +399,7 @@ access(all) contract FlowYieldVaults {
         }
         /// Returns the strategy type identifier for this YieldVault
         access(all) view fun getStrategyType(): String {
-            return self.strategy.getType().identifier
+            return self._borrowStrategy().getType().identifier
         }
         /// Withdraws the requested amount from the Strategy
         access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @{FungibleToken.Vault} {
@@ -339,6 +426,23 @@ access(all) contract FlowYieldVaults {
             )
 
             return <- res
+        }
+        /// Closes the YieldVault by repaying all debt on the underlying position and returning all collateral.
+        /// This method properly closes the FlowALP position by using the AutoBalancer to swap yield tokens
+        /// to MOET for debt repayment, then returns all collateral including any dust residuals.
+        access(FungibleToken.Withdraw) fun close(): @{FungibleToken.Vault} {
+            let collateral <- self._borrowStrategy().closePosition(collateralType: self.vaultType)
+
+            emit WithdrawnFromYieldVault(
+                id: self.uniqueID.id,
+                strategyType: self.getStrategyType(),
+                tokenType: collateral.getType().identifier,
+                amount: collateral.balance,
+                owner: self.owner?.address,
+                toUUID: collateral.uuid
+            )
+
+            return <- collateral
         }
         /// Returns an authorized reference to the encapsulated Strategy
         access(self) view fun _borrowStrategy(): auth(FungibleToken.Withdraw) &{Strategy} {
@@ -465,8 +569,9 @@ access(all) contract FlowYieldVaults {
             let yieldVault = (&self.yieldVaults[id] as auth(FungibleToken.Withdraw) &YieldVault?)!
             return <- yieldVault.withdraw(amount: amount)
         }
-        /// Withdraws and returns all available funds from the specified YieldVault, destroying the YieldVault and access to any
-        /// Strategy-related wiring with it
+        /// Closes the YieldVault by repaying all debt and returning all collateral, then destroys the YieldVault.
+        /// This properly closes the underlying FlowALP position by using the AutoBalancer to swap yield tokens
+        /// to MOET for debt repayment, ensuring all collateral (including dust) is returned to the caller.
         access(FungibleToken.Withdraw) fun closeYieldVault(_ id: UInt64): @{FungibleToken.Vault} {
             pre {
                 self.yieldVaults[id] != nil:
@@ -474,7 +579,7 @@ access(all) contract FlowYieldVaults {
             }
 
             let yieldVault <- self._withdrawYieldVault(id: id)
-            let res <- yieldVault.withdraw(amount: yieldVault.getYieldVaultBalance())
+            let res <- yieldVault.close()
             Burner.burn(<-yieldVault)
             return <-res
         }
