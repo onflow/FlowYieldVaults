@@ -98,6 +98,16 @@ access(all) contract FlowYieldVaultsStrategies {
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
         }
+        /// Closes the position by withdrawing all available collateral.
+        /// For simple strategies without FlowALP positions, this just withdraws all available balance.
+        access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
+            pre {
+                self.isSupportedCollateralType(collateralType):
+                "Unsupported collateral type \(collateralType.identifier)"
+            }
+            let availableBalance = self.availableBalance(ofToken: collateralType)
+            return <- self.withdraw(maxAmount: availableBalance, ofToken: collateralType)
+        }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
@@ -273,6 +283,16 @@ access(all) contract FlowYieldVaultsStrategies {
                 return <- DeFiActionsUtils.getEmptyVault(ofToken)
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
+        }
+        /// Closes the position by withdrawing all available collateral.
+        /// For simple strategies without FlowALP positions, this just withdraws all available balance.
+        access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
+            pre {
+                self.isSupportedCollateralType(collateralType):
+                "Unsupported collateral type \(collateralType.identifier)"
+            }
+            let availableBalance = self.availableBalance(ofToken: collateralType)
+            return <- self.withdraw(maxAmount: availableBalance, ofToken: collateralType)
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {

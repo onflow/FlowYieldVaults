@@ -200,6 +200,16 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
+		"FlowYieldVaultsStrategies": {
+			"source": "cadence/contracts/deprecated/FlowYieldVaultsStrategies.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
+				"mainnet-fork": "b1d63873c3cc9f79",
+				"testing": "0000000000000009",
+				"testnet": "d2580caf2ef07c2f"
+			}
+		},
 		"FungibleTokenConnectors": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/FungibleTokenConnectors.cdc",
 			"aliases": {
@@ -414,6 +424,14 @@
 				"mainnet": "e467b9dd11fa00df",
 				"mainnet-fork": "e467b9dd11fa00df",
 				"testnet": "8c5303eaa26202d6"
+			}
+		},
+		"FlowCreditMarket": {
+			"source": "mainnet://6b00ff876c299c61.FlowCreditMarket",
+			"aliases": {
+				"mainnet": "6b00ff876c299c61",
+				"mainnet-fork": "6b00ff876c299c61",
+				"testnet": "426f0458ced60037"
 			}
 		},
 		"FlowEVMBridge": {
@@ -1151,6 +1169,65 @@
 							"type": "String"
 						}
 					]
+				},
+				{
+					"name": "FlowYieldVaultsStrategies",
+					"args": [
+						{
+							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+							"type": "String"
+						},
+						{
+							"value": "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+							"type": "String"
+						},
+						{
+							"value": "0x370A8DF17742867a44e56223EC20D82092242C85",
+							"type": "String"
+						},
+						{
+							"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
+							"type": "String"
+						},
+						{
+							"value": [
+								{
+									"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
+									"type": "String"
+								},
+								{
+									"value": "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2",
+									"type": "String"
+								},
+								{
+									"value": "0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED",
+									"type": "String"
+								},
+								{
+									"value": "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e",
+									"type": "String"
+								}
+							],
+							"type": "Array"
+						},
+						{
+							"value": [
+								{
+									"value": "100",
+									"type": "UInt32"
+								},
+								{
+									"value": "100",
+									"type": "UInt32"
+								},
+								{
+									"value": "3000",
+									"type": "UInt32"
+								}
+							],
+							"type": "Array"
+						}
+					]
 				}
 			]
 		},
@@ -1222,6 +1299,65 @@
 							"type": "String"
 						}
 					]
+				},
+				{
+					"name": "FlowYieldVaultsStrategies",
+					"args": [
+						{
+							"value": "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+							"type": "String"
+						},
+						{
+							"value": "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+							"type": "String"
+						},
+						{
+							"value": "0x370A8DF17742867a44e56223EC20D82092242C85",
+							"type": "String"
+						},
+						{
+							"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
+							"type": "String"
+						},
+						{
+							"value": [
+								{
+									"value": "0xc52E820d2D6207D18667a97e2c6Ac22eB26E803c",
+									"type": "String"
+								},
+								{
+									"value": "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2",
+									"type": "String"
+								},
+								{
+									"value": "0x2aaBea2058b5aC2D339b163C6Ab6f2b6d53aabED",
+									"type": "String"
+								},
+								{
+									"value": "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e",
+									"type": "String"
+								}
+							],
+							"type": "Array"
+						},
+						{
+							"value": [
+								{
+									"value": "100",
+									"type": "UInt32"
+								},
+								{
+									"value": "100",
+									"type": "UInt32"
+								},
+								{
+									"value": "3000",
+									"type": "UInt32"
+								}
+							],
+							"type": "Array"
+						}
+					]
 				}
 			]
 		},
@@ -1283,6 +1419,49 @@
 						{
 							"value": "0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c",
 							"type": "String"
+						}
+					]
+				},
+				{
+					"name": "FlowYieldVaultsStrategies",
+					"args": [
+						{
+							"value": "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+							"type": "String"
+						},
+						{
+							"value": "0x2Db6468229F6fB1a77d248Dbb1c386760C257804",
+							"type": "String"
+						},
+						{
+							"value": "0xA1e0E4CCACA34a738f03cFB1EAbAb16331FA3E2c",
+							"type": "String"
+						},
+						{
+							"value": "0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95",
+							"type": "String"
+						},
+						{
+							"value": [
+								{
+									"value": "0x4154d5B0E2931a0A1E5b733f19161aa7D2fc4b95",
+									"type": "String"
+								},
+								{
+									"value": "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e",
+									"type": "String"
+								}
+							],
+							"type": "Array"
+						},
+						{
+							"value": [
+								{
+									"value": "3000",
+									"type": "UInt32"
+								}
+							],
+							"type": "Array"
 						}
 					]
 				}
