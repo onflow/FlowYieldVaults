@@ -315,11 +315,11 @@ fun test_BtcDaily2025_DailyRebalancing() {
         // Apply all price updates
         applyPriceTick(flowPrice: normalizedPrice, ytPrice: ytPrice, user: users[0])
 
-        // Rebalance all agents
+        // Potentially rebalance all agents (not forced)
         var a = 0
         while a < numAgents {
-            rebalanceYieldVault(signer: flowYieldVaultsAccount, id: vaultIds[a], force: true, beFailed: false)
-            rebalancePosition(signer: flowALPAccount, pid: pids[a], force: true, beFailed: false)
+            rebalanceYieldVault(signer: flowYieldVaultsAccount, id: vaultIds[a], force: false, beFailed: false)
+            rebalancePosition(signer: flowALPAccount, pid: pids[a], force: false, beFailed: false)
             a = a + 1
         }
         rebalanceCount = rebalanceCount + 1
@@ -359,22 +359,55 @@ fun test_BtcDaily2025_DailyRebalancing() {
     let finalDebt = getMOETDebtFromPosition(pid: pids[0])
     let finalYieldTokens = getAutoBalancerBalance(id: vaultIds[0])!
     let finalNormalizedPrice = normalizePrice(prices[prices.length - 1])
+    let finalYtPrice = ytPriceAtDay(prices.length - 1)
     let finalHF = (finalFlowCollateral * finalNormalizedPrice) / finalDebt
+
+    // P&L: net equity = collateral_value + yt_value - debt (all in stablecoin/MOET terms)
+    let collateralValueMOET = finalFlowCollateral * finalNormalizedPrice
+    let ytValueMOET = finalYieldTokens * finalYtPrice
+    let netEquityMOET = collateralValueMOET + ytValueMOET - finalDebt
+    let initialDepositMOET = fundingPerAgent
+
+    // UFix64 is unsigned, so track sign separately to avoid underflow
+    let moetProfit = netEquityMOET >= initialDepositMOET
+    let pnlMOETAbs = moetProfit ? (netEquityMOET - initialDepositMOET) : (initialDepositMOET - netEquityMOET)
+    let pnlPctMOETAbs = pnlMOETAbs / initialDepositMOET
+    let pnlMOETSign = moetProfit ? "+" : "-"
+
+    let netEquityFLOW = netEquityMOET / finalNormalizedPrice
+    let flowProfit = netEquityFLOW >= fundingPerAgent
+    let pnlFLOWAbs = flowProfit ? (netEquityFLOW - fundingPerAgent) : (fundingPerAgent - netEquityFLOW)
+    let pnlPctFLOWAbs = pnlFLOWAbs / fundingPerAgent
+    let pnlFLOWSign = flowProfit ? "+" : "-"
+
+    let priceUp = finalNormalizedPrice >= 1.0
+    let priceChangePctAbs = priceUp ? (finalNormalizedPrice - 1.0) : (1.0 - finalNormalizedPrice)
+    let priceChangeSign = priceUp ? "+" : "-"
 
     log("\n=== SIMULATION RESULTS ===")
     log("Agents:              \(numAgents)")
     log("Days simulated:      \(prices.length)")
     log("Rebalance events:    \(rebalanceCount)")
     log("Liquidation count:   \(liquidationCount)")
+    log("")
+    log("--- Price ---")
     log("Initial BTC price:   $\(initialPrice)")
     log("Lowest BTC price:    $\(lowestPrice)")
     log("Highest BTC price:   $\(highestPrice)")
     log("Final BTC price:     $\(prices[prices.length - 1])")
+    log("Price change:        \(priceChangeSign)\(priceChangePctAbs)")
+    log("")
+    log("--- Position ---")
     log("Lowest HF observed:  \(lowestHF)")
     log("Final HF (agent 0):  \(finalHF)")
-    log("Final collateral:    \(finalFlowCollateral) FLOW")
+    log("Final collateral:    \(finalFlowCollateral) FLOW (value: \(collateralValueMOET) MOET)")
     log("Final debt:          \(finalDebt) MOET")
-    log("Final yield tokens:  \(finalYieldTokens)")
+    log("Final yield tokens:  \(finalYieldTokens) (value: \(ytValueMOET) MOET @ yt=\(finalYtPrice))")
+    log("")
+    log("--- P&L ---")
+    log("Initial deposit:     \(fundingPerAgent) FLOW")
+    log("Net equity (MOET):   \(netEquityMOET) (P&L: \(pnlMOETSign)\(pnlMOETAbs), \(pnlMOETSign)\(pnlPctMOETAbs))")
+    log("Net equity (FLOW):   \(netEquityFLOW) (P&L: \(pnlFLOWSign)\(pnlFLOWAbs), \(pnlFLOWSign)\(pnlPctFLOWAbs))")
     log("===========================\n")
 
     Test.assertEqual(btc_daily_2025_expectedLiquidationCount, liquidationCount)
