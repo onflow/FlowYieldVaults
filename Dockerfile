@@ -1,6 +1,7 @@
 FROM debian:stable-slim
 
 ENV FLOW_INSTALL_URL=https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh \
+    FLOW_VERSION=v2.14.3 \
     APP_HOME=/app \
     SEED_DIR=/seed/state \
     FOUNDRY_DIR=/root/.foundry
@@ -20,8 +21,8 @@ RUN bash -lc 'curl -L https://foundry.paradigm.xyz | bash' \
  && ln -s "$FOUNDRY_DIR/bin/chisel" /usr/local/bin/chisel \
  && forge --version && anvil --version && cast --version
 
-# Install Flow CLI
-RUN bash -lc 'curl -fsSL "$FLOW_INSTALL_URL" | bash' \
+# Install Flow CLI (pinned version — update when v2.15.0+ binaries are available)
+RUN bash -lc 'curl -fsSL "$FLOW_INSTALL_URL" | bash -s -- $FLOW_VERSION' \
  && mv /root/.local/bin/flow /usr/local/bin/flow \
  && chmod +x /usr/local/bin/flow \
  && flow version
