@@ -4,7 +4,7 @@ import EVM from "MockEVM"
 access(all) fun computeMappingSlot(_ values: [AnyStruct]): String {
     let encoded = EVM.encodeABI(values)
     let hashBytes = HashAlgorithm.KECCAK_256.hash(encoded)
-    return String.encodeHex(hashBytes)
+    return "0x\(String.encodeHex(hashBytes))"
 }
 
 // Helper: Compute ERC20 balanceOf storage slot
@@ -33,12 +33,16 @@ access(all) fun toHex32(_ value: UInt256): String {
 
 // Helper: Convert a slot number (UInt256) to its padded hex string for EVM.store/load
 access(all) fun slotHex(_ slotNum: UInt256): String {
-    return toHex32(slotNum)
+    return "0x\(toHex32(slotNum))"
 }
 
 // Helper: Parse a hex slot string back to UInt256
-access(all) fun slotToNum(_ slotHex: String): UInt256 {
-    let bytes = slotHex.decodeHex()
+access(all) fun slotToNum(_ slot: String): UInt256 {
+    var hex = slot
+    if hex.length > 2 && hex.slice(from: 0, upTo: 2) == "0x" {
+        hex = hex.slice(from: 2, upTo: hex.length)
+    }
+    let bytes = hex.decodeHex()
     var num = 0 as UInt256
     for byte in bytes {
         num = num * 256 + UInt256(byte)
@@ -201,22 +205,22 @@ transaction(
         assert(slot0Value.length == 64, message: "slot0 must be 64 hex chars")
 
         // --- Slot 0: slot0 (packed) ---
-        EVM.store(target: poolAddr, slot: "0", value: slot0Value)
+        EVM.store(target: poolAddr, slot: slotHex(0), value: slot0Value)
 
         // Verify round-trip
-        let readBack = EVM.load(target: poolAddr, slot: "0")
+        let readBack = EVM.load(target: poolAddr, slot: slotHex(0))
         let readBackHex = String.encodeHex(readBack)
         assert(readBackHex == slot0Value, message: "slot0 read-back mismatch - storage corruption!")
 
         // --- Slots 1-3: feeGrowthGlobal0X128, feeGrowthGlobal1X128, protocolFees = 0 ---
         let zero32 = "0000000000000000000000000000000000000000000000000000000000000000"
-        EVM.store(target: poolAddr, slot: "1", value: zero32)
-        EVM.store(target: poolAddr, slot: "2", value: zero32)
-        EVM.store(target: poolAddr, slot: "3", value: zero32)
+        EVM.store(target: poolAddr, slot: slotHex(1), value: zero32)
+        EVM.store(target: poolAddr, slot: slotHex(2), value: zero32)
+        EVM.store(target: poolAddr, slot: slotHex(3), value: zero32)
 
         // --- Slot 4: liquidity = uint128 max ---
         let liquidityAmount: UInt256 = 340282366920938463463374607431768211455 // 2^128 - 1
-        EVM.store(target: poolAddr, slot: "4", value: toHex32(liquidityAmount))
+        EVM.store(target: poolAddr, slot: slotHex(4), value: toHex32(liquidityAmount))
 
         // --- Initialize boundary ticks ---
         // Tick storage layout per tick (4 consecutive slots):
@@ -293,7 +297,7 @@ transaction(
 
         assert(obs0Bytes.length == 32, message: "observations[0] must be exactly 32 bytes")
 
-        EVM.store(target: poolAddr, slot: "8", value: String.encodeHex(obs0Bytes))
+        EVM.store(target: poolAddr, slot: slotHex(8), value: String.encodeHex(obs0Bytes))
 
         // --- Fund pool with token balances ---
         // Calculate 1 billion tokens in each token's decimal format
