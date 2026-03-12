@@ -966,6 +966,10 @@ access(all) contract PMStrategiesV1 {
         let yieldTokenVault <- source.withdrawAvailable(maxAmount: targetShares)
         let shares = yieldTokenVault.balance
         assert(shares > 0.0, message: "No shares available to redeem")
+        assert(
+            amount == nil || shares >= targetShares * 0.9999,
+            message: "Insufficient shares for requested amount: got \(shares), need >= \(targetShares * 0.9999)"
+        )
 
         // 2. Bridge yield tokens from Cadence to user's COA on EVM
         let scopedProvider <- self._createBridgeFeeProvider()
@@ -1136,6 +1140,9 @@ access(all) contract PMStrategiesV1 {
             value: EVM.Balance(attoflow: 0)
         )
         assert(transferResult.status == EVM.Status.successful, message: "Share transfer back to service COA failed")
+
+        // 2b. Revoke lingering ERC-20 approval (transfer doesn't consume allowance)
+        self._evmApprove(coa: userCOA, token: info.vaultEVMAddress, spender: serviceCOA.address(), amount: 0)
 
         // 3. Bridge shares from service COA back to Cadence
         let yieldTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: info.vaultEVMAddress)
