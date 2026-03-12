@@ -16,6 +16,8 @@ import "FlowYieldVaults"
 import "FlowYieldVaultsAutoBalancers"
 // vm bridge
 import "FlowEVMBridgeConfig"
+import "FlowEVMBridgeUtils"
+import "EVMAmountUtils"
 // live oracles
 import "ERC4626PriceOracles"
 
@@ -73,6 +75,15 @@ access(all) contract PMStrategiesV1 {
         access(all) fun availableBalance(ofToken: Type): UFix64 {
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
+        /// Returns the NAV-based balance by calling convertToAssets on the ERC-4626 vault
+        access(all) fun navBalance(ofToken: Type): UFix64 {
+            return PMStrategiesV1._navBalanceFor(
+                strategyType: self.getType(),
+                collateralType: self.sink.getSinkType(),
+                ofToken: ofToken,
+                id: self.id()!
+            )
+        }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
             self.sink.depositCapacity(from: from)
@@ -84,6 +95,16 @@ access(all) contract PMStrategiesV1 {
                 return <- DeFiActionsUtils.getEmptyVault(ofToken)
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
+        }
+        /// Closes the position by withdrawing all available collateral.
+        /// For simple strategies without FlowALP positions, this just withdraws all available balance.
+        access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
+            pre {
+                self.isSupportedCollateralType(collateralType):
+                "Unsupported collateral type \(collateralType.identifier)"
+            }
+            let availableBalance = self.availableBalance(ofToken: collateralType)
+            return <- self.withdraw(maxAmount: availableBalance, ofToken: collateralType)
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
@@ -138,6 +159,15 @@ access(all) contract PMStrategiesV1 {
         access(all) fun availableBalance(ofToken: Type): UFix64 {
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
+        /// Returns the NAV-based balance by calling convertToAssets on the ERC-4626 vault
+        access(all) fun navBalance(ofToken: Type): UFix64 {
+            return PMStrategiesV1._navBalanceFor(
+                strategyType: self.getType(),
+                collateralType: self.sink.getSinkType(),
+                ofToken: ofToken,
+                id: self.id()!
+            )
+        }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
             self.sink.depositCapacity(from: from)
@@ -149,6 +179,16 @@ access(all) contract PMStrategiesV1 {
                 return <- DeFiActionsUtils.getEmptyVault(ofToken)
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
+        }
+        /// Closes the position by withdrawing all available collateral.
+        /// For simple strategies without FlowALP positions, this just withdraws all available balance.
+        access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
+            pre {
+                self.isSupportedCollateralType(collateralType):
+                "Unsupported collateral type \(collateralType.identifier)"
+            }
+            let availableBalance = self.availableBalance(ofToken: collateralType)
+            return <- self.withdraw(maxAmount: availableBalance, ofToken: collateralType)
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
@@ -203,6 +243,15 @@ access(all) contract PMStrategiesV1 {
         access(all) fun availableBalance(ofToken: Type): UFix64 {
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
+        /// Returns the NAV-based balance by calling convertToAssets on the ERC-4626 vault
+        access(all) fun navBalance(ofToken: Type): UFix64 {
+            return PMStrategiesV1._navBalanceFor(
+                strategyType: self.getType(),
+                collateralType: self.sink.getSinkType(),
+                ofToken: ofToken,
+                id: self.id()!
+            )
+        }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
             self.sink.depositCapacity(from: from)
@@ -214,6 +263,16 @@ access(all) contract PMStrategiesV1 {
                 return <- DeFiActionsUtils.getEmptyVault(ofToken)
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
+        }
+        /// Closes the position by withdrawing all available collateral.
+        /// For simple strategies without FlowALP positions, this just withdraws all available balance.
+        access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
+            pre {
+                self.isSupportedCollateralType(collateralType):
+                "Unsupported collateral type \(collateralType.identifier)"
+            }
+            let availableBalance = self.availableBalance(ofToken: collateralType)
+            return <- self.withdraw(maxAmount: availableBalance, ofToken: collateralType)
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
@@ -517,6 +576,51 @@ access(all) contract PMStrategiesV1 {
 
             self.configs[composer] = mergedComposerConfig
         }
+    }
+
+    /// Looks up the EVM vault address for a given strategy + collateral pair from the on-chain StrategyComposerIssuer config
+    access(contract) fun _getYieldTokenEVMAddress(forStrategy: Type, collateralType: Type): EVM.EVMAddress? {
+        let issuer = self.account.storage.borrow<&StrategyComposerIssuer>(from: self.IssuerStoragePath)
+        if issuer == nil { return nil }
+        if let composerConfig = issuer!.configs[Type<@ERC4626VaultStrategyComposer>()] {
+            if let strategyConfig = composerConfig[forStrategy] {
+                if let collateralConfig = strategyConfig[collateralType] {
+                    // Dictionary access through references yields &EVM.EVMAddress, not EVM.EVMAddress;
+                    // cast to reference, then reconstruct via addressFromString
+                    if let addrRef = collateralConfig["yieldTokenEVMAddress"] as? &EVM.EVMAddress {
+                        return EVM.addressFromString("0x\(addrRef.toString())")
+                    }
+                }
+            }
+        }
+        return nil
+    }
+
+    /// Shared NAV balance computation: reads Cadence-side share balance from AutoBalancer,
+    /// converts to underlying asset value via ERC-4626 convertToAssets
+    access(contract) fun _navBalanceFor(strategyType: Type, collateralType: Type, ofToken: Type, id: UInt64): UFix64 {
+        if ofToken != collateralType { return 0.0 }
+
+        let ab = FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: id)
+        if ab == nil { return 0.0 }
+        let sharesBalance = ab!.vaultBalance()
+        if sharesBalance == 0.0 { return 0.0 }
+
+        let vaultAddr = self._getYieldTokenEVMAddress(forStrategy: strategyType, collateralType: collateralType)
+            ?? panic("No EVM vault address configured for \(strategyType.identifier)")
+
+        let sharesWei = FlowEVMBridgeUtils.ufix64ToUInt256(
+            value: sharesBalance,
+            decimals: FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: vaultAddr)
+        )
+
+        let navWei = ERC4626Utils.convertToAssets(vault: vaultAddr, shares: sharesWei)
+            ?? panic("convertToAssets failed for vault ".concat(vaultAddr.toString()))
+
+        let assetAddr = ERC4626Utils.underlyingAssetEVMAddress(vault: vaultAddr)
+            ?? panic("No underlying asset EVM address found for vault \(vaultAddr.toString())")
+
+        return EVMAmountUtils.toCadenceOutForToken(navWei, erc20Address: assetAddr)
     }
 
     /// Returns the COA capability for this account

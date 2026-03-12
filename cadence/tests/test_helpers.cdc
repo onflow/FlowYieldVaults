@@ -5,6 +5,7 @@ import "MetadataViews"
 import "FlowToken"
 import "MOET"
 import "FlowALPv0"
+import "FlowYieldVaults"
 
 access(all) let serviceAccount = Test.serviceAccount()
 
@@ -479,6 +480,27 @@ fun getYieldVaultBalance(address: Address, yieldVaultID: UInt64): UFix64? {
 }
 
 access(all)
+fun getYieldVaultInfoView(address: Address, yieldVaultID: UInt64): FlowYieldVaults.YieldVaultInfo? {
+    let res = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_info_view.cdc", [address, yieldVaultID])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! FlowYieldVaults.YieldVaultInfo?
+}
+
+access(all)
+fun getYieldVaultBalanceView(address: Address, yieldVaultID: UInt64): FlowYieldVaults.YieldVaultBalance? {
+    let res = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance_view.cdc", [address, yieldVaultID])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! FlowYieldVaults.YieldVaultBalance?
+}
+
+access(all)
+fun getYieldVaultDisplayView(address: Address, yieldVaultID: UInt64): MetadataViews.Display? {
+    let res = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_display_view.cdc", [address, yieldVaultID])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! MetadataViews.Display?
+}
+
+access(all)
 fun getAutoBalancerBalance(id: UInt64): UFix64? {
     let res = _executeScript("../scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc", [id])
     Test.expect(res, Test.beSucceeded())
@@ -500,6 +522,16 @@ fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowALPv0.PositionDetails {
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 
     return res.returnValue as! FlowALPv0.PositionDetails
+}
+
+access(all)
+fun getPositionHealth(pid: UInt64, beFailed: Bool): UFix128 {
+    let res = _executeScript("../../lib/FlowALP/cadence/scripts/flow-alp/position_health.cdc",
+        [pid]
+    )
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+
+    return res.returnValue as! UFix128
 }
 
 access(all)
@@ -527,6 +559,16 @@ fun positionAvailableBalance(
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 
     return res.returnValue as! UFix64
+}
+
+access(all)
+fun setDepositLimitFraction(signer: Test.TestAccount, tokenTypeIdentifier: String, fraction: UFix64) {
+    let setRes = _executeTransaction(
+        "../../lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_deposit_limit_fraction.cdc",
+        [tokenTypeIdentifier, fraction],
+        signer
+    )
+    Test.expect(setRes, Test.beSucceeded())
 }
 
 /* --- Transaction Helpers --- */
@@ -699,9 +741,15 @@ fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}
     let symbolsRates: {String: UInt64} = {}
     for symbol in symbolPrices.keys {
         // BandOracle uses 1e9 multiplier for prices
-        // e.g., $1.00 = 1_000_000_000, $0.50 = 500_000_000
+        // convert UFix64 to UInt64 by extracting the raw representation and multiplying by 10
+        // this is to avoid overflow, supports prices up to ~$18.4 billion.
         let price = symbolPrices[symbol]!
-        symbolsRates[symbol] = UInt64(price * 1_000_000_000.0)
+        let priceBytes = price.toBigEndianBytes()
+        var rawPrice: UInt64 = 0
+        for byte in priceBytes {
+            rawPrice = (rawPrice << 8) + UInt64(byte)
+        }
+        symbolsRates[symbol] = rawPrice * 10
     }
     
     let setRes = _executeTransaction(
@@ -710,6 +758,14 @@ fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}
         signer
     )
     Test.expect(setRes, Test.beSucceeded())
+}
+
+access(all)
+fun equalAmounts128(a: UFix128, b: UFix128, tolerance: UFix128): Bool {
+    if a > b {
+        return a - b <= tolerance
+    }
+    return b - a <= tolerance
 }
 
 /* --- Formatting helpers --- */
@@ -997,4 +1053,32 @@ fun setupPunchswap(deployer: Test.TestAccount, wflowAddress: String): {String: S
         swapRouter02Address: swapRouter02Address,
         punchswapV3FactoryAddress: punchswapV3FactoryAddress
     }
+}
+
+// Helper function to get Flow collateral from position
+access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
+    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
+    for balance in positionDetails.balances {
+        if balance.vaultType == Type<@FlowToken.Vault>() {
+            // Credit means it's a deposit (collateral)
+            if balance.direction == FlowALPv0.BalanceDirection.Credit {
+                return balance.balance
+            }
+        }
+    }
+    return 0.0
+}
+
+// Helper function to get MOET debt from position
+access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
+    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
+    for balance in positionDetails.balances {
+        if balance.vaultType == Type<@MOET.Vault>() {
+            // Debit means it's borrowed (debt)
+            if balance.direction == FlowALPv0.BalanceDirection.Debit {
+                return balance.balance
+            }
+        }
+    }
+    return 0.0
 }
