@@ -44,6 +44,7 @@ access(all) contract PMStrategiesV1 {
         yieldVaultID: UInt64,
         userAddress: Address,
         shares: UFix64,
+        estimatedAssets: UFix64,
         vaultEVMAddressHex: String
     )
     access(all) event RedeemClaimed(
@@ -130,8 +131,13 @@ access(all) contract PMStrategiesV1 {
             let availableBalance = self.availableBalance(ofToken: collateralType)
             return <- self.withdraw(maxAmount: availableBalance, ofToken: collateralType)
         }
-        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
+        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer.
+        /// Panics if a deferred redemption is pending — shares would be stranded on EVM.
         access(contract) fun burnCallback() {
+            assert(
+                PMStrategiesV1.getPendingRedeemInfo(yieldVaultID: self.id()!) == nil,
+                message: "Cannot close vault \(self.id()!) with pending deferred redemption"
+            )
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
@@ -214,8 +220,13 @@ access(all) contract PMStrategiesV1 {
             let availableBalance = self.availableBalance(ofToken: collateralType)
             return <- self.withdraw(maxAmount: availableBalance, ofToken: collateralType)
         }
-        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
+        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer.
+        /// Panics if a deferred redemption is pending — shares would be stranded on EVM.
         access(contract) fun burnCallback() {
+            assert(
+                PMStrategiesV1.getPendingRedeemInfo(yieldVaultID: self.id()!) == nil,
+                message: "Cannot close vault \(self.id()!) with pending deferred redemption"
+            )
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
@@ -916,6 +927,9 @@ access(all) contract PMStrategiesV1 {
         userFlowAddress: Address,
         fees: @FlowToken.Vault
     ) {
+        pre {
+            fees.balance > 0.0: "Scheduling fees must be provided"
+        }
         let handler = self._borrowHandler()
             ?? panic("PendingRedeemHandler not initialized")
         assert(handler.getPendingRedeem(id: yieldVaultID) == nil, message: "Pending redeem already exists for vault \(yieldVaultID)")
@@ -1007,16 +1021,27 @@ access(all) contract PMStrategiesV1 {
             data: {"yieldVaultID": yieldVaultID},
             timestamp: getCurrentBlock().timestamp + UFix64(timelockSeconds) + handler.schedulerBufferSeconds,
             priority: FlowTransactionScheduler.Priority.Low,
-            executionEffort: 2500,
+            executionEffort: 2500, // Priority.Low max; claim involves EVM redeem + unwrap/bridge + Cadence deposit
             fees: <-fees
         )
 
         handler.setScheduledTx(id: yieldVaultID, tx: <-scheduledTx)
 
+        // Estimate underlying assets for the redeemed shares
+        let underlyingAddress = ERC4626Utils.underlyingAssetEVMAddress(vault: vaultEVMAddress)
+            ?? panic("Could not get underlying asset address")
+        var estimatedAssets = 0.0
+        if let assetsEVM = ERC4626Utils.previewRedeem(vault: vaultEVMAddress, shares: sharesEVM) {
+            estimatedAssets = FlowEVMBridgeUtils.convertERC20AmountToCadenceAmount(
+                assetsEVM, erc20Address: underlyingAddress
+            )
+        }
+
         emit RedeemRequested(
             yieldVaultID: yieldVaultID,
             userAddress: userFlowAddress,
             shares: shares,
+            estimatedAssets: estimatedAssets,
             vaultEVMAddressHex: vaultEVMAddress.toString()
         )
     }
@@ -1124,7 +1149,8 @@ access(all) contract PMStrategiesV1 {
             message: "Provided COA does not belong to original requester at \(info.userFlowAddress)"
         )
 
-        // 1. Clear request on EVM
+        // 1. Clear request on EVM.
+        // Note: we rely on the EVM revert (assert status==successful) to confirm the clear.
         self._evmClearRequest(coa: userCOA, vault: info.vaultEVMAddress)
 
         // 2. Transfer shares from user's COA back to service COA via ERC-20 transfer
