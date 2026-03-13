@@ -1995,19 +1995,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
     }
 
-    /// Creates a fresh StrategyComposerIssuer with the default config skeleton.
-    /// Intended for the deployer account to recreate a lost or destroyed issuer via a transaction.
-    access(account)
-    fun createIssuer(): @StrategyComposerIssuer {
-        return <- create StrategyComposerIssuer(
-            configs: {
-                Type<@MorphoERC4626StrategyComposer>(): {
-                    Type<@FUSDEVStrategy>(): {} as {Type: CollateralConfig}
-                }
-            }
-        )
-    }
-
     /// Returns the COA capability for this account
     /// TODO: this is temporary until we have a better way to pass user's COAs to inner connectors
     access(self)
