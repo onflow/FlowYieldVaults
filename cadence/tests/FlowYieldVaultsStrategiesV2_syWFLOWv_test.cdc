@@ -207,15 +207,6 @@ access(all) fun setup() {
     )
     Test.expect(err, Test.beNil())
 
-    // Recreate the StrategyComposerIssuer (deleted from mainnet storage).
-    log("Recreating StrategyComposerIssuer...")
-    var result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/admin/recreate_composer_issuer.cdc",
-        [],
-        [adminAccount]
-    )
-    Test.expect(result, Test.beSucceeded())
-
     // yieldToUnderlying path is the same for all collaterals: syWFLOWv → WFLOW via UniV3 fee 100 (0.01%)
     // debtToCollateral paths differ per collateral: WFLOW → <collateral>
 

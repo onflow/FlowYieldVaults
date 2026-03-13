@@ -213,15 +213,6 @@ access(all) fun setup() {
     )
     Test.expect(err, Test.beNil())
 
-    // Recreate the StrategyComposerIssuer (deleted from mainnet storage on contract redeploy).
-    log("Recreating StrategyComposerIssuer...")
-    var result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/admin/recreate_composer_issuer.cdc",
-        [],
-        [adminAccount]
-    )
-    Test.expect(result, Test.beSucceeded())
-
     // Configure UniV3 paths for FUSDEVStrategy.
     // Closing direction: FUSDEV → PYUSD0 (Morpho redeem, fee 100) → <collateral> (UniV3 swap, fee 3000).
     // PYUSD0 is intentionally NOT configured as collateral — it is the underlying asset.
