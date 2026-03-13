@@ -1997,7 +1997,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
     /// Creates a fresh StrategyComposerIssuer with the default config skeleton.
     /// Intended for the deployer account to recreate a lost or destroyed issuer via a transaction.
-    access(all)
+    access(account)
     fun createIssuer(): @StrategyComposerIssuer {
         return <- create StrategyComposerIssuer(
             configs: {

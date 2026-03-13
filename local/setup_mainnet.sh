@@ -190,7 +190,6 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
 # configure syWFLOWvStrategy (MoreERC4626) collateral configs
 #
 # PYUSD0: yieldToUnderlying = syWFLOWv→WFLOW (fee 100), debtToCollateral = WFLOW→PYUSD0 (fee 3000)
-# Note: no WFLOW/PYUSD0 fee500 pool exists on mainnet — use fee3000 (pool 0x0fdba612...).
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.syWFLOWvStrategy' \
     'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
