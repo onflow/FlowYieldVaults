@@ -7,7 +7,6 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "MockStrategies"
-import "FlowALPv0"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
@@ -238,21 +237,11 @@ fun test_RebalanceYieldVaultScenario3B() {
 		equalAmounts(a:debtAfterYieldIncrease, b:expectedDebtValues[2], tolerance:0.01),
 		message: "Expected MOET debt after yield price increase to be \(expectedDebtValues[2]) but got \(debtAfterYieldIncrease)"
 	)
-	
-
-
-	        	// Check getYieldVaultBalance vs actual available balance before closing
+	// Check getYieldVaultBalance vs actual available balance before closing
 	let yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
 	
 	// Get the actual available balance from the position
-	let positionDetails = getPositionDetails(pid: 1, beFailed: false)
-	var positionFlowBalance = 0.0
-	for balance in positionDetails.balances {
-		if balance.vaultType == Type<@FlowToken.Vault>() && balance.direction == FlowALPv0.BalanceDirection.Credit {
-			positionFlowBalance = balance.balance
-			break
-		}
-	}
+	let positionFlowBalance = getFlowCollateralFromPosition(pid: pid)
 	
 	log("\n=== DIAGNOSTIC: YieldVault Balance vs Position Available ===")
 	log("getYieldVaultBalance() reports: \(yieldVaultBalance)")
@@ -265,5 +254,4 @@ fun test_RebalanceYieldVaultScenario3B() {
         
         log("\n=== TEST COMPLETE ===")
 }
-
 

@@ -7,7 +7,6 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "MockStrategies"
-import "FlowALPv0"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
@@ -249,14 +248,7 @@ fun test_RebalanceYieldVaultScenario3A() {
 	let yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
 	
 	// Get the actual available balance from the position
-	let positionDetails = getPositionDetails(pid: 1, beFailed: false)
-	var positionFlowBalance = 0.0
-	for balance in positionDetails.balances {
-		if balance.vaultType == Type<@FlowToken.Vault>() && balance.direction == FlowALPv0.BalanceDirection.Credit {
-			positionFlowBalance = balance.balance
-			break
-		}
-	}
+	let positionFlowBalance = getFlowCollateralFromPosition(pid: pid)
 	
 	log("\n=== DIAGNOSTIC: YieldVault Balance vs Position Available ===")
 	log("getYieldVaultBalance() reports: \(yieldVaultBalance)")
@@ -269,5 +261,4 @@ fun test_RebalanceYieldVaultScenario3A() {
 
 	log("\n=== TEST COMPLETE - All precision checks passed ===")
 }
-
 

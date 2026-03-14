@@ -32,16 +32,7 @@ access(all) fun performDiagnosticPrecisionTrace(
     userAddress: Address
 ) {
     // Get position ground truth
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    var flowAmount: UFix64 = 0.0
-    
-    for balance in positionDetails.balances {
-        if balance.vaultType.identifier == flowTokenIdentifier { 
-            if balance.direction.rawValue == 0 {  // Credit
-                flowAmount = balance.balance
-            }
-        }
-    }
+    let flowAmount = getFlowCollateralFromPosition(pid: pid)
     
     // Values at different layers
     let positionValue = flowAmount * 1.0  // Flow price = 1.0 in Scenario 2
@@ -271,4 +262,3 @@ fun test_RebalanceYieldVaultScenario2() {
 		message: "Expected user's Flow balance after rebalance to be more than zero but got \(flowBalanceAfter)"
 	)
 }
-
