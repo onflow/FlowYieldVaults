@@ -31,18 +31,21 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
-            REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
+            Review PR #${{ github.event.pull_request.number }} in the ${{ github.repository }} repository.
 
-            Review this pull request and leave concise, actionable feedback.
-            Focus on:
+            Steps:
+            1. Run `gh pr diff ${{ github.event.pull_request.number }}` to get the changes.
+            2. Run `gh pr view ${{ github.event.pull_request.number }}` for PR description and context.
+            3. Read any relevant files from the repo as needed to understand context.
+            4. Post your findings using `gh pr review ${{ github.event.pull_request.number }} --comment -b "..."`.
+
+            Focus only on concrete, actionable issues:
             - correctness and bugs
-            - security issues
+            - security vulnerabilities
             - breaking changes
-            - performance issues
+            - performance regressions
             - readability and maintainability
-            - missing or weak test coverage
 
             Use the repository's CLAUDE.md for style and conventions.
-            Only comment when there is a concrete issue worth fixing.
+            Skip nitpicks. Only comment if there is a real issue worth fixing.
 
