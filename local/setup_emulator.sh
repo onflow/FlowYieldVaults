@@ -41,7 +41,7 @@ flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connec
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
     'A.045a1763c93006ca.MockStrategies.TracerStrategy' \
     'A.045a1763c93006ca.MockStrategies.TracerStrategyComposer' \
-    /storage/FlowYieldVaultsStrategyComposerIssuer_0x045a1763c93006ca \
+    /storage/MockStrategiesComposerIssuer_0x045a1763c93006ca \
     --signer emulator-flow-yield-vaults
 
 # flow transactions send ../cadence/transactions/flow-yield-vaults/admin/upsert_musdf_config.cdc \
