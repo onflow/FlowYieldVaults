@@ -125,6 +125,14 @@ access(all) fun setup() {
     )
     Test.expect(err, Test.beNil())
 
+    log("Deploying FlowYieldVaultsAutoBalancers...")
+    err = Test.deployContract(
+        name: "FlowYieldVaultsAutoBalancers",
+        path: "../../cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
     // Redeploy PMStrategiesV1 with latest local code to override mainnet version
     log("Deploying PMStrategiesV1...")
     err = Test.deployContract(
