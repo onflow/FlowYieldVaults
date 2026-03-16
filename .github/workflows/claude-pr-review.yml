@@ -39,13 +39,4 @@ jobs:
             3. Read any relevant files from the repo as needed to understand context.
             4. Post your findings using `gh pr review ${{ github.event.pull_request.number }} --comment -b "..."`.
 
-            Focus only on concrete, actionable issues:
-            - correctness and bugs
-            - security vulnerabilities
-            - breaking changes
-            - performance regressions
-            - readability and maintainability
-
-            Use the repository's CLAUDE.md for style and conventions.
-            Skip nitpicks. Only comment if there is a real issue worth fixing.
-
+            leave a sample review
