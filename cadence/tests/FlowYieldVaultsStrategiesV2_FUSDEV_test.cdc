@@ -201,24 +201,25 @@ access(all) fun setup() {
     )
     Test.expect(err, Test.beNil())
 
-    log("Deploying FlowYieldVaultsStrategiesV2...")
-    err = Test.deployContract(
-        name: "FlowYieldVaultsStrategiesV2",
-        path: "../../cadence/contracts/FlowYieldVaultsStrategiesV2.cdc",
-        arguments: [
-            "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
-            "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
-            "0x370A8DF17742867a44e56223EC20D82092242C85"
-        ]
-    )
-    Test.expect(err, Test.beNil())
+    // temporary commented until merged with syWFLOW strategy
+    // log("Deploying FlowYieldVaultsStrategiesV2...")
+    // err = Test.deployContract(
+    //     name: "FlowYieldVaultsStrategiesV2",
+    //     path: "../../cadence/contracts/FlowYieldVaultsStrategiesV2.cdc",
+    //     arguments: [
+    //         "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+    //         "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+    //         "0x370A8DF17742867a44e56223EC20D82092242C85"
+    //     ]
+    // )
+    // Test.expect(err, Test.beNil())
 
     // Configure UniV3 paths for FUSDEVStrategy.
     // Closing direction: FUSDEV → PYUSD0 (Morpho redeem, fee 100) → <collateral> (UniV3 swap, fee 3000).
     // PYUSD0 is intentionally NOT configured as collateral — it is the underlying asset.
 
     log("Configuring FUSDEVStrategy + WFLOW (FUSDEV→PYUSD0→WFLOW fees 100/3000)...")
-    result = _executeTransactionFile(
+    var result = _executeTransactionFile(
         "../transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc",
         [
             fusdEvStrategyIdentifier,
