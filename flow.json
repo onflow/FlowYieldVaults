@@ -170,6 +170,16 @@
 				"testnet": "d2580caf2ef07c2f"
 			}
 		},
+		"UInt64LinkedList": {
+			"source": "cadence/contracts/UInt64LinkedList.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
+				"mainnet-fork": "b1d63873c3cc9f79",
+				"testing": "0000000000000009",
+				"testnet": "d2580caf2ef07c2f"
+			}
+		},
 		"FlowYieldVaultsSchedulerRegistry": {
 			"source": "cadence/contracts/FlowYieldVaultsSchedulerRegistry.cdc",
 			"aliases": {
@@ -1015,6 +1025,7 @@
 				"ERC4626PriceOracles",
 				"ERC4626SinkConnectors",
 				"ERC4626SwapConnectors",
+				"UInt64LinkedList",
 				"FlowYieldVaultsSchedulerRegistry",
 				"FlowYieldVaultsAutoBalancers",
 				"FlowYieldVaultsSchedulerV1",
@@ -1086,6 +1097,7 @@
 					]
 				},
 				"MockSwapper",
+				"UInt64LinkedList",
 				"FlowYieldVaultsSchedulerRegistry",
 				"FlowYieldVaultsAutoBalancers",
 				"FlowYieldVaultsSchedulerV1",
@@ -1139,6 +1151,7 @@
 					]
 				},
 				"MockSwapper",
+				"UInt64LinkedList",
 				"FlowYieldVaultsSchedulerRegistry",
 				"FlowYieldVaultsAutoBalancers",
 				"FlowYieldVaultsSchedulerV1",
@@ -1202,6 +1215,7 @@
 					]
 				},
 				"MockSwapper",
+				"UInt64LinkedList",
 				"FlowYieldVaultsSchedulerRegistry",
 				"FlowYieldVaultsAutoBalancers",
 				"FlowYieldVaultsSchedulerV1",
