@@ -218,7 +218,7 @@ access(all) fun setup() {
     // PYUSD0 is intentionally NOT configured as collateral — it is the underlying asset.
 
     log("Configuring FUSDEVStrategy + WFLOW (FUSDEV→PYUSD0→WFLOW fees 100/3000)...")
-    result = _executeTransactionFile(
+    var result = _executeTransactionFile(
         "../transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc",
         [
             fusdEvStrategyIdentifier,
