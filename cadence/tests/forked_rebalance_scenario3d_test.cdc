@@ -376,31 +376,3 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
 
     log("\n=== TEST COMPLETE ===")
 }
-
-
-// Helper function to get Flow collateral from position
-access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    for balance in positionDetails.balances {
-        if balance.vaultType == Type<@FlowToken.Vault>() {
-            if balance.direction == FlowALPv0.BalanceDirection.Credit {
-                return balance.balance
-            }
-        }
-    }
-    return 0.0
-}
-
-
-// Helper function to get MOET debt from position
-access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    for balance in positionDetails.balances {
-        if balance.vaultType == Type<@MOET.Vault>() {
-            if balance.direction == FlowALPv0.BalanceDirection.Debit {
-                return balance.balance
-            }
-        }
-    }
-    return 0.0
-}

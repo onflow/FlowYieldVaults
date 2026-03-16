@@ -64,47 +64,37 @@ access(all) let wflowBalanceSlot = 3 as UInt256
 access(all) let morphoVaultTotalSupplySlot = 11 as UInt256
 access(all) let morphoVaultTotalAssetsSlot = 15 as UInt256
 
-// Helper function to get Flow collateral from position
-access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    for balance in positionDetails.balances {
-        if balance.vaultType == Type<@FlowToken.Vault>() {
-            // Credit means it's a deposit (collateral)
-            if balance.direction == FlowALPv0.BalanceDirection.Credit {
-                return balance.balance
-            }
-        }
-    }
-    return 0.0
-}
+access(all) var snapshot: UInt64 = 0
+access(all) let TARGET_HEALTH: UFix128 = 1.3
+access(all) let SOLVENT_HEALTH_FLOOR: UFix128 = 1.0
 
-// Helper function to get MOET debt from position
-access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    for balance in positionDetails.balances {
-        if balance.vaultType == Type<@MOET.Vault>() {
-            // Debit means it's borrowed (debt)
-            if balance.direction == FlowALPv0.BalanceDirection.Debit {
-                return balance.balance
-            }
-        }
+access(all)
+fun safeReset() {
+    let cur = getCurrentBlockHeight()
+    if cur > snapshot {
+        Test.reset(to: snapshot)
     }
-    return 0.0
 }
 
 access(all)
 fun setup() {
 	deployContractsForFork()
+    snapshot = getCurrentBlockHeight()
+}
 
+/// Configure the environment after resetting to the post-deploy snapshot.
+/// Each test resets to `snapshot` then calls this with its own starting prices.
+access(all)
+fun setupEnv(flowPrice: UFix128, yieldPrice: UFix128) {
     // Setup Uniswap V3 pools with structurally valid state
     // This sets slot0, observations, liquidity, ticks, bitmap, positions, and POOL token balances
-    // PYUSD = 1.0, FUSDEV = 1000, FLOW = 0.03
+    // PYUSD = 1.0, FUSDEV = yieldPrice, FLOW = flowPrice
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: pyusd0Address,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0/1000.0, fee: 100, reverse: false),
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0/yieldPrice, fee: 100, reverse: false),
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
@@ -115,7 +105,7 @@ fun setup() {
         tokenAAddress: pyusd0Address,
         tokenBAddress: wflowAddress,
         fee: 3000,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0/0.03, fee: 3000, reverse: false),
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0/flowPrice, fee: 3000, reverse: false),
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: wflowBalanceSlot,
         signer: coaOwnerAccount
@@ -126,7 +116,7 @@ fun setup() {
         tokenAAddress: moetAddress,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0/1000.0, fee: 100, reverse: false),
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0/yieldPrice, fee: 100, reverse: false),
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
@@ -145,7 +135,7 @@ fun setup() {
 
     // BandOracle is used for FLOW and USD (MOET) prices
     let symbolPrices = { 
-        "FLOW": 0.03,  // Start at 0.03
+        "FLOW": UFix64(flowPrice),  // Start at 0.03
         "USD": 1.0    // MOET is pegged to USD, always 1.0
     }
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: symbolPrices)
@@ -156,35 +146,34 @@ fun setup() {
 
     // Fund FlowYieldVaults account for scheduling fees
     transferFlow(signer: whaleFlowAccount, recipient: flowYieldVaultsAccount.address, amount: 100.0)
-}
 
-access(all)
-fun test_RebalanceYieldVaultScenario4() {
-	// Scenario: large FLOW position at real-world low FLOW price
-	// FLOW drops further while YT price surges — tests closeYieldVault at extreme price ratios
-	let fundingAmount = 1000000.0
-	let flowPriceDecrease = 0.02    // FLOW: $0.03 (setup) → $0.02
-	let yieldPriceIncrease = 1500.0 // YT:   $1000.0 (setup) → $1500.0
-
-    // expected values derived from original scenario
-    let expectedYieldTokenValues = [18.46153846, 12.30769231, 10.72978305]
-    let expectedFlowCollateralValues = [1000000.00000000, 1000000.00000000, 1307692.30450000]
-    let expectedDebtValues = [18461.53846153, 12307.69231153, 16094.67451692]
-
-	let user = Test.createAccount()
-	transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
-    grantBeta(flowYieldVaultsAccount, user)
-
-    // Set vault to baseline 1:1000 price
+         // Set vault to baseline 1:1000 price
     setVaultSharePrice(
         vaultAddress: morphoVaultAddress,
         assetAddress: pyusd0Address,
         assetBalanceSlot: pyusd0BalanceSlot,
         totalSupplySlot: morphoVaultTotalSupplySlot,
         vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
-        priceMultiplier: 1000.0,
-        signer: user
+        priceMultiplier: UFix64(yieldPrice),
+        signer: coaOwnerAccount
     )
+}
+
+
+access(all)
+fun test_RebalanceLowCollateralHighYieldPrices() {
+	// Scenario 4: Large FLOW position at real-world low FLOW price
+	// FLOW drops further while YT price surges — tests closeYieldVault at extreme price ratios
+    safeReset()
+	setupEnv(flowPrice: 0.03, yieldPrice: 1000.0)
+
+	let fundingAmount = 1_000_000.0
+	let flowPriceDecrease = 0.02    // FLOW: $0.03 → $0.02
+	let yieldPriceIncrease = 1500.0 // YT:   $1000.0 → $1500.0
+
+	let user = Test.createAccount()
+	mintFlow(to: user, amount: fundingAmount)
+	grantBeta(flowYieldVaultsAccount, user)
 
 	createYieldVault(
 		signer: user,
@@ -194,7 +183,7 @@ fun test_RebalanceYieldVaultScenario4() {
 		beFailed: false
 	)
 
-    // Capture the actual position ID from the FlowCreditMarket.Opened event
+	// Capture the actual position ID from the FlowCreditMarket.Opened event
     var pid = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv0.Opened>())) as! FlowALPv0.Opened).pid
 
     var yieldVaultIDs = getYieldVaultIDs(address: user.address)
@@ -203,7 +192,7 @@ fun test_RebalanceYieldVaultScenario4() {
 	log("[Scenario4] YieldVault ID: \(yieldVaultIDs![0]), position ID: \(pid)")
 
 	// --- Phase 1: FLOW price drops from $0.03 to $0.02 ---
-    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: {
+	setBandOraclePrices(signer: bandOracleAccount, symbolPrices: {
         "FLOW": flowPriceDecrease,
         "USD": 1.0
     })
@@ -252,26 +241,6 @@ fun test_RebalanceYieldVaultScenario4() {
 	log("  YT balance:      \(ytBefore) YT")
 	log("  FLOW collateral: \(collateralBefore) FLOW (value: \(collateralBefore * flowPriceDecrease) MOET @ $\(flowPriceDecrease)/FLOW)")
 	log("  MOET debt:       \(debtBefore) MOET")
-    // precision comparison of all values
-    log("\n=== PRECISION COMPARISON (Before rebalance) ===")
-    log("Expected Yield Tokens: \(expectedYieldTokenValues[0])")
-    log("Actual Yield Tokens:   \(ytBefore)")
-    let diff0 = ytBefore > expectedYieldTokenValues[0] ? ytBefore - expectedYieldTokenValues[0] : expectedYieldTokenValues[0] - ytBefore
-    let sign0 = ytBefore > expectedYieldTokenValues[0] ? "+" : "-"
-    log("Difference:            \(sign0)\(diff0)")
-    log("")
-    log("Expected Flow Collateral Value: \(expectedFlowCollateralValues[0])")
-    log("Actual Flow Collateral Value:   \(collateralBefore)")
-    let flowDiff0 = collateralBefore > expectedFlowCollateralValues[0] ? collateralBefore - expectedFlowCollateralValues[0] : expectedFlowCollateralValues[0] - collateralBefore
-    let flowSign0 = collateralBefore > expectedFlowCollateralValues[0] ? "+" : "-"
-    log("Difference:                     \(flowSign0)\(flowDiff0)")
-    log("")
-    log("Expected MOET Debt: \(expectedDebtValues[0])")
-    log("Actual MOET Debt:   \(debtBefore)")
-    let debtDiff0 = debtBefore > expectedDebtValues[0] ? debtBefore - expectedDebtValues[0] : expectedDebtValues[0] - debtBefore
-    let debtSign0 = debtBefore > expectedDebtValues[0] ? "+" : "-"
-    log("Difference:                     \(debtSign0)\(debtDiff0)")
-    log("")
 
 	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: flowALPAccount, pid: pid, force: true, beFailed: false)
@@ -285,26 +254,15 @@ fun test_RebalanceYieldVaultScenario4() {
 	log("  FLOW collateral: \(collateralAfterFlowDrop) FLOW (value: \(collateralAfterFlowDrop * flowPriceDecrease) MOET)")
 	log("  MOET debt:       \(debtAfterFlowDrop) MOET")
 
-    // precision comparison of all values
-    log("\n=== PRECISION COMPARISON (After rebalance) ===")
-    log("Expected Yield Tokens: \(expectedYieldTokenValues[1])")
-    log("Actual Yield Tokens:   \(ytAfterFlowDrop)")
-    let diff1 = ytAfterFlowDrop > expectedYieldTokenValues[1] ? ytAfterFlowDrop - expectedYieldTokenValues[1] : expectedYieldTokenValues[1] - ytAfterFlowDrop
-    let sign1 = ytAfterFlowDrop > expectedYieldTokenValues[1] ? "+" : "-"
-    log("Difference:            \(sign1)\(diff1)")
-    log("")
-    log("Expected Flow Collateral Value: \(expectedFlowCollateralValues[1])")
-    log("Actual Flow Collateral Value:   \(collateralAfterFlowDrop)")
-    let flowDiff1 = collateralAfterFlowDrop > expectedFlowCollateralValues[1] ? collateralAfterFlowDrop - expectedFlowCollateralValues[1] : expectedFlowCollateralValues[1] - collateralAfterFlowDrop
-    let flowSign1 = collateralAfterFlowDrop > expectedFlowCollateralValues[1] ? "+" : "-"
-    log("Difference:                     \(flowSign1)\(flowDiff1)")
-    log("")
-    log("Expected MOET Debt: \(expectedDebtValues[1])")
-    log("Actual MOET Debt:   \(debtAfterFlowDrop)")
-    let debtDiff1 = debtAfterFlowDrop > expectedDebtValues[1] ? debtAfterFlowDrop - expectedDebtValues[1] : expectedDebtValues[1] - debtAfterFlowDrop
-    let debtSign1 = debtAfterFlowDrop > expectedDebtValues[1] ? "+" : "-"
-    log("Difference:                     \(debtSign1)\(debtDiff1)")
-    log("")
+	// The position was undercollateralized after FLOW price drop, so the topUpSource
+	// (AutoBalancer YT → MOET) should have repaid some debt, reducing both YT and MOET debt.
+	Test.assert(debtAfterFlowDrop < debtBefore,
+		message: "Expected MOET debt to decrease after rebalancing undercollateralized position, got \(debtAfterFlowDrop) (was \(debtBefore))")
+	Test.assert(ytAfterFlowDrop < ytBefore,
+		message: "Expected AutoBalancer YT to decrease after using topUpSource to repay debt, got \(ytAfterFlowDrop) (was \(ytBefore))")
+	// FLOW collateral is not touched by debt repayment
+    Test.assert(equalAmounts(a: collateralAfterFlowDrop, b: collateralBefore, tolerance: 0.001),
+		message: "Expected FLOW collateral to be unchanged after debt repayment rebalance, got \(collateralAfterFlowDrop) (was \(collateralBefore))")
 
 	// --- Phase 2: YT price rises from $1000.0 to $1500.0 ---
 	setVaultSharePrice(
@@ -351,29 +309,248 @@ fun test_RebalanceYieldVaultScenario4() {
 	log("  YT balance:      \(ytAfterYTRise) YT")
 	log("  FLOW collateral: \(collateralAfterYTRise) FLOW (value: \(collateralAfterYTRise * flowPriceDecrease) MOET)")
 	log("  MOET debt:       \(debtAfterYTRise) MOET")
-    
-    // precision comparison of all values
-    log("\n=== PRECISION COMPARISON (After rebalance) ===")
-    log("Expected Yield Tokens: \(expectedYieldTokenValues[2])")
-    log("Actual Yield Tokens:   \(ytAfterYTRise)")
-    let diff2 = ytAfterYTRise > expectedYieldTokenValues[2] ? ytAfterYTRise - expectedYieldTokenValues[2] : expectedYieldTokenValues[2] - ytAfterYTRise
-    let sign2 = ytAfterYTRise > expectedYieldTokenValues[2] ? "+" : "-"
-    log("Difference:            \(sign2)\(diff2)")
-    log("")
-    log("Expected Flow Collateral Value: \(expectedFlowCollateralValues[2])")
-    log("Actual Flow Collateral Value:   \(collateralAfterYTRise)")
-    let flowDiff2 = collateralAfterYTRise > expectedFlowCollateralValues[2] ? collateralAfterYTRise - expectedFlowCollateralValues[2] : expectedFlowCollateralValues[2] - collateralAfterYTRise
-    let flowSign2 = collateralAfterYTRise > expectedFlowCollateralValues[2] ? "+" : "-"
-    log("Difference:                     \(flowSign2)\(flowDiff2)")
-    log("")
-    log("Expected MOET Debt: \(expectedDebtValues[2])")
-    log("Actual MOET Debt:   \(debtAfterYTRise)")
-    let debtDiff2 = debtAfterYTRise > expectedDebtValues[2] ? debtAfterYTRise - expectedDebtValues[2] : expectedDebtValues[2] - debtAfterYTRise
-    let debtSign2 = debtAfterYTRise > expectedDebtValues[2] ? "+" : "-"
-    log("Difference:                     \(debtSign2)\(debtDiff2)")
-    log("")
 
-	// closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
+	// The AutoBalancer's YT is now worth 50% more, making its value exceed the deposit threshold.
+	// It should push excess YT → FLOW into the position, increasing collateral and reducing YT.
+	Test.assert(ytAfterYTRise < ytAfterFlowDrop,
+		message: "Expected AutoBalancer YT to decrease after pushing excess value to position, got \(ytAfterYTRise) (was \(ytAfterFlowDrop))")
+	Test.assert(collateralAfterYTRise > collateralAfterFlowDrop,
+		message: "Expected FLOW collateral to increase after AutoBalancer pushed YT→FLOW to position, got \(collateralAfterYTRise) (was \(collateralAfterFlowDrop))")
+
+	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+
+	closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
+
+	// After close, the vault should no longer exist and the user should have received their FLOW back
+	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	Test.assert(flowBalanceAfter > flowBalanceBefore,
+		message: "Expected user FLOW balance to increase after closing vault, got \(flowBalanceAfter) (was \(flowBalanceBefore))")
+
+	yieldVaultIDs = getYieldVaultIDs(address: user.address)
+	Test.assert(yieldVaultIDs == nil || yieldVaultIDs!.length == 0,
+		message: "Expected no yield vaults after close but found \(yieldVaultIDs?.length ?? 0)")
 
 	log("\n[Scenario4] Test complete")
+}
+
+access(all)
+fun test_RebalanceHighCollateralLowYieldPrices() {
+	// Scenario 5: High-value collateral with moderate price drop
+	// Tests rebalancing when FLOW drops 20% from $1000 → $800
+	// This scenario tests whether position can handle moderate drops without liquidation
+    safeReset()
+	setupEnv(flowPrice: 1000.0, yieldPrice: 1.0)
+
+	let fundingAmount = 100.0
+	let initialFlowPrice = 1000.00    // Starting price for this scenario
+	let flowPriceDecrease = 800.00    // FLOW: $1000 → $800 (20% drop)
+	let yieldPriceIncrease = 1.5      // YT: $1.0 → $1.5
+
+	let user = Test.createAccount()
+	mintFlow(to: user, amount: fundingAmount)
+	grantBeta(flowYieldVaultsAccount, user)
+
+	createYieldVault(
+		signer: user,
+		strategyIdentifier: strategyIdentifier,
+		vaultIdentifier: flowTokenIdentifier,
+		amount: fundingAmount,
+		beFailed: false
+	)
+
+    // Capture the actual position ID from the FlowCreditMarket.Opened event
+    var pid = (getLastPositionOpenedEvent(Test.eventsOfType(Type<FlowALPv0.Opened>())) as! FlowALPv0.Opened).pid
+
+    var yieldVaultIDs = getYieldVaultIDs(address: user.address)
+    Test.assert(yieldVaultIDs != nil, message: "Expected user's YieldVault IDs to be non-nil but encountered nil")
+    Test.assertEqual(1, yieldVaultIDs!.length)
+	log("[Scenario5] YieldVault ID: \(yieldVaultIDs![0]), position ID: \(pid)")
+
+	let initialCollateral = getFlowCollateralFromPosition(pid: pid)
+	let initialDebt = getMOETDebtFromPosition(pid: pid)
+	let initialHealth = getPositionHealth(pid: pid, beFailed: false)
+	let initialCollateralValue = initialCollateral * initialFlowPrice
+	log("[Scenario5] Initial state (FLOW=$\(initialFlowPrice), YT=$1.0)")
+	log("  Funding: \(initialCollateral) FLOW")
+	log("  Collateral value: $\(initialCollateralValue)")
+	log("  Actual debt: $\(initialDebt) MOET")
+	log("  Initial health: \(initialHealth)")
+
+	// --- Phase 1: FLOW price drops from $1000 to $800 (20% drop) ---
+    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: {
+        "FLOW": flowPriceDecrease,
+        "USD": 1.0
+    })
+
+    // Update WFLOW/PYUSD0 pool to reflect new FLOW price
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: wflowAddress,
+        tokenBAddress: pyusd0Address,
+        fee: 3000,
+        priceTokenBPerTokenA: feeAdjustedPrice(UFix128(flowPriceDecrease), fee: 3000, reverse: true),
+        tokenABalanceSlot: wflowBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
+        signer: coaOwnerAccount
+    )
+
+    // Position rebalance sells FUSDEV -> MOET to repay debt (reverse direction)
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: moetAddress,
+        tokenBAddress: morphoVaultAddress,
+        fee: 100,
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: true),
+        tokenABalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: fusdevBalanceSlot,
+        signer: coaOwnerAccount
+    )
+
+    // Possible path: FUSDEV -> PYUSD0 (Morpho redeem) -> PYUSD0 -> MOET (reverse on this pool)
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: moetAddress,
+        tokenBAddress: pyusd0Address,
+        fee: 100,
+        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: true),
+        tokenABalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
+        signer: coaOwnerAccount
+    )
+
+	let ytBefore = getAutoBalancerBalance(id: yieldVaultIDs![0])!
+	let debtBefore = getMOETDebtFromPosition(pid: pid)
+	let collateralBefore = getFlowCollateralFromPosition(pid: pid)
+
+	// Read health from FlowALP so this test tracks protocol configuration changes.
+	let healthBeforeRebalance = getPositionHealth(pid: pid, beFailed: false)
+	let collateralValueBefore = collateralBefore * flowPriceDecrease
+
+	log("[Scenario5] After price drop to $\(flowPriceDecrease) (BEFORE rebalance)")
+	log("  YT balance:      \(ytBefore) YT")
+	log("  FLOW collateral: \(collateralBefore) FLOW")
+	log("  Collateral value: $\(collateralValueBefore) MOET")
+	log("  MOET debt:       \(debtBefore) MOET")
+	log("  Health:          \(healthBeforeRebalance)")
+
+	// The price drop should push health below the rebalance target while keeping the position solvent.
+	Test.assert(healthBeforeRebalance < TARGET_HEALTH,
+		message: "Expected health to drop below TARGET_HEALTH (\(TARGET_HEALTH)) after 20% FLOW price drop, got \(healthBeforeRebalance)")
+	Test.assert(healthBeforeRebalance > SOLVENT_HEALTH_FLOOR,
+		message: "Expected health to remain above \(SOLVENT_HEALTH_FLOOR) after 20% FLOW price drop, got \(healthBeforeRebalance)")
+
+	// Rebalance to restore health to the strategy target.
+	log("[Scenario5] Rebalancing position and yield vault...")
+	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
+	rebalancePosition(signer: flowALPAccount, pid: pid, force: true, beFailed: false)
+
+	let ytAfterFlowDrop = getAutoBalancerBalance(id: yieldVaultIDs![0])!
+	let debtAfterFlowDrop = getMOETDebtFromPosition(pid: pid)
+	let collateralAfterFlowDrop = getFlowCollateralFromPosition(pid: pid)
+	let healthAfterRebalance = getPositionHealth(pid: pid, beFailed: false)
+
+	log("[Scenario5] After rebalance (FLOW=$\(flowPriceDecrease), YT=$1.0)")
+	log("  YT balance:      \(ytAfterFlowDrop) YT")
+	log("  FLOW collateral: \(collateralAfterFlowDrop) FLOW")
+	log("  Collateral value: $\(collateralAfterFlowDrop * flowPriceDecrease) MOET")
+	log("  MOET debt:       \(debtAfterFlowDrop) MOET")
+	log("  Health:          \(healthAfterRebalance)")
+
+	// The position was undercollateralized (health < TARGET_HEALTH) after the FLOW price drop,
+	// so the topUpSource (AutoBalancer YT → MOET) should have repaid some debt.
+	Test.assert(debtAfterFlowDrop < debtBefore,
+		message: "Expected MOET debt to decrease after rebalancing undercollateralized position, got \(debtAfterFlowDrop) (was \(debtBefore))")
+	Test.assert(ytAfterFlowDrop < ytBefore,
+		message: "Expected AutoBalancer YT to decrease after using topUpSource to repay debt, got \(ytAfterFlowDrop) (was \(ytBefore))")
+	// Debt repayment only affects the MOET debit — FLOW collateral is untouched.
+	Test.assert(equalAmounts(a: collateralAfterFlowDrop, b: collateralBefore, tolerance: 0.000001),
+		message: "Expected FLOW collateral to be unchanged after debt repayment, got \(collateralAfterFlowDrop) (was \(collateralBefore))")
+	// The AutoBalancer has sufficient YT to cover the full repayment needed to reach the target.
+	Test.assert(equalAmounts128(a: healthAfterRebalance, b: TARGET_HEALTH, tolerance: 0.00000001),
+		message: "Expected health to be fully restored to TARGET_HEALTH (\(TARGET_HEALTH)) after rebalance, got \(healthAfterRebalance)")
+
+	// --- Phase 2: YT price rises from $1.0 to $1.5 ---
+	log("[Scenario5] Phase 2: YT price increases to $\(yieldPriceIncrease)")
+	setVaultSharePrice(
+        vaultAddress: morphoVaultAddress,
+        assetAddress: pyusd0Address,
+        assetBalanceSlot: UInt256(1),
+        totalSupplySlot: morphoVaultTotalSupplySlot,
+        vaultTotalAssetsSlot: morphoVaultTotalAssetsSlot,
+        priceMultiplier: yieldPriceIncrease,
+        signer: user
+    )
+    
+    // AutoBalancer sells FUSDEV -> PYUSD0 (reverse on this pool)
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: morphoVaultAddress,
+        tokenBAddress: pyusd0Address,
+        fee: 100,
+        priceTokenBPerTokenA: feeAdjustedPrice(UFix128(yieldPriceIncrease), fee: 100, reverse: true),
+        tokenABalanceSlot: fusdevBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
+        signer: coaOwnerAccount
+    )
+
+    // Position rebalance borrows MOET -> FUSDEV (forward on this pool)
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: morphoVaultAddress,
+        tokenBAddress: moetAddress,
+        fee: 100,
+        priceTokenBPerTokenA: feeAdjustedPrice(UFix128(yieldPriceIncrease), fee: 100, reverse: false),
+        tokenABalanceSlot: fusdevBalanceSlot,
+        tokenBBalanceSlot: moetBalanceSlot,
+        signer: coaOwnerAccount
+    )
+
+	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
+
+	let ytAfterYTRise = getAutoBalancerBalance(id: yieldVaultIDs![0])!
+	let debtAfterYTRise = getMOETDebtFromPosition(pid: pid)
+	let collateralAfterYTRise = getFlowCollateralFromPosition(pid: pid)
+	let healthAfterYTRise = getPositionHealth(pid: pid, beFailed: false)
+
+	log("[Scenario5] After YT rise (FLOW=$\(flowPriceDecrease), YT=$\(yieldPriceIncrease))")
+	log("  YT balance:      \(ytAfterYTRise) YT")
+	log("  FLOW collateral: \(collateralAfterYTRise) FLOW")
+	log("  Collateral value: $\(collateralAfterYTRise * flowPriceDecrease) MOET")
+	log("  MOET debt:       \(debtAfterYTRise) MOET")
+	log("  Health:          \(healthAfterYTRise)")
+
+	// The AutoBalancer's YT is now worth 50% more, exceeding the upper threshold.
+	// It pushes excess YT → FLOW into the position, reducing YT and increasing FLOW collateral.
+	Test.assert(ytAfterYTRise < ytAfterFlowDrop,
+		message: "Expected AutoBalancer YT to decrease after pushing excess value to position, got \(ytAfterYTRise) (was \(ytAfterFlowDrop))")
+	Test.assert(collateralAfterYTRise > collateralAfterFlowDrop,
+		message: "Expected FLOW collateral to increase after AutoBalancer pushed YT→FLOW to position, got \(collateralAfterYTRise) (was \(collateralAfterFlowDrop))")
+
+	// Rebalance both position and yield vault before closing to ensure everything is settled
+	log("\n[Scenario5] Rebalancing position and yield vault before close...")
+	rebalancePosition(signer: flowALPAccount, pid: pid, force: true, beFailed: false)
+	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
+
+	let ytBeforeClose = getAutoBalancerBalance(id: yieldVaultIDs![0])!
+	let debtBeforeClose = getMOETDebtFromPosition(pid: pid)
+	let collateralBeforeClose = getFlowCollateralFromPosition(pid: pid)
+	log("[Scenario5] After final rebalance before close:")
+	log("  YT balance:      \(ytBeforeClose) YT")
+	log("  FLOW collateral: \(collateralBeforeClose) FLOW")
+	log("  MOET debt:       \(debtBeforeClose) MOET")
+
+	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+
+	// Close the yield vault
+	log("\n[Scenario5] Closing yield vault...")
+	closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
+
+	// User should receive their collateral back; vault should be destroyed.
+	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	Test.assert(flowBalanceAfter > flowBalanceBefore,
+		message: "Expected user FLOW balance to increase after closing vault, got \(flowBalanceAfter) (was \(flowBalanceBefore))")
+
+	yieldVaultIDs = getYieldVaultIDs(address: user.address)
+	Test.assert(yieldVaultIDs == nil || yieldVaultIDs!.length == 0,
+		message: "Expected no yield vaults after close but found \(yieldVaultIDs?.length ?? 0)")
 }
