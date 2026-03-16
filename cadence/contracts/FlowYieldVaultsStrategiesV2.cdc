@@ -1171,7 +1171,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
         access(all) view fun getSupportedComposers(): {Type: Bool} {
             return {
-                Type<@MorphoERC4626StrategyComposer>(): true,
+                Type<@MorphoERC4626StrategyComposer>(): true
             }
         }
 
