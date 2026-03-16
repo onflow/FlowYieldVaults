@@ -8,7 +8,7 @@ on:
   issues:
     types: [opened, assigned]
   pull_request_review:
-    types: [submitted, opened, synchronize, reopened, ready_for_review]
+    types: [submitted]
 
 jobs:
   claude:
