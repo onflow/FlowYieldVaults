@@ -211,7 +211,7 @@ access(all) fun setup() {
     // debtToCollateral paths differ per collateral: WFLOW → <collateral>
 
     log("Configuring MoreERC4626CollateralConfig: syWFLOWvStrategy + PYUSD0 (WFLOW→PYUSD0 fee 3000)...")
-    result = _executeTransactionFile(
+    var result = _executeTransactionFile(
         "../transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc",
         [
             syWFLOWvStrategyIdentifier,
