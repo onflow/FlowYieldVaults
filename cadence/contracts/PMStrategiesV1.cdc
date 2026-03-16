@@ -61,7 +61,8 @@ access(all) contract PMStrategiesV1 {
     access(all) event RedeemRecovered(
         yieldVaultID: UInt64,
         userAddress: Address,
-        vaultEVMAddressHex: String
+        vaultEVMAddressHex: String,
+        reason: String
     )
 
     access(all) let univ3FactoryEVMAddress: EVM.EVMAddress
@@ -1121,7 +1122,8 @@ access(all) contract PMStrategiesV1 {
             emit RedeemRecovered(
                 yieldVaultID: yieldVaultID,
                 userAddress: info.userFlowAddress,
-                vaultEVMAddressHex: info.vaultEVMAddress.toString()
+                vaultEVMAddressHex: info.vaultEVMAddress.toString(),
+                reason: assetsReceived == nil ? "evm_revert" : "zero_assets"
             )
             handler.removePendingRedeem(id: yieldVaultID)
             handler.removeScheduledTx(id: yieldVaultID)
