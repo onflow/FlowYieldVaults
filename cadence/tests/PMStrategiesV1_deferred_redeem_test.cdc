@@ -1,4 +1,4 @@
-#test_fork(network: "mainnet", height: nil)
+#test_fork(network: "mainnet", height: 145417928)  // Pinned to avoid live Band oracle stale-threshold flakiness
 
 import Test
 
@@ -294,15 +294,14 @@ access(all) fun testDuplicateRequestRedeemFails() {
 }
 
 access(all) fun testViewFunctionsWhilePending() {
-    // getAllPendingRedeemIDs — should contain exactly our yieldVaultID
+    // getAllPendingRedeemIDs can contain unrelated fork-state redeems; assert our vault is present.
     let idsResult = _executeScript(
         "scripts/pm-strategies/get_all_pending_redeem_ids.cdc",
         []
     )
     Test.expect(idsResult, Test.beSucceeded())
     let ids = idsResult.returnValue! as! [UInt64]
-    Test.assert(ids.length == 1, message: "Expected exactly one pending redeem ID")
-    Test.assert(ids[0] == yieldVaultID, message: "Pending ID should match yieldVaultID")
+    Test.assert(ids.contains(yieldVaultID), message: "Expected pending redeem IDs to contain yieldVaultID")
     log("getAllPendingRedeemIDs: \(yieldVaultID)")
 
     // getScheduledClaim — should return a future timestamp
@@ -389,7 +388,7 @@ access(all) fun testClearRedeemRequest() {
     )
     Test.expect(idsResult, Test.beSucceeded())
     let clearedIds = idsResult.returnValue! as! [UInt64]
-    Test.assert(clearedIds.length == 0, message: "Expected no pending redeem IDs after clear")
+    Test.assert(!clearedIds.contains(yieldVaultID), message: "Expected yieldVaultID to be absent from pending redeem IDs after clear")
 
     let tsResult = _executeScript(
         "scripts/pm-strategies/get_scheduled_claim_timestamp.cdc",
@@ -466,6 +465,6 @@ access(all) fun testRedeemAllAfterCancel() {
     )
     Test.expect(idsResult, Test.beSucceeded())
     let clearedIds = idsResult.returnValue! as! [UInt64]
-    Test.assert(clearedIds.length == 0, message: "Expected no pending redeems after re-cancel")
+    Test.assert(!clearedIds.contains(yieldVaultID), message: "Expected yieldVaultID to be absent from pending redeems after re-cancel")
     log("Re-request → cancel lifecycle complete")
 }
