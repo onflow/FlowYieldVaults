@@ -309,6 +309,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                             Burner.burn(<-extraCollateral)
                         }
                     }
+                }
             }
 
             // Step 7: Create a BufferedSwapSource that converts ALL yield tokens → MOET.
