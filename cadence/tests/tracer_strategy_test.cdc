@@ -398,11 +398,8 @@ fun test_RebalanceYieldVaultSucceedsAfterCollateralPriceIncrease() {
 
     log("Yield token balance before rebalance: \(yieldTokensBefore)")
 
-    // Rebalance the YieldVault to adjust the Yield tokens based on the new collateral price
-    // Force both yield vault and position to rebalance
-    rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
-
-    // Position ID is hardcoded to 1 here since this is the first yield vault created, 
+    // Position health increased because FLOW collateral is worth more; drawDown brings it back to target.
+    // Position ID is hardcoded to 1 here since this is the first yield vault created,
     // if there is a better way to get the position ID, please let me know
     rebalancePosition(signer: protocolAccount, pid: positionID, force: true, beFailed: false)
 
