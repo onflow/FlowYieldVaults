@@ -2,7 +2,7 @@
 
 import Test
 
-/// Fork test for PMStrategiesV1 deferred redemption — validates request/query/cancel
+/// Fork test for PMStrategiesV1 deferred redemption — validates request/query/cancel/recovery
 /// against real mainnet EVM state (More Vaults Diamond vault with withdrawal queue).
 ///
 /// Tests:
@@ -15,10 +15,11 @@ import Test
 ///   7. Negative: wrong COA on clearRedeemRequest, no-pending clearRedeemRequest
 ///   8. Cancel the deferred redemption (clearRedeemRequest), verify state cleared
 ///   9. Redeem all (nil amount) after cancel — exercises minimumAvailable() path, verifies lifecycle repeatability
-///
-/// claimRedeem is not fork-testable: moveTime() advances block.timestamp past
-/// the 48h timelock but EVM oracle/yield state stays frozen, causing redeem() to
-/// revert on stale-data checks. Cadence-side scheduler logic verified separately.
+///  10. Negative: claimRedeem with no pending redeem
+///  11. claimRedeem before timelock — rejected by timestamp guard
+///  12. EVM revert recovery: after timelock, redeem() reverts (stale oracle),
+///      _evmRedeem returns nil, shares recovered to AutoBalancer
+///  13. Re-request after recovery — verifies orphaned EVM request doesn't block a new requestRedeem
 ///
 /// Mainnet addresses:
 ///   - Admin (FlowYieldVaults deployer): 0xb1d63873c3cc9f79
@@ -39,6 +40,7 @@ access(all) let schedulingFee = 0.5
 // --- Test State ---
 
 access(all) var yieldVaultID: UInt64 = 0
+access(all) var abBalanceBeforeRedeem = 0.0
 
 /* --- Helpers --- */
 
@@ -233,6 +235,13 @@ access(all) fun testRequestRedeem() {
         [userAccount.address, yieldVaultID]
     ).returnValue! as! UFix64?)!
     log("NAV balance before requestRedeem: \(navBefore)")
+
+    // Capture AutoBalancer share balance before redeem for end-to-end recovery verification
+    abBalanceBeforeRedeem = (_executeScript(
+        "../scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc",
+        [yieldVaultID]
+    ).returnValue! as! UFix64?)!
+    log("AutoBalancer share balance before requestRedeem: \(abBalanceBeforeRedeem)")
 
     log("Requesting deferred redeem for 1.0 FLOW worth of shares...")
     let result = _executeTransactionFile(
@@ -467,5 +476,159 @@ access(all) fun testRedeemAllAfterCancel() {
     Test.expect(idsResult, Test.beSucceeded())
     let clearedIds = idsResult.returnValue! as! [UInt64]
     Test.assert(clearedIds.length == 0, message: "Expected no pending redeems after re-cancel")
-    log("Re-request → cancel lifecycle complete")
+    log("Re-request -> cancel lifecycle complete")
+}
+
+access(all) fun testClaimRedeemNoPendingFails() {
+    log("Attempting claimRedeem with no pending redeem (should fail)...")
+    let result = _executeTransactionFile(
+        "transactions/pm-strategies/claim_redeem.cdc",
+        [yieldVaultID],
+        []
+    )
+    Test.expect(result, Test.beFailed())
+    log("claimRedeem with no pending correctly rejected")
+}
+
+access(all) fun testClaimRedeemBeforeTimelockFails() {
+    let navBefore = (_executeScript(
+        "scripts/pm-strategies/get_yield_vault_nav_balance.cdc",
+        [userAccount.address, yieldVaultID]
+    ).returnValue! as! UFix64?)!
+    log("NAV before timelock-guard test: \(navBefore)")
+
+    // Request a deferred redeem
+    log("Requesting deferred redeem for 1.0 FLOW worth of shares...")
+    var result = _executeTransactionFile(
+        "transactions/pm-strategies/request_redeem.cdc",
+        [yieldVaultID, 1.0 as UFix64?, schedulingFee],
+        [userAccount]
+    )
+    Test.expect(result, Test.beSucceeded())
+    log("requestRedeem succeeded")
+
+    // Call claimRedeem immediately — should be rejected by timestamp guard
+    log("Calling claimRedeem before timelock (should be rejected)...")
+    result = _executeTransactionFile(
+        "transactions/pm-strategies/claim_redeem.cdc",
+        [yieldVaultID],
+        []
+    )
+    Test.expect(result, Test.beFailed())
+    log("claimRedeem before timelock correctly rejected")
+
+    // Pending state should still exist (nothing changed)
+    let infoResult = _executeScript(
+        "scripts/pm-strategies/get_pending_redeem_info.cdc",
+        [yieldVaultID]
+    )
+    Test.expect(infoResult, Test.beSucceeded())
+    Test.assert(infoResult.returnValue != nil, message: "Pending redeem should still exist after rejected claim")
+    log("Pending state preserved after rejected early claim")
+}
+
+access(all) fun testEVMRedeemRevertTriggersRecovery() {
+    // Pending redeem exists from testClaimRedeemBeforeTimelockFails.
+    let infoBefore = _executeScript(
+        "scripts/pm-strategies/get_pending_redeem_info.cdc",
+        [yieldVaultID]
+    )
+    Test.expect(infoBefore, Test.beSucceeded())
+    Test.assert(infoBefore.returnValue != nil, message: "Expected pending redeem before moveTime")
+
+    let abBefore = (_executeScript(
+        "../scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc",
+        [yieldVaultID]
+    ).returnValue! as! UFix64?)!
+    let userFlowBefore = getAccount(userAccount.address).balance
+
+    // moveTime advances past the scheduled timestamp (timelock + schedulerBuffer).
+    // The 48h time jump makes EVM oracle data stale → redeem() reverts →
+    // _evmRedeem returns nil → recovery pulls shares back to AutoBalancer.
+    Test.moveTime(by: 172831.0)
+
+    // Pending state cleared
+    let infoAfter = _executeScript(
+        "scripts/pm-strategies/get_pending_redeem_info.cdc",
+        [yieldVaultID]
+    )
+    Test.expect(infoAfter, Test.beSucceeded())
+    Test.assert(infoAfter.returnValue == nil, message: "Expected pending redeem cleared after recovery")
+
+    let idsResult = _executeScript(
+        "scripts/pm-strategies/get_all_pending_redeem_ids.cdc",
+        []
+    )
+    Test.expect(idsResult, Test.beSucceeded())
+    let ids = idsResult.returnValue! as! [UInt64]
+    Test.assert(ids.length == 0, message: "Expected no pending redeem IDs after recovery")
+
+    // Shares recovered to AutoBalancer
+    let abAfter = (_executeScript(
+        "../scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc",
+        [yieldVaultID]
+    ).returnValue! as! UFix64?)!
+    Test.assert(abAfter > abBefore, message: "Expected AutoBalancer increase from recovered shares")
+    log("Shares recovered to AutoBalancer (delta: \(abAfter - abBefore))")
+
+    // User received no FLOW (recovery, not happy path)
+    let userFlowAfter = getAccount(userAccount.address).balance
+    Test.assert(
+        userFlowAfter == userFlowBefore,
+        message: "Expected no FLOW change for user during recovery"
+    )
+
+    // Claim outcome should be "failed" (recovery, not success)
+    let outcomeResult = _executeScript(
+        "scripts/pm-strategies/get_claim_outcome.cdc",
+        [yieldVaultID]
+    )
+    Test.expect(outcomeResult, Test.beSucceeded())
+    let outcome = outcomeResult.returnValue! as! String?
+    Test.assert(outcome == "failed", message: "Expected claim outcome 'failed' after recovery")
+    log("Claim outcome after recovery: \(outcome!)")
+}
+
+access(all) fun testRequestRedeemAfterRecovery() {
+    // After recovery, Cadence state is clean but the EVM vault may still have
+    // an orphaned withdrawal request from the previous requestRedeem.
+    // This test verifies a new requestRedeem succeeds despite that.
+    //
+    // NOTE: EVM view calls (navBalance, convertToAssets) are unreliable after
+    // the 48h moveTime — oracle data is stale. Use Cadence-side AutoBalancer
+    // balance and nil-amount redeem (skips convertToShares EVM call).
+
+    let abBalance = (_executeScript(
+        "../scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc",
+        [yieldVaultID]
+    ).returnValue! as! UFix64?)!
+    log("AutoBalancer share balance after recovery: \(abBalance)")
+    Test.assert(abBalance > 0.0, message: "Expected positive AutoBalancer balance from recovered shares")
+
+    // Use nil amount to redeem all shares — avoids convertToShares EVM call
+    log("Requesting deferred redeem (all) after recovery...")
+    let result = _executeTransactionFile(
+        "transactions/pm-strategies/request_redeem.cdc",
+        [yieldVaultID, nil as UFix64?, schedulingFee],
+        [userAccount]
+    )
+    Test.expect(result, Test.beSucceeded())
+    log("requestRedeem after recovery succeeded — orphaned EVM request did not block")
+
+    // Verify pending state exists
+    let infoResult = _executeScript(
+        "scripts/pm-strategies/get_pending_redeem_info.cdc",
+        [yieldVaultID]
+    )
+    Test.expect(infoResult, Test.beSucceeded())
+    Test.assert(infoResult.returnValue != nil, message: "Expected pending redeem after re-request")
+
+    // Claim outcome should be cleared on new requestRedeem
+    let outcomeResult = _executeScript(
+        "scripts/pm-strategies/get_claim_outcome.cdc",
+        [yieldVaultID]
+    )
+    Test.expect(outcomeResult, Test.beSucceeded())
+    Test.assert(outcomeResult.returnValue == nil, message: "Expected nil claim outcome after re-request")
+    log("Re-request after recovery lifecycle complete")
 }
