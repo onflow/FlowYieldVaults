@@ -328,7 +328,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     if quote.inAmount > 0.0 {
                         let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
                         if extraCollateral.balance > 0.0 {
-                            let extraMOET <- collateralToMoetSwapper.swap(quote: quote, inVault: <-extraCollateral)
+                            // Re-quote against the actual withdrawn amount: if the source was underfunded,
+                            // extraCollateral.balance < quote.inAmount. Passing the stale quote to swap()
+                            // would set amountOutMinimum = buffered (the full desired output), which the
+                            // smaller input cannot achieve, causing the UniV3 exactInput call to revert.
+                            let actualQuote = collateralToMoetSwapper.quoteOut(forProvided: extraCollateral.balance, reverse: false)
+                            let extraMOET <- collateralToMoetSwapper.swap(quote: actualQuote, inVault: <-extraCollateral)
                             if extraMOET.balance > 0.0 {
                                 // Deposit MOET to reduce position debt before close
                                 self.position.deposit(from: <-extraMOET)
