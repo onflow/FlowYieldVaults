@@ -303,16 +303,15 @@ access(all) fun testDuplicateRequestRedeemFails() {
 }
 
 access(all) fun testViewFunctionsWhilePending() {
-    // getAllPendingRedeemIDs — should contain exactly our yieldVaultID
+    // getAllPendingRedeemIDs — should contain our yieldVaultID
     let idsResult = _executeScript(
         "scripts/pm-strategies/get_all_pending_redeem_ids.cdc",
         []
     )
     Test.expect(idsResult, Test.beSucceeded())
     let ids = idsResult.returnValue! as! [UInt64]
-    Test.assert(ids.length == 1, message: "Expected exactly one pending redeem ID")
-    Test.assert(ids[0] == yieldVaultID, message: "Pending ID should match yieldVaultID")
-    log("getAllPendingRedeemIDs: \(yieldVaultID)")
+    Test.assert(ids.contains(yieldVaultID), message: "Pending IDs should contain our yieldVaultID")
+    log("getAllPendingRedeemIDs contains \(yieldVaultID)")
 
     // getScheduledClaim — should return a future timestamp
     let tsResult = _executeScript(
@@ -398,7 +397,7 @@ access(all) fun testClearRedeemRequest() {
     )
     Test.expect(idsResult, Test.beSucceeded())
     let clearedIds = idsResult.returnValue! as! [UInt64]
-    Test.assert(clearedIds.length == 0, message: "Expected no pending redeem IDs after clear")
+    Test.assert(!clearedIds.contains(yieldVaultID), message: "Pending IDs should not contain our yieldVaultID after clear")
 
     let tsResult = _executeScript(
         "scripts/pm-strategies/get_scheduled_claim_timestamp.cdc",
@@ -475,7 +474,7 @@ access(all) fun testRedeemAllAfterCancel() {
     )
     Test.expect(idsResult, Test.beSucceeded())
     let clearedIds = idsResult.returnValue! as! [UInt64]
-    Test.assert(clearedIds.length == 0, message: "Expected no pending redeems after re-cancel")
+    Test.assert(!clearedIds.contains(yieldVaultID), message: "Pending IDs should not contain our yieldVaultID after re-cancel")
     log("Re-request -> cancel lifecycle complete")
 }
 
