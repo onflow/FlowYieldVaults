@@ -133,7 +133,6 @@ fun test_RebalanceLowCollateralHighYieldPrices() {
 	log("  FLOW collateral: \(collateralBefore) FLOW (value: \(collateralBefore * flowPriceDecrease) MOET @ $\(flowPriceDecrease)/FLOW)")
 	log("  MOET debt:       \(debtBefore) MOET")
 
-	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
 	let ytAfterFlowDrop = getAutoBalancerBalance(id: yieldVaultIDs![0])!
@@ -258,8 +257,7 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 		message: "Expected health to remain above \(SOLVENT_HEALTH_FLOOR) after 20% FLOW price drop, got \(healthBeforeRebalance)")
 
 	// Rebalance to restore health to the strategy target.
-	log("[Scenario5] Rebalancing position and yield vault...")
-	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
+	log("[Scenario5] Rebalancing position...")
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
 	let ytAfterFlowDrop = getAutoBalancerBalance(id: yieldVaultIDs![0])!
