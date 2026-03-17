@@ -315,7 +315,8 @@ access(all) contract PMStrategiesV1 {
             let availableBalance = self.availableBalance(ofToken: collateralType)
             return <- self.withdraw(maxAmount: availableBalance, ofToken: collateralType)
         }
-        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
+        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer.
+        /// FUSDEVStrategy uses direct instant redemption — no deferred redeem support.
         access(contract) fun burnCallback() {
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
         }
@@ -881,23 +882,30 @@ access(all) contract PMStrategiesV1 {
             return self.pendingRedeems.keys
         }
 
-        /// Read-modify-write: Cadence dicts are value types, so nested dict access
-        /// through {String: AnyStruct} returns a copy. Map stays small (one entry per
-        /// in-flight claim, cleared after backend reads it).
         access(contract) fun setClaimOutcome(yieldVaultID: UInt64, outcome: String) {
-            var outcomes = (self.metadata["claimOutcomes"] as? {UInt64: String}) ?? {}
+            if self.metadata["claimOutcomes"] == nil {
+                self.metadata["claimOutcomes"] = {} as {UInt64: String}
+            }
+            let entry: auth(Mutate) &AnyStruct = &self.metadata["claimOutcomes"]!
+            let outcomes = entry as! auth(Mutate) &{UInt64: String}
             outcomes[yieldVaultID] = outcome
-            self.metadata["claimOutcomes"] = outcomes
         }
 
         access(contract) fun clearClaimOutcome(yieldVaultID: UInt64) {
-            var outcomes = (self.metadata["claimOutcomes"] as? {UInt64: String}) ?? {}
+            if self.metadata["claimOutcomes"] == nil {
+                return
+            }
+            let entry: auth(Remove) &AnyStruct = &self.metadata["claimOutcomes"]!
+            let outcomes = entry as! auth(Remove) &{UInt64: String}
             outcomes.remove(key: yieldVaultID)
-            self.metadata["claimOutcomes"] = outcomes
         }
 
         access(contract) view fun getClaimOutcome(yieldVaultID: UInt64): String? {
-            let outcomes = (self.metadata["claimOutcomes"] as? {UInt64: String}) ?? {}
+            if self.metadata["claimOutcomes"] == nil {
+                return nil
+            }
+            let entry: &AnyStruct = &self.metadata["claimOutcomes"]!
+            let outcomes = entry as! &{UInt64: String}
             return outcomes[yieldVaultID]
         }
     }
