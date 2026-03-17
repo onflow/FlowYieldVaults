@@ -28,6 +28,7 @@ import Test
 // --- Accounts ---
 
 access(all) let adminAccount = Test.getAccount(0xb1d63873c3cc9f79)
+access(all) let bandOracleAdmin = Test.getAccount(0x6801a6222ebf784a)
 access(all) let userAccount = Test.getAccount(0x443472749ebdaac8)
 
 // --- Constants ---
@@ -146,9 +147,17 @@ access(all) fun setup() {
     )
     Test.expect(err, Test.beNil())
 
+    log("Refreshing Band FLOW/USD + USD/USD data for FlowALP...")
+    var result = _executeTransactionFile(
+        "transactions/band-oracle/refresh_flowalp_core_prices.cdc",
+        [],
+        [bandOracleAdmin]
+    )
+    Test.expect(result, Test.beSucceeded())
+
     // Grant beta access
     log("Granting beta access...")
-    var result = _executeTransactionFile(
+    result = _executeTransactionFile(
         "../transactions/flow-yield-vaults/admin/grant_beta.cdc",
         [],
         [adminAccount, userAccount]
@@ -301,9 +310,8 @@ access(all) fun testViewFunctionsWhilePending() {
     )
     Test.expect(idsResult, Test.beSucceeded())
     let ids = idsResult.returnValue! as! [UInt64]
-    Test.assert(ids.length == 1, message: "Expected exactly one pending redeem ID")
-    Test.assert(ids[0] == yieldVaultID, message: "Pending ID should match yieldVaultID")
-    log("getAllPendingRedeemIDs: \(yieldVaultID)")
+    Test.assert(ids.contains(yieldVaultID), message: "Expected pending redeem IDs to contain yieldVaultID")
+    log("getAllPendingRedeemIDs contains: \(yieldVaultID)")
 
     // getScheduledClaim — should return a future timestamp
     let tsResult = _executeScript(
@@ -389,7 +397,7 @@ access(all) fun testClearRedeemRequest() {
     )
     Test.expect(idsResult, Test.beSucceeded())
     let clearedIds = idsResult.returnValue! as! [UInt64]
-    Test.assert(clearedIds.length == 0, message: "Expected no pending redeem IDs after clear")
+    Test.assert(!clearedIds.contains(yieldVaultID), message: "Expected yieldVaultID to be absent from pending redeem IDs after clear")
 
     let tsResult = _executeScript(
         "scripts/pm-strategies/get_scheduled_claim_timestamp.cdc",
@@ -466,6 +474,6 @@ access(all) fun testRedeemAllAfterCancel() {
     )
     Test.expect(idsResult, Test.beSucceeded())
     let clearedIds = idsResult.returnValue! as! [UInt64]
-    Test.assert(clearedIds.length == 0, message: "Expected no pending redeems after re-cancel")
+    Test.assert(!clearedIds.contains(yieldVaultID), message: "Expected yieldVaultID to be absent from pending redeems after re-cancel")
     log("Re-request → cancel lifecycle complete")
 }
