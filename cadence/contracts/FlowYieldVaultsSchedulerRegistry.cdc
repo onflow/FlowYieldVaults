@@ -1,5 +1,6 @@
 import "FlowTransactionScheduler"
 import "DeFiActions"
+import "UInt64LinkedList"
 
 
 /// FlowYieldVaultsSchedulerRegistry
@@ -12,28 +13,6 @@ import "DeFiActions"
 /// - The global Supervisor capability for recovery operations
 ///
 access(all) contract FlowYieldVaultsSchedulerRegistry {
-
-    /* --- TYPES --- */
-
-    /// Node in the simulated doubly-linked list used for O(1) stuck-scan ordering.
-    /// Only recurring, scan-eligible vaults participate in this list.
-    /// `prev` points toward the head (most recently executed); `next` points toward the tail (oldest/least recently executed).
-    access(all) struct ListNode {
-        access(all) var prev: UInt64?
-        access(all) var next: UInt64?
-        init(prev: UInt64?, next: UInt64?) {
-            self.prev = prev
-            self.next = next
-        }
-
-        access(all) fun setPrev(prev: UInt64?) {
-            self.prev = prev
-        }
-
-        access(all) fun setNext(next: UInt64?) {
-            self.next = next
-        }
-    }
 
     /* --- EVENTS --- */
 
@@ -63,6 +42,10 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /// Maximum number of yield vaults to process in a single Supervisor batch
     access(all) let MAX_BATCH_SIZE: Int
 
+    /* --- STORAGE PATHS --- */
+
+    access(all) let executionListStoragePath: StoragePath
+
     /* --- STATE --- */
 
     /// Registry of all yield vault IDs that participate in scheduling
@@ -80,59 +63,13 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /// Stored as a dictionary for O(1) add/remove; iteration gives the pending set
     access(self) var pendingQueue: {UInt64: Bool}
 
-    /// Simulated doubly-linked list for O(1) stuck-scan ordering across recurring scan participants.
-    /// listHead = most recently executed recurring vault ID (or nil if empty).
-    /// listTail = least recently executed recurring vault ID — getStuckScanCandidates walks from here.
-    /// On reportExecution a recurring participant is snipped from its current position and moved to head in O(1).
-    /// If a vault later disables recurring config, its stale list entry is pruned lazily during candidate walks.
-    access(self) var listNodes: {UInt64: ListNode}
-    access(self) var listHead: UInt64?
-    access(self) var listTail: UInt64?
+    /* --- PRIVATE LIST ACCESSOR --- */
 
-    /* --- PRIVATE LIST HELPERS --- */
-
-    /// Insert `id` at the head of the list (most-recently-executed end).
-    /// Caller must ensure `id` is not already in the list.
-    access(self) fun _listInsertAtHead(id: UInt64) {
-        let node = ListNode(prev: nil, next: self.listHead)
-        if let oldHeadID = self.listHead {
-            var oldHead = self.listNodes[oldHeadID]!
-            oldHead.setPrev(prev: id)
-            self.listNodes[oldHeadID] = oldHead
-        } else {
-            // List was empty — id is also the tail
-            self.listTail = id
-        }
-        self.listNodes[id] = node
-        self.listHead = id
-    }
-
-    /// Remove `id` from wherever it sits in the list in O(1).
-    /// Returns false if the id is not currently linked.
-    access(self) fun _listRemove(id: UInt64): Bool {
-        let node = self.listNodes.remove(key: id)
-        if node == nil {
-            return false
-        }
-
-        if let prevID = node!.prev {
-            var prevNode = self.listNodes[prevID]!
-            prevNode.setNext(next: node!.next)
-            self.listNodes[prevID] = prevNode
-        } else {
-            // id was the head
-            self.listHead = node!.next
-        }
-
-        if let nextID = node!.next {
-            var nextNode = self.listNodes[nextID]!
-            nextNode.setPrev(prev: node!.prev)
-            self.listNodes[nextID] = nextNode
-        } else {
-            // id was the tail
-            self.listTail = node!.prev
-        }
-        return true
+    /// Borrow the execution-order linked list from account storage.
+    access(self) fun _list(): &UInt64LinkedList.List {
+        return self.account.storage
+            .borrow<&UInt64LinkedList.List>(from: self.executionListStoragePath)
+            ?? panic("UInt64LinkedList.List resource missing from storage")
     }
 
     /* --- ACCOUNT-LEVEL FUNCTIONS --- */
@@ -155,11 +92,12 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
 
         // Only recurring vaults participate in stuck-scan ordering.
         // If already in the list (idempotent re-register), remove first to avoid duplicates.
-        if self.listNodes[yieldVaultID] != nil {
-            self._listRemove(id: yieldVaultID)
+        let list = self._list()
+        if list.contains(id: yieldVaultID) {
+            let _ = list.remove(id: yieldVaultID)
         }
         if participatesInStuckScan {
-            self._listInsertAtHead(id: yieldVaultID)
+            list.insertAtHead(id: yieldVaultID)
         }
         emit YieldVaultRegistered(yieldVaultID: yieldVaultID)
     }
@@ -168,11 +106,12 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /// (most recently executed) so the Supervisor scans recurring participants from the tail
     /// (least recently executed) for stuck detection — O(1).
     access(account) fun reportExecution(yieldVaultID: UInt64) {
-        if !(self.yieldVaultRegistry[yieldVaultID] ?? false) || self.listNodes[yieldVaultID] == nil {
+        let list = self._list()
+        if !(self.yieldVaultRegistry[yieldVaultID] ?? false) || !list.contains(id: yieldVaultID) {
             return
         }
-        let _ = self._listRemove(id: yieldVaultID)
-        self._listInsertAtHead(id: yieldVaultID)
+        let _ = list.remove(id: yieldVaultID)
+        list.insertAtHead(id: yieldVaultID)
     }
 
     /// Adds a yield vault to the pending queue for seeding by the Supervisor
@@ -197,7 +136,7 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         let _h = self.handlerCaps.remove(key: yieldVaultID)
         let _s = self.scheduleCaps.remove(key: yieldVaultID)
         let pending = self.pendingQueue.remove(key: yieldVaultID)
-        let _ = self._listRemove(id: yieldVaultID)
+        let _ = self._list().remove(id: yieldVaultID)
         emit YieldVaultUnregistered(yieldVaultID: yieldVaultID, wasInPendingQueue: pending != nil)
     }
 
@@ -209,7 +148,7 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
             .load<Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>>(
                 from: storedCapPath
             )
-        self.account.storage.save(cap,to: storedCapPath)
+        self.account.storage.save(cap, to: storedCapPath)
     }
 
     /* --- VIEW FUNCTIONS --- */
@@ -283,11 +222,12 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /// Supervisor should only scan these for stuck detection instead of all registered vaults.
     /// @param limit: Maximum number of IDs to return (caller typically passes MAX_BATCH_SIZE)
     access(all) fun getStuckScanCandidates(limit: UInt): [UInt64] {
+        let list = self._list()
         var result: [UInt64] = []
-        var current = self.listTail
+        var current = list.tail
         while UInt(result.length) < limit {
             if let id = current {
-                let previous = self.listNodes[id]?.prev
+                let previous = list.nodes[id]?.prev
                 let scheduleCap = self.scheduleCaps[id]
                 let isRecurringParticipant =
                     scheduleCap != nil
@@ -298,7 +238,7 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
                     result.append(id)
                 } else {
                     self.dequeuePending(yieldVaultID: id)
-                    let _ = self._listRemove(id: id)
+                    let _ = list.remove(id: id)
                 }
                 current = previous
             } else {
@@ -320,12 +260,11 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
 
     init() {
         self.MAX_BATCH_SIZE = 5  // Process up to 5 yield vaults per Supervisor run
+        self.executionListStoragePath = /storage/FlowYieldVaultsExecutionList
         self.yieldVaultRegistry = {}
         self.handlerCaps = {}
         self.scheduleCaps = {}
         self.pendingQueue = {}
-        self.listNodes = {}
-        self.listHead = nil
-        self.listTail = nil
+        self.account.storage.save(<- UInt64LinkedList.createList(), to: self.executionListStoragePath)
     }
 }

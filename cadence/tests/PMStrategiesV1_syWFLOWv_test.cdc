@@ -8,8 +8,6 @@ import "FlowYieldVaults"
 import "PMStrategiesV1"
 import "FlowYieldVaultsClosedBeta"
 
-import "test_helpers.cdc"
-
 /// Fork test for PMStrategiesV1 syWFLOWv strategy — validates the full YieldVault lifecycle
 /// (create, deposit, withdraw, close) against real mainnet state.
 ///
@@ -31,6 +29,9 @@ import "test_helpers.cdc"
 
 /// Mainnet admin account — deployer of PMStrategiesV1, FlowYieldVaults, FlowYieldVaultsClosedBeta
 access(all) let adminAccount = Test.getAccount(0xb1d63873c3cc9f79)
+
+/// BandOracle contract account — used to refresh forked FLOW/USD timestamps for FlowALP.
+access(all) let bandOracleAdmin = Test.getAccount(0x6801a6222ebf784a)
 
 /// Mainnet user account — used to test yield vault operations
 access(all) let userAccount = Test.getAccount(0x443472749ebdaac8)
@@ -56,6 +57,11 @@ access(all) var syWFLOWvYieldVaultID: UInt64 = 0
 /* --- Test Helpers --- */
 
 access(all)
+fun _executeScript(_ path: String, _ args: [AnyStruct]): Test.ScriptResult {
+    return Test.executeScript(Test.readFile(path), args)
+}
+
+access(all)
 fun _executeTransactionFile(_ path: String, _ args: [AnyStruct], _ signers: [Test.TestAccount]): Test.TransactionResult {
     let txn = Test.Transaction(
         code: Test.readFile(path),
@@ -64,6 +70,14 @@ fun _executeTransactionFile(_ path: String, _ args: [AnyStruct], _ signers: [Tes
         arguments: args
     )
     return Test.executeTransaction(txn)
+}
+
+access(all)
+fun equalAmounts(a: UFix64, b: UFix64, tolerance: UFix64): Bool {
+    if a > b {
+        return a - b <= tolerance
+    }
+    return b - a <= tolerance
 }
 
 /* --- Setup --- */
@@ -125,6 +139,14 @@ access(all) fun setup() {
     )
     Test.expect(err, Test.beNil())
 
+    log("Deploying FlowYieldVaultsAutoBalancers...")
+    err = Test.deployContract(
+        name: "FlowYieldVaultsAutoBalancers",
+        path: "../../cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
     // Redeploy PMStrategiesV1 with latest local code to override mainnet version
     log("Deploying PMStrategiesV1...")
     err = Test.deployContract(
@@ -138,9 +160,17 @@ access(all) fun setup() {
     )
     Test.expect(err, Test.beNil())
 
+    log("Refreshing Band FLOW/USD data for FlowALP...")
+    var result = _executeTransactionFile(
+        "transactions/band-oracle/refresh_flowalp_core_prices.cdc",
+        [],
+        [bandOracleAdmin]
+    )
+    Test.expect(result, Test.beSucceeded())
+
     // Grant beta access to user account for testing yield vault operations
     log("Granting beta access to user...")
-    var result = _executeTransactionFile(
+    result = _executeTransactionFile(
         "../transactions/flow-yield-vaults/admin/grant_beta.cdc",
         [],
         [adminAccount, userAccount]
