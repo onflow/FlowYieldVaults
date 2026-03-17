@@ -756,45 +756,73 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             let yieldTokenSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
-            // Step 4: Create a SwapSource that converts syWFLOWv → FLOW for debt repayment
-            let flowSource = SwapConnectors.SwapSource(
+            // Step 4: Create a BufferedSwapSource that converts ALL syWFLOWv → FLOW for debt repayment.
+            // Pulls all available tokens (not quoteIn-limited) to avoid ERC4626 rounding underestimates
+            // that would leave us short of the required FLOW debt. Any FLOW overpayment is returned as
+            // dust and converted back to collateral below.
+            let flowSource = BufferedSwapSource(
                 swapper: self.yieldToDebtSwapper,
                 source: yieldTokenSource,
                 uniqueID: self.copyID()
             )
 
-            // Step 5: Close position — pool pulls exactly the FLOW debt amount from flowSource
+            // Step 5: Pre-supplement from collateral if yield tokens are insufficient to cover the FLOW debt.
+            //
+            // The syWFLOWv close path has a structural round-trip fee loss:
+            //   Open:  FLOW → syWFLOWv (ERC4626 deposit, free)
+            //   Close: syWFLOWv → FLOW (UniV3 AMM swap, ~0.3% fee)
+            // In production, accrued yield more than covers this; with no accrued yield (e.g. in
+            // tests, immediate open+close), the yield tokens convert back to slightly less FLOW
+            // than was borrowed. We handle this by pre-pulling a tiny amount of collateral from
+            // self.source, swapping it to FLOW via debtToCollateralSwapper in reverse, and depositing
+            // it into the position to reduce the outstanding debt — BEFORE calling position.closePosition.
+            //
+            // This MUST be done before closePosition because the position is locked during close:
+            // any attempt to pull from self.source inside a repaymentSource.withdrawAvailable call
+            // would trigger "Reentrancy: position X is locked".
+            let expectedFlow = flowSource.minimumAvailable()
+            if expectedFlow < totalDebtAmount {
+                let shortfall = totalDebtAmount - expectedFlow
+                // Add 1% buffer to account for swap slippage/rounding in the collateral→FLOW leg
+                let buffered = shortfall + shortfall / 100.0
+                let quote = self.debtToCollateralSwapper.quoteIn(forDesired: buffered, reverse: true)
+                if quote.inAmount > 0.0 {
+                    let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
+                    if extraCollateral.balance > 0.0 {
+                        let extraFlow <- self.debtToCollateralSwapper.swapBack(quote: quote, residual: <-extraCollateral)
+                        if extraFlow.balance > 0.0 {
+                            self.position.deposit(from: <-extraFlow)
+                        } else {
+                            Burner.burn(<-extraFlow)
+                        }
+                    } else {
+                        Burner.burn(<-extraCollateral)
+                    }
+                }
+            }
+
+            // Step 6: Close position — pool pulls the (now pre-reduced) FLOW debt from flowSource
             let resultVaults <- self.position.closePosition(repaymentSources: [flowSource])
 
-            assert(
-                resultVaults.length >= 1 && resultVaults.length <= 2,
-                message: "Expected 1 or 2 vaults from closePosition, got \(resultVaults.length)"
-            )
-
-            var collateralVault <- resultVaults.removeFirst()
-            assert(
-                collateralVault.getType() == internalCollateralType,
-                message: "First vault returned from closePosition must be internal collateral (\(internalCollateralType.identifier)), got \(collateralVault.getType().identifier)"
-            )
-
-            // Handle any overpayment dust (FLOW) returned as the second vault.
+            // closePosition returns vaults in dict-iteration order (hash-based), so we cannot
+            // assume the collateral vault is first. Iterate all vaults: collect collateral by type
+            // and convert any non-collateral vaults (FLOW overpayment dust) back to collateral.
+            var collateralVault <- DeFiActionsUtils.getEmptyVault(internalCollateralType)
             while resultVaults.length > 0 {
-                let dustVault <- resultVaults.removeFirst()
-                if dustVault.balance > 0.0 {
-                    if dustVault.getType() == internalCollateralType {
-                        collateralVault.deposit(from: <-dustVault)
+                let v <- resultVaults.removeFirst()
+                if v.getType() == internalCollateralType {
+                    collateralVault.deposit(from: <-v)
+                } else if v.balance > 0.0 {
+                    // FLOW overpayment dust — convert back to collateral if routable
+                    let quote = self.debtToCollateralSwapper.quoteOut(forProvided: v.balance, reverse: false)
+                    if quote.outAmount > 0.0 {
+                        let swapped <- self.debtToCollateralSwapper.swap(quote: quote, inVault: <-v)
+                        collateralVault.deposit(from: <-swapped)
                     } else {
-                    // Quote first — if dust is too small to route, destroy it
-                        let quote = self.debtToCollateralSwapper.quoteOut(forProvided: dustVault.balance, reverse: false)
-                        if quote.outAmount > 0.0 {
-                            let swapped <- self.debtToCollateralSwapper.swap(quote: quote, inVault: <-dustVault)
-                            collateralVault.deposit(from: <-swapped)
-                        } else {
-                            Burner.burn(<-dustVault)
-                        }
+                        Burner.burn(<-v)
                     }
                 } else {
-                    Burner.burn(<-dustVault)
+                    Burner.burn(<-v)
                 }
             }
 
