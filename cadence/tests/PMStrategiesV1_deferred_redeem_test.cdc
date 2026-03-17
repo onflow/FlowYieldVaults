@@ -147,7 +147,7 @@ access(all) fun setup() {
     )
     Test.expect(err, Test.beNil())
 
-    log("Refreshing Band FLOW/USD + USD/USD data for FlowALP...")
+    log("Refreshing Band FLOW/USD data for FlowALP...")
     var result = _executeTransactionFile(
         "transactions/band-oracle/refresh_flowalp_core_prices.cdc",
         [],
