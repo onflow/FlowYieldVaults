@@ -25,7 +25,7 @@ transaction(
     wethAmount: UFix64
 ) {
     prepare(signer: auth(Storage, BorrowValue, IssueStorageCapabilityController, SaveValue, PublishCapability, UnpublishCapability) &Account) {
-        let coaCap = signer.capabilities.storage.issue<auth(EVM.Call, EVM.Bridge) &EVM.CadenceOwnedAccount>(/storage/evm)
+        let coaCap = signer.capabilities.storage.issue<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
 
         let wethEVM = EVM.addressFromString(wethEvmAddr)
         let wbtcEVM = EVM.addressFromString(wbtcEvmAddr)
