@@ -345,15 +345,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 if v.getType() == collateralType {
                     collateralVault.deposit(from: <-v)
                 } else if v.balance > 0.0 {
-                    if let swapper = debtToCollateralSwapper {
-                        // Quote first — if dust is too small to route, destroy it
-                        let quote = swapper.quoteOut(forProvided: v.balance, reverse: false)
-                        if quote.outAmount > 0.0 {
-                            let swapped <- swapper.swap(quote: quote, inVault: <-v)
-                            collateralVault.deposit(from: <-swapped)
-                        } else {
-                            Burner.burn(<-v)
-                        }
+                    // Quote first — if dust is too small to route, destroy it
+                    let quote = debtToCollateralSwapper.quoteOut(forProvided: v.balance, reverse: false)
+                    if quote.outAmount > 0.0 {
+                        let swapped <- debtToCollateralSwapper.swap(quote: quote, inVault: <-v)
+                        collateralVault.deposit(from: <-swapped)
                     } else {
                         Burner.burn(<-v)
                     }
