@@ -118,7 +118,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 Burner.burn(<-sourceLiquidity)
                 return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
             }
-            return <- self.swapper.swap(quote: nil, inVault: <-sourceLiquidity)
+            let swapped <- self.swapper.swap(quote: nil, inVault: <-sourceLiquidity)
+            assert(swapped.balance > 0.0, message: "BufferedSwapSource: swap returned zero despite available input")
+            return <- swapped
         }
     }
 
@@ -210,6 +212,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     "Invalid debtToCollateral UniV3 path length"
                 debtToCollateralUniV3FeePath.length == debtToCollateralUniV3AddressPath.length - 1:
                     "Invalid debtToCollateral UniV3 fee path length"
+                debtToCollateralUniV3AddressPath[0].equals(yieldToUnderlyingUniV3AddressPath[yieldToUnderlyingUniV3AddressPath.length - 1]):
+                    "debtToCollateral UniV3 path must start with the underlying asset (end of yieldToUnderlying path)"
             }
             self.yieldTokenEVMAddress = yieldTokenEVMAddress
             self.yieldToUnderlyingUniV3AddressPath = yieldToUnderlyingUniV3AddressPath
@@ -377,16 +381,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 let quote = collateralToMoetSwapper.quoteIn(forDesired: buffered, reverse: false)
                 if quote.inAmount > 0.0 {
                     let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
-                    if extraCollateral.balance > 0.0 {
-                        let extraMOET <- collateralToMoetSwapper.swap(quote: quote, inVault: <-extraCollateral)
-                        if extraMOET.balance > 0.0 {
-                            self.position.deposit(from: <-extraMOET)
-                        } else {
-                            Burner.burn(<-extraMOET)
-                        }
-                    } else {
-                        Burner.burn(<-extraCollateral)
-                    }
+                    assert(extraCollateral.balance > 0.0,
+                        message: "Pre-supplement: no collateral available to cover shortfall of \(shortfall) MOET")
+                    let extraMOET <- collateralToMoetSwapper.swap(quote: quote, inVault: <-extraCollateral)
+                    assert(extraMOET.balance > 0.0,
+                        message: "Pre-supplement: collateral→MOET swap produced zero output")
+                    self.position.deposit(from: <-extraMOET)
                 }
             }
 
@@ -678,13 +678,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                         let incoming <- from.withdraw(amount: from.balance)
                         if incoming.balance > 0.0 {
                             let quote = preSwapper.quoteOut(forProvided: incoming.balance, reverse: false)
-                            if quote.outAmount > 0.0 {
-                                let moetVault <- preSwapper.swap(quote: quote, inVault: <-incoming)
-                                self.sink.depositCapacity(from: &moetVault as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
-                                Burner.burn(<-moetVault)
-                            } else {
-                                Burner.burn(<-incoming)
-                            }
+                            assert(quote.outAmount > 0.0, message: "syWFLOWvStrategy deposit: collateral→MOET quote returned zero — check pool liquidity or path config")
+                            let moetVault <- preSwapper.swap(quote: quote, inVault: <-incoming)
+                            assert(moetVault.balance > 0.0, message: "syWFLOWvStrategy deposit: collateral→MOET swap produced zero output")
+                            self.sink.depositCapacity(from: &moetVault as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
+                            Burner.burn(<-moetVault)
                         } else {
                             Burner.burn(<-incoming)
                         }
@@ -774,24 +772,15 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 destroy resultVaults
                 // Convert internal collateral (MOET) → external collateral (e.g. PYUSD0) if needed
                 if internalCollateralType != collateralType {
-                    if let id = self.uniqueID {
-                        if let moetToOrigSwapper = self._buildMoetToCollateralSwapper(uniqueID: id) {
-                            if collateralVault.balance > 0.0 {
-                                let quote = moetToOrigSwapper.quoteOut(forProvided: collateralVault.balance, reverse: false)
-                                if quote.outAmount > 0.0 {
-                                    let extVault <- moetToOrigSwapper.swap(quote: quote, inVault: <-collateralVault)
-                                    self.positionClosed = true
-                                    return <- extVault
-                                }
-                            }
-                            Burner.burn(<-collateralVault)
-                            self.positionClosed = true
-                            return <- DeFiActionsUtils.getEmptyVault(collateralType)
-                        }
-                    }
-                    Burner.burn(<-collateralVault)
+                    let id = self.uniqueID!
+                    let moetToOrigSwapper = self._buildMoetToCollateralSwapper(uniqueID: id)
+                        ?? panic("closePosition: no MOET→collateral swapper for \(collateralType.identifier)")
+                    assert(collateralVault.balance > 0.0, message: "closePosition: zero-debt MOET vault has zero balance")
+                    let quote = moetToOrigSwapper.quoteOut(forProvided: collateralVault.balance, reverse: false)
+                    assert(quote.outAmount > 0.0, message: "closePosition: MOET→\(collateralType.identifier) quote returned zero")
+                    let extVault <- moetToOrigSwapper.swap(quote: quote, inVault: <-collateralVault)
                     self.positionClosed = true
-                    return <- DeFiActionsUtils.getEmptyVault(collateralType)
+                    return <- extVault
                 }
                 self.positionClosed = true
                 return <- collateralVault
@@ -858,16 +847,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 let quote = flowToCollateral.quoteIn(forDesired: buffered, reverse: true)
                 if quote.inAmount > 0.0 {
                     let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
-                    if extraCollateral.balance > 0.0 {
-                        let extraFlow <- flowToCollateral.swapBack(quote: quote, residual: <-extraCollateral)
-                        if extraFlow.balance > 0.0 {
-                            self.position.deposit(from: <-extraFlow)
-                        } else {
-                            Burner.burn(<-extraFlow)
-                        }
-                    } else {
-                        Burner.burn(<-extraCollateral)
-                    }
+                    assert(extraCollateral.balance > 0.0,
+                        message: "Pre-supplement: no collateral available to cover shortfall of \(shortfall) FLOW")
+                    let extraFlow <- flowToCollateral.swapBack(quote: quote, residual: <-extraCollateral)
+                    assert(extraFlow.balance > 0.0,
+                        message: "Pre-supplement: collateral→FLOW swap produced zero output")
+                    self.position.deposit(from: <-extraFlow)
                 }
             }
 
@@ -900,21 +885,15 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
             // Convert internal collateral (MOET) → external collateral (e.g. PYUSD0) if needed
             if internalCollateralType != collateralType {
-                if let id = self.uniqueID {
-                    if let moetToOrigSwapper = self._buildMoetToCollateralSwapper(uniqueID: id) {
-                        if collateralVault.balance > 0.0 {
-                            let quote = moetToOrigSwapper.quoteOut(forProvided: collateralVault.balance, reverse: false)
-                            if quote.outAmount > 0.0 {
-                                let extVault <- moetToOrigSwapper.swap(quote: quote, inVault: <-collateralVault)
-                                self.positionClosed = true
-                                return <- extVault
-                            }
-                        }
-                    }
-                }
-                Burner.burn(<-collateralVault)
+                let id = self.uniqueID!
+                let moetToOrigSwapper = self._buildMoetToCollateralSwapper(uniqueID: id)
+                    ?? panic("closePosition: no MOET→collateral swapper for \(collateralType.identifier)")
+                assert(collateralVault.balance > 0.0, message: "closePosition: MOET vault has zero balance after close")
+                let quote = moetToOrigSwapper.quoteOut(forProvided: collateralVault.balance, reverse: false)
+                assert(quote.outAmount > 0.0, message: "closePosition: MOET→\(collateralType.identifier) quote returned zero")
+                let extVault <- moetToOrigSwapper.swap(quote: quote, inVault: <-collateralVault)
                 self.positionClosed = true
-                return <- DeFiActionsUtils.getEmptyVault(collateralType)
+                return <- extVault
             }
 
             self.positionClosed = true
@@ -1036,10 +1015,18 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     composer: Type<@MoreERC4626StrategyComposer>(),
                     collateral: origType
                 ) {
+                    // Extend the FLOW→collateral path with collateralToMoet[1..] (skip collateral address,
+                    // already the last element of debtToCollateral) and all collateralToMoet fees.
+                    // e.g. debtToCollateral=[WFLOW,PYUSD0], collateralToMoet=[PYUSD0,MOET]
+                    //   → [WFLOW, PYUSD0, MOET], fees=[..., 100]
                     var path = closeConfig.debtToCollateralUniV3AddressPath
-                    path.append(preswapCfg.collateralToMoetAddressPath[preswapCfg.collateralToMoetAddressPath.length - 1])
+                    for i in InclusiveRange(1, preswapCfg.collateralToMoetAddressPath.length - 1) {
+                        path.append(preswapCfg.collateralToMoetAddressPath[i])
+                    }
                     var fees = closeConfig.debtToCollateralUniV3FeePath
-                    fees.append(preswapCfg.collateralToMoetFeePath[preswapCfg.collateralToMoetFeePath.length - 1])
+                    for fee in preswapCfg.collateralToMoetFeePath {
+                        fees.append(fee)
+                    }
                     return FlowYieldVaultsStrategiesV2._buildUniV3Swapper(
                         tokenPath: path,
                         feePath: fees,
@@ -1264,6 +1251,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         ): @{FlowYieldVaults.Strategy} {
             pre {
                 self.config[type] != nil: "Unsupported strategy type \(type.identifier)"
+                self.config[type]!.length > 0: "No collateral configured for strategy type \(type.identifier)"
             }
             let collateralType = withFunds.getType()
 
@@ -1742,7 +1730,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                         uniqueID: uniqueID
                     )
                     let preSwapQuote = preSwapper.quoteOut(forProvided: withFunds.balance, reverse: false)
+                    assert(preSwapQuote.outAmount > 0.0, message: "Pre-swap: collateral→MOET quote returned zero — check pool liquidity or path config")
                     let moetFunds <- preSwapper.swap(quote: preSwapQuote, inVault: <-withFunds)
+                    assert(moetFunds.balance > 0.0, message: "Pre-swap: collateral→MOET swap produced zero MOET output")
 
                     // Open FlowALP position with MOET as collateral
                     let positionPreswap <- FlowYieldVaultsStrategiesV2._openCreditPosition(
@@ -1875,6 +1865,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 "Invalid debt-to-collateral Uniswap V3 path length"
             debtToCollateralFeePath.length == debtToCollateralAddressPath.length - 1:
                 "Debt-to-collateral Uniswap V3 fee path length must be path length - 1"
+            debtToCollateralAddressPath[0].equals(yieldToUnderlyingAddressPath[yieldToUnderlyingAddressPath.length - 1]):
+                "debtToCollateral UniV3 path must start with the underlying asset (end of yieldToUnderlying path)"
         }
         return MoreERC4626CollateralConfig(
             yieldTokenEVMAddress: yieldTokenEVMAddress,
@@ -1949,9 +1941,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     self.configs[type] ?? panic("No config registered for \(type.identifier)")
                 )
             case Type<@MoreERC4626StrategyComposer>():
-                return <- create MoreERC4626StrategyComposer(
-                    FlowYieldVaultsStrategiesV2._getMoreERC4626ComposerConfig(type)
-                )
+                let moreCfg = FlowYieldVaultsStrategiesV2._getMoreERC4626ComposerConfig(type)
+                assert(moreCfg.length > 0, message: "No config registered for \(type.identifier)")
+                return <- create MoreERC4626StrategyComposer(moreCfg)
             default:
                 panic("Unsupported StrategyComposer \(type.identifier) requested")
             }
