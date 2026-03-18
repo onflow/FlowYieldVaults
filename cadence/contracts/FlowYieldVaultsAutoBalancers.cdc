@@ -281,17 +281,13 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         Burner.burn(<-autoBalancer)
     }
 
-    access(self) fun createRegistryReportCallbackImpl(): @RegistryReportCallback {
-        return <-create RegistryReportCallback()
-    }
-
     init() {
         self.pathPrefix = "FlowYieldVaultsAutoBalancer_"
         self.registryReportCallbackStoragePath = StoragePath(identifier: "FlowYieldVaultsRegistryReportCallback")!
 
         // Ensure shared execution callback exists (reports this account's executions to Registry)
         if self.account.storage.type(at: self.registryReportCallbackStoragePath) == nil {
-            self.account.storage.save(<-self.createRegistryReportCallbackImpl(), to: self.registryReportCallbackStoragePath)
+            self.account.storage.save(<-create RegistryReportCallback(), to: self.registryReportCallbackStoragePath)
         }
     }
 }
