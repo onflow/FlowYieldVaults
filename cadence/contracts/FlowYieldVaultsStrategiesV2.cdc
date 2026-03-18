@@ -396,11 +396,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             // assume the collateral vault is first. Find it by type and convert any non-collateral
             // vaults (MOET overpayment dust) back to collateral via reconstructed swapper.
             // Reconstruct MOET→YIELD→collateral from CollateralConfig.
-            let debtToCollateralSwapper = self._resolveDebtToCollateralSwapper(
-                uniqueID: self.uniqueID!,
+            let debtToCollateralSwapper = self._buildDebtToCollateralSwapper(
                 collateralConfig: closeCollateralConfig,
                 tokens: closeTokens,
-                collateralType: collateralType
+                collateralType: collateralType,
+                uniqueID: self.uniqueID!
             )
 
             var collateralVault <- DeFiActionsUtils.getEmptyVault(collateralType)
@@ -409,15 +409,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 if v.getType() == collateralType {
                     collateralVault.deposit(from: <-v)
                 } else if v.balance > 0.0 {
-                    if let swapper = debtToCollateralSwapper {
-                        // Quote first — if dust is too small to route, destroy it
-                        let quote = swapper.quoteOut(forProvided: v.balance, reverse: false)
-                        if quote.outAmount > 0.0 {
-                            let swapped <- swapper.swap(quote: quote, inVault: <-v)
-                            collateralVault.deposit(from: <-swapped)
-                        } else {
-                            Burner.burn(<-v)
-                        }
+                    // Quote first — if dust is too small to route, destroy it
+                    let quote = debtToCollateralSwapper.quoteOut(forProvided: v.balance, reverse: false)
+                    if quote.outAmount > 0.0 {
+                        let swapped <- debtToCollateralSwapper.swap(quote: quote, inVault: <-v)
+                        collateralVault.deposit(from: <-swapped)
                     } else {
                         Burner.burn(<-v)
                     }
@@ -550,21 +546,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             )
             return SwapConnectors.SequentialSwapper(
                 swappers: [debtToYieldAMM, yieldToCollateral],
-                uniqueID: uniqueID
-            )
-        }
-
-        /// Resolves the MOET→collateral swapper for closePosition dust handling.
-        access(self) fun _resolveDebtToCollateralSwapper(
-            uniqueID: DeFiActions.UniqueIdentifier,
-            collateralConfig: FlowYieldVaultsStrategiesV2.CollateralConfig,
-            tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
-            collateralType: Type
-        ): {DeFiActions.Swapper}? {
-            return self._buildDebtToCollateralSwapper(
-                collateralConfig: collateralConfig,
-                tokens: tokens,
-                collateralType: collateralType,
                 uniqueID: uniqueID
             )
         }
@@ -1936,7 +1917,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
             switch type {
             case Type<@MorphoERC4626StrategyComposer>():
-                return <- create MorphoERC4626StrategyComposer(self.configs[type] ?? {})
+                return <- create MorphoERC4626StrategyComposer(
+                    self.configs[type] ?? panic("No config registered for \(type.identifier)")
+                )
             case Type<@MoreERC4626StrategyComposer>():
                 return <- create MoreERC4626StrategyComposer(
                     FlowYieldVaultsStrategiesV2._getMoreERC4626ComposerConfig(type)
