@@ -1114,7 +1114,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
             switch type {
             case Type<@MorphoERC4626StrategyComposer>():
-                return <- create MorphoERC4626StrategyComposer(self.configs[type] ?? {})
+                return <- create MorphoERC4626StrategyComposer(
+                    self.configs[type] ?? panic("No config registered for \(type.identifier)")
+                )
             default:
                 panic("Unsupported StrategyComposer \(type.identifier) requested")
             }
