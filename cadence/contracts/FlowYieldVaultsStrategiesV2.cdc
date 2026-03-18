@@ -251,7 +251,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
         /// Returns the amount available for withdrawal via the inner Source
         access(all) fun availableBalance(ofToken: Type): UFix64 {
-            if FlowYieldVaultsStrategiesV2._isPositionClosed(self.uniqueID) { return 0.0 }
+            if self._isPositionClosed() { return 0.0 }
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference.
@@ -320,12 +320,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 // Zero vaults: dust collateral rounded down to zero — return an empty vault
                 if resultVaults.length == 0 {
                     destroy resultVaults
-                    FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
+                    self._markPositionClosed()
                     return <- DeFiActionsUtils.getEmptyVault(collateralType)
                 }
                 var collateralVault <- resultVaults.removeFirst()
                 destroy resultVaults
-                FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
+                self._markPositionClosed()
                 return <- collateralVault
             }
 
@@ -435,13 +435,13 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
 
             destroy resultVaults
-            FlowYieldVaultsStrategiesV2._markPositionClosed(self.uniqueID)
+            self._markPositionClosed()
             return <- collateralVault
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
-            FlowYieldVaultsStrategiesV2._cleanupPositionClosed(self.uniqueID)
+            self._cleanupPositionClosed()
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
             return DeFiActions.ComponentInfo(
@@ -514,6 +514,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
 
         /// Builds a collateral→MOET UniV3 swapper from CollateralConfig.
+        /// Derives the path by reversing yieldToCollateralUniV3AddressPath[1..] (skipping the
+        /// yield token) and appending MOET, preserving all intermediate hops.
+        /// e.g. [FUSDEV, PYUSD0, WETH, WBTC] → [WBTC, WETH, PYUSD0, MOET]
         access(self) fun _buildCollateralToDebtSwapper(
             collateralConfig: FlowYieldVaultsStrategiesV2.CollateralConfig,
             tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
@@ -523,12 +526,23 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             let yieldToCollPath = collateralConfig.yieldToCollateralUniV3AddressPath
             let yieldToCollFees = collateralConfig.yieldToCollateralUniV3FeePath
             assert(yieldToCollPath.length >= 2, message: "yieldToCollateral path must have at least 2 elements")
-            let collateralEVMAddress = yieldToCollPath[yieldToCollPath.length - 1]
-            let underlyingEVMAddress = tokens.underlying4626AssetEVMAddress
-            let collateralToUnderlyingFee = yieldToCollFees[yieldToCollFees.length - 1]
+            // Build reversed path: iterate yieldToCollPath from last down to index 1 (skip yield token at 0),
+            // then append MOET. e.g. [FUSDEV, PYUSD0, WETH, WBTC] → [WBTC, WETH, PYUSD0] + MOET
+            var collToDebtPath: [EVM.EVMAddress] = []
+            var collToDebtFees: [UInt32] = []
+            for i in InclusiveRange(yieldToCollPath.length - 1, 1, step: -1) {
+                collToDebtPath.append(yieldToCollPath[i])
+            }
+            collToDebtPath.append(tokens.moetTokenEVMAddress)
+            // Build reversed fees: iterate from last down to index 1 (skip yield→underlying fee at 0),
+            // then append PYUSD0→MOET fee (100). e.g. [100, 3000, 3000] → [3000, 3000] + 100
+            for i in InclusiveRange(yieldToCollFees.length - 1, 1, step: -1) {
+                collToDebtFees.append(yieldToCollFees[i])
+            }
+            collToDebtFees.append(UInt32(100))
             return FlowYieldVaultsStrategiesV2._buildUniV3Swapper(
-                tokenPath: [collateralEVMAddress, underlyingEVMAddress, tokens.moetTokenEVMAddress],
-                feePath: [collateralToUnderlyingFee, UInt32(100)],
+                tokenPath: collToDebtPath,
+                feePath: collToDebtFees,
                 inVault: collateralType,
                 outVault: tokens.moetTokenType,
                 uniqueID: uniqueID
@@ -560,6 +574,30 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 swappers: [debtToYieldAMM, yieldToCollateral],
                 uniqueID: uniqueID
             )
+        }
+
+        access(self) view fun _isPositionClosed(): Bool {
+            if let id = self.uniqueID {
+                let partition = FlowYieldVaultsStrategiesV2.config["closedPositions"] as! {UInt64: Bool}? ?? {}
+                return partition[id.id] ?? false
+            }
+            return false
+        }
+
+        access(self) fun _markPositionClosed() {
+            if let id = self.uniqueID {
+                var partition = FlowYieldVaultsStrategiesV2.config["closedPositions"] as! {UInt64: Bool}? ?? {}
+                partition[id.id] = true
+                FlowYieldVaultsStrategiesV2.config["closedPositions"] = partition
+            }
+        }
+
+        access(self) fun _cleanupPositionClosed() {
+            if let id = self.uniqueID {
+                var partition = FlowYieldVaultsStrategiesV2.config["closedPositions"] as! {UInt64: Bool}? ?? {}
+                partition.remove(key: id.id)
+                FlowYieldVaultsStrategiesV2.config["closedPositions"] = partition
+            }
         }
     }
 
@@ -760,10 +798,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
 
             // Step 3: Reconstruct MoreERC4626CollateralConfig and swappers from contract-level config.
-            // The swappers are not read from the stored resource fields (yieldToDebtSwapper /
-            // debtToCollateralSwapper); instead they are rebuilt at close time from the shared
-            // per-strategy config — the same pattern used by FUSDEVStrategy.closePosition.
-            //
             // For the stablecoin path (e.g. PYUSD0 → MOET pre-swap), _getOriginalCollateralType
             // gives the user-facing key for the MoreERC4626CollateralConfig lookup.
             let closeCollateralKey = self.uniqueID != nil
@@ -2151,30 +2185,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             coaCapability: FlowYieldVaultsStrategiesV2._getCOACapability(),
             uniqueID: uniqueID
         )
-    }
-
-    // --- "closedPositions" partition ---
-
-    access(contract) view fun _isPositionClosed(_ uniqueID: DeFiActions.UniqueIdentifier?): Bool {
-        if uniqueID == nil { return false }
-        let partition = FlowYieldVaultsStrategiesV2.config["closedPositions"] as! {UInt64: Bool}? ?? {}
-        return partition[uniqueID!.id] ?? false
-    }
-
-    access(contract) fun _markPositionClosed(_ uniqueID: DeFiActions.UniqueIdentifier?) {
-        if let id = uniqueID {
-            var partition = FlowYieldVaultsStrategiesV2.config["closedPositions"] as! {UInt64: Bool}? ?? {}
-            partition[id.id] = true
-            FlowYieldVaultsStrategiesV2.config["closedPositions"] = partition
-        }
-    }
-
-    access(contract) fun _cleanupPositionClosed(_ uniqueID: DeFiActions.UniqueIdentifier?) {
-        if let id = uniqueID {
-            var partition = FlowYieldVaultsStrategiesV2.config["closedPositions"] as! {UInt64: Bool}? ?? {}
-            partition.remove(key: id.id)
-            FlowYieldVaultsStrategiesV2.config["closedPositions"] = partition
-        }
     }
 
     // --- "syWFLOWvDebtTokenTypes" partition ---
