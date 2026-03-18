@@ -199,6 +199,18 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             debtToCollateralUniV3AddressPath: [EVM.EVMAddress],
             debtToCollateralUniV3FeePath: [UInt32]
         ) {
+            pre {
+                yieldToUnderlyingUniV3AddressPath.length > 1:
+                    "Invalid yieldToUnderlying UniV3 path length"
+                yieldToUnderlyingUniV3FeePath.length == yieldToUnderlyingUniV3AddressPath.length - 1:
+                    "Invalid yieldToUnderlying UniV3 fee path length"
+                yieldToUnderlyingUniV3AddressPath[0].equals(yieldTokenEVMAddress):
+                    "yieldToUnderlying UniV3 path must start with yield token"
+                debtToCollateralUniV3AddressPath.length > 1:
+                    "Invalid debtToCollateral UniV3 path length"
+                debtToCollateralUniV3FeePath.length == debtToCollateralUniV3AddressPath.length - 1:
+                    "Invalid debtToCollateral UniV3 fee path length"
+            }
             self.yieldTokenEVMAddress = yieldTokenEVMAddress
             self.yieldToUnderlyingUniV3AddressPath = yieldToUnderlyingUniV3AddressPath
             self.yieldToUnderlyingUniV3FeePath = yieldToUnderlyingUniV3FeePath
@@ -563,30 +575,16 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         access(self) let position: @FlowALPv0.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
-        // debtTokenType moved to contract-level config["syWFLOWvDebtTokenTypes"] keyed by uniqueID.id
-        /// Kept for Cadence upgrade compatibility — not read by closePosition.
-        /// closePosition rebuilds swappers from MoreERC4626CollateralConfig at close time.
-        access(self) let yieldToDebtSwapper: {DeFiActions.Swapper}
-        /// Kept for Cadence upgrade compatibility — not read by closePosition.
-        /// closePosition rebuilds swappers from MoreERC4626CollateralConfig at close time.
-        access(self) let debtToCollateralSwapper: {DeFiActions.Swapper}
-        /// Tracks whether the underlying FlowALP position has been closed. Once true,
-        /// availableBalance() returns 0.0 to avoid panicking when the pool no longer
-        /// holds the position (e.g. during YieldVault burnCallback after close).
         access(self) var positionClosed: Bool
 
         init(
             id: DeFiActions.UniqueIdentifier,
             collateralType: Type,
-            position: @FlowALPv0.Position,
-            yieldToDebtSwapper: {DeFiActions.Swapper},
-            debtToCollateralSwapper: {DeFiActions.Swapper}
+            position: @FlowALPv0.Position
         ) {
             self.uniqueID = id
             self.sink = position.createSink(type: collateralType)
             self.source = position.createSourceWithOptions(type: collateralType, pullFromTopUpSource: true)
-            self.yieldToDebtSwapper = yieldToDebtSwapper
-            self.debtToCollateralSwapper = debtToCollateralSwapper
             self.positionClosed = false
             self.position <-position
         }
@@ -1747,9 +1745,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     return <-create syWFLOWvStrategy(
                         id: uniqueID,
                         collateralType: tokens.moetTokenType,
-                        position: <-positionPreswap,
-                        yieldToDebtSwapper: syWFLOWvToFlow,
-                        debtToCollateralSwapper: syWFLOWvToFlow  // field unused at close time; rebuilt from config
+                        position: <-positionPreswap
                     )
                 }
 
@@ -1793,9 +1789,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 return <-create syWFLOWvStrategy(
                     id: uniqueID,
                     collateralType: collateralType,
-                    position: <-positionFlow,
-                    yieldToDebtSwapper: syWFLOWvToFlow,
-                    debtToCollateralSwapper: syWFLOWvToFlow  // field unused at close time; rebuilt from config
+                    position: <-positionFlow
                 )
 
             default:
