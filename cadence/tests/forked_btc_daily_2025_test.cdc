@@ -24,9 +24,16 @@ access(all) let bandOracleAccount = Test.getAccount(0x6801a6222ebf784a)
 access(all) let whaleFlowAccount = Test.getAccount(0x92674150c9213fc9)
 access(all) let coaOwnerAccount = Test.getAccount(0xe467b9dd11fa00df)
 
+// WBTC on Flow EVM: 717dae2baf7656be9a9b01dee31d571a9d4c9579
+access(all) let WBTC_TOKEN_ID = "A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault"
+access(all) let WBTC_TYPE = CompositeType(WBTC_TOKEN_ID)!
+
+// 0x01b7e73CDAd95D407e8696E04194a75F19744801
+
 access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategiesV2.FUSDEVStrategy>().identifier
-access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
-access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
+access(all) var wbtcTokenIdentifier = WBTC_TOKEN_ID
+access(all) let MOET_TYPE = Type<@MOET.Vault>()
+access(all) var moetTokenIdentifier = MOET_TYPE.identifier
 
 // ============================================================================
 // PROTOCOL ADDRESSES
@@ -41,7 +48,7 @@ access(all) let factoryAddress = "0xca6d7Bb03334bBf135902e1d919a5feccb461632"
 access(all) let morphoVaultAddress = "0xd069d989e2F44B70c65347d1853C0c67e10a9F8D"
 access(all) let pyusd0Address = "0x99aF3EeA856556646C98c8B9b2548Fe815240750"
 access(all) let moetAddress = "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2"
-access(all) let wflowAddress = "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
+access(all) let wbtcAddress = "0x717dae2baf7656be9a9b01dee31d571a9d4c9579"
 
 // ============================================================================
 // STORAGE SLOT CONSTANTS
@@ -50,7 +57,7 @@ access(all) let wflowAddress = "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
 access(all) let moetBalanceSlot = 0 as UInt256
 access(all) let pyusd0BalanceSlot = 1 as UInt256
 access(all) let fusdevBalanceSlot = 12 as UInt256
-access(all) let wflowBalanceSlot = 3 as UInt256
+access(all) let wbtcBalanceSlot = 5 as UInt256
 
 access(all) let morphoVaultTotalSupplySlot = 11 as UInt256
 access(all) let morphoVaultTotalAssetsSlot = 15 as UInt256
@@ -61,7 +68,7 @@ access(all) let morphoVaultTotalAssetsSlot = 15 as UInt256
 
 access(all) let numAgents = 1
 
-access(all) let fundingPerAgent = 1000.0
+access(all) let fundingPerAgent = 1.0
 
 access(all) let initialPrice = btc_daily_2025_prices[0]
 
@@ -82,20 +89,9 @@ fun setup() {
         tokenAAddress: pyusd0Address,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
+        priceTokenBPerTokenA: 1.0,
         tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
-    )
-
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: pyusd0Address,
-        tokenBAddress: wflowAddress,
-        fee: 3000,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 3000, reverse: false),
-        tokenABalanceSlot: pyusd0BalanceSlot,
-        tokenBBalanceSlot: wflowBalanceSlot,
         signer: coaOwnerAccount
     )
 
@@ -104,7 +100,7 @@ fun setup() {
         tokenAAddress: moetAddress,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
+        priceTokenBPerTokenA: 1.0,
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
@@ -115,16 +111,11 @@ fun setup() {
         tokenAAddress: moetAddress,
         tokenBAddress: pyusd0Address,
         fee: 100,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
+        priceTokenBPerTokenA: 1.0,
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: pyusd0BalanceSlot,
         signer: coaOwnerAccount
     )
-
-    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: {
-        "FLOW": 1.0,
-        "USD": 1.0
-    })
 
     let reserveAmount = 100_000_00.0
     transferFlow(signer: whaleFlowAccount, recipient: flowALPAccount.address, amount: reserveAmount)
@@ -138,10 +129,10 @@ fun setup() {
 // HELPERS
 // ============================================================================
 
-access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
+access(all) fun getBTCCollateralFromPosition(pid: UInt64): UFix64 {
     let positionDetails = getPositionDetails(pid: pid, beFailed: false)
     for balance in positionDetails.balances {
-        if balance.vaultType == Type<@FlowToken.Vault>() {
+        if balance.vaultType == WBTC_TYPE {
             if balance.direction == FlowALPv0.BalanceDirection.Credit {
                 return balance.balance
             }
@@ -153,17 +144,13 @@ access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
 access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
     let positionDetails = getPositionDetails(pid: pid, beFailed: false)
     for balance in positionDetails.balances {
-        if balance.vaultType == Type<@MOET.Vault>() {
+        if balance.vaultType == MOET_TYPE {
             if balance.direction == FlowALPv0.BalanceDirection.Debit {
                 return balance.balance
             }
         }
     }
     return 0.0
-}
-
-access(all) fun normalizePrice(_ absolutePrice: UFix64): UFix64 {
-    return absolutePrice / initialPrice
 }
 
 /// Compute deterministic YT (ERC4626 vault share) price at a given day.
@@ -173,46 +160,33 @@ access(all) fun ytPriceAtDay(_ day: Int): UFix64 {
 }
 
 /// Update all prices for a given simulation day.
-access(all) fun applyPriceTick(flowPrice: UFix64, ytPrice: UFix64, user: Test.TestAccount) {
+access(all) fun applyPriceTick(btcPrice: UFix64, ytPrice: UFix64, user: Test.TestAccount) {
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: {
-        "FLOW": flowPrice,
+        "BTC": btcPrice,
         "USD": 1.0
     })
 
     setPoolToPrice(
         factoryAddress: factoryAddress,
-        tokenAAddress: wflowAddress,
+        tokenAAddress: wbtcAddress,
         tokenBAddress: pyusd0Address,
         fee: 3000,
-        priceTokenBPerTokenA: feeAdjustedPrice(UFix128(flowPrice), fee: 3000, reverse: true),
-        tokenABalanceSlot: wflowBalanceSlot,
+        priceTokenBPerTokenA: UFix128(btcPrice),
+        tokenABalanceSlot: wbtcBalanceSlot,
         tokenBBalanceSlot: pyusd0BalanceSlot,
         signer: coaOwnerAccount
     )
 
-    if flowPrice < 1.0 {
-        setPoolToPrice(
-            factoryAddress: factoryAddress,
-            tokenAAddress: moetAddress,
-            tokenBAddress: morphoVaultAddress,
-            fee: 100,
-            priceTokenBPerTokenA: feeAdjustedPrice(UFix128(ytPrice), fee: 100, reverse: true),
-            tokenABalanceSlot: moetBalanceSlot,
-            tokenBBalanceSlot: fusdevBalanceSlot,
-            signer: coaOwnerAccount
-        )
-    } else {
-        setPoolToPrice(
-            factoryAddress: factoryAddress,
-            tokenAAddress: moetAddress,
-            tokenBAddress: morphoVaultAddress,
-            fee: 100,
-            priceTokenBPerTokenA: feeAdjustedPrice(UFix128(ytPrice), fee: 100, reverse: false),
-            tokenABalanceSlot: moetBalanceSlot,
-            tokenBBalanceSlot: fusdevBalanceSlot,
-            signer: coaOwnerAccount
-        )
-    }
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: moetAddress,
+        tokenBAddress: morphoVaultAddress,
+        fee: 100,
+        priceTokenBPerTokenA: UFix128(ytPrice),
+        tokenABalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: fusdevBalanceSlot,
+        signer: coaOwnerAccount
+    )
 
     setVaultSharePrice(
         vaultAddress: morphoVaultAddress,
@@ -239,10 +213,14 @@ fun test_BtcDaily2025_DailyRebalancing() {
     let pids: [UInt64] = []
     let vaultIds: [UInt64] = []
 
+    // Apply initial pricing
+    applyPriceTick(btcPrice: initialPrice, ytPrice: ytPriceAtDay(0), user: coaOwnerAccount)
+
     var i = 0
     while i < numAgents {
         let user = Test.createAccount()
-        transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingPerAgent)
+        transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: 10.0)
+        mintBTC(signer: user, amount: fundingPerAgent)
         grantBeta(flowYieldVaultsAccount, user)
 
         setVaultSharePrice(
@@ -258,7 +236,7 @@ fun test_BtcDaily2025_DailyRebalancing() {
         createYieldVault(
             signer: user,
             strategyIdentifier: strategyIdentifier,
-            vaultIdentifier: flowTokenIdentifier,
+            vaultIdentifier: wbtcTokenIdentifier,
             amount: fundingPerAgent,
             beFailed: false
         )
@@ -277,7 +255,7 @@ fun test_BtcDaily2025_DailyRebalancing() {
 
     log("\n=== BTC DAILY 2025 SIMULATION ===")
     log("Agents: \(numAgents)")
-    log("Funding per agent: \(fundingPerAgent) FLOW")
+    log("Funding per agent: \(fundingPerAgent) BTC (~\(fundingPerAgent * initialPrice) MOET)")
     log("Duration: \(btc_daily_2025_durationDays) days")
     log("Price points: \(prices.length)")
     log("Initial BTC price: $\(prices[0])")
@@ -285,7 +263,7 @@ fun test_BtcDaily2025_DailyRebalancing() {
 
     var liquidationCount = 0
     var rebalanceCount = 0
-    var previousNormalizedPrice = 1.0
+    var previousBTCPrice = initialPrice
     var lowestPrice = initialPrice
     var highestPrice = initialPrice
     var lowestHF = 100.0
@@ -295,7 +273,6 @@ fun test_BtcDaily2025_DailyRebalancing() {
     var day = 0
     while day < prices.length {
         let absolutePrice = prices[day]
-        let normalizedPrice = normalizePrice(absolutePrice)
         let ytPrice = ytPriceAtDay(day)
 
         if absolutePrice < lowestPrice {
@@ -313,7 +290,7 @@ fun test_BtcDaily2025_DailyRebalancing() {
         }
 
         // Apply all price updates
-        applyPriceTick(flowPrice: normalizedPrice, ytPrice: ytPrice, user: users[0])
+        applyPriceTick(btcPrice: absolutePrice, ytPrice: ytPrice, user: users[0])
 
         // Potentially rebalance all agents (not forced)
         var a = 0
@@ -327,19 +304,19 @@ fun test_BtcDaily2025_DailyRebalancing() {
         // Check health factors
         a = 0
         while a < numAgents {
-            let flowCollateral = getFlowCollateralFromPosition(pid: pids[a])
-            let flowCollateralValue = flowCollateral * normalizedPrice
+            let btcCollateral = getBTCCollateralFromPosition(pid: pids[a])
+            let btcCollateralValue = btcCollateral * absolutePrice
             let debt = getMOETDebtFromPosition(pid: pids[a])
 
             if debt > 0.0 {
-                let hf = flowCollateralValue / debt
+                let hf = btcCollateralValue / debt
                 if hf < lowestHF {
                     lowestHF = hf
                 }
 
                 // Log weekly + at price extremes
                 if a == 0 && (day % 7 == 0 || absolutePrice == lowestPrice || absolutePrice == highestPrice) {
-                    log("  [day \(day)] \(dates[day]) price=$\(absolutePrice) ratio=\(normalizedPrice) yt=\(ytPrice) HF=\(hf) collateral=\(flowCollateralValue) debt=\(debt)")
+                    log("  [day \(day)] \(dates[day]) price=$\(absolutePrice) yt=\(ytPrice) HF=\(hf) collateral=\(btcCollateralValue) debt=\(debt)")
                 }
 
                 if hf < 1.0 {
@@ -350,23 +327,22 @@ fun test_BtcDaily2025_DailyRebalancing() {
             a = a + 1
         }
 
-        previousNormalizedPrice = normalizedPrice
+        previousBTCPrice = absolutePrice
         day = day + 1
     }
 
     // Final state
-    let finalFlowCollateral = getFlowCollateralFromPosition(pid: pids[0])
+    let finalBTCCollateral = getBTCCollateralFromPosition(pid: pids[0])
     let finalDebt = getMOETDebtFromPosition(pid: pids[0])
     let finalYieldTokens = getAutoBalancerBalance(id: vaultIds[0])!
-    let finalNormalizedPrice = normalizePrice(prices[prices.length - 1])
     let finalYtPrice = ytPriceAtDay(prices.length - 1)
-    let finalHF = (finalFlowCollateral * finalNormalizedPrice) / finalDebt
+    let finalHF = (finalBTCCollateral * previousBTCPrice) / finalDebt
 
     // P&L: net equity = collateral_value + yt_value - debt (all in stablecoin/MOET terms)
-    let collateralValueMOET = finalFlowCollateral * finalNormalizedPrice
+    let collateralValueMOET = finalBTCCollateral * previousBTCPrice
     let ytValueMOET = finalYieldTokens * finalYtPrice
     let netEquityMOET = collateralValueMOET + ytValueMOET - finalDebt
-    let initialDepositMOET = fundingPerAgent
+    let initialDepositMOET = fundingPerAgent * initialPrice
 
     // UFix64 is unsigned, so track sign separately to avoid underflow
     let moetProfit = netEquityMOET >= initialDepositMOET
@@ -374,14 +350,15 @@ fun test_BtcDaily2025_DailyRebalancing() {
     let pnlPctMOETAbs = pnlMOETAbs / initialDepositMOET
     let pnlMOETSign = moetProfit ? "+" : "-"
 
-    let netEquityFLOW = netEquityMOET / finalNormalizedPrice
-    let flowProfit = netEquityFLOW >= fundingPerAgent
-    let pnlFLOWAbs = flowProfit ? (netEquityFLOW - fundingPerAgent) : (fundingPerAgent - netEquityFLOW)
-    let pnlPctFLOWAbs = pnlFLOWAbs / fundingPerAgent
-    let pnlFLOWSign = flowProfit ? "+" : "-"
+    let netEquityBTC = netEquityMOET / previousBTCPrice
+    let btcProfit = netEquityBTC >= fundingPerAgent
+    let pnlBTCAbs = btcProfit ? (netEquityBTC - fundingPerAgent) : (fundingPerAgent - netEquityBTC)
+    let pnlPctBTCAbs = pnlBTCAbs / fundingPerAgent
+    let pnlBTCSign = btcProfit ? "+" : "-"
 
-    let priceUp = finalNormalizedPrice >= 1.0
-    let priceChangePctAbs = priceUp ? (finalNormalizedPrice - 1.0) : (1.0 - finalNormalizedPrice)
+    let priceUp = previousBTCPrice >= initialPrice
+    let priceChangeAbs = priceUp ? (previousBTCPrice - initialPrice) : (initialPrice - previousBTCPrice)
+    let priceChangePct = priceChangeAbs / initialPrice
     let priceChangeSign = priceUp ? "+" : "-"
 
     log("\n=== SIMULATION RESULTS ===")
@@ -395,19 +372,19 @@ fun test_BtcDaily2025_DailyRebalancing() {
     log("Lowest BTC price:    $\(lowestPrice)")
     log("Highest BTC price:   $\(highestPrice)")
     log("Final BTC price:     $\(prices[prices.length - 1])")
-    log("Price change:        \(priceChangeSign)\(priceChangePctAbs)")
+    log("Price change:        \(priceChangeSign)\(priceChangePct)")
     log("")
     log("--- Position ---")
     log("Lowest HF observed:  \(lowestHF)")
     log("Final HF (agent 0):  \(finalHF)")
-    log("Final collateral:    \(finalFlowCollateral) FLOW (value: \(collateralValueMOET) MOET)")
+    log("Final collateral:    \(finalBTCCollateral) BTC (value: \(collateralValueMOET) MOET)")
     log("Final debt:          \(finalDebt) MOET")
     log("Final yield tokens:  \(finalYieldTokens) (value: \(ytValueMOET) MOET @ yt=\(finalYtPrice))")
     log("")
     log("--- P&L ---")
-    log("Initial deposit:     \(fundingPerAgent) FLOW")
+    log("Initial deposit:     \(fundingPerAgent) BTC (~\(fundingPerAgent * initialPrice) MOET)")
     log("Net equity (MOET):   \(netEquityMOET) (P&L: \(pnlMOETSign)\(pnlMOETAbs), \(pnlMOETSign)\(pnlPctMOETAbs))")
-    log("Net equity (FLOW):   \(netEquityFLOW) (P&L: \(pnlFLOWSign)\(pnlFLOWAbs), \(pnlFLOWSign)\(pnlPctFLOWAbs))")
+    log("Net equity (BTC):   \(netEquityBTC) (P&L: \(pnlBTCSign)\(pnlBTCAbs), \(pnlBTCSign)\(pnlPctBTCAbs))")
     log("===========================\n")
 
     Test.assertEqual(btc_daily_2025_expectedLiquidationCount, liquidationCount)

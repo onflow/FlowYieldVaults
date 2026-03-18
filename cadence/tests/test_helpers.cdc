@@ -950,6 +950,81 @@ fun transferFlow(signer: Test.TestAccount, recipient: Address, amount: UFix64) {
 }
 
 access(all)
+fun setupGenericVault(signer: Test.TestAccount, vaultIdentifier: String) {
+    let setupResult = _executeTransaction(
+        "../../lib/flow-evm-bridge/cadence/transactions/example-assets/setup/setup_generic_vault.cdc",
+        [vaultIdentifier],
+        signer
+    )
+    Test.expect(setupResult, Test.beSucceeded())
+}
+
+access(all)
+fun transferBTC(signer: Test.TestAccount, recipient: Test.TestAccount, amount: UFix64) {
+    setupGenericVault(
+        signer: recipient,
+        vaultIdentifier: "A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault"
+    )
+    let transferResult = _executeTransaction(
+        "transactions/transfer_wbtc.cdc",
+        [recipient.address, amount],
+        signer
+    )
+    Test.expect(transferResult, Test.beSucceeded())
+}
+
+access(all)
+fun setERC20Balance(
+    signer: Test.TestAccount,
+    tokenAddress: String,
+    holderAddress: String,
+    balanceSlot: UInt256,
+    amount: UInt256
+) {
+    let res = _executeTransaction(
+        "transactions/set_erc20_balance.cdc",
+        [tokenAddress, holderAddress, balanceSlot, amount],
+        signer
+    )
+    Test.expect(res, Test.beSucceeded())
+}
+
+access(all)
+fun mintBTC(signer: Test.TestAccount, amount: UFix64) {
+    let wbtcAddress = "0x717dae2baf7656be9a9b01dee31d571a9d4c9579"
+    let wbtcTokenId = "A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault"
+    let wbtcBalanceSlot: UInt256 = 5
+
+    // Ensure signer has a COA (needs some FLOW for gas)
+    if getCOA(signer.address) == nil {
+        createCOA(signer, fundingAmount: 1.0)
+    }
+    let coaAddress = getCOA(signer.address)!
+
+    // Set wBTC ERC20 balance for the signer's COA on EVM
+    // wBTC has 8 decimals, so multiply amount by 1e8
+    // Split to avoid UFix64 overflow for large amounts
+    let whole = UInt256(amount)
+    let frac = amount - UFix64(UInt64(amount))
+    let amountSmallestUnit = whole * 100_000_000 + UInt256(frac * 100_000_000.0)
+    setERC20Balance(
+        signer: signer,
+        tokenAddress: wbtcAddress,
+        holderAddress: coaAddress,
+        balanceSlot: wbtcBalanceSlot,
+        amount: amountSmallestUnit
+    )
+
+    // Bridge wBTC from EVM to Cadence
+    let bridgeRes = _executeTransaction(
+        "../../lib/flow-evm-bridge/cadence/transactions/bridge/tokens/bridge_tokens_from_evm.cdc",
+        [wbtcTokenId, amountSmallestUnit],
+        signer
+    )
+    Test.expect(bridgeRes, Test.beSucceeded())
+}
+
+access(all)
 fun createCOA(_ signer: Test.TestAccount, fundingAmount: UFix64) {
     let createCOAResult = _executeTransaction(
         "../../lib/FlowALP/FlowActions/cadence/transactions/evm/create_coa.cdc",
