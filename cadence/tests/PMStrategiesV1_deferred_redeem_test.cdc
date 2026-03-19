@@ -1,4 +1,4 @@
-#test_fork(network: "mainnet", height: 145_589_651)
+#test_fork(network: "mainnet", height: nil) // latest mainnet block, needs oracle price, which goes stale if not on latest
 
 import Test
 
