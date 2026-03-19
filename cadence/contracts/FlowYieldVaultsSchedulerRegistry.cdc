@@ -5,11 +5,12 @@ import "UInt64LinkedList"
 
 /// FlowYieldVaultsSchedulerRegistry
 ///
-/// Stores registry of YieldVault IDs and their handler capabilities for scheduling.
+/// Stores the global registry of live YieldVault IDs and their scheduling capabilities.
 /// This contract maintains:
-/// - A registry of all yield vault IDs that participate in scheduled rebalancing
+/// - A registry of all live yield vault IDs known to the scheduler infrastructure
 /// - Handler capabilities (AutoBalancer capabilities) for each yield vault
 /// - A pending queue for yield vaults that need initial seeding or re-seeding
+/// - A recurring-only stuck-scan ordering used by the Supervisor
 /// - The global Supervisor capability for recovery operations
 ///
 access(all) contract FlowYieldVaultsSchedulerRegistry {
@@ -48,7 +49,8 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
 
     /* --- STATE --- */
 
-    /// Registry of all yield vault IDs that participate in scheduling
+    /// Registry of all live yield vault IDs known to the scheduler infrastructure.
+    /// This is broader than the recurring-only stuck-scan ordering.
     access(self) var yieldVaultRegistry: {UInt64: Bool}
 
     /// Handler capabilities (AutoBalancer) for each yield vault - keyed by yield vault ID
@@ -90,7 +92,8 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         self.handlerCaps[yieldVaultID] = handlerCap
         self.scheduleCaps[yieldVaultID] = scheduleCap
 
-        // Only recurring vaults participate in stuck-scan ordering.
+        // The registry tracks all live yield vaults, but only recurring vaults
+        // participate in the Supervisor's stuck-scan ordering.
         // If already in the list (idempotent re-register), remove first to avoid duplicates.
         let list = self._list()
         if list.contains(id: yieldVaultID) {

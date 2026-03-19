@@ -245,8 +245,8 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         let scheduleCap = self.account.capabilities.storage
             .issue<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>(storagePath)
 
-        // Register yield vault in registry for global mapping of live yield vault IDs.
-        // Only recurring vaults participate in stuck-scan ordering.
+        // Register the yield vault in the global scheduler registry.
+        // Only recurring vaults participate in the Supervisor's stuck-scan ordering.
         FlowYieldVaultsSchedulerRegistry.register(
             yieldVaultID: uniqueID.id,
             handlerCap: handlerCap,

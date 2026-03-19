@@ -36,11 +36,11 @@ FlowYieldVaults Account
     |       +-- Starts first native schedule
     |
     +-- FlowYieldVaultsSchedulerRegistry
-    |       +-- yieldVaultRegistry: {UInt64: Bool}
+    |       +-- yieldVaultRegistry: {UInt64: Bool} (all live yield vault IDs)
     |       +-- handlerCaps
     |       +-- scheduleCaps
     |       +-- pendingQueue
-    |       +-- listNodes / listHead / listTail (LRU stuck-scan order for recurring participants)
+    |       +-- listNodes / listHead / listTail (LRU recurring-only stuck-scan order)
     |       +-- supervisorCap
     |
     +-- FlowYieldVaultsSchedulerV1

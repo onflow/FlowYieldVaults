@@ -42,10 +42,10 @@
 
 ### FlowYieldVaultsSchedulerV1 + FlowYieldVaultsSchedulerRegistry
 - **FlowYieldVaultsSchedulerRegistry** stores:
-  - `yieldVaultRegistry`: registered yield vault IDs
+  - `yieldVaultRegistry`: all live yield vault IDs known to scheduler infrastructure
   - `handlerCaps`: direct capabilities to AutoBalancers (no wrapper)
   - `pendingQueue`: yield vaults needing (re)seeding; processing is bounded by `MAX_BATCH_SIZE = 5` per Supervisor run
-  - `stuckScanOrder`: LRU-ordered list of recurring scan participants for stuck detection; recurring vaults call `reportExecution()` on each run to move themselves to the most-recently-executed end, so the Supervisor scans the longest-idle recurring vaults first
+  - `stuckScanOrder`: LRU-ordered recurring-only subset used for stuck detection; recurring vaults call `reportExecution()` on each run to move themselves to the most-recently-executed end, so the Supervisor scans the longest-idle recurring vaults first
   - `supervisorCap`: capability for Supervisor self-scheduling
 - **FlowYieldVaultsSchedulerV1** provides:
   - `Supervisor`: recovery handler for failed schedules
