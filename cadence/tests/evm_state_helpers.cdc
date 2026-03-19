@@ -45,7 +45,35 @@ access(all) fun setPoolToPrice(
             code: Test.readFile("transactions/set_uniswap_v3_pool_price.cdc"),
             authorizers: [signer.address],
             signers: [signer],
-            arguments: [factoryAddress, tokenAAddress, tokenBAddress, fee, priceTokenBPerTokenA, tokenABalanceSlot, tokenBBalanceSlot]
+            arguments: [factoryAddress, tokenAAddress, tokenBAddress, fee, priceTokenBPerTokenA, tokenABalanceSlot, tokenBBalanceSlot, 0.0, 0.0, 1.0]
+        )
+    )
+    Test.expect(seedResult, Test.beSucceeded())
+}
+
+/// Set Uniswap V3 pool to a specific price with finite TVL and concentrated liquidity.
+/// tvl: total pool TVL in USD (e.g. 10_000_000.0 for $10M)
+/// concentration: fraction 0.0-1.0 (e.g. 0.80 for 80% of liquidity in narrow range)
+/// tokenBPriceUSD: USD price of tokenB (e.g. 1.0 for stablecoins)
+access(all) fun setPoolToPriceWithTVL(
+    factoryAddress: String,
+    tokenAAddress: String,
+    tokenBAddress: String,
+    fee: UInt64,
+    priceTokenBPerTokenA: UFix128,
+    tokenABalanceSlot: UInt256,
+    tokenBBalanceSlot: UInt256,
+    tvl: UFix64,
+    concentration: UFix64,
+    tokenBPriceUSD: UFix64,
+    signer: Test.TestAccount
+) {
+    let seedResult = Test.executeTransaction(
+        Test.Transaction(
+            code: Test.readFile("transactions/set_uniswap_v3_pool_price.cdc"),
+            authorizers: [signer.address],
+            signers: [signer],
+            arguments: [factoryAddress, tokenAAddress, tokenBAddress, fee, priceTokenBPerTokenA, tokenABalanceSlot, tokenBBalanceSlot, tvl, concentration, tokenBPriceUSD]
         )
     )
     Test.expect(seedResult, Test.beSucceeded())

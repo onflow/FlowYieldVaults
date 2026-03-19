@@ -48,6 +48,7 @@ access(all) fun slotToNum(_ slotHex: String): UInt256 {
 
 // Properly seed Uniswap V3 pool with STRUCTURALLY VALID state
 // This creates: slot0, observations, liquidity, ticks (with initialized flag), bitmap, and token balances
+// Pass 0.0 for tvl and concentration to create a full-range infinite liquidity pool (useful for no slippage)
 transaction(
     factoryAddress: String,
     tokenAAddress: String,
@@ -55,7 +56,10 @@ transaction(
     fee: UInt64,
     priceTokenBPerTokenA: UFix128,
     tokenABalanceSlot: UInt256,
-    tokenBBalanceSlot: UInt256
+    tokenBBalanceSlot: UInt256,
+    tvl: UFix64,
+    concentration: UFix64,
+    tokenBPriceUSD: UFix64
 ) {
     let coa: auth(EVM.Call) &EVM.CadenceOwnedAccount
     prepare(signer: auth(Storage) &Account) {
@@ -171,9 +175,98 @@ transaction(
         
         let tickSpacing = (EVM.decodeABI(types: [Type<Int256>()], data: spacingResult.data)[0] as! Int256)
 
-        // Use FULL RANGE ticks (min/max for Uniswap V3), aligned to tickSpacing
-        let tickLower = (-887272 as Int256) / tickSpacing * tickSpacing
-        let tickUpper = (887272 as Int256) / tickSpacing * tickSpacing
+        // Compute tick range, liquidity, and token balances based on TVL mode
+        let Q96: UInt256 = UInt256(1) << 96
+        var tickLower: Int256 = 0
+        var tickUpper: Int256 = 0
+        var liquidityAmount: UInt256 = 0
+        var token0Balance: UInt256 = 0
+        var token1Balance: UInt256 = 0
+
+        if tvl > 0.0 && concentration > 0.0 && concentration < 1.0 {
+            // --- Concentrated liquidity mode ---
+            let halfWidth = 1.0 - concentration
+
+            // sqrt(1 +/- halfWidth) via integer sqrt at 1e16 scale for 8-digit precision
+            let PRECISION: UInt256 = 10_000_000_000_000_000
+            let SQRT_PRECISION: UInt256 = 100_000_000
+            let halfWidthScaled = UInt256(UInt64(halfWidth * 100_000_000.0)) * 100_000_000
+
+            let upperMultNum = isqrt(PRECISION + halfWidthScaled)
+            let lowerMultNum = isqrt(PRECISION - halfWidthScaled)
+
+            var sqrtPriceUpper = targetSqrtPriceX96 * upperMultNum / SQRT_PRECISION
+            var sqrtPriceLower = targetSqrtPriceX96 * lowerMultNum / SQRT_PRECISION
+
+            let MAX_SQRT: UInt256 = 1461446703485210103287273052203988822378723970341
+            let MIN_SQRT: UInt256 = 4295128739
+            if sqrtPriceUpper > MAX_SQRT { sqrtPriceUpper = MAX_SQRT }
+            if sqrtPriceLower < MIN_SQRT + 1 { sqrtPriceLower = MIN_SQRT + 1 }
+
+            let rawTickUpper = getTickAtSqrtRatio(sqrtPriceX96: sqrtPriceUpper)
+            let rawTickLower = getTickAtSqrtRatio(sqrtPriceX96: sqrtPriceLower)
+
+            // Align tickLower down, tickUpper up to tickSpacing
+            tickLower = rawTickLower / tickSpacing * tickSpacing
+            if rawTickLower < 0 && rawTickLower % tickSpacing != 0 {
+                tickLower = tickLower - tickSpacing
+            }
+            tickUpper = rawTickUpper / tickSpacing * tickSpacing
+            if rawTickUpper > 0 && rawTickUpper % tickSpacing != 0 {
+                tickUpper = tickUpper + tickSpacing
+            }
+
+            assert(tickLower < tickUpper, message: "Concentrated tick range is empty after alignment")
+
+            let sqrtPa = getSqrtRatioAtTick(tick: tickLower)
+            let sqrtPb = getSqrtRatioAtTick(tick: tickUpper)
+
+            // Convert TVL/2 from USD to token1 smallest units using token prices
+            let effectiveBPrice = tokenBPriceUSD > 0.0 ? tokenBPriceUSD : 1.0
+            var token1PriceUSD = effectiveBPrice
+            if tokenAAddress >= tokenBAddress {
+                // token1 = tokenA; tokenA is worth priceTokenBPerTokenA * tokenBPrice in USD
+                token1PriceUSD = UFix64(priceTokenBPerTokenA) * effectiveBPrice
+            }
+            let tvlHalfToken1 = tvl / 2.0 / token1PriceUSD
+            let tvlHalfWhole = UInt256(UInt64(tvlHalfToken1))
+            var tvlHalfSmallest = tvlHalfWhole
+            var td: UInt8 = 0
+            while td < token1Decimals {
+                tvlHalfSmallest = tvlHalfSmallest * 10
+                td = td + 1
+            }
+
+            // L = tvlHalfSmallest * Q96 / (sqrtP - sqrtPa)
+            let sqrtPDiffA = targetSqrtPriceX96 - sqrtPa
+            assert(sqrtPDiffA > 0, message: "sqrtP must be > sqrtPa for liquidity calculation")
+            liquidityAmount = tvlHalfSmallest * Q96 / sqrtPDiffA
+
+            // token1 = L * (sqrtP - sqrtPa) / Q96
+            token1Balance = liquidityAmount * sqrtPDiffA / Q96
+
+            // token0 = L * (sqrtPb - sqrtP) / sqrtPb * Q96 / sqrtP
+            let sqrtPDiffB = sqrtPb - targetSqrtPriceX96
+            token0Balance = liquidityAmount * sqrtPDiffB / sqrtPb * Q96 / targetSqrtPriceX96
+        } else {
+            // --- Full-range infinite liquidity mode (backward compatible) ---
+            tickLower = (-887272 as Int256) / tickSpacing * tickSpacing
+            tickUpper = (887272 as Int256) / tickSpacing * tickSpacing
+            liquidityAmount = 340282366920938463463374607431768211455 // 2^128 - 1
+
+            token0Balance = 1000000000
+            var ti: UInt8 = 0
+            while ti < token0Decimals {
+                token0Balance = token0Balance * 10
+                ti = ti + 1
+            }
+            token1Balance = 1000000000
+            ti = 0
+            while ti < token1Decimals {
+                token1Balance = token1Balance * 10
+                ti = ti + 1
+            }
+        }
 
         // Pack slot0 for Solidity storage layout
         // Struct fields packed right-to-left (LSB to MSB):
@@ -214,8 +307,7 @@ transaction(
         EVM.store(target: poolAddr, slot: "2", value: zero32)
         EVM.store(target: poolAddr, slot: "3", value: zero32)
 
-        // --- Slot 4: liquidity = uint128 max ---
-        let liquidityAmount: UInt256 = 340282366920938463463374607431768211455 // 2^128 - 1
+        // --- Slot 4: liquidity ---
         EVM.store(target: poolAddr, slot: "4", value: toHex32(liquidityAmount))
 
         // --- Initialize boundary ticks ---
@@ -296,22 +388,6 @@ transaction(
         EVM.store(target: poolAddr, slot: "8", value: String.encodeHex(obs0Bytes))
 
         // --- Fund pool with token balances ---
-        // Calculate 1 billion tokens in each token's decimal format
-        var token0Balance: UInt256 = 1000000000
-        var i: UInt8 = 0
-        while i < token0Decimals {
-            token0Balance = token0Balance * 10
-            i = i + 1
-        }
-        
-        var token1Balance: UInt256 = 1000000000
-        i = 0
-        while i < token1Decimals {
-            token1Balance = token1Balance * 10
-            i = i + 1
-        }
-
-        // Set token balances (padded to 32 bytes)
         let token0BalanceSlotComputed = computeBalanceOfSlot(holderAddress: poolAddress, balanceSlot: token0BalanceSlot)
         EVM.store(target: token0, slot: token0BalanceSlotComputed, value: toHex32(token0Balance))
 
@@ -668,6 +744,18 @@ access(all) fun bytesToUInt256(_ bytes: [UInt8]): UInt256 {
         result = result * 256 + UInt256(byte)
     }
     return result
+}
+
+/// Integer square root via Newton's method. Returns floor(sqrt(x)).
+access(all) fun isqrt(_ x: UInt256): UInt256 {
+    if x == 0 { return 0 }
+    var z = x
+    var y = (z + 1) / 2
+    while y < z {
+        z = y
+        y = (z + x / z) / 2
+    }
+    return z
 }
 
 access(all) fun getTokenDecimals(evmContractAddress: EVM.EVMAddress): UInt8 {

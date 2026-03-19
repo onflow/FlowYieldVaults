@@ -154,3 +154,160 @@ fun test_ERC4626PriceSetAndDeposit() {
         log("Multiplier \(multiplier): expected=\(expectedShares) actual=\(fusdevBalance)")
     }
 }
+
+access(all)
+fun test_ConcentratedLiquiditySlippage() {
+    // Use fee=500 (0.05%) to get a fresh pool with no pre-existing state
+    let testFee: UInt64 = 500
+
+    // --- Baseline: infinite liquidity ---
+    Test.reset(to: snapshot)
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: wflowAddress,
+        tokenBAddress: pyusd0Address,
+        fee: testFee,
+        priceTokenBPerTokenA: 1.0,
+        tokenABalanceSlot: wflowBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
+        signer: testAccount
+    )
+
+    let infBefore = getBalance(address: testAccount.address, vaultPublicPath: pyusd0PublicPath)!
+    var swapRes = Test.executeTransaction(
+        Test.Transaction(
+            code: Test.readFile("transactions/execute_univ3_swap.cdc"),
+            authorizers: [testAccount.address],
+            signers: [testAccount],
+            arguments: [factoryAddress, routerAddress, quoterAddress, wflowAddress, pyusd0Address, testFee, 10000.0]
+        )
+    )
+    Test.expect(swapRes, Test.beSucceeded())
+    let infiniteOutput = getBalance(address: testAccount.address, vaultPublicPath: pyusd0PublicPath)! - infBefore
+
+    // --- Concentrated: $500K TVL, 80% concentration ---
+    Test.reset(to: snapshot)
+    setPoolToPriceWithTVL(
+        factoryAddress: factoryAddress,
+        tokenAAddress: wflowAddress,
+        tokenBAddress: pyusd0Address,
+        fee: testFee,
+        priceTokenBPerTokenA: 1.0,
+        tokenABalanceSlot: wflowBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
+        tvl: 500_000.0,
+        concentration: 0.80,
+        tokenBPriceUSD: 1.0,
+        signer: testAccount
+    )
+
+    let concBefore = getBalance(address: testAccount.address, vaultPublicPath: pyusd0PublicPath)!
+    swapRes = Test.executeTransaction(
+        Test.Transaction(
+            code: Test.readFile("transactions/execute_univ3_swap.cdc"),
+            authorizers: [testAccount.address],
+            signers: [testAccount],
+            arguments: [factoryAddress, routerAddress, quoterAddress, wflowAddress, pyusd0Address, testFee, 10000.0]
+        )
+    )
+    Test.expect(swapRes, Test.beSucceeded())
+    let concOutput = getBalance(address: testAccount.address, vaultPublicPath: pyusd0PublicPath)! - concBefore
+
+    let slippage10k_500k = (infiniteOutput - concOutput) / infiniteOutput
+    log("10K swap — Infinite: \(infiniteOutput), $500K TVL/80%: \(concOutput), Slippage: \(slippage10k_500k)")
+
+    Test.assert(concOutput < infiniteOutput, message: "Concentrated pool should produce less output than infinite liquidity")
+    Test.assert(slippage10k_500k > 0.0001, message: "Expected meaningful slippage for $10K against $500K TVL")
+
+    // --- More TVL ($5M) = less slippage ---
+    Test.reset(to: snapshot)
+    setPoolToPriceWithTVL(
+        factoryAddress: factoryAddress,
+        tokenAAddress: wflowAddress,
+        tokenBAddress: pyusd0Address,
+        fee: testFee,
+        priceTokenBPerTokenA: 1.0,
+        tokenABalanceSlot: wflowBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
+        tvl: 5_000_000.0,
+        concentration: 0.80,
+        tokenBPriceUSD: 1.0,
+        signer: testAccount
+    )
+
+    let bigBefore = getBalance(address: testAccount.address, vaultPublicPath: pyusd0PublicPath)!
+    swapRes = Test.executeTransaction(
+        Test.Transaction(
+            code: Test.readFile("transactions/execute_univ3_swap.cdc"),
+            authorizers: [testAccount.address],
+            signers: [testAccount],
+            arguments: [factoryAddress, routerAddress, quoterAddress, wflowAddress, pyusd0Address, testFee, 10000.0]
+        )
+    )
+    Test.expect(swapRes, Test.beSucceeded())
+    let bigTvlOutput = getBalance(address: testAccount.address, vaultPublicPath: pyusd0PublicPath)! - bigBefore
+
+    let slippage10k_5m = (infiniteOutput - bigTvlOutput) / infiniteOutput
+    log("10K swap — $5M TVL/80%: \(bigTvlOutput), Slippage: \(slippage10k_5m)")
+
+    Test.assert(bigTvlOutput > concOutput, message: "Larger TVL should yield more output (less slippage)")
+    Test.assert(slippage10k_5m < slippage10k_500k, message: "Larger TVL should have lower slippage %")
+
+    // --- Smaller swap ($1K) = less slippage ---
+    Test.reset(to: snapshot)
+    setPoolToPriceWithTVL(
+        factoryAddress: factoryAddress,
+        tokenAAddress: wflowAddress,
+        tokenBAddress: pyusd0Address,
+        fee: testFee,
+        priceTokenBPerTokenA: 1.0,
+        tokenABalanceSlot: wflowBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
+        tvl: 500_000.0,
+        concentration: 0.80,
+        tokenBPriceUSD: 1.0,
+        signer: testAccount
+    )
+
+    let smallBefore = getBalance(address: testAccount.address, vaultPublicPath: pyusd0PublicPath)!
+    swapRes = Test.executeTransaction(
+        Test.Transaction(
+            code: Test.readFile("transactions/execute_univ3_swap.cdc"),
+            authorizers: [testAccount.address],
+            signers: [testAccount],
+            arguments: [factoryAddress, routerAddress, quoterAddress, wflowAddress, pyusd0Address, testFee, 1000.0]
+        )
+    )
+    Test.expect(swapRes, Test.beSucceeded())
+    let smallOutput = getBalance(address: testAccount.address, vaultPublicPath: pyusd0PublicPath)! - smallBefore
+
+    // Get 1K infinite baseline for comparison
+    Test.reset(to: snapshot)
+    setPoolToPrice(
+        factoryAddress: factoryAddress,
+        tokenAAddress: wflowAddress,
+        tokenBAddress: pyusd0Address,
+        fee: testFee,
+        priceTokenBPerTokenA: 1.0,
+        tokenABalanceSlot: wflowBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
+        signer: testAccount
+    )
+
+    let smallInfBefore = getBalance(address: testAccount.address, vaultPublicPath: pyusd0PublicPath)!
+    swapRes = Test.executeTransaction(
+        Test.Transaction(
+            code: Test.readFile("transactions/execute_univ3_swap.cdc"),
+            authorizers: [testAccount.address],
+            signers: [testAccount],
+            arguments: [factoryAddress, routerAddress, quoterAddress, wflowAddress, pyusd0Address, testFee, 1000.0]
+        )
+    )
+    Test.expect(swapRes, Test.beSucceeded())
+    let smallInfOutput = getBalance(address: testAccount.address, vaultPublicPath: pyusd0PublicPath)! - smallInfBefore
+
+    let slippage1k_500k = (smallInfOutput - smallOutput) / smallInfOutput
+    log("1K swap — $500K TVL/80%: \(smallOutput), Slippage: \(slippage1k_500k)")
+
+    Test.assert(slippage1k_500k < slippage10k_500k, message: "Smaller swap should have less slippage %")
+}

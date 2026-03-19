@@ -166,7 +166,10 @@ access(all) fun applyPriceTick(btcPrice: UFix64, ytPrice: UFix64, user: Test.Tes
         "USD": 1.0
     })
 
-    setPoolToPrice(
+    let btcPool = btc_daily_2025_pools["pyusd_btc"]!
+    let ytPool = btc_daily_2025_pools["moet_fusdev"]!
+
+    setPoolToPriceWithTVL(
         factoryAddress: factoryAddress,
         tokenAAddress: wbtcAddress,
         tokenBAddress: pyusd0Address,
@@ -174,10 +177,13 @@ access(all) fun applyPriceTick(btcPrice: UFix64, ytPrice: UFix64, user: Test.Tes
         priceTokenBPerTokenA: UFix128(btcPrice),
         tokenABalanceSlot: wbtcBalanceSlot,
         tokenBBalanceSlot: pyusd0BalanceSlot,
+        tvl: btcPool.size,
+        concentration: btcPool.concentration,
+        tokenBPriceUSD: 1.0,
         signer: coaOwnerAccount
     )
 
-    setPoolToPrice(
+    setPoolToPriceWithTVL(
         factoryAddress: factoryAddress,
         tokenAAddress: moetAddress,
         tokenBAddress: morphoVaultAddress,
@@ -185,6 +191,9 @@ access(all) fun applyPriceTick(btcPrice: UFix64, ytPrice: UFix64, user: Test.Tes
         priceTokenBPerTokenA: UFix128(ytPrice),
         tokenABalanceSlot: moetBalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
+        tvl: ytPool.size,
+        concentration: ytPool.concentration,
+        tokenBPriceUSD: ytPrice,
         signer: coaOwnerAccount
     )
 
