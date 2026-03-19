@@ -179,7 +179,6 @@ fun test_RebalanceYieldVaultScenario2() {
 
 	log("[TEST] Initial yield vault balance: \(yieldVaultBalance ?? 0.0)")
 
-	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: protocolAccount, pid: pid, force: true, beFailed: false)
 
 	for index, yieldTokenPrice in yieldPriceIncreases {

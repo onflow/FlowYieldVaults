@@ -488,6 +488,16 @@ fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowALPv0.PositionDetails {
 }
 
 access(all)
+fun getPositionHealth(pid: UInt64, beFailed: Bool): UFix128 {
+    let res = _executeScript("../../lib/FlowALP/cadence/scripts/flow-alp/position_health.cdc",
+        [pid]
+    )
+    Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
+
+    return res.returnValue as! UFix128
+}
+
+access(all)
 fun getReserveBalanceForType(vaultIdentifier: String): UFix64 {
     let res = _executeScript(
         "../../lib/FlowALP/cadence/scripts/flow-alp/get_reserve_balance_for_type.cdc",
@@ -542,6 +552,16 @@ fun addSupportedTokenFixedRateInterestCurve(
         signer
     )
     Test.expect(additionRes, Test.beSucceeded())
+}
+
+access(all)
+fun setDepositLimitFraction(signer: Test.TestAccount, tokenTypeIdentifier: String, fraction: UFix64) {
+    let setRes = _executeTransaction(
+        "../../lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_deposit_limit_fraction.cdc",
+        [tokenTypeIdentifier, fraction],
+        signer
+    )
+    Test.expect(setRes, Test.beSucceeded())
 }
 
 access(all)
@@ -664,6 +684,14 @@ fun setMockSwapperLiquidityConnector(signer: Test.TestAccount, vaultStoragePath:
 
 access(all)
 fun equalAmounts(a: UFix64, b: UFix64, tolerance: UFix64): Bool {
+    if a > b {
+        return a - b <= tolerance
+    }
+    return b - a <= tolerance
+}
+
+access(all)
+fun equalAmounts128(a: UFix128, b: UFix128, tolerance: UFix128): Bool {
     if a > b {
         return a - b <= tolerance
     }
@@ -977,4 +1005,32 @@ fun setupPunchswap(deployer: Test.TestAccount, wflowAddress: String): {String: S
         swapRouter02Address: swapRouter02Address,
         punchswapV3FactoryAddress: punchswapV3FactoryAddress
     }
+}
+
+// Helper function to get Flow collateral from position
+access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
+    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
+    for balance in positionDetails.balances {
+        if balance.vaultType == Type<@FlowToken.Vault>() {
+            // Credit means it's a deposit (collateral)
+            if balance.direction == FlowALPv0.BalanceDirection.Credit {
+                return balance.balance
+            }
+        }
+    }
+    return 0.0
+}
+
+// Helper function to get MOET debt from position
+access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
+    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
+    for balance in positionDetails.balances {
+        if balance.vaultType == Type<@MOET.Vault>() {
+            // Debit means it's borrowed (debt)
+            if balance.direction == FlowALPv0.BalanceDirection.Debit {
+                return balance.balance
+            }
+        }
+    }
+    return 0.0
 }
