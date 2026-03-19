@@ -187,7 +187,9 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
 
             // STEP 1: State-based detection - scan for stuck yield vaults
             if scanForStuck {
-                let candidates = FlowYieldVaultsSchedulerRegistry.getStuckScanCandidates(limit: UInt(FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE))
+                let candidates = FlowYieldVaultsSchedulerRegistry.pruneAndGetStuckScanCandidates(
+                    limit: UInt(FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE)
+                )
                 for yieldVaultID in candidates {
                     if FlowYieldVaultsAutoBalancers.isStuckYieldVault(id: yieldVaultID) {
                         FlowYieldVaultsSchedulerRegistry.enqueuePending(yieldVaultID: yieldVaultID)

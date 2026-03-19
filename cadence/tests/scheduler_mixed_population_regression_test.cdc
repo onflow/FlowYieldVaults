@@ -254,14 +254,12 @@ fun testSupervisorScansPastNonRecurringTailEntries() {
 
     var recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
     var detectedEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.StuckYieldVaultDetected>())
-    Test.assertEqual(
-        detectedEventsBefore,
-        detectedEvents.length,
+    Test.assert(
+        detectedEvents.length == detectedEventsBefore,
         message: "First Supervisor tick should only prune blocker tail entries, not detect the recurring target yet"
     )
-    Test.assertEqual(
-        recoveredEventsBefore,
-        recoveredEvents.length,
+    Test.assert(
+        recoveredEvents.length == recoveredEventsBefore,
         message: "First Supervisor tick should not recover the recurring target yet"
     )
 
