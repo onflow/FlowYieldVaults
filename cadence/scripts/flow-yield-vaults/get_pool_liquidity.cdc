@@ -1,18 +1,33 @@
 import "EVM"
 import "FlowEVMBridgeUtils"
 
-/// Returns liquidity status for a list of Uniswap V3 pools.
+/// Returns liquidity status for a list of Uniswap V3 pools deployed on Flow EVM.
 ///
-/// For each pool reports:
-///   pool         – short name from the caller (e.g. "moet_pyusd0")
-///   tokenA       – human-readable name of token A (e.g. "MOET")
-///   balanceA     – token A reserve held by the pool contract (UFix64, 8 dp)
-///   tokenB       – human-readable name of token B
-///   balanceB     – token B reserve held by the pool contract (UFix64, 8 dp)
-///   hasLiquidity – true when current in-range liquidity > 0
+/// This script is called by the fcm-observer service (github.com/onflow/fcm-observer)
+/// on a periodic basis to monitor pool health. The caller reads pool configuration
+/// from the observer's fcm_config.json (the top-level "flowEVM" section) and passes
+/// it in as arguments on each invocation.
 ///
-/// Arguments mirror the pool config in fcm_config.json flowEVM section and are
-/// passed as parallel arrays so the script signature uses only primitive Cadence types.
+/// For each pool the script resolves the pool address via the factory, then performs
+/// three dry EVM calls (no gas cost):
+///   1. factory.getPool(tokenA, tokenB, fee)  – resolve pool address
+///   2. pool.liquidity()                       – check in-range liquidity
+///   3. tokenA/tokenB.balanceOf(pool)          – read actual token reserves
+///
+/// If any call fails the pool entry is still returned with zero balances and
+/// hasLiquidity=false, so the metric is always present (never absent/stale).
+///
+/// Each pool in the response contains:
+///   pool         – short human-readable name supplied by the caller (e.g. "moet_pyusd0")
+///   tokenA       – token A name supplied by the caller (e.g. "MOET")
+///   balanceA     – token A reserve held by the pool contract (UFix64, 8 decimal places)
+///   tokenB       – token B name supplied by the caller (e.g. "PYUSD0")
+///   balanceB     – token B reserve held by the pool contract (UFix64, 8 decimal places)
+///   hasLiquidity – true when the pool's current in-range liquidity > 0
+///
+/// Arguments are passed as parallel arrays (one entry per pool) rather than an array
+/// of structs because Cadence scripts cannot accept arrays of structs as arguments.
+/// The caller is responsible for keeping all arrays the same length and in the same order.
 access(all) struct PoolStatus {
     access(all) let pool:         String
     access(all) let tokenA:       String
