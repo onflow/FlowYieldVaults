@@ -6,9 +6,10 @@
 /// registry for up to MAX_BATCH_SIZE candidates from the tail of the scan order, then checks
 /// those candidates one by one.
 ///
-/// That optimization breaks down when the scan order contains vaults that can never become
-/// stuck. Today, non-recurring vaults are still registered into the same ordering even though
-/// isStuckYieldVault() immediately returns false for them.
+/// That optimization breaks down when the scan order contains stale entries that can never
+/// become stuck. In particular, vaults that were once recurring can remain in the ordering
+/// after their recurring config is removed, even though isStuckYieldVault() immediately
+/// returns false for them.
 ///
 /// This creates a liveness risk:
 /// - more than MAX_BATCH_SIZE non-recurring vaults can occupy the tail,
