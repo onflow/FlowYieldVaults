@@ -17,8 +17,7 @@
 ///
 /// This file exists to lock that failure mode down as a regression. The main test below
 /// intentionally builds that mixed population and asserts the Supervisor should still find
-/// the real stuck vault. On the current implementation, that assertion fails, which is the
-/// exact bug this test is meant to expose until the scheduler logic is fixed.
+/// the real stuck vault after bounded lazy pruning advances through the stale tail entries.
 import Test
 import BlockchainHelpers
 
@@ -201,8 +200,8 @@ fun testSupervisorScansPastNonRecurringTailEntries() {
     Test.assert(foundRecurringTarget, message: "Failed to identify the recurring target yield vault")
     Test.assertEqual(true, hasActiveSchedule(recurringYieldVaultID))
 
-    // Sanity check the test setup: the first scan batch should contain only blocker IDs,
-    // proving the real recurring target starts behind the tail window the Supervisor reads.
+    // Sanity check the test setup: one bounded scan should not reach the recurring target yet,
+    // because its inspection budget is spent pruning the non-recurring blockers at the tail.
     let initialCandidates = FlowYieldVaultsSchedulerRegistry.getStuckScanCandidates(
         limit: UInt(FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE)
     )
@@ -276,9 +275,9 @@ fun testSupervisorScansPastNonRecurringTailEntries() {
     log("Recovered events after supervisor ticks: \(recoveredEvents.length.toString())")
     log("Detected events after supervisor ticks: \(detectedEvents.length.toString())")
 
-    // These are the core regression assertions. On the current implementation they fail,
-    // because the Supervisor keeps rescanning the same non-recurring tail entries and never
-    // reaches the real stuck recurring vault behind them.
+    // These are the core regression assertions. A correct implementation should prune through
+    // the stale non-recurring tail over repeated bounded scans, then detect and recover the
+    // real recurring vault behind it.
     Test.assert(
         detectedEvents.length > detectedEventsBefore,
         message: "Supervisor should eventually detect the stuck recurring vault instead of rescanning the same non-recurring tail entries forever"

@@ -219,17 +219,20 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         return self.pendingQueue.length
     }
 
-    /// Returns up to `limit` recurring scan participants starting from the tail
-    /// (least recently executed among recurring participants).
-    /// Stale entries whose recurring config has been removed are pruned lazily as the walk proceeds.
+    /// Inspects up to `limit` tail entries from the recurring stuck-scan ordering and returns
+    /// the recurring participants encountered.
+    /// Stale entries whose recurring config has been removed are pruned lazily as the bounded
+    /// walk proceeds, so repeated calls keep making forward progress without unbounded work.
     /// Supervisor should only scan these for stuck detection instead of all registered vaults.
-    /// @param limit: Maximum number of IDs to return (caller typically passes MAX_BATCH_SIZE)
+    /// @param limit: Maximum number of tail entries to inspect in this call
     access(all) fun getStuckScanCandidates(limit: UInt): [UInt64] {
         let list = self._list()
         var result: [UInt64] = []
+        var inspected: UInt = 0
         var current = list.tail
-        while UInt(result.length) < limit {
+        while inspected < limit {
             if let id = current {
+                inspected = inspected + 1
                 let previous = list.nodes[id]?.prev
                 let scheduleCap = self.scheduleCaps[id]
                 let isRecurringParticipant =
