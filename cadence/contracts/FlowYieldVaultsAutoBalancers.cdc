@@ -86,12 +86,15 @@ access(all) contract FlowYieldVaultsAutoBalancers {
     ///
     /// A transaction is considered active when it is:
     /// - still `Scheduled`, or
-    /// - already marked `Executed` by FlowTransactionScheduler, but the AutoBalancer has not
-    ///   yet advanced its last rebalance timestamp past that transaction's scheduled time.
+    /// - already marked `Executed` by FlowTransactionScheduler and still within a bounded
+    ///   grace period after its scheduled timestamp.
     ///
     /// The second case matters because FlowTransactionScheduler flips status to `Executed`
     /// before the handler actually runs. Without treating that in-flight window as active,
     /// the Supervisor can falsely classify healthy vaults as stuck and recover them twice.
+    /// But that window must be bounded: if the handler panics after the optimistic status
+    /// update, the vault must eventually become recoverable instead of remaining "active"
+    /// forever.
     ///
     /// @param id: The yield vault/AutoBalancer ID
     /// @return Bool: true if there's at least one active internally-managed transaction, false otherwise
@@ -102,7 +105,8 @@ access(all) contract FlowYieldVaultsAutoBalancers {
             return false
         }
 
-        let lastRebalanceTimestamp = autoBalancer!.getLastRebalanceTimestamp()
+        let currentTimestamp = getCurrentBlock().timestamp
+        let optimisticExecutionGracePeriod: UFix64 = 5.0
         let txnIDs = autoBalancer!.getScheduledTransactionIDs()
         for txnID in txnIDs {
             if let scheduledTxn = autoBalancer!.borrowScheduledTransaction(id: txnID) {
@@ -112,7 +116,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
                     }
 
                     if status == FlowTransactionScheduler.Status.Executed
-                        && scheduledTxn.timestamp > lastRebalanceTimestamp {
+                        && currentTimestamp <= scheduledTxn.timestamp + optimisticExecutionGracePeriod {
                         return true
                     }
                 }
