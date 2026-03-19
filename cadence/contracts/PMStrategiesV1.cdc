@@ -1046,6 +1046,21 @@ access(all) contract PMStrategiesV1 {
         )
     }
 
+    /// Completes a pending deferred redemption. Permissionless - called automatically by
+    /// PendingRedeemHandler.executeTransaction when the timelock expires, or manually by
+    /// anyone to retry if the scheduled execution failed or was missed.
+    access(all) fun claimRedeem(yieldVaultID: UInt64) {
+        let handler = self._borrowHandler()
+            ?? panic("PendingRedeemHandler not initialized")
+        let scheduledClaim = handler.getScheduledClaim(id: yieldVaultID)
+            ?? panic("No scheduled claim for vault \(yieldVaultID)")
+        assert(
+            getCurrentBlock().timestamp >= scheduledClaim.timestamp,
+            message: "Timelock has not expired yet (claimable after \(scheduledClaim.timestamp))"
+        )
+        self._claimRedeem(yieldVaultID: yieldVaultID)
+    }
+
     /// Called by PendingRedeemHandler.executeTransaction when the timelock has expired.
     /// Redeems shares via service COA, converts underlying ERC-20 to Cadence, deposits to user's wallet.
     access(self) fun _claimRedeem(yieldVaultID: UInt64) {
