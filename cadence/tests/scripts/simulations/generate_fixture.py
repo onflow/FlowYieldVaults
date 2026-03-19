@@ -170,6 +170,16 @@ def build_fixture(daily: list[dict], scenario: str, start: str, end: str) -> dic
                 "concentration": 0.8,
                 "fee_tier": 0.003,
             },
+            "pyusd_btc": {
+                "size": 10000000,
+                "concentration": 0.8,
+                "fee_tier": 0.003,
+            },
+            "moet_fusdev": {
+                "size": 500000,
+                "concentration": 0.95,
+                "fee_tier": 0.0001,
+            },
         },
         "constants": {
             "btc_collateral_factor": 0.8,
