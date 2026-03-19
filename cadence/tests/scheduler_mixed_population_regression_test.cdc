@@ -200,22 +200,6 @@ fun testSupervisorScansPastNonRecurringTailEntries() {
     Test.assert(foundRecurringTarget, message: "Failed to identify the recurring target yield vault")
     Test.assertEqual(true, hasActiveSchedule(recurringYieldVaultID))
 
-    // Sanity check the test setup: one bounded scan should not reach the recurring target yet,
-    // because its inspection budget is spent pruning the non-recurring blockers at the tail.
-    let initialCandidates = FlowYieldVaultsSchedulerRegistry.getStuckScanCandidates(
-        limit: UInt(FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE)
-    )
-    Test.assert(
-        !initialCandidates.contains(recurringYieldVaultID),
-        message: "Setup failure: target recurring vault should sit behind the first stuck-scan batch"
-    )
-    for candidate in initialCandidates {
-        Test.assert(
-            blockerIDs.contains(candidate),
-            message: "Setup failure: initial tail scan should contain only non-recurring blockers"
-        )
-    }
-
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 2.0)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.5)
 
@@ -262,16 +246,38 @@ fun testSupervisorScansPastNonRecurringTailEntries() {
     )
     Test.expect(scheduleSupervisorRes, Test.beSucceeded())
 
-    let supervisorTicks = 3
+    // First Supervisor tick should spend its bounded inspection budget pruning the non-recurring
+    // blocker tail. It should not reach the stuck recurring target yet.
+    Test.moveTime(by: 60.0 * 10.0 + 10.0)
+    Test.commitBlock()
+
+    var recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
+    var detectedEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.StuckYieldVaultDetected>())
+    Test.assertEqual(
+        detectedEventsBefore,
+        detectedEvents.length,
+        message: "First Supervisor tick should only prune blocker tail entries, not detect the recurring target yet"
+    )
+    Test.assertEqual(
+        recoveredEventsBefore,
+        recoveredEvents.length,
+        message: "First Supervisor tick should not recover the recurring target yet"
+    )
+
+    // Subsequent bounded scans should make forward progress and eventually reach the real
+    // stuck recurring vault behind the stale tail.
+    let remainingSupervisorTicks = 2
     idx = 0
-    while idx < supervisorTicks {
+    while idx < remainingSupervisorTicks
+        && detectedEvents.length == detectedEventsBefore
+        && recoveredEvents.length == recoveredEventsBefore {
         Test.moveTime(by: 60.0 * 10.0 + 10.0)
         Test.commitBlock()
+        recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
+        detectedEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.StuckYieldVaultDetected>())
         idx = idx + 1
     }
 
-    let recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
-    let detectedEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.StuckYieldVaultDetected>())
     log("Recovered events after supervisor ticks: \(recoveredEvents.length.toString())")
     log("Detected events after supervisor ticks: \(detectedEvents.length.toString())")
 
