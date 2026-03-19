@@ -29,7 +29,7 @@ access(all) contract UInt64LinkedList {
     /* --- RESOURCE --- */
 
     access(all) resource List {
-        access(all) var nodes: {UInt64: ListNode}
+        access(all) let nodes: {UInt64: ListNode}
         access(all) var head: UInt64?
         access(all) var tail: UInt64?
 
@@ -41,6 +41,9 @@ access(all) contract UInt64LinkedList {
 
         /// Insert `id` at the head. Caller must ensure `id` is not already present.
         access(all) fun insertAtHead(id: UInt64) {
+            pre {
+                !self.contains(id: id): "ID already exists in list"
+            }
             let node = ListNode(prev: nil, next: self.head)
             if let oldHeadID = self.head {
                 var oldHead = self.nodes[oldHeadID]!
