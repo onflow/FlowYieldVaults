@@ -232,7 +232,7 @@ flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-ma
 #   --signer <TEST_USER>
 #
 #
-# WBTC (BTCf)
+# WBTC
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
 #   A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.FUSDEVStrategy \
 #   A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault \
