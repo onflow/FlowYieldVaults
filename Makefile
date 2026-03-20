@@ -4,8 +4,7 @@ test:
 
 .PHONY: lint
 lint:
-	find cadence -name "*.cdc" | xargs flow cadence lint \
-		| tee /dev/stderr | tail -n2 | grep -q "Lint passed"
+	find cadence -name "*.cdc" | xargs flow cadence lint --warnings-as-errors
 
 .PHONY: ci
 ci: lint test
