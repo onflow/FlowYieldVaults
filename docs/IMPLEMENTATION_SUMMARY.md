@@ -68,14 +68,14 @@ FlowYieldVaults Account
 2. The AutoBalancer rebalances.
 3. If recurring scheduling is configured, the AutoBalancer schedules its next run.
 4. The shared execution callback reports success to the registry.
-5. `reportExecution()` moves that vault to the most-recently-executed end of the LRU list.
+5. `reportExecution()` moves that vault to the head of the LRU list (most recently executed).
 
 ### Recovery Operation
 
 Each Supervisor run has two bounded steps:
 
 1. Stuck detection:
-   - reads up to `MAX_BATCH_SIZE` least-recently-executed recurring-participant vault IDs from `getStuckScanCandidates(...)`
+   - reads up to `MAX_BATCH_SIZE` least-recently-executed recurring-participant vault IDs from `pruneAndGetStuckScanCandidates(...)`
    - checks whether each candidate is overdue and lacks an active schedule
    - enqueues stuck vaults into `pendingQueue`
 

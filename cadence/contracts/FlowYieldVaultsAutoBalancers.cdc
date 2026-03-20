@@ -106,7 +106,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         }
 
         let currentTimestamp = getCurrentBlock().timestamp
-        let optimisticExecutionGracePeriod: UFix64 = 5.0
+        let optimisticExecutionGracePeriod: UFix64 = 15.0
         let txnIDs = autoBalancer!.getScheduledTransactionIDs()
         for txnID in txnIDs {
             if let scheduledTxn = autoBalancer!.borrowScheduledTransaction(id: txnID) {
