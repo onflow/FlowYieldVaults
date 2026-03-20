@@ -1,4 +1,4 @@
-#test_fork(network: "mainnet", height: 143600000)  // Pinned: FUSDEV vault has liquidity issues after ~143650000
+#test_fork(network: "mainnet", height: 145_589_651)  // Pinned: FUSDEV vault has liquidity issues after ~143650000
 
 import Test
 
@@ -128,14 +128,6 @@ access(all) fun setup() {
     err = Test.deployContract(
         name: "FlowYieldVaults",
         path: "../../cadence/contracts/FlowYieldVaults.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    log("Deploying FlowYieldVaultsAutoBalancers...")
-    err = Test.deployContract(
-        name: "FlowYieldVaultsAutoBalancers",
-        path: "../../cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
