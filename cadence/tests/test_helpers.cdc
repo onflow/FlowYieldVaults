@@ -222,6 +222,14 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "UInt64LinkedList",
+        path: "../contracts/UInt64LinkedList.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
     // FlowYieldVaults contracts
     // Deployment order matters due to imports:
     // 1. FlowYieldVaultsSchedulerRegistry (no FlowYieldVaults dependencies)
