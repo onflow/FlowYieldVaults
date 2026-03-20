@@ -1,4 +1,4 @@
-#test_fork(network: "mainnet", height: 145_589_651)  // Uses latest height - syWFLOWv works well at recent heights
+#test_fork(network: "mainnet", height: nil)  // Uses latest height - syWFLOWv works well at recent heights
 
 import Test
 
