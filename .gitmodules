@@ -22,3 +22,4 @@
 [submodule "lib/FlowALP"]
 	path = lib/FlowALP
 	url = git@github.com:onflow/FlowALP.git
+	branch = v0
