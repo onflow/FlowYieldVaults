@@ -1034,7 +1034,6 @@
 				"type": "file",
 				"location": "local/emulator-account.pkey"
 			}
-
 		},
 		"testnet-flow-alp-deployer": {
 			"address": "426f0458ced60037",
@@ -1042,6 +1041,20 @@
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
+		"mainnet-fork-flowalp": {
+			"address": "6b00ff876c299c61",
+			"key": {
+				"type": "file",
+				"location": "local/emulator-account.pkey"
+			}
+		},
+		"mainnet-fork-pyusd0-donor": {
+			"address": "443472749ebdaac8",
+			"key": {
+				"type": "file",
+				"location": "local/emulator-account.pkey"
 			}
 		}
 	},
@@ -1197,16 +1210,6 @@
 		},
 		"mainnet-fork": {
 			"mainnet-fork-admin": [
-				{
-					"name": "MockOracle",
-					"args": [
-						{
-							"value": "A.6b00ff876c299c61.MOET.Vault",
-							"type": "String"
-						}
-					]
-				},
-				"MockSwapper",
 				"FlowYieldVaultsSchedulerRegistry",
 				"FlowYieldVaultsAutoBalancers",
 				"FlowYieldVaultsSchedulerV1",
