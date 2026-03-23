@@ -51,6 +51,19 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let IssuerStoragePath: StoragePath
 
+    /// Emitted when a non-empty vault is destroyed because the swapper quote returned zero output,
+    /// indicating the balance is too small to route (dust). Includes the quote as evidence of why
+    /// the burn decision was made, to aid debugging of stale or misconfigured swapper paths.
+    access(all) event DustBurned(
+        tokenType: String,
+        balance: UFix64,
+        quoteInType: String,
+        quoteOutType: String,
+        quoteInAmount: UFix64,
+        quoteOutAmount: UFix64,
+        swapperType: String
+    )
+
     /// A Source that converts yield tokens to debt tokens by pulling ALL available yield
     /// tokens from the wrapped source, rather than using quoteIn to limit the pull amount.
     ///
@@ -298,18 +311,19 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     uniqueID: self.uniqueID!
                 )
                 let shortfall = totalDebtAmount - expectedMOET
-                // Add 1% buffer to account for swap slippage/rounding in the collateral→MOET leg
+                // Over-deposit by 1% so the remaining debt lands below expectedMOET, giving
+                // BufferedSwapSource enough margin to cover ERC4626 floor-rounding at redemption
                 let buffered = shortfall + shortfall / 100.0
                 let quote = collateralToMoetSwapper.quoteIn(forDesired: buffered, reverse: false)
-                if quote.inAmount > 0.0 {
-                    let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
-                    assert(extraCollateral.balance > 0.0,
-                        message: "Pre-supplement: no collateral available to cover shortfall of \(shortfall) MOET")
-                    let extraMOET <- collateralToMoetSwapper.swap(quote: quote, inVault: <-extraCollateral)
-                    assert(extraMOET.balance > 0.0,
-                        message: "Pre-supplement: collateral→MOET swap produced zero output")
-                    self.position.deposit(from: <-extraMOET)
-                }
+                assert(quote.inAmount > 0.0,
+                    message: "Pre-supplement: collateral→MOET quote returned zero input for non-zero shortfall — swapper misconfigured")
+                let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
+                assert(extraCollateral.balance > 0.0,
+                    message: "Pre-supplement: no collateral available to cover shortfall of \(shortfall) MOET")
+                let extraMOET <- collateralToMoetSwapper.swap(quote: quote, inVault: <-extraCollateral)
+                assert(extraMOET.balance > 0.0,
+                    message: "Pre-supplement: collateral→MOET swap produced zero output")
+                self.position.deposit(from: <-extraMOET)
             }
 
             // Step 7: Create a BufferedSwapSource that converts ALL yield tokens → MOET.
@@ -342,17 +356,27 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 let v <- resultVaults.removeFirst()
                 if v.getType() == collateralType {
                     collateralVault.deposit(from: <-v)
-                } else if v.balance > 0.0 {
+                } else if v.balance == 0 {
+                    // destroy empty vault
+                    Burner.burn(<-v)
+                } else {
                     // Quote first — if dust is too small to route, destroy it
                     let quote = debtToCollateralSwapper.quoteOut(forProvided: v.balance, reverse: false)
                     if quote.outAmount > 0.0 {
                         let swapped <- debtToCollateralSwapper.swap(quote: quote, inVault: <-v)
                         collateralVault.deposit(from: <-swapped)
                     } else {
+                        emit DustBurned(
+                            tokenType: v.getType().identifier,
+                            balance: v.balance,
+                            quoteInType: quote.inType.identifier,
+                            quoteOutType: quote.outType.identifier,
+                            quoteInAmount: quote.inAmount,
+                            quoteOutAmount: quote.outAmount,
+                            swapperType: debtToCollateralSwapper.getType().identifier
+                        )
                         Burner.burn(<-v)
                     }
-                } else {
-                    Burner.burn(<-v)
                 }
             }
 
