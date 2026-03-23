@@ -338,20 +338,6 @@ fun test_RebalanceYieldVaultScenario2() {
 // HELPER FUNCTIONS
 // ============================================================================
 
-// Helper function to get Flow collateral from position
-access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    for balance in positionDetails.balances {
-        if balance.vaultType == Type<@FlowToken.Vault>() {
-            // Credit means it's a deposit (collateral)
-            if balance.direction.rawValue == 0 {  // Credit = 0
-                return balance.balance
-            }
-        }
-    }
-    return 0.0
-}
-
 // Enhanced diagnostic precision tracking function with full call stack tracing
 access(all) fun performDiagnosticPrecisionTrace(
     yieldVaultID: UInt64,

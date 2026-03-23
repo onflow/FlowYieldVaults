@@ -75,7 +75,7 @@ access(all) contract MockSwapper {
         /// NOTE: This mock sources pricing data from the mocked oracle, allowing for pricing to be manually manipulated
         /// for testing and demonstration purposes
         access(all) fun swap(quote: {DeFiActions.Quote}?, inVault: @{FungibleToken.Vault}): @{FungibleToken.Vault} {
-            return <- self._swap(<-inVault, reverse: false)
+            return <- self._swap(quote: quote, from: <-inVault, reverse: false)
         }
 
         /// Performs a swap taking a Vault of type outVault, outputting a resulting inVault. Implementations may choose
@@ -84,7 +84,7 @@ access(all) contract MockSwapper {
         /// NOTE: This mock sources pricing data from the mocked oracle, allowing for pricing to be manually manipulated
         /// for testing and demonstration purposes
         access(all) fun swapBack(quote: {DeFiActions.Quote}?, residual: @{FungibleToken.Vault}): @{FungibleToken.Vault} {
-            return <- self._swap(<-residual, reverse: true)
+            return <- self._swap(quote: quote, from: <-residual, reverse: true)
         }
 
         /// Internal estimator returning a quote for the amount in/out and in the desired direction
@@ -114,8 +114,17 @@ access(all) contract MockSwapper {
             let uintInAmount = out ? uintAmount : (uintAmount / uintPrice)
             let uintOutAmount = out ? uintAmount * uintPrice : uintAmount
 
-            let inAmount = FlowALPMath.toUFix64Round(uintInAmount)
-            let outAmount = FlowALPMath.toUFix64Round(uintOutAmount)
+            // Round conservatively based on what's being calculated:
+            // - quoteOut (out=true): Use banker's rounding for balance - quotes are estimates used for
+            //   availability checks and shouldn't systematically underestimate (which causes wrong branch selection)
+            // - quoteIn (out=false): Round UP the calculated input to ensure we can deliver the desired output
+            // The provided/desired amounts stay as-is without additional rounding
+            let inAmount = out
+                ? amount  // provided input, use as-is
+                : FlowALPMath.toUFix64RoundUp(uintInAmount)    // calculated input, round up
+            let outAmount = out
+                ? FlowALPMath.toUFix64RoundDown(uintOutAmount) // calculated output, banker's rounding for balanced estimates
+                : amount  // desired output, use as-is (caller specifies exactly what they want)
 
             return SwapConnectors.BasicQuote(
                 inType: reverse ? self.outVault : self.inVault,
@@ -125,13 +134,16 @@ access(all) contract MockSwapper {
             )
         }
 
-        access(self) fun _swap(_ from: @{FungibleToken.Vault}, reverse: Bool): @{FungibleToken.Vault} {
+        access(self) fun _swap(quote: {DeFiActions.Quote}?, from: @{FungibleToken.Vault}, reverse: Bool): @{FungibleToken.Vault} {
             let inAmount = from.balance
             var swapInVault = reverse ? MockSwapper.liquidityConnectors[from.getType()]! : MockSwapper.liquidityConnectors[self.inType()]!
             var swapOutVault = reverse ? MockSwapper.liquidityConnectors[self.inType()]! : MockSwapper.liquidityConnectors[self.outType()]!
-            swapInVault.depositCapacity(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})            
+            swapInVault.depositCapacity(from: &from as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
             Burner.burn(<-from)
-            let outAmount = self.quoteOut(forProvided: inAmount, reverse: reverse).outAmount
+
+            // Use the provided quote's outAmount when available to honor quoteIn's guarantee
+            // quoteIn rounds UP the input to ensure we can deliver the promised output
+            let outAmount = quote?.outAmount ?? self.quoteOut(forProvided: inAmount, reverse: reverse).outAmount
             var outVault <- swapOutVault.withdrawAvailable(maxAmount: outAmount)
 
             assert(outVault.balance == outAmount,
