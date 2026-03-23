@@ -36,7 +36,7 @@ transaction(id: UInt64, amount: UFix64) {
             let vaultCap = signer.capabilities.storage.issue<&{FungibleToken.Vault}>(vaultData.storagePath)
             let receiverCap = signer.capabilities.storage.issue<&{FungibleToken.Vault}>(vaultData.storagePath)
             signer.capabilities.publish(vaultCap, at: vaultData.metadataPath)
-            signer.capabilities.publish(vaultCap, at: vaultData.receiverPath)
+            signer.capabilities.publish(receiverCap, at: vaultData.receiverPath)
         }
 
         // reference the signer's receiver
