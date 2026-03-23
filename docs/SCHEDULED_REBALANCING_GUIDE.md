@@ -26,10 +26,10 @@ YieldVault Creation (Atomic)
 FlowYieldVaultsAutoBalancers._initNewAutoBalancer()
          |
          v
-FlowYieldVaultsScheduler.registerYieldVault()
-    |-- Issues capability to AutoBalancer
+FlowYieldVaultsSchedulerRegistry.register(...)
+    |-- Stores handler + schedule capabilities
     |-- Registers in FlowYieldVaultsSchedulerRegistry
-    +-- Schedules first execution
+    +-- AutoBalancer schedules first execution
          |
          v
 FlowTransactionScheduler executes at scheduled time
@@ -42,10 +42,10 @@ AutoBalancer.executeTransaction()
 
 ### Components
 
-1. **FlowYieldVaultsScheduler**: Manages registration and scheduling
-2. **FlowYieldVaultsSchedulerRegistry**: Stores registry of yield vaults and pending queue
-3. **AutoBalancer**: Implements `TransactionHandler`, executes rebalancing
-4. **Supervisor**: Recovery handler for failed schedules (paginated)
+1. **FlowYieldVaultsAutoBalancers**: Configures AutoBalancers, registers them, and starts the first schedule
+2. **FlowYieldVaultsSchedulerRegistry**: Stores registered vault IDs, capabilities, pending queue, and stuck-scan order
+3. **AutoBalancer**: Implements `TransactionHandler`, executes rebalancing, and self-schedules recurring runs
+4. **FlowYieldVaultsSchedulerV1.Supervisor**: Recovery handler for failed schedules
 
 ### No Wrapper Needed
 
@@ -161,10 +161,11 @@ flow scripts execute cadence/scripts/flow-yield-vaults/get_pending_count.cdc
 
 ### What It Does
 
-The Supervisor handles yield vaults that failed to self-schedule:
-- Processes bounded `pendingQueue` (MAX 50 yield vaults per run)
-- Schedules failed yield vaults
-- Self-reschedules if more work remains
+The Supervisor handles two recovery scenarios per run:
+1. **Stuck detection**: Scans up to `MAX_BATCH_SIZE` vault candidates using `getStuckScanCandidates()`, which returns vaults ordered least-recently-executed first (LRU). Stuck vaults are enqueued in `pendingQueue`.
+2. **Pending processing**: Seeds vaults from `pendingQueue` (up to `MAX_BATCH_SIZE` per run). When scheduled with a recurring interval, the Supervisor keeps self-rescheduling even if a given run finds no work.
+
+Each AutoBalancer reports back to the registry after every execution via `RegistryReportCallback`, which calls `reportExecution()` to move the vault to the most-recently-executed end of the internal list. Because stuck scanning starts from the least-recently-executed tail, the Supervisor still prioritises the longest-idle vaults first.
 
 ### When It's Needed
 
@@ -187,36 +188,39 @@ The next Supervisor run will re-seed the yield vault.
 
 ## Events
 
-### FlowYieldVaultsScheduler Events
+### FlowYieldVaultsSchedulerV1 Events
 
 ```cadence
-event RebalancingScheduled(
-    yieldVaultID: UInt64,
-    scheduledTransactionID: UInt64,
-    timestamp: UFix64,
-    priority: UInt8,
-    isRecurring: Bool,
-    recurringInterval: UFix64?,
-    force: Bool
+event YieldVaultRecovered(
+    yieldVaultID: UInt64
 )
 
-event RebalancingCanceled(
+event YieldVaultRecoveryFailed(
     yieldVaultID: UInt64,
-    scheduledTransactionID: UInt64,
-    feesReturned: UFix64
+    error: String
 )
 
-event SupervisorSeededYieldVault(
-    yieldVaultID: UInt64,
+event StuckYieldVaultDetected(
+    yieldVaultID: UInt64
+)
+
+event SupervisorRescheduled(
     scheduledTransactionID: UInt64,
     timestamp: UFix64
+)
+
+event SupervisorRescheduleFailed(
+    timestamp: UFix64,
+    requiredFee: UFix64?,
+    availableBalance: UFix64?,
+    error: String
 )
 ```
 
 ### FlowYieldVaultsSchedulerRegistry Events
 
 ```cadence
-event YieldVaultRegistered(yieldVaultID: UInt64, handlerCapValid: Bool)
+event YieldVaultRegistered(yieldVaultID: UInt64)
 event YieldVaultUnregistered(yieldVaultID: UInt64, wasInPendingQueue: Bool)
 event YieldVaultEnqueuedPending(yieldVaultID: UInt64, pendingQueueSize: Int)
 event YieldVaultDequeuedPending(yieldVaultID: UInt64, pendingQueueSize: Int)
@@ -239,9 +243,9 @@ flow transactions send cadence/transactions/flow-yield-vaults/cancel_scheduled_r
 
 When a yield vault is closed:
 1. `_cleanupAutoBalancer()` is called
-2. `unregisterYieldVault()` cancels pending schedules
-3. Fees are refunded to the FlowYieldVaults account
-4. YieldVault is removed from registry
+2. The vault is removed from `FlowYieldVaultsSchedulerRegistry`
+3. AutoBalancer capability controllers are deleted
+4. Burning the AutoBalancer cleans up its internally managed scheduled transactions
 
 ---
 
@@ -311,5 +315,5 @@ A: No, one schedule per yield vault. Cancel to reschedule.
 
 ---
 
-**Last Updated**: November 26, 2025  
-**Version**: 2.0.0
+**Last Updated**: March 9, 2026
+**Version**: 2.1.0

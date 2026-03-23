@@ -1,5 +1,10 @@
 # AutoBalancer Recovery via Schedule Capability
 
+> Historical note: this proposal describes the recovery design that was later implemented.
+> Current code names are `FlowYieldVaultsSchedulerV1` and `FlowYieldVaultsSchedulerRegistry`.
+> Current stuck detection scans up to `MAX_BATCH_SIZE` least-recently-executed vaults from
+> the registry's LRU ordering, not the full registered set.
+
 ## Problem Statement
 
 When an `AutoBalancer` is configured for recurring rebalancing, its `executeTransaction` function contains an internal check:
@@ -104,8 +109,8 @@ Instead of modifying DeFiActions to add a `restartRecurring` flag, we use the ex
 ┌────────────────────────────────────────────────────────────────┐
 │                    Supervisor Recovery                          │
 ├────────────────────────────────────────────────────────────────┤
-│ 1. Supervisor scans registered yield vaults                           │
-│ 2. Detects stuck yield vaults via isStuckYieldVault() check:               │
+│ 1. Supervisor scans up to MAX_BATCH_SIZE LRU candidates from Registry │
+│ 2. Detects stuck yield vaults via isStuckYieldVault() check:         │
 │    - Has recurringConfig                                       │
 │    - No active schedule                                        │
 │    - Next expected execution time is in the past              │
@@ -126,7 +131,7 @@ The Supervisor emits these events during recovery:
 
 ## Fee Source Considerations
 
-Both Supervisor and AutoBalancer use the same fund source (the FlowYieldVaultsStrategies contract account's FlowToken vault). This means:
+Both Supervisor and AutoBalancer use the same fund source (the FlowYieldVaults account's shared FlowToken vault). This means:
 
 1. If the account is drained, BOTH fail to schedule
 2. If the account is refunded, BOTH can schedule again
@@ -164,7 +169,7 @@ let scheduleCap = self.account.capabilities.storage
     .issue<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>(storagePath)
 ```
 
-### FlowYieldVaultsScheduler
+### FlowYieldVaultsSchedulerV1
 
 Simplified Supervisor that directly calls `scheduleNextRebalance()`:
 

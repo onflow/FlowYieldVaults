@@ -857,7 +857,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
 
         access(all) view fun getSupportedComposers(): {Type: Bool} {
-            return { 
+            return {
                 Type<@MorphoERC4626StrategyComposer>(): true
             }
         }
@@ -994,7 +994,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     fun _createRecurringConfig(withID: DeFiActions.UniqueIdentifier?): DeFiActions.AutoBalancerRecurringConfig {
         // Create txnFunder that can provide/accept FLOW for scheduling fees
         let txnFunder = self._createTxnFunder(withID: withID)
-        
+
         return DeFiActions.AutoBalancerRecurringConfig(
             interval: 60 * 10,  // Rebalance every 10 minutes
             priority: FlowTransactionScheduler.Priority.Medium,
