@@ -356,7 +356,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 let v <- resultVaults.removeFirst()
                 if v.getType() == collateralType {
                     collateralVault.deposit(from: <-v)
-                } else if v.balance == 0 {
+                } else if v.balance == 0.0 {
                     // destroy empty vault
                     Burner.burn(<-v)
                 } else {
