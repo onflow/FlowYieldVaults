@@ -2,174 +2,174 @@
 
 ## Overview
 
-Autonomous scheduled rebalancing for FlowYieldVaults YieldVaults using Flow's native transaction scheduler (FLIP 330).
+Scheduled rebalancing for FlowYieldVaults is built on Flow's native transaction scheduler.
+AutoBalancers schedule themselves for normal recurring execution, while
+`FlowYieldVaultsSchedulerV1.Supervisor` exists only to detect and recover stuck vaults.
 
-## Branch Information
+## Status
 
-**Branch**: `scheduled-rebalancing`  
-**Last Updated**: November 26, 2025
+This document reflects the current scheduler architecture in this repository.
+
+- Last Updated: March 10, 2026
+- Current batch size: `FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE = 5`
+- Current scheduler contract: `FlowYieldVaultsSchedulerV1.cdc`
 
 ## Architecture
 
 ### Key Design Principles
 
-1. **Atomic Initial Scheduling**: YieldVault creation atomically registers and schedules first execution
-2. **No Wrapper**: Direct capability to AutoBalancer (RebalancingHandler removed)
-3. **Self-Scheduling AutoBalancers**: AutoBalancers chain their own subsequent executions
-4. **Recovery-Only Supervisor**: Processes bounded pending queue, not all yield vaults
+1. Atomic registration and first scheduling at YieldVault creation.
+2. Direct AutoBalancer capabilities, with no scheduling wrapper layer.
+3. Native self-scheduling for healthy recurring AutoBalancers.
+4. Recovery-only Supervisor with bounded scanning and bounded pending-queue processing.
+5. LRU stuck-scan ordering, so the longest-idle vaults are checked first.
 
-### Component Design
+### Main Components
 
-```
-FlowYieldVaults Contract Account
+```text
+FlowYieldVaults Account
     |
-    +-- FlowYieldVaultsScheduler
-    |       +-- SchedulerManager (tracks scheduled transactions)
-    |       +-- Supervisor (recovery handler for failed schedules)
+    +-- FlowYieldVaultsAutoBalancers
+    |       +-- Stores account-hosted AutoBalancers
+    |       +-- Issues handler/schedule capabilities
+    |       +-- Sets shared execution callback
+    |       +-- Starts first native schedule
     |
     +-- FlowYieldVaultsSchedulerRegistry
     |       +-- yieldVaultRegistry: {UInt64: Bool}
-    |       +-- handlerCaps: {UInt64: Capability<AutoBalancer>}
-    |       +-- pendingQueue: {UInt64: Bool}  (bounded by MAX_BATCH_SIZE=50)
+    |       +-- handlerCaps
+    |       +-- scheduleCaps
+    |       +-- pendingQueue
+    |       +-- listNodes / listHead / listTail (LRU stuck-scan order)
     |       +-- supervisorCap
     |
-    +-- FlowYieldVaultsAutoBalancers
-            +-- AutoBalancer (per YieldVault) implements TransactionHandler
+    +-- FlowYieldVaultsSchedulerV1
+            +-- Supervisor resource
+            +-- scheduling cost/config helpers
 ```
 
-### Execution Flow
+## Execution Flow
 
-1. **YieldVault Creation** (atomic):
-   - User creates YieldVault via `create_yield_vault.cdc`
-   - Strategy creates AutoBalancer in `_initNewAutoBalancer()`
-   - `registerYieldVault()` atomically:
-     - Issues capability directly to AutoBalancer
-     - Registers in FlowYieldVaultsSchedulerRegistry
-     - Schedules first execution
-   - If any step fails, entire transaction reverts
+### YieldVault Creation
 
-2. **Scheduled Execution**:
-   - FlowTransactionScheduler triggers at scheduled time
-   - Calls `AutoBalancer.executeTransaction()`
-   - AutoBalancer.rebalance() executes
-   - AutoBalancer self-schedules next execution (if configured with recurringConfig)
+1. `create_yield_vault.cdc` creates a strategy.
+2. The strategy calls `FlowYieldVaultsAutoBalancers._initNewAutoBalancer(...)`.
+3. `_initNewAutoBalancer(...)`:
+   - stores the AutoBalancer
+   - issues handler and schedule capabilities
+   - registers the vault in `FlowYieldVaultsSchedulerRegistry`
+   - sets a shared `RegistryReportCallback`
+   - schedules the first rebalance when `recurringConfig != nil`
+4. If any required step fails, the transaction reverts.
 
-3. **Recovery** (Supervisor):
-   - Processes `getPendingYieldVaultIDs()` (MAX 50 per run)
-   - Schedules yield vaults that failed to self-schedule
-   - Self-reschedules if pending work remains
+### Normal Operation
 
-## Files
+1. `FlowTransactionScheduler` executes the AutoBalancer.
+2. The AutoBalancer rebalances.
+3. If recurring scheduling is configured, the AutoBalancer schedules its next run.
+4. The shared execution callback reports success to the registry.
+5. `reportExecution()` moves that vault to the most-recently-executed end of the LRU list.
 
-### Core Contracts
-- **`FlowYieldVaultsScheduler.cdc`** (~730 lines)
-  - SchedulerManager resource
-  - Supervisor resource (recovery handler)
-  - Atomic registration with initial scheduling
-  
-- **`FlowYieldVaultsSchedulerRegistry.cdc`** (~155 lines)
-  - Registry storage (separate contract)
-  - Pending queue with MAX_BATCH_SIZE pagination
-  - Events: YieldVaultRegistered, YieldVaultUnregistered, YieldVaultEnqueuedPending, YieldVaultDequeuedPending
+### Recovery Operation
 
-### Transactions
-- `schedule_rebalancing.cdc` - Manual schedule (after canceling auto-schedule)
-- `cancel_scheduled_rebalancing.cdc` - Cancel and get refund
-- `setup_scheduler_manager.cdc` - Initialize SchedulerManager
-- `setup_supervisor.cdc` - Initialize Supervisor
-- `schedule_supervisor.cdc` - Schedule Supervisor for recovery
-- `enqueue_pending_yield_vault.cdc` - Manually enqueue for recovery
+Each Supervisor run has two bounded steps:
 
-### Scripts
-- `get_scheduled_rebalancing.cdc` - Query specific yield vault's schedule
-- `get_all_scheduled_rebalancing.cdc` - List all scheduled rebalancing
-- `get_registered_yield_vault_ids.cdc` - Get registered yield vault IDs
-- `get_pending_count.cdc` - Check pending queue size
-- `estimate_rebalancing_cost.cdc` - Estimate fees
-- `has_wrapper_cap_for_yield_vault.cdc` - Check if handler cap exists (renamed from wrapper)
+1. Stuck detection:
+   - reads up to `MAX_BATCH_SIZE` least-recently-executed vault IDs from `getStuckScanCandidates(...)`
+   - checks whether each candidate is overdue and lacks an active schedule
+   - enqueues stuck vaults into `pendingQueue`
 
-### Tests
-- `scheduled_supervisor_test.cdc` - Supervisor and multi-yield-vault tests
-- `scheduled_rebalance_integration_test.cdc` - Integration tests
-- `scheduled_rebalance_scenario_test.cdc` - Scenario-based tests
-- `scheduler_edge_cases_test.cdc` - Edge case tests
+2. Pending recovery:
+   - reads up to `MAX_BATCH_SIZE` vault IDs from `getPendingYieldVaultIDsPaginated(page: 0, size: UInt(MAX_BATCH_SIZE))`
+   - borrows each vault's `Schedule` capability
+   - calls `scheduleNextRebalance(whileExecuting: nil)` directly
+   - dequeues successfully recovered vaults
 
-## Key Features
+If the Supervisor itself is configured with a recurring interval, it self-reschedules after the run.
 
-### Automatic Scheduling at YieldVault Creation
-- No manual setup required
-- First rebalancing scheduled atomically with yield vault creation
-- Fails safely - reverts entire transaction if scheduling fails
+## Core Contracts
 
-### Self-Scheduling AutoBalancers
-- AutoBalancers with `recurringConfig` chain their own executions
-- No central coordinator needed for normal operation
-- Each AutoBalancer manages its own schedule independently
+- `FlowYieldVaultsAutoBalancers.cdc`
+  - account-hosted AutoBalancer creation and cleanup
+  - handler/schedule capability issuance
+  - shared execution callback wiring
 
-### Paginated Recovery (Supervisor)
-- MAX_BATCH_SIZE = 50 yield vaults per Supervisor run
-- Only processes pending queue (not all registered yield vaults)
-- Self-reschedules if more work remains
+- `FlowYieldVaultsSchedulerRegistry.cdc`
+  - registered vault tracking
+  - pending queue
+  - handler/schedule capability storage
+  - LRU stuck-scan ordering
 
-### Events
+- `FlowYieldVaultsSchedulerV1.cdc`
+  - Supervisor recovery handler
+  - Supervisor configuration and cost estimation helpers
+  - Supervisor recovery and self-reschedule events
+
+## Scheduler-Related Transactions
+
+- `cadence/transactions/flow-yield-vaults/admin/schedule_supervisor.cdc`
+- `cadence/transactions/flow-yield-vaults/admin/destroy_supervisor.cdc`
+- `cadence/transactions/flow-yield-vaults/admin/destroy_and_reset_supervisor.cdc`
+- `cadence/transactions/flow-yield-vaults/enqueue_pending_yield_vault.cdc`
+- `cadence/transactions/flow-yield-vaults/admin/set_default_recurring_interval.cdc`
+- `cadence/transactions/flow-yield-vaults/admin/set_default_exec_effort.cdc`
+- `cadence/transactions/flow-yield-vaults/admin/set_default_min_fee_fallback.cdc`
+- `cadence/transactions/flow-yield-vaults/admin/set_default_fee_margin_multiplier.cdc`
+- `cadence/transactions/flow-yield-vaults/admin/set_default_priority.cdc`
+
+## Scheduler-Related Scripts
+
+- `cadence/scripts/flow-yield-vaults/get_registered_yield_vault_ids.cdc`
+- `cadence/scripts/flow-yield-vaults/get_registered_yield_vault_count.cdc`
+- `cadence/scripts/flow-yield-vaults/get_pending_count.cdc`
+- `cadence/scripts/flow-yield-vaults/get_pending_yield_vaults_paginated.cdc`
+- `cadence/scripts/flow-yield-vaults/get_scheduler_config.cdc`
+- `cadence/scripts/flow-yield-vaults/estimate_rebalancing_cost.cdc`
+- `cadence/scripts/flow-yield-vaults/has_active_schedule.cdc`
+- `cadence/scripts/flow-yield-vaults/is_stuck_yield_vault.cdc`
+- `cadence/scripts/flow-yield-vaults/has_wrapper_cap_for_yield_vault.cdc`
+  - legacy script name; it checks for the direct handler capability stored in the registry
+
+## Current Events
+
 ```cadence
-// FlowYieldVaultsScheduler
-event RebalancingScheduled(yieldVaultID, scheduledTransactionID, timestamp, priority, isRecurring, ...)
-event RebalancingCanceled(yieldVaultID, scheduledTransactionID, feesReturned)
-event SupervisorSeededYieldVault(yieldVaultID, scheduledTransactionID, timestamp)
+// FlowYieldVaultsSchedulerV1
+event YieldVaultRecovered(yieldVaultID: UInt64)
+event YieldVaultRecoveryFailed(yieldVaultID: UInt64, error: String)
+event StuckYieldVaultDetected(yieldVaultID: UInt64)
+event SupervisorRescheduled(scheduledTransactionID: UInt64, timestamp: UFix64)
+event SupervisorRescheduleFailed(
+    timestamp: UFix64,
+    requiredFee: UFix64?,
+    availableBalance: UFix64?,
+    error: String
+)
 
 // FlowYieldVaultsSchedulerRegistry
-event YieldVaultRegistered(yieldVaultID, handlerCapValid)
-event YieldVaultUnregistered(yieldVaultID, wasInPendingQueue)
-event YieldVaultEnqueuedPending(yieldVaultID, pendingQueueSize)
-event YieldVaultDequeuedPending(yieldVaultID, pendingQueueSize)
+event YieldVaultRegistered(yieldVaultID: UInt64)
+event YieldVaultUnregistered(yieldVaultID: UInt64, wasInPendingQueue: Bool)
+event YieldVaultEnqueuedPending(yieldVaultID: UInt64, pendingQueueSize: Int)
+event YieldVaultDequeuedPending(yieldVaultID: UInt64, pendingQueueSize: Int)
 ```
 
 ## Test Coverage
 
-| Test | Description |
-|------|-------------|
-| `testAutoRegisterAndSupervisor` | YieldVault creation auto-registers and schedules |
-| `testMultiYieldVaultNativeScheduling` | 3 yield vaults all self-schedule natively |
-| `testMultiYieldVaultIndependentExecution` | Multiple yield vaults execute independently 3+ times |
-| `testPaginationStress` | 18 yield vaults (>MAX_BATCH_SIZE) all registered and execute |
-| `testSupervisorDoesNotDisruptHealthyYieldVaults` | Healthy yield vaults continue executing with Supervisor running |
-| `testStuckYieldVaultDetectionLogic` | Detection logic correctly identifies healthy vs stuck yield vaults |
-| `testInsufficientFundsAndRecovery` | Complete failure and recovery cycle with insufficient funds |
-| `testYieldVaultHasNativeScheduleAfterCreation` | Yield vault has active schedule immediately after creation |
+- `scheduled_supervisor_test.cdc`
+  - native scheduling, pagination, healthy-supervisor no-op behavior, stuck detection, recovery
+- `scheduled_rebalance_integration_test.cdc`
+  - scheduler integration behavior
+- `scheduled_rebalance_scenario_test.cdc`
+  - multi-round scheduling scenarios
+- `scheduler_edge_cases_test.cdc`
+  - edge cases and invariants
+- `yield_vault_lifecycle_test.cdc`
+  - vault lifecycle with scheduler wiring
+- `atomic_registration_gc_test.cdc`
+  - atomic registration and cleanup behavior
 
-## Security
+## Security and Operational Notes
 
-1. **Access Control**:
-   - `getSupervisorCap()` - `access(account)`
-   - `getHandlerCap()` - `access(account)`
-   - `enqueuePending()` - `access(account)`
-   - Registration/unregistration only from FlowYieldVaultsAutoBalancers
-
-2. **Atomic Operations**:
-   - YieldVault creation + registration + scheduling is atomic
-   - Failure at any step reverts the entire transaction
-
-3. **Bounded Operations**:
-   - Supervisor processes MAX 50 yield vaults per execution
-   - Prevents compute limit exhaustion
-
-## Changelog
-
-### Version 2.0.0 (November 26, 2025)
-- Removed RebalancingHandler wrapper
-- Atomic initial scheduling at yield vault registration
-- Paginated Supervisor with pending queue
-- Self-scheduling AutoBalancers
-- Moved registration to FlowYieldVaultsAutoBalancers
-- Added comprehensive events
-
-### Version 1.0.0 (November 10, 2025)
-- Initial implementation
-- Central Supervisor scanning all yield vaults
-- RebalancingHandler wrapper
-
----
-
-**Status**: Implementation complete, tests passing  
-**Last Updated**: November 26, 2025
+1. Registration, execution reporting, pending enqueue/dequeue, and unregister operations are account-restricted.
+2. Supervisor processing is bounded to avoid unbounded compute growth.
+3. Healthy recurring execution depends on the FlowYieldVaults account retaining sufficient FLOW for fees.
+4. Recovery does not replace off-chain monitoring; it only restores schedules for vaults that are overdue and unscheduled.

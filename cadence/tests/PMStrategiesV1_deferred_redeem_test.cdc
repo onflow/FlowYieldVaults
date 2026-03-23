@@ -1,4 +1,4 @@
-#test_fork(network: "mainnet", height: nil)
+#test_fork(network: "mainnet", height: nil) // latest mainnet block, needs oracle price, which goes stale if not on latest
 
 import Test
 
@@ -125,14 +125,6 @@ access(all) fun setup() {
     err = Test.deployContract(
         name: "FlowYieldVaults",
         path: "../../cadence/contracts/FlowYieldVaults.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    log("Deploying FlowYieldVaultsAutoBalancers...")
-    err = Test.deployContract(
-        name: "FlowYieldVaultsAutoBalancers",
-        path: "../../cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
