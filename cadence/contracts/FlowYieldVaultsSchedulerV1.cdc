@@ -172,7 +172,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
         ///   "priority": UInt8 (0=High,1=Medium,2=Low) - for Supervisor self-rescheduling
         ///   "executionEffort": UInt64 - for Supervisor self-rescheduling
         ///   "recurringInterval": UFix64 (for Supervisor self-rescheduling)
-        ///   "scanForStuck": Bool (default true - scan all registered yield vaults for stuck ones)
+        ///   "scanForStuck": Bool (default true - scan up to MAX_BATCH_SIZE least-recently-executed vaults for stuck ones)
         /// }
         access(FlowTransactionScheduler.Execute) fun executeTransaction(id: UInt64, data: AnyStruct?) {
             let cfg = data as? {String: AnyStruct} ?? {}
@@ -186,24 +186,8 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
 
             // STEP 1: State-based detection - scan for stuck yield vaults
             if scanForStuck {
-                // TODO: add pagination - this will inevitably fails and at minimum creates inconsistent execution
-                //      effort between runs
-                let registeredYieldVaults = FlowYieldVaultsSchedulerRegistry.getRegisteredYieldVaultIDs()
-                var scanned = 0
-                for yieldVaultID in registeredYieldVaults {
-                    if scanned >= FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE {
-                        break
-                    }
-                    scanned = scanned + 1
-                    
-                    // Skip if already in pending queue
-                    // TODO: This is extremely inefficient - accessing from mapping is preferrable to iterating over
-                    //      an array
-                    if FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDs().contains(yieldVaultID) {
-                        continue
-                    }
-
-                    // Check if yield vault is stuck (has recurring config, no active schedule, overdue)
+                let candidates = FlowYieldVaultsSchedulerRegistry.getStuckScanCandidates(limit: UInt(FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE))
+                for yieldVaultID in candidates {
                     if FlowYieldVaultsAutoBalancers.isStuckYieldVault(id: yieldVaultID) {
                         FlowYieldVaultsSchedulerRegistry.enqueuePending(yieldVaultID: yieldVaultID)
                         emit StuckYieldVaultDetected(yieldVaultID: yieldVaultID)
@@ -212,8 +196,8 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
             }
 
             // STEP 2: Process pending yield vaults - recover them via Schedule capability
-            let pendingYieldVaults = FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDsPaginated(page: 0, size: nil)
-            
+            let pendingYieldVaults = FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDsPaginated(page: 0, size: UInt(FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE))
+
             for yieldVaultID in pendingYieldVaults {
                 // Get Schedule capability for this yield vault
                 let scheduleCap = FlowYieldVaultsSchedulerRegistry.getScheduleCap(yieldVaultID: yieldVaultID)
@@ -457,7 +441,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
 
         // Initialize paths
         self.SupervisorStoragePath = /storage/FlowYieldVaultsSupervisor
-        
+
         // Configure Supervisor at deploy time
         self.ensureSupervisorConfigured()
     }
