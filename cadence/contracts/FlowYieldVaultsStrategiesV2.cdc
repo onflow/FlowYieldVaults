@@ -471,7 +471,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         ): UniswapV3SwapConnectors.Swapper {
             let yieldToCollPath = collateralConfig.yieldToCollateralUniV3AddressPath
             let yieldToCollFees = collateralConfig.yieldToCollateralUniV3FeePath
-            assert(yieldToCollPath.length >= 2, message: "yieldToCollateral path must have at least 2 elements")
+            assert(yieldToCollPath.length >= 2, message: "yieldToCollateral path requires at least yield and collateral tokens, got \(yieldToCollPath.length)")
             // Build reversed path: iterate yieldToCollPath from last down to index 1 (skip yield token at 0),
             // then append MOET. e.g. [FUSDEV, PYUSD0, WETH, WBTC] → [WBTC, WETH, PYUSD0] + MOET
             var collToDebtPath: [EVM.EVMAddress] = []
@@ -1072,7 +1072,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
             // collateral EVM address = last element of yieldToCollateral path
             // underlying (PYUSD0) EVM address = second element of yieldToCollateral path
-            assert(yieldToCollPath.length >= 2, message: "yieldToCollateral path must have at least 2 elements")
+            assert(yieldToCollPath.length >= 2, message: "yieldToCollateral path requires at least yield and collateral tokens, got \(yieldToCollPath.length)")
             let collateralEVMAddress = yieldToCollPath[yieldToCollPath.length - 1]
             let underlyingEVMAddress = tokens.underlying4626AssetEVMAddress
 
