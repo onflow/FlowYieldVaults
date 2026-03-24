@@ -222,6 +222,8 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /// Inspects up to `limit` tail entries from the recurring stuck-scan ordering, lazily prunes
     /// stale non-recurring entries, and returns the recurring participants encountered.
     /// Repeated calls keep making forward progress without unbounded work.
+    /// NOTE: re-enabling recurring scheduling for a previously pruned vault is not handled here.
+    /// TODO: add an explicit rejoin path for recurring off -> on in a follow-up PR.
     /// This is intentionally account-restricted because it mutates registry state as it prunes.
     /// @param limit: Maximum number of tail entries to inspect in this call
     access(account) fun pruneAndGetStuckScanCandidates(limit: UInt): [UInt64] {
@@ -242,8 +244,9 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
                 if isRecurringParticipant {
                     result.append(id)
                 } else {
-                    // Protocol invariant: once recurring config is removed from a vault, it is not
-                    // re-enabled later. Pruned entries therefore do not need a rejoin path.
+                    // Current behavior: removing recurring config prunes the vault from the
+                    // stuck-scan ordering. Re-enabling recurring later still needs an explicit
+                    // rejoin path and is intentionally left to a follow-up PR.
                     self.dequeuePending(yieldVaultID: id)
                     let _ = list.remove(id: id)
                 }
