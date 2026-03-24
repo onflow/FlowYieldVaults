@@ -174,7 +174,7 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/tra
 #   --network testnet
 #
 #
-# WBTC (BTCf)
+# WBTC
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
 #   A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy \
 #   A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault \
