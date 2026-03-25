@@ -32,7 +32,7 @@ These changes are **non-upgradable** and define version boundaries.
 All changes must be:
 
 * Backward-compatible
-* Deployable to the same contract address
+* Deployable to the same contract address with the same name
 * Safe for existing integrations
 
 ---
@@ -113,6 +113,48 @@ When a non-upgradable change is introduced:
 1. Checkout version branch (e.g., `v0`)
 2. Use pinned dependencies
 3. Deploy to network
+
+---
+
+## Contract Naming Conventions
+
+Clear and consistent contract naming is required to reinforce version boundaries and avoid ambiguity.
+
+### Within a Version
+
+* Contract names must remain **stable**
+* Contracts must be deployable to the **same address** with the **same name**
+* Renaming or adding suffixes (e.g., `V2`, `New`) is **not allowed**
+
+### Across Versions
+
+When introducing a new version due to non-upgradeable changes:
+
+* Contracts must be **redeployed under new names or addresses**
+* Naming must clearly indicate version differences
+
+#### Recommended Patterns
+
+* **Suffix-based versioning:**
+
+  * `FlowVault` → `FlowVaultV1`
+  * `AutoBalancer` → `AutoBalancerV1`
+
+### Guidelines
+
+* Use explicit version identifiers (`V1`, `V2`, ...)
+* Avoid ambiguous names such as:
+
+  * `New`
+  * `Updated`
+* Keep naming consistent across FYV, Flow ALP, and DeFiActions
+
+### Important
+
+Once a version is deployed and superseded:
+
+* Its contracts should be treated as **immutable**
+* No further modifications should be made
 
 ---
 
