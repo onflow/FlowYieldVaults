@@ -11,6 +11,7 @@ import "FlowYieldVaultsSchedulerV1"
 import "FlowTransactionScheduler"
 import "FlowYieldVaultsSchedulerRegistry"
 import "DeFiActions"
+import "AutoBalancers"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
@@ -229,9 +230,9 @@ fun testSingleAutoBalancerThreeExecutions() {
     log("Balance after execution 3: ".concat(balance3.toString()))
     Test.assert(balance3 != balance2, message: "Balance should change after execution 3 (was: ".concat(balance2.toString()).concat(", now: ").concat(balance3.toString()).concat(")"))
     
-    // Verify DeFiActions.Rebalanced events
-    let rebalanceEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
-    log("DeFiActions.Rebalanced events: ".concat(rebalanceEvents.length.toString()))
+    // Verify AutoBalancers.Rebalanced events
+    let rebalanceEvents = Test.eventsOfType(Type<AutoBalancers.Rebalanced>())
+    log("AutoBalancers.Rebalanced events: ".concat(rebalanceEvents.length.toString()))
     Test.assertEqual(3, rebalanceEvents.length)
     
     log("\nBalance progression: ".concat(balance0.toString()).concat(" -> ").concat(balance1.toString()).concat(" -> ").concat(balance2.toString()).concat(" -> ").concat(balance3.toString()))
@@ -346,8 +347,8 @@ fun testThreeYieldVaultsNineExecutions() {
     Test.assert(balance2_r3 != balance2_r2, message: "YieldVault 2 balance should change after round 3")
     
     // Verify rebalancing events
-    let rebalanceEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
-    log("DeFiActions.Rebalanced events: ".concat(rebalanceEvents.length.toString()))
+    let rebalanceEvents = Test.eventsOfType(Type<AutoBalancers.Rebalanced>())
+    log("AutoBalancers.Rebalanced events: ".concat(rebalanceEvents.length.toString()))
     Test.assertEqual(9, rebalanceEvents.length)
     
     log("PASS: Three yield vaults each executed exactly 3 times (9 total)")

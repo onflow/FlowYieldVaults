@@ -5,6 +5,7 @@ import "EVM"
 // DeFiActions
 import "DeFiActionsUtils"
 import "DeFiActions"
+import "AutoBalancers"
 import "SwapConnectors"
 import "FungibleTokenConnectors"
 // amm integration
@@ -578,14 +579,14 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     /// Returned bundle for stored AutoBalancer interactions (reference + caps)
     access(all) struct AutoBalancerIO {
         access(all) let autoBalancer:
-            auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw)
-            &DeFiActions.AutoBalancer
+            auth(AutoBalancers.Auto, AutoBalancers.Set, AutoBalancers.Get, AutoBalancers.Schedule, FungibleToken.Withdraw)
+            &AutoBalancers.AutoBalancer
 
         access(all) let sink: {DeFiActions.Sink}
         access(all) let source: {DeFiActions.Source}
 
         init(
-            autoBalancer: auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw) &DeFiActions.AutoBalancer,
+            autoBalancer: auth(AutoBalancers.Auto, AutoBalancers.Set, AutoBalancers.Get, AutoBalancers.Schedule, FungibleToken.Withdraw) &AutoBalancers.AutoBalancer,
             sink: {DeFiActions.Sink},
             source: {DeFiActions.Source}
         ) {
@@ -1273,11 +1274,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     /// Creates an AutoBalancerRecurringConfig for scheduled rebalancing.
     /// The txnFunder uses the contract's FlowToken vault to pay for scheduling fees.
     access(self)
-    fun _createRecurringConfig(withID: DeFiActions.UniqueIdentifier?): DeFiActions.AutoBalancerRecurringConfig {
+    fun _createRecurringConfig(withID: DeFiActions.UniqueIdentifier?): AutoBalancers.AutoBalancerRecurringConfig {
         // Create txnFunder that can provide/accept FLOW for scheduling fees
         let txnFunder = self._createTxnFunder(withID: withID)
 
-        return DeFiActions.AutoBalancerRecurringConfig(
+        return AutoBalancers.AutoBalancerRecurringConfig(
             interval: 60 * 10,  // Rebalance every 10 minutes
             priority: FlowTransactionScheduler.Priority.Medium,
             executionEffort: 800,

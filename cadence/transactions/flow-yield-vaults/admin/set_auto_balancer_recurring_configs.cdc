@@ -2,6 +2,7 @@ import "FungibleToken"
 import "FlowToken"
 import "FungibleTokenConnectors"
 import "DeFiActions"
+import "AutoBalancers"
 import "FlowTransactionScheduler"
 import "FlowYieldVaultsAutoBalancers"
 import "FlowYieldVaultsSchedulerRegistry"
@@ -34,7 +35,7 @@ transaction(
             ?? panic("Invalid priority: \(priorityRaw) - must be 0=High, 1=Medium, 2=Low")
         for id in FlowYieldVaultsSchedulerRegistry.getRegisteredYieldVaultIDs() {
             let path = FlowYieldVaultsAutoBalancers.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
-            if let ab = signer.storage.borrow<auth(DeFiActions.Identify, DeFiActions.Configure) &DeFiActions.AutoBalancer>(from: path) {
+            if let ab = signer.storage.borrow<auth(DeFiActions.Identify, AutoBalancer.Configure) &AutoBalancers.AutoBalancer>(from: path) {
                 // autobalancer is not configured as recurring, skip
                 if ab.getRecurringConfig() == nil {
                     continue
@@ -43,7 +44,7 @@ transaction(
                     toUpdate: &txnFunder as auth(DeFiActions.Extend) &{DeFiActions.IdentifiableStruct},
                     with: ab
                 )
-                let config = DeFiActions.AutoBalancerRecurringConfig(
+                let config = AutoBalancers.AutoBalancerRecurringConfig(
                     interval: interval,
                     priority: priority,
                     executionEffort: executionEffort,
