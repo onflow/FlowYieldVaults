@@ -34,7 +34,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
 
     /// Callback resource invoked by each AutoBalancer after execution; calls Registry.reportExecution with its id
     access(all) resource RegistryReportCallback: DeFiActions.AutoBalancerExecutionCallback {
-        access(all) fun onExecuted(balancerUUID: UInt64) {
+        access(all) fun onExecuted(resourceUUID: UInt64, uniqueID: UInt64?) {
             // The callback capability is published publicly for runtime lookup, so treat the
             // reported ID as untrusted and verify the real AutoBalancer state before mutating
             // registry execution ordering.
@@ -42,12 +42,21 @@ access(all) contract FlowYieldVaultsAutoBalancers {
             // IMPORTANT: this validator assumes DeFiActions invokes the callback synchronously
             // from AutoBalancer.executeTransaction(), in the same block as rebalance(). If that
             // execution model changes in the future, this check must be revisited.
-            if !FlowYieldVaultsSchedulerRegistry.isRegistered(yieldVaultID: balancerUUID) {
+            if uniqueID == nil {
                 return
             }
 
-            let autoBalancer = FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: balancerUUID)
+            let yieldVaultID = uniqueID!
+            if !FlowYieldVaultsSchedulerRegistry.isRegistered(yieldVaultID: yieldVaultID) {
+                return
+            }
+
+            let autoBalancer = FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: yieldVaultID)
             if autoBalancer == nil {
+                return
+            }
+
+            if autoBalancer!.uuid != resourceUUID {
                 return
             }
 
@@ -56,7 +65,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
                 return
             }
 
-            FlowYieldVaultsSchedulerRegistry.reportExecution(yieldVaultID: balancerUUID)
+            FlowYieldVaultsSchedulerRegistry.reportExecution(yieldVaultID: yieldVaultID)
         }
     }
 
