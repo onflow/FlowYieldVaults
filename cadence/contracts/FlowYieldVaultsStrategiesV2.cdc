@@ -650,7 +650,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     access(self) fun _initAutoBalancerAndIO(
         oracle: {DeFiActions.PriceOracle},
         yieldTokenType: Type,
-        recurringConfig: DeFiActions.AutoBalancerRecurringConfig?,
+        recurringConfig: AutoBalancers.AutoBalancerRecurringConfig?,
         uniqueID: DeFiActions.UniqueIdentifier
     ): FlowYieldVaultsStrategiesV2.AutoBalancerIO {
         let autoBalancerRef =
