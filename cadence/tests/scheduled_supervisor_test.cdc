@@ -7,6 +7,7 @@ import "FlowToken"
 import "MOET"
 import "YieldToken"
 import "MockStrategies"
+import "FlowYieldVaultsAutoBalancers"
 import "FlowYieldVaultsSchedulerV1"
 import "FlowTransactionScheduler"
 import "DeFiActions"
@@ -20,9 +21,23 @@ access(all) var strategyIdentifier = Type<@MockStrategies.TracerStrategy>().iden
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
 access(all) var yieldTokenIdentifier = Type<@YieldToken.Vault>().identifier
 access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
-
 // Snapshot for test isolation - captured after setup completes
 access(all) var snapshot: UInt64 = 0
+
+/// Small helper struct used by the callback tests so we can keep the registry key
+/// (uniqueID / yield vault ID) and the generic resource UUID together.
+///
+/// The callback API is generic and exposes both values. FYV indexes registry state by
+/// yield vault ID, while the spoofing hardening also verifies the raw resource UUID.
+access(all) struct TrackedAutoBalancer {
+    access(all) let yieldVaultID: UInt64
+    access(all) let resourceUUID: UInt64
+
+    init(yieldVaultID: UInt64, resourceUUID: UInt64) {
+        self.yieldVaultID = yieldVaultID
+        self.resourceUUID = resourceUUID
+    }
+}
 
 access(all)
 fun setup() {
@@ -83,6 +98,71 @@ fun setup() {
     log("✅ Setup complete. Snapshot at block: ".concat(snapshot.toString()))
 }
 
+/// Creates a YieldVault for the shared mock strategy and returns the IDs needed to reason
+/// about the generic callback payload:
+/// - `yieldVaultID`: FYV's registry key and the strategy stack uniqueID
+/// - `resourceUUID`: the raw AutoBalancer resource UUID reported by DeFiActions
+access(all)
+fun createTrackedAutoBalancer(account user: Test.TestAccount, amount: UFix64): TrackedAutoBalancer {
+    let existingYieldVaultIDs: [UInt64] = getYieldVaultIDs(address: user.address) ?? []
+
+    let createYieldVaultRes = executeTransaction(
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        [strategyIdentifier, flowTokenIdentifier, amount],
+        user
+    )
+    Test.expect(createYieldVaultRes, Test.beSucceeded())
+
+    let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
+    var yieldVaultID: UInt64? = nil
+    for candidateID in yieldVaultIDs {
+        if !existingYieldVaultIDs.contains(candidateID) {
+            yieldVaultID = candidateID
+        }
+    }
+
+    let newYieldVaultID = yieldVaultID
+        ?? panic("Could not identify the newly created YieldVault")
+
+    let createdEvts = Test.eventsOfType(Type<DeFiActions.CreatedAutoBalancer>())
+    Test.assert(createdEvts.length > 0, message: "Expected AutoBalancer creation event")
+    var matchedResourceUUID: UInt64? = nil
+    for rawEvt in createdEvts {
+        let createdEvt = rawEvt as! DeFiActions.CreatedAutoBalancer
+        if createdEvt.uniqueID != nil && createdEvt.uniqueID! == newYieldVaultID {
+            matchedResourceUUID = createdEvt.uuid
+        }
+    }
+
+    let resourceUUID = matchedResourceUUID
+        ?? panic("Could not find CreatedAutoBalancer event for yield vault ID \(newYieldVaultID)")
+
+    return TrackedAutoBalancer(yieldVaultID: newYieldVaultID, resourceUUID: resourceUUID)
+}
+
+/// The registry exposes scan candidates from tail to head, which means the first element is
+/// the least recently executed yield vault and the last element is the most recent one.
+access(all)
+fun assertTailCandidateOrder(
+    _ candidates: [UInt64],
+    leastRecent: UInt64,
+    mostRecent: UInt64,
+    context: String
+) {
+    Test.assert(
+        candidates.length == 2,
+        message: "Expected exactly two registry candidates in \(context), got \(candidates.length)"
+    )
+    Test.assert(
+        candidates[0] == leastRecent,
+        message: "Unexpected least-recent candidate in \(context)"
+    )
+    Test.assert(
+        candidates[1] == mostRecent,
+        message: "Unexpected most-recent candidate in \(context)"
+    )
+}
+
 /// Test: Auto-Register and Native Scheduling
 ///
 /// NEW ARCHITECTURE:
@@ -138,6 +218,131 @@ fun testAutoRegisterAndSupervisor() {
     log("DeFiActions.Rebalanced events: ".concat(rebalancedEvents.length.toString()))
 
     log("PASS: Auto-Register + Native Scheduling")
+}
+
+/// The callback is now owner-level and generic, but FYV still relies on it to keep the
+/// execution-order linked list accurate. This test proves that a legitimate scheduled
+/// execution still moves the executed vault from the registry tail to the head.
+///
+/// We stagger the two vault creations by half the 10-minute interval used by the mock
+/// strategy. That guarantees only the first vault is due in the next scheduler block,
+/// which makes the resulting registry reordering unambiguous.
+access(all)
+fun testExecutionCallbackReordersRegistryAfterRealExecution() {
+    if snapshot < getCurrentBlockHeight() {
+        Test.reset(to: snapshot)
+    }
+
+    let user = Test.createAccount()
+    mintFlow(to: user, amount: 1000.0)
+    grantBeta(flowYieldVaultsAccount, user)
+
+    let firstVault = createTrackedAutoBalancer(account: user, amount: 100.0)
+
+    // Shift the second vault half an interval later so only the first one is due in the
+    // next scheduler block.
+    Test.moveTime(by: 60.0 * 5.0)
+    let secondVault = createTrackedAutoBalancer(account: user, amount: 100.0)
+
+    let orderBeforeExecution = FlowYieldVaultsSchedulerRegistry.getStuckScanCandidates(limit: UInt(2))
+    assertTailCandidateOrder(
+        orderBeforeExecution,
+        leastRecent: firstVault.yieldVaultID,
+        mostRecent: secondVault.yieldVaultID,
+        context: "before the first scheduled execution"
+    )
+
+    let executedBefore = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>()).length
+
+    // Advance exactly enough for the first vault to execute while the second vault is still
+    // waiting for its first interval.
+    Test.moveTime(by: 60.0 * 5.0 + 10.0)
+    Test.commitBlock()
+
+    let executedAfter = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>()).length
+    Test.assert(
+        executedAfter == executedBefore + 1,
+        message: "Expected exactly one scheduled execution after the staggered interval"
+    )
+
+    let publishedCallback = getAccount(flowYieldVaultsAccount.address).capabilities.borrow<&{DeFiActions.AutoBalancerExecutionCallback}>(
+        DeFiActions.executionCallbackPublicPath()
+    )
+    Test.assert(publishedCallback != nil, message: "Expected the shared execution callback to be published")
+
+    let firstBalancer = FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: firstVault.yieldVaultID)
+        ?? panic("Missing first AutoBalancer")
+    Test.assert(
+        firstBalancer.uuid == firstVault.resourceUUID,
+        message: "Expected the executed AutoBalancer UUID to match the creation event payload"
+    )
+    // The same-block timestamp invariant is enforced inside RegistryReportCallback.
+    // This integration test stays focused on the observable scheduler effect: a
+    // real execution must move the executed vault to the head of the registry.
+    Test.assert(
+        firstBalancer.getLastRebalanceTimestamp() > 0.0,
+        message: "Expected the executed AutoBalancer to record a rebalance timestamp"
+    )
+
+    let orderAfterExecution = FlowYieldVaultsSchedulerRegistry.getStuckScanCandidates(limit: UInt(2))
+    assertTailCandidateOrder(
+        orderAfterExecution,
+        leastRecent: secondVault.yieldVaultID,
+        mostRecent: firstVault.yieldVaultID,
+        context: "after a legitimate AutoBalancer execution"
+    )
+}
+
+/// The execution callback capability is published publicly so AutoBalancers can discover it
+/// at runtime. This test exercises that exact public path from an arbitrary account and
+/// proves that FYV only accepts the callback if the targeted AutoBalancer actually rebalanced
+/// in the current block.
+///
+/// We first establish a legitimate execution ordering, then move to a fresh block and call
+/// the public callback directly for the second vault. If the spoofing guard failed, the
+/// second vault would jump to the head of the registry. The expected result is no change.
+access(all)
+fun testPublicExecutionCallbackSpoofDoesNotReorderRegistry() {
+    if snapshot < getCurrentBlockHeight() {
+        Test.reset(to: snapshot)
+    }
+
+    let user = Test.createAccount()
+    mintFlow(to: user, amount: 1000.0)
+    grantBeta(flowYieldVaultsAccount, user)
+
+    let firstVault = createTrackedAutoBalancer(account: user, amount: 100.0)
+    Test.moveTime(by: 60.0 * 5.0)
+    let secondVault = createTrackedAutoBalancer(account: user, amount: 100.0)
+
+    // Establish the same real execution ordering as the positive test above.
+    Test.moveTime(by: 60.0 * 5.0 + 10.0)
+    Test.commitBlock()
+
+    let orderAfterRealExecution = FlowYieldVaultsSchedulerRegistry.getStuckScanCandidates(limit: UInt(2))
+    assertTailCandidateOrder(
+        orderAfterRealExecution,
+        leastRecent: secondVault.yieldVaultID,
+        mostRecent: firstVault.yieldVaultID,
+        context: "after the legitimate first execution"
+    )
+
+    // Move to a new block so the callback hardening must reject any replay/spoof attempt.
+    Test.moveTime(by: 1.0)
+    let spoofRes = executeTransaction(
+        "./transactions/flow-yield-vaults/spoof_execution_callback.cdc",
+        [flowYieldVaultsAccount.address, secondVault.resourceUUID, secondVault.yieldVaultID],
+        user
+    )
+    Test.expect(spoofRes, Test.beSucceeded())
+
+    let orderAfterSpoof = FlowYieldVaultsSchedulerRegistry.getStuckScanCandidates(limit: UInt(2))
+    assertTailCandidateOrder(
+        orderAfterSpoof,
+        leastRecent: secondVault.yieldVaultID,
+        mostRecent: firstVault.yieldVaultID,
+        context: "after a spoofed callback invocation"
+    )
 }
 
 /// Test: Multiple yield vaults all self-schedule via native mechanism
