@@ -5,6 +5,7 @@ import "FlowToken"
 import "FlowTransactionScheduler"
 // DeFiActions
 import "DeFiActions"
+import "AutoBalancers"
 // Registry storage (separate contract)
 import "FlowYieldVaultsSchedulerRegistry"
 // AutoBalancer management (for detecting stuck yield vaults)
