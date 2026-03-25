@@ -94,6 +94,14 @@ access(all) contract FlowYieldVaultsAutoBalancers {
     /// the Supervisor can falsely classify healthy vaults as stuck and recover them twice.
     /// But that window must be bounded: if the handler panics after the optimistic status
     /// update, the vault must eventually become recoverable instead of remaining "active"
+    /// The second case matters because FlowTransactionScheduler flips status to `Executed`
+    /// before the handler actually runs (though within the same block and collection). 
+    /// Without treating that in-flight window as active, the Supervisor can falsely classify healthy vaults as stuck and recover them twice.
+    /// In particular, this can happen when:
+    ///  - the supervisor and the handler and both executed in the same block, and
+    ///  - the supervisor is executed before the handler
+    /// But that window must be bounded: if the handler panics after the optimistic status
+    /// update, the vault must eventually become recoverable instead of remaining "active"
     /// forever.
     ///
     /// @param id: The yield vault/AutoBalancer ID
