@@ -10,6 +10,7 @@ import "MockStrategies"
 import "FlowYieldVaultsSchedulerV1"
 import "FlowTransactionScheduler"
 import "DeFiActions"
+import "AutoBalancers"
 import "FlowYieldVaultsSchedulerRegistry"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
@@ -133,9 +134,9 @@ fun testAutoRegisterAndSupervisor() {
     let schedulerExecEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     Test.assert(schedulerExecEvents.length > 0, message: "Should have FlowTransactionScheduler.Executed event")
 
-    let rebalancedEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
+    let rebalancedEvents = Test.eventsOfType(Type<AutoBalancers.Rebalanced>())
     log("Scheduler.Executed events: ".concat(schedulerExecEvents.length.toString()))
-    log("DeFiActions.Rebalanced events: ".concat(rebalancedEvents.length.toString()))
+    log("AutoBalancers.Rebalanced events: ".concat(rebalancedEvents.length.toString()))
 
     log("PASS: Auto-Register + Native Scheduling")
 }
