@@ -1,4 +1,5 @@
 import "DeFiActions"
+import "AutoBalancers"
 
 import "FlowYieldVaultsAutoBalancers"
 
@@ -14,12 +15,12 @@ import "FlowYieldVaultsAutoBalancers"
 ///
 transaction(id: UInt64, force: Bool) {
     // the AutoBalancer that will be rebalanced
-    let autoBalancer: auth(DeFiActions.Auto) &DeFiActions.AutoBalancer
-    
+    let autoBalancer: auth(AutoBalancers.Auto) &AutoBalancers.AutoBalancer
+
     prepare(signer: auth(BorrowValue) &Account) {
         // derive the path and borrow an authorized reference to the AutoBalancer
         let storagePath = FlowYieldVaultsAutoBalancers.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
-        self.autoBalancer = signer.storage.borrow<auth(DeFiActions.Auto) &DeFiActions.AutoBalancer>(from: storagePath)
+        self.autoBalancer = signer.storage.borrow<auth(AutoBalancers.Auto) &AutoBalancers.AutoBalancer>(from: storagePath)
             ?? panic("Could not borrow reference to AutoBalancer id \(id) at path \(storagePath)")
     }
 

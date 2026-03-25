@@ -1,5 +1,6 @@
 import "FlowTransactionScheduler"
 import "DeFiActions"
+import "AutoBalancers"
 import "UInt64LinkedList"
 
 
@@ -57,7 +58,7 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
 
     /// Schedule capabilities for each yield vault - keyed by yield vault ID
     /// Used by Supervisor to directly call scheduleNextRebalance() for recovery
-    access(self) var scheduleCaps: {UInt64: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>}
+    access(self) var scheduleCaps: {UInt64: Capability<auth(AutoBalancers.Schedule) &AutoBalancers.AutoBalancer>}
 
     /// Queue of yield vault IDs that need initial seeding or re-seeding by the Supervisor
     /// Stored as a dictionary for O(1) add/remove; iteration gives the pending set
@@ -78,7 +79,7 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     access(account) fun register(
         yieldVaultID: UInt64,
         handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>,
-        scheduleCap: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>
+        scheduleCap: Capability<auth(AutoBalancers.Schedule) &AutoBalancers.AutoBalancer>
     ) {
         pre {
             handlerCap.check(): "Invalid handler capability provided for yieldVaultID \(yieldVaultID)"
@@ -173,7 +174,7 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
 
     /// Get schedule capability for a YieldVault - account restricted for Supervisor use
     /// This allows calling scheduleNextRebalance() directly on the AutoBalancer
-    access(account) view fun getScheduleCap(yieldVaultID: UInt64): Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>? {
+    access(account) view fun getScheduleCap(yieldVaultID: UInt64): Capability<auth(AutoBalancers.Schedule) &AutoBalancers.AutoBalancer>? {
         return self.scheduleCaps[yieldVaultID]
     }
 
