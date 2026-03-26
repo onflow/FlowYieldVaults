@@ -17,7 +17,7 @@ import "ERC4626Utils"
 import "FlowALPv0"
 // FlowYieldVaults platform
 import "FlowYieldVaults"
-import "FlowYieldVaultsAutoBalancers"
+import "FlowYieldVaultsAutoBalancersV1"
 // scheduler
 import "FlowTransactionScheduler"
 // tokens
@@ -270,7 +270,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
 
             // Step 4: Create external yield token source from AutoBalancer
-            let yieldTokenSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
+            let yieldTokenSource = FlowYieldVaultsAutoBalancersV1.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
             // Step 5: Reconstruct yield→MOET swapper from stored CollateralConfig.
@@ -387,7 +387,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
-            FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
+            FlowYieldVaultsAutoBalancersV1._cleanupAutoBalancer(id: self.id()!)
             self._cleanupPositionClosed()
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
@@ -654,7 +654,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         uniqueID: DeFiActions.UniqueIdentifier
     ): FlowYieldVaultsStrategiesV2.AutoBalancerIO {
         let autoBalancerRef =
-            FlowYieldVaultsAutoBalancers._initNewAutoBalancer(
+            FlowYieldVaultsAutoBalancersV1._initNewAutoBalancer(
                 oracle: oracle,
                 vaultType: yieldTokenType,
                 lowerThreshold: 0.95,

@@ -1,7 +1,7 @@
 import "DeFiActions"
 import "AutoBalancers"
 
-import "FlowYieldVaultsAutoBalancers"
+import "FlowYieldVaultsAutoBalancersV1"
 
 /// Calls on the AutoBalancer to rebalance which will result in a rebalancing around the value of deposits. If force is
 /// `true`, rebalancing should occur regardless of the lower & upper thresholds configured on the AutoBalancer.
@@ -19,7 +19,7 @@ transaction(id: UInt64, force: Bool) {
 
     prepare(signer: auth(BorrowValue) &Account) {
         // derive the path and borrow an authorized reference to the AutoBalancer
-        let storagePath = FlowYieldVaultsAutoBalancers.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
+        let storagePath = FlowYieldVaultsAutoBalancersV1.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
         self.autoBalancer = signer.storage.borrow<auth(AutoBalancers.Auto) &AutoBalancers.AutoBalancer>(from: storagePath)
             ?? panic("Could not borrow reference to AutoBalancer id \(id) at path \(storagePath)")
     }

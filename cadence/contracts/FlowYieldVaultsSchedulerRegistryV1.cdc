@@ -1,5 +1,7 @@
 import "FlowTransactionScheduler"
 import "DeFiActions"
+import "AutoBalancers"
+import "UInt64LinkedList"
 
 
 /// FlowYieldVaultsSchedulerRegistry
@@ -11,7 +13,7 @@ import "DeFiActions"
 /// - A pending queue for yield vaults that need initial seeding or re-seeding
 /// - The global Supervisor capability for recovery operations
 ///
-access(all) contract FlowYieldVaultsSchedulerRegistry {
+access(all) contract FlowYieldVaultsSchedulerRegistryV1 {
 
     /* --- EVENTS --- */
 
@@ -41,6 +43,10 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /// Maximum number of yield vaults to process in a single Supervisor batch
     access(all) let MAX_BATCH_SIZE: Int
 
+    /* --- STORAGE PATHS --- */
+
+    access(all) let executionListStoragePath: StoragePath
+
     /* --- STATE --- */
 
     /// Registry of all yield vault IDs that participate in scheduling
@@ -52,11 +58,20 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
 
     /// Schedule capabilities for each yield vault - keyed by yield vault ID
     /// Used by Supervisor to directly call scheduleNextRebalance() for recovery
-    access(self) var scheduleCaps: {UInt64: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>}
+    access(self) var scheduleCaps: {UInt64: Capability<auth(AutoBalancers.Schedule) &AutoBalancers.AutoBalancer>}
 
     /// Queue of yield vault IDs that need initial seeding or re-seeding by the Supervisor
     /// Stored as a dictionary for O(1) add/remove; iteration gives the pending set
     access(self) var pendingQueue: {UInt64: Bool}
+
+    /* --- PRIVATE LIST ACCESSOR --- */
+
+    /// Borrow the execution-order linked list from account storage.
+    access(self) fun _list(): &UInt64LinkedList.List {
+        return self.account.storage
+            .borrow<&UInt64LinkedList.List>(from: self.executionListStoragePath)
+            ?? panic("UInt64LinkedList.List resource missing from storage")
+    }
 
     /* --- ACCOUNT-LEVEL FUNCTIONS --- */
 
@@ -64,7 +79,7 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     access(account) fun register(
         yieldVaultID: UInt64,
         handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>,
-        scheduleCap: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>
+        scheduleCap: Capability<auth(AutoBalancers.Schedule) &AutoBalancers.AutoBalancer>
     ) {
         pre {
             handlerCap.check(): "Invalid handler capability provided for yieldVaultID \(yieldVaultID)"
@@ -73,7 +88,26 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         self.yieldVaultRegistry[yieldVaultID] = true
         self.handlerCaps[yieldVaultID] = handlerCap
         self.scheduleCaps[yieldVaultID] = scheduleCap
+        // New vaults go to the head; they haven't executed yet but are freshly registered.
+        // If already in the list (idempotent re-register), remove first to avoid duplicates.
+        let list = self._list()
+        if list.contains(id: yieldVaultID) {
+            let _ = list.remove(id: yieldVaultID)
+        }
+        list.insertAtHead(id: yieldVaultID)
         emit YieldVaultRegistered(yieldVaultID: yieldVaultID)
+    }
+
+    /// Called on every execution. Moves yieldVaultID to the head (most recently executed)
+    /// so the Supervisor scans from the tail (least recently executed) for stuck detection — O(1).
+    /// If the list entry is unexpectedly missing, reinsert it to restore the ordering structure.
+    access(account) fun reportExecution(yieldVaultID: UInt64) {
+        if !(self.yieldVaultRegistry[yieldVaultID] ?? false) {
+            return
+        }
+        let list = self._list()
+        let _ = list.remove(id: yieldVaultID)
+        list.insertAtHead(id: yieldVaultID)
     }
 
     /// Adds a yield vault to the pending queue for seeding by the Supervisor
@@ -92,12 +126,13 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         }
     }
 
-    /// Unregister a YieldVault (idempotent) - removes from registry, capabilities, and pending queue
+    /// Unregister a YieldVault (idempotent) - removes from registry, capabilities, pending queue, and linked list
     access(account) fun unregister(yieldVaultID: UInt64) {
-        self.yieldVaultRegistry.remove(key: yieldVaultID)
-        self.handlerCaps.remove(key: yieldVaultID)
-        self.scheduleCaps.remove(key: yieldVaultID)
+        let _r = self.yieldVaultRegistry.remove(key: yieldVaultID)
+        let _h = self.handlerCaps.remove(key: yieldVaultID)
+        let _s = self.scheduleCaps.remove(key: yieldVaultID)
         let pending = self.pendingQueue.remove(key: yieldVaultID)
+        let _ = self._list().remove(id: yieldVaultID)
         emit YieldVaultUnregistered(yieldVaultID: yieldVaultID, wasInPendingQueue: pending != nil)
     }
 
@@ -109,7 +144,7 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
             .load<Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>>(
                 from: storedCapPath
             )
-        self.account.storage.save(cap,to: storedCapPath)
+        self.account.storage.save(cap, to: storedCapPath)
     }
 
     /* --- VIEW FUNCTIONS --- */
@@ -139,7 +174,7 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
 
     /// Get schedule capability for a YieldVault - account restricted for Supervisor use
     /// This allows calling scheduleNextRebalance() directly on the AutoBalancer
-    access(account) view fun getScheduleCap(yieldVaultID: UInt64): Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>? {
+    access(account) view fun getScheduleCap(yieldVaultID: UInt64): Capability<auth(AutoBalancers.Schedule) &AutoBalancers.AutoBalancer>? {
         return self.scheduleCaps[yieldVaultID]
     }
 
@@ -155,26 +190,35 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
 
     /// Get paginated pending yield vault IDs
     /// @param page: The page number (0-indexed)
-    /// @param size: The page size (defaults to MAX_BATCH_SIZE if nil)
-    access(all) view fun getPendingYieldVaultIDsPaginated(page: Int, size: Int?): [UInt64] {
-        let pageSize = size ?? self.MAX_BATCH_SIZE
+    /// @param size: The page size (defaults to MAX_BATCH_SIZE if 0)
+    access(all) view fun getPendingYieldVaultIDsPaginated(page: Int, size: UInt): [UInt64] {
+        let pageSize = size == 0 ? self.MAX_BATCH_SIZE : Int(size)
         let allPending = self.pendingQueue.keys
         let startIndex = page * pageSize
-        
+
         if startIndex >= allPending.length {
             return []
         }
-        
-        let endIndex = startIndex + pageSize > allPending.length 
-            ? allPending.length 
+
+        let endIndex = startIndex + pageSize > allPending.length
+            ? allPending.length
             : startIndex + pageSize
-            
+
         return allPending.slice(from: startIndex, upTo: endIndex)
     }
 
     /// Returns the total number of yield vaults in the pending queue
     access(all) view fun getPendingCount(): Int {
         return self.pendingQueue.length
+    }
+
+    /// Returns up to `limit` vault IDs starting from the tail (least recently executed).
+    /// Supervisor should only scan these for stuck detection instead of all registered vaults.
+    /// @param limit: Maximum number of IDs to return (caller typically passes MAX_BATCH_SIZE)
+    access(all) fun getStuckScanCandidates(limit: UInt): [UInt64] {
+        return self.account.storage
+            .borrow<&UInt64LinkedList.List>(from: self.executionListStoragePath)!
+            .tailWalk(limit: limit)
     }
 
     /// Get global Supervisor capability, if set
@@ -189,11 +233,11 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
 
     init() {
         self.MAX_BATCH_SIZE = 5  // Process up to 5 yield vaults per Supervisor run
+        self.executionListStoragePath = /storage/FlowYieldVaultsExecutionList
         self.yieldVaultRegistry = {}
         self.handlerCaps = {}
         self.scheduleCaps = {}
         self.pendingQueue = {}
+        self.account.storage.save(<- UInt64LinkedList.createList(), to: self.executionListStoragePath)
     }
 }
-
-
