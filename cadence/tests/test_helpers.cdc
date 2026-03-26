@@ -232,10 +232,12 @@ access(all) fun deployContracts() {
 
     // FlowYieldVaults contracts
     // Deployment order matters due to imports:
-    // 1. AutoBalancer (no FlowYieldVaults dependencies)
-    // 2. FlowYieldVaultsSchedulerRegistryV1 (imports AutoBalancer)
-    // 3. FlowYieldVaultsAutoBalancersV1 (imports AutoBalancer, FlowYieldVaultsSchedulerRegistryV1)
-    // 4. FlowYieldVaultsSchedulerV1 (imports FlowYieldVaultsSchedulerRegistryV1 AND FlowYieldVaultsAutoBalancersV1)
+    // 1. AutoBalancers (no FlowYieldVaults dependencies)
+    // 2. FlowYieldVaultsSchedulerRegistryV1 (imports AutoBalancers)
+    // 3. FlowYieldVaultsAutoBalancersV1 (imports AutoBalancers, FlowYieldVaultsSchedulerRegistryV1)
+    // 4. FlowYieldVaultsSchedulerRegistry (imports DeFiActions, FlowTransactionScheduler)
+    // 5. FlowYieldVaultsAutoBalancers (imports AutoBalancers, FlowYieldVaultsSchedulerRegistry)
+    // 6. FlowYieldVaultsSchedulerV1 (imports FlowYieldVaultsSchedulerRegistryV1 AND FlowYieldVaultsAutoBalancersV1)
     err = Test.deployContract(
         name: "AutoBalancers",
         path: "../contracts/AutoBalancers.cdc",
@@ -251,6 +253,18 @@ access(all) fun deployContracts() {
     err = Test.deployContract(
         name: "FlowYieldVaultsAutoBalancersV1",
         path: "../contracts/FlowYieldVaultsAutoBalancersV1.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "FlowYieldVaultsSchedulerRegistry",
+        path: "../contracts/FlowYieldVaultsSchedulerRegistry.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "FlowYieldVaultsAutoBalancers",
+        path: "../contracts/FlowYieldVaultsAutoBalancers.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
