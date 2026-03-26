@@ -397,8 +397,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 assert(extraCollateral.balance > 0.0,
                     message: "Pre-supplement: no collateral available to cover shortfall of \(shortfall) MOET")
                 let extraMOET <- collateralToMoetSwapper.swap(quote: quote, inVault: <-extraCollateral)
-                assert(extraMOET.balance > 0.0,
-                    message: "Pre-supplement: collateral→MOET swap produced zero output")
+                assert(extraMOET.balance >= shortfall,
+                    message: "Pre-supplement: collateral→MOET swap produced less than shortfall: got \(extraMOET.balance), need \(shortfall)")
                 self.position.deposit(from: <-extraMOET)
             }
 
@@ -871,8 +871,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 assert(extraCollateral.balance > 0.0,
                     message: "Pre-supplement: no collateral available to cover shortfall of \(shortfall) FLOW")
                 let extraFlow <- flowToCollateral.swapBack(quote: quote, residual: <-extraCollateral)
-                assert(extraFlow.balance > 0.0,
-                    message: "Pre-supplement: collateral→FLOW swap produced zero output")
+                assert(extraFlow.balance >= shortfall,
+                    message: "Pre-supplement: collateral→FLOW swap produced less than shortfall: got \(extraFlow.balance), need \(shortfall)")
                 self.position.deposit(from: <-extraFlow)
             }
 
