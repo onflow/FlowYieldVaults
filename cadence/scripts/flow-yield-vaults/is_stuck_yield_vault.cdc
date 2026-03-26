@@ -1,4 +1,4 @@
-import "FlowYieldVaultsAutoBalancers"
+import "FlowYieldVaultsAutoBalancersV1"
 
 /// Returns true if the yield vault is stuck (overdue with no active schedule).
 /// A yield vault is considered stuck if:
@@ -12,6 +12,6 @@ import "FlowYieldVaultsAutoBalancers"
 /// @return Bool: true if yield vault is stuck, false otherwise
 ///
 access(all) fun main(yieldVaultID: UInt64): Bool {
-    return FlowYieldVaultsAutoBalancers.isStuckYieldVault(id: yieldVaultID)
+    return FlowYieldVaultsAutoBalancersV1.isStuckYieldVault(id: yieldVaultID)
 }
 

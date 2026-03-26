@@ -9,7 +9,7 @@ import "YieldToken"
 import "MockStrategies"
 import "FlowYieldVaultsSchedulerV1"
 import "FlowTransactionScheduler"
-import "FlowYieldVaultsSchedulerRegistry"
+import "FlowYieldVaultsSchedulerRegistryV1"
 import "DeFiActions"
 import "AutoBalancers"
 
@@ -136,7 +136,7 @@ fun testNativeScheduledRebalancing() {
     Test.expect(regIDsRes, Test.beSucceeded())
     let regIDs = regIDsRes.returnValue! as! [UInt64]
     Test.assert(regIDs.contains(yieldVaultID), message: "YieldVault should be in registry")
-    log("YieldVault is registered in FlowYieldVaultsSchedulerRegistry")
+    log("YieldVault is registered in FlowYieldVaultsSchedulerRegistryV1")
     
     // Step 3: Get initial AutoBalancer balance
     let initialBalance = getAutoBalancerBalance(id: yieldVaultID)

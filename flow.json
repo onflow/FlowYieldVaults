@@ -176,7 +176,18 @@
 			}
 		},
 		"FlowYieldVaultsAutoBalancers": {
-			"source": "cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
+			"source": "cadence/contracts/FlowYieldVaultsAutoBalancersV1.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
+				"mainnet-fork": "b1d63873c3cc9f79",
+				"testing": "0000000000000009",
+				"testnet": "d2580caf2ef07c2f",
+				"testnet-fork": "d2580caf2ef07c2f"
+			}
+		},
+		"FlowYieldVaultsAutoBalancersV1": {
+			"source": "cadence/contracts/FlowYieldVaultsAutoBalancersV1.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -209,6 +220,17 @@
 		},
 		"FlowYieldVaultsSchedulerRegistry": {
 			"source": "cadence/contracts/FlowYieldVaultsSchedulerRegistry.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
+				"mainnet-fork": "b1d63873c3cc9f79",
+				"testing": "0000000000000009",
+				"testnet": "d2580caf2ef07c2f",
+				"testnet-fork": "d2580caf2ef07c2f"
+			}
+		},
+		"FlowYieldVaultsSchedulerRegistryV1": {
+			"source": "cadence/contracts/FlowYieldVaultsSchedulerRegistryV1.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -1117,7 +1139,9 @@
 				"UInt64LinkedList",
 				"AutoBalancers",
 				"FlowYieldVaultsSchedulerRegistry",
+				"FlowYieldVaultsSchedulerRegistryV1",
 				"FlowYieldVaultsAutoBalancers",
+				"FlowYieldVaultsAutoBalancersV1",
 				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
@@ -1190,7 +1214,9 @@
 				"UInt64LinkedList",
 				"AutoBalancers",
 				"FlowYieldVaultsSchedulerRegistry",
+				"FlowYieldVaultsSchedulerRegistryV1",
 				"FlowYieldVaultsAutoBalancers",
+				"FlowYieldVaultsAutoBalancersV1",
 				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
@@ -1245,7 +1271,9 @@
 				"UInt64LinkedList",
 				"AutoBalancers",
 				"FlowYieldVaultsSchedulerRegistry",
+				"FlowYieldVaultsSchedulerRegistryV1",
 				"FlowYieldVaultsAutoBalancers",
+				"FlowYieldVaultsAutoBalancersV1",
 				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
@@ -1310,7 +1338,9 @@
 				"UInt64LinkedList",
 				"AutoBalancers",
 				"FlowYieldVaultsSchedulerRegistry",
+				"FlowYieldVaultsSchedulerRegistryV1",
 				"FlowYieldVaultsAutoBalancers",
+				"FlowYieldVaultsAutoBalancersV1",
 				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
@@ -1373,7 +1403,9 @@
 				"MockSwapper",
 				"AutoBalancers",
 				"FlowYieldVaultsSchedulerRegistry",
+				"FlowYieldVaultsSchedulerRegistryV1",
 				"FlowYieldVaultsAutoBalancers",
+				"FlowYieldVaultsAutoBalancersV1",
 				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",

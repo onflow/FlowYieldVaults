@@ -16,7 +16,7 @@ import "ERC4626Utils"
 import "FlowALPv0"
 // FlowYieldVaults platform
 import "FlowYieldVaults"
-import "FlowYieldVaultsAutoBalancers"
+import "FlowYieldVaultsAutoBalancersV1"
 // scheduler
 import "FlowTransactionScheduler"
 // tokens
@@ -190,7 +190,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
 
             // Step 4: Create external yield token source from AutoBalancer
-            let yieldTokenSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
+            let yieldTokenSource = FlowYieldVaultsAutoBalancersV1.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
             // Step 5: Retrieve yield→MOET swapper from contract config
@@ -244,7 +244,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
-            FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
+            FlowYieldVaultsAutoBalancersV1._cleanupAutoBalancer(id: self.id()!)
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
             return DeFiActions.ComponentInfo(
@@ -699,9 +699,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             recurringConfig: AutoBalancers.AutoBalancerRecurringConfig?,
             uniqueID: DeFiActions.UniqueIdentifier
         ): FlowYieldVaultsStrategiesV2.AutoBalancerIO {
-            // NOTE: This stores the AutoBalancer in FlowYieldVaultsAutoBalancers storage and returns an authorized ref.
+            // NOTE: This stores the AutoBalancer in FlowYieldVaultsAutoBalancersV1 storage and returns an authorized ref.
             let autoBalancerRef =
-                FlowYieldVaultsAutoBalancers._initNewAutoBalancer(
+                FlowYieldVaultsAutoBalancersV1._initNewAutoBalancer(
                     oracle: oracle,
                     vaultType: yieldTokenType,
                     lowerThreshold: 0.95,

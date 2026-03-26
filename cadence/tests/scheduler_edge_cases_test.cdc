@@ -8,7 +8,7 @@ import "MOET"
 import "YieldToken"
 import "MockStrategies"
 import "FlowYieldVaultsSchedulerV1"
-import "FlowYieldVaultsSchedulerRegistry"
+import "FlowYieldVaultsSchedulerRegistryV1"
 import "FlowTransactionScheduler"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
