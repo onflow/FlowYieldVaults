@@ -49,6 +49,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     ///   "closedPositions"            → {UInt64: Bool}
     ///   "syWFLOWvDebtTokenTypes"     → {UInt64: Type}
     ///   "moreERC4626Configs"         → {Type: {Type: {Type: MoreERC4626CollateralConfig}}}
+    
+    // @deprecated - should be used only for working with legacy positions
     ///   "moetPreswapConfigs"         → {Type: {Type: MoetPreswapConfig}}
     ///   "originalCollateralTypes"    → {UInt64: Type}
     access(contract) let config: {String: AnyStruct}
@@ -1763,68 +1765,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     source: balancerIO.source,
                     uniqueID: uniqueID
                 )
-
-                // --- Stablecoin pre-swap path (e.g. PYUSD0 → MOET) ---
-                if let preswapCfg = FlowYieldVaultsStrategiesV2._getMoetPreswapConfig(
-                    composer: Type<@MoreERC4626StrategyComposer>(),
-                    collateral: collateralType
-                ) {
-                    let preSwapper = UniswapV3SwapConnectors.Swapper(
-                        factoryAddress: FlowYieldVaultsStrategiesV2.univ3FactoryEVMAddress,
-                        routerAddress: FlowYieldVaultsStrategiesV2.univ3RouterEVMAddress,
-                        quoterAddress: FlowYieldVaultsStrategiesV2.univ3QuoterEVMAddress,
-                        tokenPath: preswapCfg.collateralToMoetAddressPath,
-                        feePath: preswapCfg.collateralToMoetFeePath,
-                        inVault: collateralType,
-                        outVault: tokens.moetTokenType,
-                        coaCapability: FlowYieldVaultsStrategiesV2._getCOACapability(),
-                        uniqueID: uniqueID
-                    )
-                    let preSwapQuote = preSwapper.quoteOut(forProvided: withFunds.balance, reverse: false)
-                    assert(preSwapQuote.outAmount > 0.0, message: "Pre-swap: collateral→MOET quote returned zero — check pool liquidity or path config")
-                    let moetFunds <- preSwapper.swap(quote: preSwapQuote, inVault: <-withFunds)
-                    assert(moetFunds.balance > 0.0, message: "Pre-swap: collateral→MOET swap produced zero MOET output")
-
-                    // Open FlowALP position with MOET as collateral
-                    let positionPreswap <- FlowYieldVaultsStrategiesV2._openCreditPosition(
-                        funds: <-moetFunds,
-                        issuanceSink: abaSwapSinkFlow,
-                        repaymentSource: abaSwapSourceFlow
-                    )
-
-                    // AutoBalancer debt management: same as WBTC/WETH (manages FLOW borrow/repay)
-                    let positionDebtSinkPre = positionPreswap.createSinkWithOptions(
-                        type: flowDebtTokenType,
-                        pushToDrawDownSink: false
-                    )
-                    let positionDebtSwapSinkPre = SwapConnectors.SwapSink(
-                        swapper: syWFLOWvToFlow,
-                        sink: positionDebtSinkPre,
-                        uniqueID: uniqueID
-                    )
-                    let positionDebtSourcePre = positionPreswap.createSourceWithOptions(
-                        type: flowDebtTokenType,
-                        pullFromTopUpSource: false
-                    )
-                    let positionDebtSwapSourcePre = SwapConnectors.SwapSource(
-                        swapper: flowToSyWFLOWv,
-                        source: positionDebtSourcePre,
-                        uniqueID: uniqueID
-                    )
-                    balancerIO.autoBalancer.setSink(positionDebtSwapSinkPre, updateSinkID: true)
-                    balancerIO.autoBalancer.setSource(positionDebtSwapSourcePre, updateSourceID: true)
-
-                    FlowYieldVaultsStrategiesV2._setSyWFLOWvDebtTokenType(uniqueID.id, flowDebtTokenType)
-                    FlowYieldVaultsStrategiesV2._setOriginalCollateralType(uniqueID.id, collateralType)
-
-                    return <-create syWFLOWvStrategy(
-                        id: uniqueID,
-                        collateralType: tokens.moetTokenType,
-                        position: <-positionPreswap
-                    )
-                }
-
-                // --- Standard path (WBTC, WETH — directly supported by FlowALP) ---
 
                 // Open FlowALP position with collateral; drawDownSink accepts FLOW
                 let positionFlow <- FlowYieldVaultsStrategiesV2._openCreditPosition(

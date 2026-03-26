@@ -347,27 +347,6 @@ access(all) fun setup() {
     )
     Test.expect(result, Test.beSucceeded())
 
-    // Seed the PYUSD0/MOET pool with MOET so the PYUSD0→MOET pre-swap has liquidity.
-    //
-    // Background: the mainnet PYUSD0/MOET pool at fee 100 accumulates PYUSD0 over time because
-    // strategies sell MOET→PYUSD0. Before testing PYUSD0→MOET pre-swap we restore MOET reserves
-    // by swapping MOET→PYUSD0. The wbtcUser now has MOET from the auto-borrowed reserve position.
-    log("Seeding PYUSD0/MOET pool: swapping 50 MOET → PYUSD0 via UniV3 fee 100...")
-    result = _executeTransactionFile(
-        "transactions/seed_pool_moet_to_pyusd0.cdc",
-        [
-            "0xca6d7Bb03334bBf135902e1d919a5feccb461632",  // UniV3 factory
-            "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",  // UniV3 router
-            "0x370A8DF17742867a44e56223EC20D82092242C85",  // UniV3 quoter
-            moetEVMAddress,
-            pyusd0EVMAddress,
-            100 as UInt32,
-            50.0 as UFix64
-        ],
-        [wbtcUser]
-    )
-    Test.expect(result, Test.beSucceeded())
-
     // Provision WETH: bridge ~2 WETH from the COA (EVM) to Cadence storage.
     // The COA at 0x000000000000000000000002b87c966bc00bc2c4 holds ~12 WETH on mainnet.
     log("Bridging 2 WETH from COA to Cadence for WBTC/WETH user...")
@@ -421,9 +400,9 @@ access(all) fun testCreateSyWFLOWvYieldVault_PYUSD0() {
     Test.assert(balance != nil && balance! > 0.0, message: "Expected positive balance after create (PYUSD0)")
     log("PYUSD0 vault balance after create: ".concat(balance!.toString()))
 
-    // Verify the PYUSD0→MOET pre-swap happened by checking FlowALPv0.Deposited events:
-    //   - There must be a Deposited event with vaultType = MOET (pre-swapped collateral)
-    //   - There must be NO Deposited event with vaultType = PYUSD0 (should never reach FlowALP)
+    // Verify the PYUSD0→MOET pre-swap DID NOT happen by checking FlowALPv0.Deposited events:
+    //   - There must be NO Deposited event with vaultType = MOET (pre-swapped collateral)
+    //   - There must be a Deposited event with vaultType = PYUSD0 (should never reach FlowALP)
     let depositedEvents = Test.eventsOfType(Type<FlowALPv0.Deposited>())
     log("FlowALPv0.Deposited events: ".concat(depositedEvents.length.toString()))
 
@@ -440,11 +419,11 @@ access(all) fun testCreateSyWFLOWvYieldVault_PYUSD0() {
             foundPyusd0Deposit = true
         }
     }
-    Test.assert(foundMoetDeposit,
-        message: "Expected FlowALPv0.Deposited event with MOET — pre-swap did not deposit MOET into FlowALP")
-    Test.assert(!foundPyusd0Deposit,
-        message: "Unexpected FlowALPv0.Deposited event with PYUSD0 — pre-swap was bypassed")
-    log("Confirmed: FlowALP received MOET as collateral (PYUSD0 was pre-swapped before FlowALP deposit)")
+    Test.assert(!foundMoetDeposit,
+        message: "Unxpected FlowALPv0.Deposited event with MOET — pre-swap did not deposit PYUSD0 into FlowALP")
+    Test.assert(foundPyusd0Deposit,
+        message: "Expected FlowALPv0.Deposited event with PYUSD0 — pre-swap was bypassed")
+    log("Confirmed: FlowALP received PYUSD0 as collateral (MOET was NOT pre-swapped before FlowALP deposit)")
 }
 
 access(all) fun testDepositToSyWFLOWvYieldVault_PYUSD0() {
