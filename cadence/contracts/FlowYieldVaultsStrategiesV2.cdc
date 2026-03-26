@@ -390,10 +390,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     uniqueID: self.uniqueID!
                 )
                 let shortfall = totalDebtAmount - expectedMOET
-                // Over-deposit by 1% so the remaining debt lands below expectedMOET, giving
-                // BufferedSwapSource enough margin to cover ERC4626 floor-rounding at redemption
-                let buffered = shortfall + shortfall / 100.0
-                let quote = collateralToMoetSwapper.quoteIn(forDesired: buffered, reverse: false)
+                let quote = collateralToMoetSwapper.quoteIn(forDesired: shortfall, reverse: false)
                 assert(quote.inAmount > 0.0,
                     message: "Pre-supplement: collateral→MOET quote returned zero input for non-zero shortfall — swapper misconfigured")
                 let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
@@ -867,10 +864,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             let expectedFlow = flowSource.minimumAvailable()
             if expectedFlow < totalDebtAmount {
                 let shortfall = totalDebtAmount - expectedFlow
-                // Over-deposit by 1% so the remaining debt lands below expectedFlow, giving
-                // BufferedSwapSource enough margin to cover ERC4626 floor-rounding at redemption
-                let buffered = shortfall + shortfall / 100.0
-                let quote = flowToCollateral.quoteIn(forDesired: buffered, reverse: true)
+                let quote = flowToCollateral.quoteIn(forDesired: shortfall, reverse: true)
                 assert(quote.inAmount > 0.0,
                     message: "Pre-supplement: collateral→FLOW quote returned zero input for non-zero shortfall — swapper misconfigured")
                 let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
@@ -1111,8 +1105,29 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
     }
 
+    // @deprecated
     /// Returned bundle for stored AutoBalancer interactions (reference + caps)
     access(all) struct AutoBalancerIO {
+        access(all) let autoBalancer:
+            auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw)
+            &DeFiActions.AutoBalancer
+
+        access(all) let sink: {DeFiActions.Sink}
+        access(all) let source: {DeFiActions.Source}
+
+        init(
+            autoBalancer: auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw) &DeFiActions.AutoBalancer,
+            sink: {DeFiActions.Sink},
+            source: {DeFiActions.Source}
+        ) {
+            self.sink = sink
+            self.source = source
+            self.autoBalancer = autoBalancer
+        }
+    }
+
+    /// Returned bundle for stored AutoBalancer interactions (reference + caps)
+    access(all) struct AutoBalancerIO_v2 {
         access(all) let autoBalancer:
             auth(AutoBalancers.Auto, AutoBalancers.Set, AutoBalancers.Get, AutoBalancers.Schedule, FungibleToken.Withdraw)
             &AutoBalancers.AutoBalancer
@@ -1187,7 +1202,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         yieldTokenType: Type,
         recurringConfig: AutoBalancers.AutoBalancerRecurringConfig?,
         uniqueID: DeFiActions.UniqueIdentifier
-    ): FlowYieldVaultsStrategiesV2.AutoBalancerIO {
+    ): FlowYieldVaultsStrategiesV2.AutoBalancerIO_v2 {
         let autoBalancerRef =
             FlowYieldVaultsAutoBalancersV1._initNewAutoBalancer(
                 oracle: oracle,
@@ -1205,7 +1220,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         let source = autoBalancerRef.createBalancerSource()
             ?? panic("Could not retrieve Source from AutoBalancer with id \(uniqueID.id)")
 
-        return FlowYieldVaultsStrategiesV2.AutoBalancerIO(
+        return FlowYieldVaultsStrategiesV2.AutoBalancerIO_v2(
             autoBalancer: autoBalancerRef,
             sink: sink,
             source: source

@@ -209,18 +209,18 @@ access(all) fun setup() {
     )
     Test.expect(err, Test.beNil())
 
-    log("Deploying FlowYieldVaultsSchedulerRegistry...")
+    log("Deploying FlowYieldVaultsSchedulerRegistryV1...")
     err = Test.deployContract(
-        name: "FlowYieldVaultsSchedulerRegistry",
-        path: "../../cadence/contracts/FlowYieldVaultsSchedulerRegistry.cdc",
+        name: "FlowYieldVaultsSchedulerRegistryV1",
+        path: "../../cadence/contracts/FlowYieldVaultsSchedulerRegistryV1.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
-    log("Deploying FlowYieldVaultsAutoBalancers...")
+    log("Deploying FlowYieldVaultsAutoBalancersV1...")
     err = Test.deployContract(
-        name: "FlowYieldVaultsAutoBalancers",
-        path: "../../cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
+        name: "FlowYieldVaultsAutoBalancersV1",
+        path: "../../cadence/contracts/FlowYieldVaultsAutoBalancersV1.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
