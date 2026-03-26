@@ -25,6 +25,30 @@ import "EVMAmountUtils"
 /// Token USD prices are supplied by the caller only so the script can size quotes using
 /// a fixed USD notional across very different assets. The script does not compare against
 /// any external oracle or fair-value reference.
+///
+/// Field meanings:
+/// - `pool`: caller-supplied human-readable pool label
+/// - `poolAddress`: resolved Flow EVM pool address, or zero address when the pool does not exist
+/// - `tokenA` / `tokenB`: caller-supplied token labels matching the quoted pair orientation
+/// - `poolLookupSucceeded`: whether `factory.getPool(...)` returned successfully
+/// - `poolExists`: whether the factory resolved a non-zero pool address
+/// - `liquidityCallSucceeded`: whether `pool.liquidity()` returned successfully
+/// - `hasInRangeLiquidity`: whether the pool currently reports non-zero in-range V3 liquidity
+/// - `hasTokenMetadata`: whether both token `decimals()` calls succeeded
+/// - `probeTradeUsd`: small baseline notional used to approximate near-current execution
+/// - `canonicalTradeUsd`: meaningful notional used for the health check itself
+/// - `maxImpactBps`: maximum allowed execution deterioration between probe and canonical quotes
+/// - `probeSellPriceBPerA`: executable sell price for `tokenA -> tokenB` at probe size, expressed as `tokenB per tokenA`
+/// - `canonicalSellPriceBPerA`: executable sell price for `tokenA -> tokenB` at canonical size, expressed as `tokenB per tokenA`
+/// - `hasSellQuote`: whether both sell-side quotes succeeded
+/// - `sellImpactBps`: deterioration from probe sell price to canonical sell price, in basis points
+/// - `sellWithinImpactLimit`: whether sell-side impact is within `maxImpactBps`
+/// - `probeBuyPriceBPerA`: executable buy price derived from `tokenB -> tokenA` at probe size, normalized to `tokenB per tokenA`
+/// - `canonicalBuyPriceBPerA`: executable buy price derived from `tokenB -> tokenA` at canonical size, normalized to `tokenB per tokenA`
+/// - `hasBuyQuote`: whether both buy-side quotes succeeded
+/// - `buyImpactBps`: deterioration from probe buy price to canonical buy price, in basis points
+/// - `buyWithinImpactLimit`: whether buy-side impact is within `maxImpactBps`
+/// - `healthyForExecution`: final execution-health flag for this pool at the requested size
 access(all) struct PoolHealth {
     access(all) let pool:                   String
     access(all) let poolAddress:            String
@@ -218,6 +242,22 @@ access(all) fun main(
         return decoded[0] as! UInt256
     }
 
+    fun decodeAddressSafe(data: [UInt8]): EVM.EVMAddress? {
+        let decoded = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: data)
+        if decoded.length == 0 {
+            return nil
+        }
+        return decoded[0] as! EVM.EVMAddress
+    }
+
+    fun decodeUInt256Safe(data: [UInt8]): UInt256? {
+        let decoded = EVM.decodeABI(types: [Type<UInt256>()], data: data)
+        if decoded.length == 0 {
+            return nil
+        }
+        return decoded[0] as! UInt256
+    }
+
     fun getTokenDecimalsSafe(evmContractAddress: EVM.EVMAddress): UInt8? {
         let res = dryCall(evmContractAddress, EVM.encodeABIWithSignature("decimals()", []))
         if res.status != EVM.Status.successful {
@@ -289,7 +329,23 @@ access(all) fun main(
             continue
         }
 
-        let poolAddr = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: poolRes.data)[0] as! EVM.EVMAddress
+        let poolAddrOpt = decodeAddressSafe(data: poolRes.data)
+        if poolAddrOpt == nil {
+            results.append(
+                emptyResult(
+                    at: i,
+                    poolAddress: "",
+                    poolLookupSucceeded: false,
+                    poolExists: false,
+                    liquidityCallSucceeded: false,
+                    hasInRangeLiquidity: false,
+                    hasTokenMetadata: false
+                )
+            )
+            i = i + 1
+            continue
+        }
+        let poolAddr = poolAddrOpt!
         let poolAddress = poolAddr.toString()
         let poolExists = poolAddress != "0000000000000000000000000000000000000000"
         if !poolExists {
@@ -313,9 +369,10 @@ access(all) fun main(
         var liquidityCallSucceeded = false
         let liqRes = dryCall(poolAddr, EVM.encodeABIWithSignature("liquidity()", []))
         if liqRes.status == EVM.Status.successful {
-            liquidityCallSucceeded = true
-            let liq = EVM.decodeABI(types: [Type<UInt256>()], data: liqRes.data)[0] as! UInt256
-            hasInRangeLiquidity = liq > 0
+            if let liq = decodeUInt256Safe(data: liqRes.data) {
+                liquidityCallSucceeded = true
+                hasInRangeLiquidity = liq > 0
+            }
         }
 
         let tokenADecimalsOpt = getTokenDecimalsSafe(evmContractAddress: tokenA)
