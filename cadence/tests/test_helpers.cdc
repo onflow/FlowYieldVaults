@@ -348,7 +348,6 @@ access(self) fun _deploy(config: DeploymentConfig) {
         )
         Test.expect(err, Test.beNil())
     }
-
     err = Test.deployContract(
         name: "FlowYieldVaultsClosedBeta",
         path: "../contracts/FlowYieldVaultsClosedBeta.cdc",
