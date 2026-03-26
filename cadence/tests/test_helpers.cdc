@@ -354,12 +354,18 @@ access(self) fun _deploy(config: DeploymentConfig) {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowYieldVaults",
-        path: "../contracts/FlowYieldVaults.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
+
+    // Cannot be deployed due to breaking changes to
+    // the mainnet contracts.  Remove the comment once
+    // the mainnet contracts are updated.
+    if !config.skipBreakingChanges {
+        err = Test.deployContract(
+            name: "FlowYieldVaults",
+            path: "../contracts/FlowYieldVaults.cdc",
+            arguments: []
+        )
+        Test.expect(err, Test.beNil())
+    }
     err = Test.deployContract(
         name: "EVMAbiHelpers",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/EVMAbiHelpers.cdc",
