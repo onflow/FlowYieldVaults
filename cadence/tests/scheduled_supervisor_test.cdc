@@ -11,7 +11,7 @@ import "FlowYieldVaultsSchedulerV1"
 import "FlowTransactionScheduler"
 import "DeFiActions"
 import "AutoBalancers"
-import "FlowYieldVaultsSchedulerRegistry"
+import "FlowYieldVaultsSchedulerRegistryV1"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
@@ -284,7 +284,7 @@ fun testPaginationStress() {
         Test.reset(to: snapshot)
     }
     // Calculate number of yield vaults: 3 * MAX_BATCH_SIZE + partial batch
-    // MAX_BATCH_SIZE is 5 in FlowYieldVaultsSchedulerRegistry
+    // MAX_BATCH_SIZE is 5 in FlowYieldVaultsSchedulerRegistryV1
     let maxBatchSize = 5
     let fullBatches = 3
     let partialBatch = 3  // Less than MAX_BATCH_SIZE
@@ -443,7 +443,7 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
     Test.expect(regIDsRes, Test.beSucceeded())
     let regIDs = regIDsRes.returnValue! as! [UInt64]
     Test.assert(regIDs.contains(yieldVaultID), message: "YieldVault should be in registry")
-    log("YieldVault is registered in FlowYieldVaultsSchedulerRegistry")
+    log("YieldVault is registered in FlowYieldVaultsSchedulerRegistryV1")
 
     // 3. Wait for some native executions
     log("Step 3: Waiting for native execution...")
@@ -948,7 +948,7 @@ fun testInsufficientFundsAndRecovery() {
 // access(all)
 // fun testSupervisorHandlesManyStuckVaults() {
 //     let n = 200
-//     let maxBatchSize = FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE
+//     let maxBatchSize = FlowYieldVaultsSchedulerRegistryV1.MAX_BATCH_SIZE
 //
 //     if snapshot != getCurrentBlockHeight() {
 //         Test.reset(to: snapshot)

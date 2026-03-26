@@ -1,7 +1,7 @@
-import "FlowYieldVaultsSchedulerRegistry"
+import "FlowYieldVaultsSchedulerRegistryV1"
 
 /// Returns the number of yield vaults in the pending queue awaiting seeding
 access(all) fun main(): Int {
-    return FlowYieldVaultsSchedulerRegistry.getPendingCount()
+    return FlowYieldVaultsSchedulerRegistryV1.getPendingCount()
 }
 

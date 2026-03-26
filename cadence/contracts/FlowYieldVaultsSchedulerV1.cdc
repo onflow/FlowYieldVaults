@@ -4,9 +4,9 @@ import "FlowToken"
 // Flow system contracts
 import "FlowTransactionScheduler"
 // Registry storage (separate contract)
-import "FlowYieldVaultsSchedulerRegistry"
+import "FlowYieldVaultsSchedulerRegistryV1"
 // AutoBalancer management (for detecting stuck yield vaults)
-import "FlowYieldVaultsAutoBalancers"
+import "FlowYieldVaultsAutoBalancersV1"
 
 /// FlowYieldVaultsScheduler
 ///
@@ -15,7 +15,7 @@ import "FlowYieldVaultsAutoBalancers"
 /// Architecture:
 /// - AutoBalancers are configured with recurringConfig at creation in FlowYieldVaultsStrategies
 /// - AutoBalancers self-schedule subsequent executions via their native mechanism
-/// - FlowYieldVaultsAutoBalancers handles registration with the registry and starts scheduling
+/// - FlowYieldVaultsAutoBalancersV1 handles registration with the registry and starts scheduling
 /// - The Supervisor is a recovery mechanism for AutoBalancers that fail to self-schedule
 ///
 /// Key Features:
@@ -184,21 +184,21 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
 
             // STEP 1: State-based detection - scan for stuck yield vaults
             if scanForStuck {
-                let candidates = FlowYieldVaultsSchedulerRegistry.getStuckScanCandidates(limit: UInt(FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE))
+                let candidates = FlowYieldVaultsSchedulerRegistryV1.getStuckScanCandidates(limit: UInt(FlowYieldVaultsSchedulerRegistryV1.MAX_BATCH_SIZE))
                 for yieldVaultID in candidates {
-                    if FlowYieldVaultsAutoBalancers.isStuckYieldVault(id: yieldVaultID) {
-                        FlowYieldVaultsSchedulerRegistry.enqueuePending(yieldVaultID: yieldVaultID)
+                    if FlowYieldVaultsAutoBalancersV1.isStuckYieldVault(id: yieldVaultID) {
+                        FlowYieldVaultsSchedulerRegistryV1.enqueuePending(yieldVaultID: yieldVaultID)
                         emit StuckYieldVaultDetected(yieldVaultID: yieldVaultID)
                     }
                 }
             }
 
             // STEP 2: Process pending yield vaults - recover them via Schedule capability
-            let pendingYieldVaults = FlowYieldVaultsSchedulerRegistry.getPendingYieldVaultIDsPaginated(page: 0, size: UInt(FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE))
+            let pendingYieldVaults = FlowYieldVaultsSchedulerRegistryV1.getPendingYieldVaultIDsPaginated(page: 0, size: UInt(FlowYieldVaultsSchedulerRegistryV1.MAX_BATCH_SIZE))
 
             for yieldVaultID in pendingYieldVaults {
                 // Get Schedule capability for this yield vault
-                let scheduleCap = FlowYieldVaultsSchedulerRegistry.getScheduleCap(yieldVaultID: yieldVaultID)
+                let scheduleCap = FlowYieldVaultsSchedulerRegistryV1.getScheduleCap(yieldVaultID: yieldVaultID)
                 if scheduleCap == nil || !scheduleCap!.check() {
                     emit YieldVaultRecoveryFailed(yieldVaultID: yieldVaultID, error: "Invalid Schedule capability")
                     continue
@@ -214,7 +214,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
                 }
 
                 // Successfully recovered - dequeue from pending
-                FlowYieldVaultsSchedulerRegistry.dequeuePending(yieldVaultID: yieldVaultID)
+                FlowYieldVaultsSchedulerRegistryV1.dequeuePending(yieldVaultID: yieldVaultID)
                 emit YieldVaultRecovered(yieldVaultID: yieldVaultID)
             }
 
@@ -255,7 +255,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
 
             let nextTimestamp = getCurrentBlock().timestamp + recurringInterval
 
-            let supervisorCap = FlowYieldVaultsSchedulerRegistry.getSupervisorCap()
+            let supervisorCap = FlowYieldVaultsSchedulerRegistryV1.getSupervisorCap()
             if supervisorCap == nil {
                 emit SupervisorRescheduleFailed(
                     timestamp: nextTimestamp,
@@ -398,7 +398,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
         }
 
         // Check if Supervisor capability is already registered
-        if FlowYieldVaultsSchedulerRegistry.getSupervisorCap() != nil {
+        if FlowYieldVaultsSchedulerRegistryV1.getSupervisorCap() != nil {
             return
         }
 
@@ -406,7 +406,7 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
         let cap = self.account.capabilities.storage.issue<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>(
             self.SupervisorStoragePath
         )
-        FlowYieldVaultsSchedulerRegistry.setSupervisorCap(cap: cap)
+        FlowYieldVaultsSchedulerRegistryV1.setSupervisorCap(cap: cap)
     }
 
     /* --- ACCOUNT FUNCTIONS --- */
@@ -423,10 +423,10 @@ access(all) contract FlowYieldVaultsSchedulerV1 {
     ///
     access(account) fun enqueuePendingYieldVault(yieldVaultID: UInt64) {
         assert(
-            FlowYieldVaultsSchedulerRegistry.isRegistered(yieldVaultID: yieldVaultID),
+            FlowYieldVaultsSchedulerRegistryV1.isRegistered(yieldVaultID: yieldVaultID),
             message: "enqueuePendingYieldVault: YieldVault #\(yieldVaultID.toString()) is not registered"
         )
-        FlowYieldVaultsSchedulerRegistry.enqueuePending(yieldVaultID: yieldVaultID)
+        FlowYieldVaultsSchedulerRegistryV1.enqueuePending(yieldVaultID: yieldVaultID)
     }
 
     init() {

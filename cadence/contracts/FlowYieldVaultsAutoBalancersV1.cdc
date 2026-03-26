@@ -3,11 +3,12 @@ import "Burner"
 import "FungibleToken"
 // DeFiActions
 import "DeFiActions"
+import "AutoBalancers"
 import "FlowTransactionScheduler"
 // Registry for global yield vault mapping
-import "FlowYieldVaultsSchedulerRegistry"
+import "FlowYieldVaultsSchedulerRegistryV1"
 
-/// FlowYieldVaultsAutoBalancers
+/// FlowYieldVaultsAutoBalancersV1
 ///
 /// This contract deals with the storage, retrieval and cleanup of DeFiActions AutoBalancers as they are used in
 /// FlowYieldVaults defined Strategies.
@@ -24,10 +25,20 @@ import "FlowYieldVaultsSchedulerRegistry"
 /// - The registry tracks all live yield vault IDs for global mapping
 /// - Cleanup unregisters from the registry
 ///
-access(all) contract FlowYieldVaultsAutoBalancers {
+access(all) contract FlowYieldVaultsAutoBalancersV1 {
 
     /// The path prefix used for StoragePath & PublicPath derivations
     access(all) let pathPrefix: String
+
+    /// Storage path for the shared execution callback resource that reports to the registry (one per account)
+    access(self) let registryReportCallbackStoragePath: StoragePath
+
+    /// Callback resource invoked by each AutoBalancer after execution; calls Registry.reportExecution with its id
+    access(all) resource RegistryReportCallback: AutoBalancers.AutoBalancerExecutionCallback {
+        access(all) fun onExecuted(balancerUUID: UInt64) {
+            FlowYieldVaultsSchedulerRegistryV1.reportExecution(yieldVaultID: balancerUUID)
+        }
+    }
 
     /* --- PUBLIC METHODS --- */
 
@@ -39,9 +50,9 @@ access(all) contract FlowYieldVaultsAutoBalancers {
 
     /// Returns an unauthorized reference to an AutoBalancer with the given UniqueIdentifier.id value. If none is
     /// configured, `nil` will be returned.
-    access(all) fun borrowAutoBalancer(id: UInt64): &DeFiActions.AutoBalancer? {
+    access(all) fun borrowAutoBalancer(id: UInt64): &AutoBalancers.AutoBalancer? {
         let publicPath = self.deriveAutoBalancerPath(id: id, storage: false) as! PublicPath
-        return self.account.capabilities.borrow<&DeFiActions.AutoBalancer>(publicPath)
+        return self.account.capabilities.borrow<&AutoBalancers.AutoBalancer>(publicPath)
     }
 
     /// Creates a source from an AutoBalancer for external use (e.g., position close operations).
@@ -52,7 +63,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
     ///
     access(account) fun createExternalSource(id: UInt64): {DeFiActions.Source}? {
         let storagePath = self.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
-        if let autoBalancer = self.account.storage.borrow<auth(DeFiActions.Get) &DeFiActions.AutoBalancer>(from: storagePath) {
+        if let autoBalancer = self.account.storage.borrow<auth(AutoBalancers.Get) &AutoBalancers.AutoBalancer>(from: storagePath) {
             return autoBalancer.createBalancerSource()
         }
         return nil
@@ -65,7 +76,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
     ///
     access(account) fun createExternalSink(id: UInt64): {DeFiActions.Sink}? {
         let storagePath = self.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
-        if let autoBalancer = self.account.storage.borrow<auth(DeFiActions.Get) &DeFiActions.AutoBalancer>(from: storagePath) {
+        if let autoBalancer = self.account.storage.borrow<auth(AutoBalancers.Get) &AutoBalancers.AutoBalancer>(from: storagePath) {
             return autoBalancer.createBalancerSink()
         }
         return nil
@@ -82,7 +93,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         if autoBalancer == nil {
             return false
         }
-        
+
         let txnIDs = autoBalancer!.getScheduledTransactionIDs()
         for txnID in txnIDs {
             if autoBalancer!.borrowScheduledTransaction(id: txnID)?.status() == FlowTransactionScheduler.Status.Scheduled {
@@ -106,24 +117,24 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         if autoBalancer == nil {
             return false
         }
-        
+
         // Check if yield vault has recurring config (should be executing periodically)
         let config = autoBalancer!.getRecurringConfig()
         if config == nil {
             return false // Not configured for recurring, can't be "stuck"
         }
-        
+
         // Check if there's an active schedule
         if self.hasActiveSchedule(id: id) {
             return false // Has active schedule, not stuck
         }
-        
+
         // Check if yield vault is overdue
         let nextExpected = autoBalancer!.calculateNextExecutionTimestampAsConfigured()
         if nextExpected == nil {
             return true // Can't calculate next time, likely stuck
         }
-        
+
         // If next expected time has passed and no active schedule, yield vault is stuck
         return nextExpected! < getCurrentBlock().timestamp
     }
@@ -149,9 +160,9 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         upperThreshold: UFix64,
         rebalanceSink: {DeFiActions.Sink}?,
         rebalanceSource: {DeFiActions.Source}?,
-        recurringConfig: DeFiActions.AutoBalancerRecurringConfig?,
+        recurringConfig: AutoBalancers.AutoBalancerRecurringConfig?,
         uniqueID: DeFiActions.UniqueIdentifier
-    ): auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw) &DeFiActions.AutoBalancer {
+    ): auth(AutoBalancers.Auto, AutoBalancers.Set, AutoBalancers.Get, AutoBalancers.Schedule, FungibleToken.Withdraw) &AutoBalancers.AutoBalancer {
 
         // derive paths & prevent collision
         let storagePath = self.deriveAutoBalancerPath(id: uniqueID.id, storage: true) as! StoragePath
@@ -163,8 +174,22 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         assert(!publishedCap,
             message: "Published Capability collision found when publishing AutoBalancer for UniqueIdentifier.id \(uniqueID.id) at path \(publicPath)")
 
+        let registryReportCallbackCapabilityStoragePath =
+            StoragePath(identifier: "FlowYieldVaultsRegistryReportCallbackCapability")!
+        if self.account.storage.type(at: registryReportCallbackCapabilityStoragePath) == nil {
+            let sharedReportCap = self.account.capabilities.storage.issue<&{AutoBalancers.AutoBalancerExecutionCallback}>(
+                self.registryReportCallbackStoragePath
+            )
+            self.account.storage.save(sharedReportCap, to: registryReportCallbackCapabilityStoragePath)
+        }
+        let reportCap = self.account.storage.copy<Capability<&{AutoBalancers.AutoBalancerExecutionCallback}>>(
+            from: registryReportCallbackCapabilityStoragePath
+        ) ?? panic(
+            "Missing shared registry report callback capability at \(registryReportCallbackCapabilityStoragePath)"
+        )
+
         // create & save AutoBalancer with optional recurring config
-        let autoBalancer <- DeFiActions.createAutoBalancer(
+        let autoBalancer <- AutoBalancers.createAutoBalancer(
                 oracle: oracle,
                 vaultType: vaultType,
                 lowerThreshold: lowerThreshold,
@@ -174,21 +199,22 @@ access(all) contract FlowYieldVaultsAutoBalancers {
                 recurringConfig: recurringConfig,
                 uniqueID: uniqueID
             )
+        autoBalancer.setExecutionCallback(reportCap)
         self.account.storage.save(<-autoBalancer, to: storagePath)
         let autoBalancerRef = self._borrowAutoBalancer(uniqueID.id)
 
         // issue & publish public capability
-        let publicCap = self.account.capabilities.storage.issue<&DeFiActions.AutoBalancer>(storagePath)
+        let publicCap = self.account.capabilities.storage.issue<&AutoBalancers.AutoBalancer>(storagePath)
         self.account.capabilities.publish(publicCap, at: publicPath)
 
         // issue private capability & set within AutoBalancer
-        let authorizedCap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw, FlowTransactionScheduler.Execute) &DeFiActions.AutoBalancer>(storagePath)
+        let authorizedCap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw, FlowTransactionScheduler.Execute) &AutoBalancers.AutoBalancer>(storagePath)
         autoBalancerRef.setSelfCapability(authorizedCap)
 
         // ensure proper configuration before closing
         storedType = self.account.storage.type(at: storagePath)
         publishedCap = self.account.capabilities.exists(publicPath)
-        assert(storedType == Type<@DeFiActions.AutoBalancer>(),
+        assert(storedType == Type<@AutoBalancers.AutoBalancer>(),
             message: "Error when configuring AutoBalancer for UniqueIdentifier.id \(uniqueID.id) at path \(storagePath)")
         assert(publishedCap,
             message: "Error when publishing AutoBalancer Capability for UniqueIdentifier.id \(uniqueID.id) at path \(publicPath)")
@@ -199,10 +225,10 @@ access(all) contract FlowYieldVaultsAutoBalancers {
 
         // Issue schedule capability for the AutoBalancer (for Supervisor to call scheduleNextRebalance directly)
         let scheduleCap = self.account.capabilities.storage
-            .issue<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>(storagePath)
+            .issue<auth(AutoBalancers.Schedule) &AutoBalancers.AutoBalancer>(storagePath)
 
         // Register yield vault in registry for global mapping of live yield vault IDs
-        FlowYieldVaultsSchedulerRegistry.register(yieldVaultID: uniqueID.id, handlerCap: handlerCap, scheduleCap: scheduleCap)
+        FlowYieldVaultsSchedulerRegistryV1.register(yieldVaultID: uniqueID.id, handlerCap: handlerCap, scheduleCap: scheduleCap)
 
         // Start the native AutoBalancer self-scheduling chain if recurringConfig was provided
         // This schedules the first rebalance; subsequent ones are scheduled automatically
@@ -220,9 +246,9 @@ access(all) contract FlowYieldVaultsAutoBalancers {
     /// Returns an authorized reference on the AutoBalancer with the associated UniqueIdentifier.id. If none is found,
     /// the operation reverts.
     access(account)
-    fun _borrowAutoBalancer(_ id: UInt64): auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw) &DeFiActions.AutoBalancer {
+    fun _borrowAutoBalancer(_ id: UInt64): auth(AutoBalancers.Auto, AutoBalancers.Set, AutoBalancers.Get, AutoBalancers.Schedule, FungibleToken.Withdraw) &AutoBalancers.AutoBalancer {
         let storagePath = self.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
-        return self.account.storage.borrow<auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw) &DeFiActions.AutoBalancer>(
+        return self.account.storage.borrow<auth(AutoBalancers.Auto, AutoBalancers.Set, AutoBalancers.Get, AutoBalancers.Schedule, FungibleToken.Withdraw) &AutoBalancers.AutoBalancer>(
                 from: storagePath
             ) ?? panic("Could not borrow reference to AutoBalancer with UniqueIdentifier.id \(id) from StoragePath \(storagePath)")
     }
@@ -231,13 +257,13 @@ access(all) contract FlowYieldVaultsAutoBalancers {
     /// Strategy is burned
     access(account) fun _cleanupAutoBalancer(id: UInt64) {
         // Unregister from registry (removes from global yield vault mapping)
-        FlowYieldVaultsSchedulerRegistry.unregister(yieldVaultID: id)
+        FlowYieldVaultsSchedulerRegistryV1.unregister(yieldVaultID: id)
 
         let storagePath = self.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
         let publicPath = self.deriveAutoBalancerPath(id: id, storage: false) as! PublicPath
         // unpublish the public AutoBalancer Capability
         let _ = self.account.capabilities.unpublish(publicPath)
-        
+
         // Collect controller IDs first (can't modify during iteration)
         var controllersToDelete: [UInt64] = []
         self.account.capabilities.storage.forEachController(forPath: storagePath, fun(_ controller: &StorageCapabilityController): Bool {
@@ -250,13 +276,19 @@ access(all) contract FlowYieldVaultsAutoBalancers {
                 controller.delete()
             }
         }
-        
+
         // load & burn the AutoBalancer (this also handles any pending scheduled transactions via burnCallback)
-        let autoBalancer <-self.account.storage.load<@DeFiActions.AutoBalancer>(from: storagePath)
+        let autoBalancer <-self.account.storage.load<@AutoBalancers.AutoBalancer>(from: storagePath)
         Burner.burn(<-autoBalancer)
     }
 
     init() {
         self.pathPrefix = "FlowYieldVaultsAutoBalancer_"
+        self.registryReportCallbackStoragePath = StoragePath(identifier: "FlowYieldVaultsRegistryReportCallback")!
+
+        // Ensure shared execution callback exists (reports this account's executions to Registry)
+        if self.account.storage.type(at: self.registryReportCallbackStoragePath) == nil {
+            self.account.storage.save(<-create RegistryReportCallback(), to: self.registryReportCallbackStoragePath)
+        }
     }
 }

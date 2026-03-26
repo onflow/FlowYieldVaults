@@ -5,7 +5,7 @@ import "DeFiActions"
 import "AutoBalancers"
 import "FlowTransactionScheduler"
 import "FlowYieldVaultsAutoBalancers"
-import "FlowYieldVaultsSchedulerRegistry"
+import "FlowYieldVaultsSchedulerRegistryV1"
 
 /// Sets the recurring config for all AutoBalancers tied to registered yVaults that already been configured as recurring
 /// NOTE: This transaction is intended for beta-level use only. Iteration in `prepare` will fail with enough yVaults.
@@ -33,7 +33,7 @@ transaction(
         )
         let priority = FlowTransactionScheduler.Priority(rawValue: priorityRaw)
             ?? panic("Invalid priority: \(priorityRaw) - must be 0=High, 1=Medium, 2=Low")
-        for id in FlowYieldVaultsSchedulerRegistry.getRegisteredYieldVaultIDs() {
+        for id in FlowYieldVaultsSchedulerRegistryV1.getRegisteredYieldVaultIDs() {
             let path = FlowYieldVaultsAutoBalancers.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
             if let ab = signer.storage.borrow<auth(DeFiActions.Identify, AutoBalancer.Configure) &AutoBalancers.AutoBalancer>(from: path) {
                 // autobalancer is not configured as recurring, skip
