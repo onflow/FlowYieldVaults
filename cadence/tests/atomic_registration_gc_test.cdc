@@ -3,7 +3,7 @@ import BlockchainHelpers
 import "test_helpers.cdc"
 
 import "MockStrategies"
-import "FlowYieldVaultsSchedulerRegistry"
+import "FlowYieldVaultsSchedulerRegistryV1"
 import "FlowToken"
 import "MOET"
 import "YieldToken"
@@ -102,7 +102,7 @@ access(all) fun testAtomicRegistrationAndGC() {
     let registeredIDs = registeredIDsRes.returnValue! as! [UInt64]
     Test.assert(
         registeredIDs.contains(yieldVaultID),
-        message: "YieldVault should be registered in FlowYieldVaultsSchedulerRegistry atomically"
+        message: "YieldVault should be registered in FlowYieldVaultsSchedulerRegistryV1 atomically"
     )
 
     // Verify Wrapper Capability exists
@@ -131,7 +131,7 @@ access(all) fun testAtomicRegistrationAndGC() {
     let registeredIDsAfter = registeredIDsAfterRes.returnValue! as! [UInt64]
     Test.assert(
         !registeredIDsAfter.contains(yieldVaultID),
-        message: "YieldVault should be unregistered from FlowYieldVaultsSchedulerRegistry after closing"
+        message: "YieldVault should be unregistered from FlowYieldVaultsSchedulerRegistryV1 after closing"
     )
 
     // Verify Wrapper Capability is gone

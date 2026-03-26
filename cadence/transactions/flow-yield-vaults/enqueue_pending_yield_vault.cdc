@@ -1,4 +1,4 @@
-import "FlowYieldVaultsSchedulerRegistry"
+import "FlowYieldVaultsSchedulerRegistryV1"
 
 /// [ADMIN/TEST ONLY] Manually adds a yield vault to the pending queue for Supervisor re-seeding.
 ///
@@ -25,7 +25,7 @@ transaction(yieldVaultID: UInt64) {
 
     execute {
         // Only the contract account can call this
-        FlowYieldVaultsSchedulerRegistry.enqueuePending(yieldVaultID: yieldVaultID)
+        FlowYieldVaultsSchedulerRegistryV1.enqueuePending(yieldVaultID: yieldVaultID)
     }
 }
 

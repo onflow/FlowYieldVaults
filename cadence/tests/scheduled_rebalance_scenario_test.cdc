@@ -9,8 +9,9 @@ import "YieldToken"
 import "MockStrategies"
 import "FlowYieldVaultsSchedulerV1"
 import "FlowTransactionScheduler"
-import "FlowYieldVaultsSchedulerRegistry"
+import "FlowYieldVaultsSchedulerRegistryV1"
 import "DeFiActions"
+import "AutoBalancers"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
@@ -26,7 +27,7 @@ access(all) var snapshot: UInt64 = 0
 
 // ARCHITECTURE EXPECTATIONS:
 // 1. When a YieldVault is created, the AutoBalancer is configured with recurringConfig
-// 2. FlowYieldVaultsAutoBalancers._initNewAutoBalancer registers yield vault in FlowYieldVaultsSchedulerRegistry
+// 2. FlowYieldVaultsAutoBalancersV1._initNewAutoBalancer registers yield vault in FlowYieldVaultsSchedulerRegistryV1
 // 3. AutoBalancer.scheduleNextRebalance(nil) starts the self-scheduling chain
 // 4. AutoBalancer self-reschedules after each execution (no external intervention needed)
 // 5. The Supervisor is for recovery only - picks up yield vaults from pending queue
@@ -130,7 +131,7 @@ fun testRegistryReceivesYieldVaultRegistrationAtInit() {
     log("YieldVault created with ID: ".concat(yieldVaultID.toString()))
     
     // Verify YieldVaultRegistered event
-    let regEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerRegistry.YieldVaultRegistered>())
+    let regEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerRegistryV1.YieldVaultRegistered>())
     Test.assertEqual(1, regEvents.length)
     log("YieldVaultRegistered events: ".concat(regEvents.length.toString()))
     
@@ -229,9 +230,9 @@ fun testSingleAutoBalancerThreeExecutions() {
     log("Balance after execution 3: ".concat(balance3.toString()))
     Test.assert(balance3 != balance2, message: "Balance should change after execution 3 (was: ".concat(balance2.toString()).concat(", now: ").concat(balance3.toString()).concat(")"))
     
-    // Verify DeFiActions.Rebalanced events
-    let rebalanceEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
-    log("DeFiActions.Rebalanced events: ".concat(rebalanceEvents.length.toString()))
+    // Verify AutoBalancers.Rebalanced events
+    let rebalanceEvents = Test.eventsOfType(Type<AutoBalancers.Rebalanced>())
+    log("AutoBalancers.Rebalanced events: ".concat(rebalanceEvents.length.toString()))
     Test.assertEqual(3, rebalanceEvents.length)
     
     log("\nBalance progression: ".concat(balance0.toString()).concat(" -> ").concat(balance1.toString()).concat(" -> ").concat(balance2.toString()).concat(" -> ").concat(balance3.toString()))
@@ -346,8 +347,8 @@ fun testThreeYieldVaultsNineExecutions() {
     Test.assert(balance2_r3 != balance2_r2, message: "YieldVault 2 balance should change after round 3")
     
     // Verify rebalancing events
-    let rebalanceEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
-    log("DeFiActions.Rebalanced events: ".concat(rebalanceEvents.length.toString()))
+    let rebalanceEvents = Test.eventsOfType(Type<AutoBalancers.Rebalanced>())
+    log("AutoBalancers.Rebalanced events: ".concat(rebalanceEvents.length.toString()))
     Test.assertEqual(9, rebalanceEvents.length)
     
     log("PASS: Three yield vaults each executed exactly 3 times (9 total)")

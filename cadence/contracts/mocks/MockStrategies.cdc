@@ -5,6 +5,7 @@ import "EVM"
 // DeFiActions
 import "DeFiActionsUtils"
 import "DeFiActions"
+import "AutoBalancers"
 import "SwapConnectors"
 import "FungibleTokenConnectors"
 // Lending protocol
@@ -12,7 +13,7 @@ import "FlowALPv0"
 // FlowYieldVaults platform
 import "FlowYieldVaultsClosedBeta"
 import "FlowYieldVaults"
-import "FlowYieldVaultsAutoBalancers"
+import "FlowYieldVaultsAutoBalancersV1"
 // scheduler
 import "FlowTransactionScheduler"
 // tokens
@@ -127,7 +128,7 @@ access(all) contract MockStrategies {
             }
 
             // Step 4: Create external YT source from AutoBalancer
-            let ytSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
+            let ytSource = FlowYieldVaultsAutoBalancersV1.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
             let ytType = Type<@YieldToken.Vault>()
 
@@ -236,7 +237,7 @@ access(all) contract MockStrategies {
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
-            FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
+            FlowYieldVaultsAutoBalancersV1._cleanupAutoBalancer(id: self.id()!)
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
             return DeFiActions.ComponentInfo(
@@ -291,7 +292,7 @@ access(all) contract MockStrategies {
             let recurringConfig = MockStrategies._createRecurringConfig(withID: uniqueID)
 
             // configure and AutoBalancer for this stack with native recurring scheduling
-            let autoBalancer = FlowYieldVaultsAutoBalancers._initNewAutoBalancer(
+            let autoBalancer = FlowYieldVaultsAutoBalancersV1._initNewAutoBalancer(
                 oracle: oracle,                 // used to determine value of deposits & when to rebalance
                 vaultType: yieldTokenType,      // the type of Vault held by the AutoBalancer
                 lowerThreshold: 0.95,           // set AutoBalancer to pull from rebalanceSource when balance is 5% below value of deposits
@@ -463,11 +464,11 @@ access(all) contract MockStrategies {
     /// Creates an AutoBalancerRecurringConfig for scheduled rebalancing.
     /// The txnFunder uses the contract's FlowToken vault to pay for scheduling fees.
     access(self)
-    fun _createRecurringConfig(withID: DeFiActions.UniqueIdentifier?): DeFiActions.AutoBalancerRecurringConfig {
+    fun _createRecurringConfig(withID: DeFiActions.UniqueIdentifier?): AutoBalancers.AutoBalancerRecurringConfig {
         // Create txnFunder that can provide/accept FLOW for scheduling fees
         let txnFunder = self._createTxnFunder(withID: withID)
 
-        return DeFiActions.AutoBalancerRecurringConfig(
+        return AutoBalancers.AutoBalancerRecurringConfig(
             interval: 60 * 10,  // Rebalance every 10 minutes
             priority: FlowTransactionScheduler.Priority.Medium,
             executionEffort: 999,

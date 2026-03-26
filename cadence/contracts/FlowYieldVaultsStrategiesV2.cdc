@@ -5,6 +5,7 @@ import "EVM"
 // DeFiActions
 import "DeFiActionsUtils"
 import "DeFiActions"
+import "AutoBalancers"
 import "SwapConnectors"
 import "FungibleTokenConnectors"
 // amm integration
@@ -16,7 +17,7 @@ import "ERC4626Utils"
 import "FlowALPv0"
 // FlowYieldVaults platform
 import "FlowYieldVaults"
-import "FlowYieldVaultsAutoBalancers"
+import "FlowYieldVaultsAutoBalancersV1"
 // scheduler
 import "FlowTransactionScheduler"
 // tokens
@@ -347,7 +348,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
 
             // Step 4: Create external yield token source from AutoBalancer
-            let yieldTokenSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
+            let yieldTokenSource = FlowYieldVaultsAutoBalancersV1.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
             // Step 5: Reconstruct yield→MOET swapper from stored CollateralConfig.
@@ -464,7 +465,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
-            FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
+            FlowYieldVaultsAutoBalancersV1._cleanupAutoBalancer(id: self.id()!)
             self._cleanupPositionClosed()
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
@@ -836,7 +837,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             )
 
             // Step 4: Create external syWFLOWv source from AutoBalancer
-            let yieldTokenSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
+            let yieldTokenSource = FlowYieldVaultsAutoBalancersV1.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
             // Step 5: Create a BufferedSwapSource that converts ALL syWFLOWv → FLOW for debt repayment.
@@ -936,7 +937,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer and contract-level config entries
         access(contract) fun burnCallback() {
-            FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
+            FlowYieldVaultsAutoBalancersV1._cleanupAutoBalancer(id: self.id()!)
             FlowYieldVaultsStrategiesV2._removeSyWFLOWvDebtTokenType(self.uniqueID?.id)
             // Clean up stablecoin pre-swap config entries (no-op if not set)
             if let id = self.uniqueID {
@@ -1113,14 +1114,14 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     /// Returned bundle for stored AutoBalancer interactions (reference + caps)
     access(all) struct AutoBalancerIO {
         access(all) let autoBalancer:
-            auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw)
-            &DeFiActions.AutoBalancer
+            auth(AutoBalancers.Auto, AutoBalancers.Set, AutoBalancers.Get, AutoBalancers.Schedule, FungibleToken.Withdraw)
+            &AutoBalancers.AutoBalancer
 
         access(all) let sink: {DeFiActions.Sink}
         access(all) let source: {DeFiActions.Source}
 
         init(
-            autoBalancer: auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw) &DeFiActions.AutoBalancer,
+            autoBalancer: auth(AutoBalancers.Auto, AutoBalancers.Set, AutoBalancers.Get, AutoBalancers.Schedule, FungibleToken.Withdraw) &AutoBalancers.AutoBalancer,
             sink: {DeFiActions.Sink},
             source: {DeFiActions.Source}
         ) {
@@ -1184,11 +1185,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     access(self) fun _initAutoBalancerAndIO(
         oracle: {DeFiActions.PriceOracle},
         yieldTokenType: Type,
-        recurringConfig: DeFiActions.AutoBalancerRecurringConfig?,
+        recurringConfig: AutoBalancers.AutoBalancerRecurringConfig?,
         uniqueID: DeFiActions.UniqueIdentifier
     ): FlowYieldVaultsStrategiesV2.AutoBalancerIO {
         let autoBalancerRef =
-            FlowYieldVaultsAutoBalancers._initNewAutoBalancer(
+            FlowYieldVaultsAutoBalancersV1._initNewAutoBalancer(
                 oracle: oracle,
                 vaultType: yieldTokenType,
                 lowerThreshold: 0.95,
@@ -2162,11 +2163,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     /// Creates an AutoBalancerRecurringConfig for scheduled rebalancing.
     /// The txnFunder uses the contract's FlowToken vault to pay for scheduling fees.
     access(self)
-    fun _createRecurringConfig(withID: DeFiActions.UniqueIdentifier?): DeFiActions.AutoBalancerRecurringConfig {
+    fun _createRecurringConfig(withID: DeFiActions.UniqueIdentifier?): AutoBalancers.AutoBalancerRecurringConfig {
         // Create txnFunder that can provide/accept FLOW for scheduling fees
         let txnFunder = self._createTxnFunder(withID: withID)
 
-        return DeFiActions.AutoBalancerRecurringConfig(
+        return AutoBalancers.AutoBalancerRecurringConfig(
             interval: 60 * 10,  // Rebalance every 10 minutes
             priority: FlowTransactionScheduler.Priority.Medium,
             executionEffort: 800,
