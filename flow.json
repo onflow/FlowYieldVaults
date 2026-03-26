@@ -176,7 +176,7 @@
 			}
 		},
 		"FlowYieldVaultsAutoBalancers": {
-			"source": "cadence/contracts/FlowYieldVaultsAutoBalancersV1.cdc",
+			"source": "cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
