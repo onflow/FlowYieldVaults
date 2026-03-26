@@ -193,6 +193,30 @@ access(all) fun setup() {
     )
     Test.expect(err, Test.beNil())
 
+    log("Deploying UInt64LinkedList...")
+    err = Test.deployContract(
+        name: "UInt64LinkedList",
+        path: "../../cadence/contracts/UInt64LinkedList.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    log("Deploying AutoBalancers...")
+    err = Test.deployContract(
+        name: "AutoBalancers",
+        path: "../../cadence/contracts/AutoBalancers.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    log("Deploying FlowYieldVaultsSchedulerRegistry...")
+    err = Test.deployContract(
+        name: "FlowYieldVaultsSchedulerRegistry",
+        path: "../../cadence/contracts/FlowYieldVaultsSchedulerRegistry.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
     log("Deploying FlowYieldVaultsAutoBalancers...")
     err = Test.deployContract(
         name: "FlowYieldVaultsAutoBalancers",
