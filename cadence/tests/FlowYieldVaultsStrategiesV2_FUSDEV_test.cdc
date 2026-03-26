@@ -195,6 +195,14 @@ access(all) fun setup() {
 
     log("Deploying FlowYieldVaultsAutoBalancers...")
     err = Test.deployContract(
+        name: "AutoBalancers",
+        path: "../../cadence/contracts/AutoBalancers.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    log("Deploying FlowYieldVaultsAutoBalancers...")
+    err = Test.deployContract(
         name: "FlowYieldVaultsAutoBalancers",
         path: "../../cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
         arguments: []
