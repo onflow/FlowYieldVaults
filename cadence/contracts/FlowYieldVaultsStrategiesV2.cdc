@@ -65,17 +65,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         swapperType: String
     )
 
-    // @TODO rename to UnconstrainedSwapSource or UnboundedSwapSource
-    /// A Source that converts yield tokens to debt tokens by pulling ALL available yield
-    /// tokens from the wrapped source, rather than using quoteIn to limit the pull amount.
-    ///
-    /// This avoids ERC4626 rounding issues where quoteIn might underestimate required shares,
-    /// causing the swap to return less than the requested debt amount. By pulling everything
-    /// and swapping everything, the output is as large as the yield position allows.
-    ///
-    /// The caller is responsible for ensuring the yield tokens (after swapping) will cover the
-    /// required debt — e.g. by pre-depositing supplemental MOET to reduce the position's debt
-    /// before calling closePosition (see FUSDEVStrategy.closePosition step 6).
+    /// Deprecated — replaced by SwapConnectors.SwapSource. Kept as a no-op to preserve
+    /// contract upgrade compatibility (Cadence structs cannot be removed once deployed).
     access(all) struct BufferedSwapSource : DeFiActions.Source {
         access(self) let swapper: {DeFiActions.Swapper}
         access(self) let source: {DeFiActions.Source}
@@ -86,52 +77,20 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             source: {DeFiActions.Source},
             uniqueID: DeFiActions.UniqueIdentifier?
         ) {
-            pre {
-                source.getSourceType() == swapper.inType():
-                    "source type != swapper inType"
-            }
             self.swapper = swapper
             self.source = source
             self.uniqueID = uniqueID
         }
 
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
-            return DeFiActions.ComponentInfo(
-                type: self.getType(),
-                id: self.id(),
-                innerComponents: [
-                    self.swapper.getComponentInfo(),
-                    self.source.getComponentInfo()
-                ]
-            )
+            return DeFiActions.ComponentInfo(type: self.getType(), id: self.id(), innerComponents: [])
         }
         access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? { return self.uniqueID }
         access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) { self.uniqueID = id }
         access(all) view fun getSourceType(): Type { return self.swapper.outType() }
-        access(all) fun minimumAvailable(): UFix64 {
-            let avail = self.source.minimumAvailable()
-            if avail == 0.0 { return 0.0 }
-            return self.swapper.quoteOut(forProvided: avail, reverse: false).outAmount
-        }
-        /// Pulls ALL available yield tokens from the source and swaps them to the debt token.
-        /// Ignores quoteIn — avoids ERC4626 rounding underestimates that would leave us short.
+        access(all) fun minimumAvailable(): UFix64 { return 0.0 }
         access(FungibleToken.Withdraw) fun withdrawAvailable(maxAmount: UFix64): @{FungibleToken.Vault} {
-            if maxAmount == 0.0 {
-                return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
-            }
-            let availableIn = self.source.minimumAvailable()
-            if availableIn == 0.0 {
-                return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
-            }
-            // Pull ALL available yield tokens (not quoteIn-limited)
-            let sourceLiquidity <- self.source.withdrawAvailable(maxAmount: availableIn)
-            if sourceLiquidity.balance == 0.0 {
-                Burner.burn(<-sourceLiquidity)
-                return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
-            }
-            let swapped <- self.swapper.swap(quote: nil, inVault: <-sourceLiquidity)
-            assert(swapped.balance > 0.0, message: "BufferedSwapSource: swap returned zero despite available input")
-            return <- swapped
+            return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
         }
     }
 
@@ -325,10 +284,10 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 self.position.deposit(from: <-extraMOET)
             }
 
-            // Step 7: Create a BufferedSwapSource that converts ALL yield tokens → MOET.
-            // Pulling all (not quoteIn-limited) avoids ERC4626 rounding underestimates.
-            // After the pre-supplement above, the remaining debt is covered by the yield tokens.
-            let moetSource = FlowYieldVaultsStrategiesV2.BufferedSwapSource(
+            // Step 7: Create a SwapSource that converts yield tokens → MOET for debt repayment.
+            // Step 6's pre-supplement ensures remaining debt ≤ yield value, so SwapSource will
+            // use quoteIn(remainingDebt) and pull only the shares needed — not the full balance.
+            let moetSource = SwapConnectors.SwapSource(
                 swapper: yieldToMoetSwapper,
                 source: yieldTokenSource,
                 uniqueID: self.copyID()
