@@ -560,6 +560,15 @@ fun getAutoBalancerValueOfDeposits(id: UInt64): UFix64? {
     return res.returnValue as! UFix64?
 }
 
+/// Returns [currentValue, valueOfDeposits] for the AutoBalancer in a single script call.
+/// This is more efficient than calling getAutoBalancerCurrentValue and getAutoBalancerValueOfDeposits separately.
+access(all)
+fun getAutoBalancerMetrics(id: UInt64): [UFix64]? {
+    let res = _executeScript("../scripts/flow-yield-vaults/get_auto_balancer_metrics_by_id.cdc", [id])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! [UFix64]?
+}
+
 access(all)
 fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowALPv0.PositionDetails {
     let res = _executeScript("../../lib/FlowALP/cadence/scripts/flow-alp/position_details.cdc",
