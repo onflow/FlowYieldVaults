@@ -12,6 +12,7 @@ import "FlowToken"
 import "MOET"
 import "FlowYieldVaultsStrategiesV2"
 import "FlowALPv0"
+import "DeFiActions"
 
 
 // ============================================================================
@@ -261,11 +262,12 @@ fun test_BtcDaily2025_DailyRebalancing() {
     log("Notes: \(btc_daily_2025_notes)")
 
     var liquidationCount = 0
-    var rebalanceCount = 0
     var previousBTCPrice = initialPrice
     var lowestPrice = initialPrice
     var highestPrice = initialPrice
     var lowestHF = 100.0
+    var prevVaultRebalanceCount = 0
+    var prevPositionRebalanceCount = 0
 
     let startTimestamp = getCurrentBlockTimestamp()
 
@@ -298,7 +300,14 @@ fun test_BtcDaily2025_DailyRebalancing() {
             rebalancePosition(signer: flowALPAccount, pid: pids[a], force: false, beFailed: false)
             a = a + 1
         }
-        rebalanceCount = rebalanceCount + 1
+
+        // Count actual rebalances that occurred this day
+        let currentVaultRebalanceCount = Test.eventsOfType(Type<DeFiActions.Rebalanced>()).length
+        let currentPositionRebalanceCount = Test.eventsOfType(Type<FlowALPv0.Rebalanced>()).length
+        let dayVaultRebalances = currentVaultRebalanceCount - prevVaultRebalanceCount
+        let dayPositionRebalances = currentPositionRebalanceCount - prevPositionRebalanceCount
+        prevVaultRebalanceCount = currentVaultRebalanceCount
+        prevPositionRebalanceCount = currentPositionRebalanceCount
 
         // Check health factors
         a = 0
@@ -315,7 +324,7 @@ fun test_BtcDaily2025_DailyRebalancing() {
 
                 // Log weekly + at price extremes
                 if a == 0 && (day % 7 == 0 || absolutePrice == lowestPrice || absolutePrice == highestPrice) {
-                    log("  [day \(day)] \(dates[day]) price=$\(absolutePrice) yt=\(ytPrice) HF=\(hf) collateral=\(btcCollateralValue) debt=\(debt)")
+                    log("  [day \(day)] \(dates[day]) price=$\(absolutePrice) yt=\(ytPrice) HF=\(hf) vaultRebalances=\(dayVaultRebalances) positionRebalances=\(dayPositionRebalances)")
                 }
 
                 if hf < 1.0 {
@@ -329,6 +338,12 @@ fun test_BtcDaily2025_DailyRebalancing() {
         previousBTCPrice = absolutePrice
         day = day + 1
     }
+
+    // Count actual rebalance events (not just attempts)
+    let vaultRebalanceEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
+    let positionRebalanceEvents = Test.eventsOfType(Type<FlowALPv0.Rebalanced>())
+    let vaultRebalanceCount = vaultRebalanceEvents.length
+    let positionRebalanceCount = positionRebalanceEvents.length
 
     // Final state
     let finalBTCCollateral = getBTCCollateralFromPosition(pid: pids[0])
@@ -363,7 +378,9 @@ fun test_BtcDaily2025_DailyRebalancing() {
     log("\n=== SIMULATION RESULTS ===")
     log("Agents:              \(numAgents)")
     log("Days simulated:      \(prices.length)")
-    log("Rebalance events:    \(rebalanceCount)")
+    log("Rebalance attempts:  \(prices.length * numAgents)")
+    log("Vault rebalances:    \(vaultRebalanceCount)")
+    log("Position rebalances: \(positionRebalanceCount)")
     log("Liquidation count:   \(liquidationCount)")
     log("")
     log("--- Price ---")
