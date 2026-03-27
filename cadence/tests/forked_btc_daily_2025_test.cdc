@@ -84,6 +84,8 @@ access(all)
 fun setup() {
     deployContractsForFork()
 
+    resetTransactionScheduler()
+
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: pyusd0Address,
@@ -134,18 +136,6 @@ access(all) fun getBTCCollateralFromPosition(pid: UInt64): UFix64 {
     for balance in positionDetails.balances {
         if balance.vaultType == WBTC_TYPE {
             if balance.direction == FlowALPv0.BalanceDirection.Credit {
-                return balance.balance
-            }
-        }
-    }
-    return 0.0
-}
-
-access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
-    let positionDetails = getPositionDetails(pid: pid, beFailed: false)
-    for balance in positionDetails.balances {
-        if balance.vaultType == MOET_TYPE {
-            if balance.direction == FlowALPv0.BalanceDirection.Debit {
                 return balance.balance
             }
         }
