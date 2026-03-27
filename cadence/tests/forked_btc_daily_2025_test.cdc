@@ -109,6 +109,12 @@ access(all)
 fun setup() {
     deployContractsForFork()
 
+    // it removes all the existing scheduled transactions, it is useful to speed up the tests,
+    // because otherwise, the existing 41 scheduled transactions will be executed every time we
+    // move the time forward, and each taking about 40ms, which make the tests very slow
+    // after 365 days of simulation, the total delay would be 10mins.
+    // resetting the transaction scheduler will not affect the test results, new scheduled
+    // transaction can also be created by the tests.
     resetTransactionScheduler()
 
     setPoolToPrice(
