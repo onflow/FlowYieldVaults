@@ -77,6 +77,30 @@ access(all) let yieldAPR = btc_daily_2025_constants.yieldAPR
 access(all) let daysPerYear = 365.0
 access(all) let secondsPerDay = 86400.0
 
+// Collateral factor for BTC in the FlowALP pool.
+// This determines how much of the collateral value counts toward borrowing capacity.
+// effectiveCollateral = collateralValue * collateralFactor
+// effectiveHF = effectiveCollateral / debt
+//
+// Position rebalance thresholds (in effective HF terms):
+//   - minHealth = 1.1: triggers top-up from source when effectiveHF < 1.1
+//   - targetHealth = 1.3: rebalance aims to restore effectiveHF to 1.3
+//   - maxHealth = 1.5: triggers push to sink when effectiveHF > 1.5
+// See: lib/FlowALP/cadence/contracts/FlowALPv0.cdc:544-546 (InternalPosition.init defaults)
+access(all) let collateralFactor = 0.8
+
+// Vault (AutoBalancer) rebalance thresholds.
+// The vault tracks yield token value relative to historical deposits.
+// vaultRatio = currentValue / valueOfDeposits
+//
+// Vault rebalance triggers when:
+//   - vaultRatio < 0.95 (lowerThreshold): pulls from source to buy more yield tokens
+//   - vaultRatio > 1.05 (upperThreshold): pushes to sink to sell yield tokens
+// See: lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc:763-764
+// See: cadence/contracts/FlowYieldVaultsStrategiesV2.cdc:706-707 (FUSDEVStrategy defaults)
+access(all) let vaultLowerThreshold = 0.95
+access(all) let vaultUpperThreshold = 1.05
+
 // ============================================================================
 // SETUP
 // ============================================================================
@@ -260,6 +284,10 @@ fun test_BtcDaily2025_DailyRebalancing() {
     log("Price points: \(prices.length)")
     log("Initial BTC price: $\(prices[0])")
     log("Notes: \(btc_daily_2025_notes)")
+    log("")
+    log("Rebalance Triggers:")
+    log("  HF (Position): triggers when HF < 1.1 or HF > 1.5, rebalances to HF = 1.3")
+    log("  VR (Vault):    triggers when VR < 0.95 or VR > 1.05, rebalances to VR ~ 1.0")
 
     var liquidationCount = 0
     var previousBTCPrice = initialPrice
@@ -293,8 +321,36 @@ fun test_BtcDaily2025_DailyRebalancing() {
         // Apply all price updates
         applyPriceTick(btcPrice: absolutePrice, ytPrice: ytPrice, user: users[0])
 
-        // Potentially rebalance all agents (not forced)
+        // Calculate HF BEFORE rebalancing to see pre-rebalance state
+        // effectiveHF = (collateralValue * collateralFactor) / debt
+        // This is what determines rebalance triggers (minHealth=1.1, maxHealth=1.5)
+        var preRebalanceHF: UFix64 = 0.0
         var a = 0
+        while a < numAgents {
+            if a == 0 {
+                let btcCollateral = getBTCCollateralFromPosition(pid: pids[a])
+                let btcCollateralValue = btcCollateral * absolutePrice
+                let effectiveCollateral = btcCollateralValue * collateralFactor
+                let debt = getMOETDebtFromPosition(pid: pids[a])
+                if debt > 0.0 {
+                    preRebalanceHF = effectiveCollateral / debt
+                }
+            }
+            a = a + 1
+        }
+
+        // Calculate vault ratio BEFORE rebalancing
+        // vaultRatio = currentValue / valueOfDeposits
+        // Triggers when ratio < 0.95 or ratio > 1.05
+        var preVaultRatio: UFix64 = 1.0
+        let preCurrentValue = getAutoBalancerCurrentValue(id: vaultIds[0]) ?? 0.0
+        let preValueOfDeposits = getAutoBalancerValueOfDeposits(id: vaultIds[0]) ?? 0.0
+        if preValueOfDeposits > 0.0 {
+            preVaultRatio = preCurrentValue / preValueOfDeposits
+        }
+
+        // Potentially rebalance all agents (not forced)
+        a = 0
         while a < numAgents {
             rebalanceYieldVault(signer: flowYieldVaultsAccount, id: vaultIds[a], force: false, beFailed: false)
             rebalancePosition(signer: flowALPAccount, pid: pids[a], force: false, beFailed: false)
@@ -309,27 +365,41 @@ fun test_BtcDaily2025_DailyRebalancing() {
         prevVaultRebalanceCount = currentVaultRebalanceCount
         prevPositionRebalanceCount = currentPositionRebalanceCount
 
-        // Check health factors
+        // Calculate vault ratio AFTER rebalancing
+        var postVaultRatio: UFix64 = 1.0
+        let postCurrentValue = getAutoBalancerCurrentValue(id: vaultIds[0]) ?? 0.0
+        let postValueOfDeposits = getAutoBalancerValueOfDeposits(id: vaultIds[0]) ?? 0.0
+        if postValueOfDeposits > 0.0 {
+            postVaultRatio = postCurrentValue / postValueOfDeposits
+        }
+
+        // Calculate HF AFTER rebalancing
         a = 0
         while a < numAgents {
             let btcCollateral = getBTCCollateralFromPosition(pid: pids[a])
             let btcCollateralValue = btcCollateral * absolutePrice
+            let effectiveCollateral = btcCollateralValue * collateralFactor
             let debt = getMOETDebtFromPosition(pid: pids[a])
 
             if debt > 0.0 {
-                let hf = btcCollateralValue / debt
-                if hf < lowestHF {
-                    lowestHF = hf
+                let postRebalanceHF = effectiveCollateral / debt
+                // Track lowest HF (use pre-rebalance to capture the actual low point)
+                if preRebalanceHF < lowestHF && preRebalanceHF > 0.0 {
+                    lowestHF = preRebalanceHF
                 }
 
                 // Log weekly + at price extremes
+                // Show both pre and post values to see rebalance effects:
+                //   HF: position health factor (triggers at <1.1 or >1.5)
+                //   VR: vault ratio (triggers at <0.95 or >1.05)
                 if a == 0 && (day % 7 == 0 || absolutePrice == lowestPrice || absolutePrice == highestPrice) {
-                    log("  [day \(day)] \(dates[day]) price=$\(absolutePrice) yt=\(ytPrice) HF=\(hf) vaultRebalances=\(dayVaultRebalances) positionRebalances=\(dayPositionRebalances)")
+                    log("  [day \(day)] \(dates[day]) price=$\(absolutePrice) yt=\(ytPrice) HF=\(preRebalanceHF)->\(postRebalanceHF) VR=\(preVaultRatio)->\(postVaultRatio) vaultRebalances=\(dayVaultRebalances) positionRebalances=\(dayPositionRebalances)")
                 }
 
-                if hf < 1.0 {
+                // Liquidation occurs when effectiveHF < 1.0 (check pre-rebalance)
+                if preRebalanceHF < 1.0 && preRebalanceHF > 0.0 {
                     liquidationCount = liquidationCount + 1
-                    log("  *** LIQUIDATION agent=\(a) on day \(day) (\(dates[day]))! HF=\(hf) ***")
+                    log("  *** LIQUIDATION agent=\(a) on day \(day) (\(dates[day]))! HF=\(preRebalanceHF) ***")
                 }
             }
             a = a + 1
@@ -350,7 +420,8 @@ fun test_BtcDaily2025_DailyRebalancing() {
     let finalDebt = getMOETDebtFromPosition(pid: pids[0])
     let finalYieldTokens = getAutoBalancerBalance(id: vaultIds[0])!
     let finalYtPrice = ytPriceAtDay(prices.length - 1)
-    let finalHF = (finalBTCCollateral * previousBTCPrice) / finalDebt
+    // Compute effective HF to match contract's rebalancing logic
+    let finalEffectiveHF = (finalBTCCollateral * previousBTCPrice * collateralFactor) / finalDebt
 
     // P&L: net equity = collateral_value + yt_value - debt (all in stablecoin/MOET terms)
     let collateralValueMOET = finalBTCCollateral * previousBTCPrice
@@ -390,9 +461,9 @@ fun test_BtcDaily2025_DailyRebalancing() {
     log("Final BTC price:     $\(prices[prices.length - 1])")
     log("Price change:        \(priceChangeSign)\(priceChangePct)")
     log("")
-    log("--- Position ---")
+    log("--- Position (effective HF with collateralFactor=\(collateralFactor)) ---")
     log("Lowest HF observed:  \(lowestHF)")
-    log("Final HF (agent 0):  \(finalHF)")
+    log("Final HF (agent 0):  \(finalEffectiveHF)")
     log("Final collateral:    \(finalBTCCollateral) BTC (value: \(collateralValueMOET) MOET)")
     log("Final debt:          \(finalDebt) MOET")
     log("Final yield tokens:  \(finalYieldTokens) (value: \(ytValueMOET) MOET @ yt=\(finalYtPrice))")
@@ -404,8 +475,8 @@ fun test_BtcDaily2025_DailyRebalancing() {
     log("===========================\n")
 
     Test.assertEqual(btc_daily_2025_expectedLiquidationCount, liquidationCount)
-    Test.assert(finalHF > 1.0, message: "Expected final HF > 1.0 but got \(finalHF)")
-    Test.assert(lowestHF > 1.0, message: "Expected lowest HF > 1.0 but got \(lowestHF)")
+    Test.assert(finalEffectiveHF > 1.0, message: "Expected final effective HF > 1.0 but got \(finalEffectiveHF)")
+    Test.assert(lowestHF > 1.0, message: "Expected lowest effective HF > 1.0 but got \(lowestHF)")
 
     log("=== TEST PASSED: Zero liquidations over 1 year of real BTC prices (\(numAgents) agents) ===")
 }
