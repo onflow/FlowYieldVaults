@@ -345,14 +345,13 @@ fun test_BtcDaily2025_DailyRebalancing() {
             a = a + 1
         }
 
-        // Calculate vault ratio BEFORE rebalancing
+        // Calculate vault ratio BEFORE rebalancing (single script call for efficiency)
         // vaultRatio = currentValue / valueOfDeposits
         // Triggers when ratio < 0.95 or ratio > 1.05
         var preVaultRatio: UFix64 = 1.0
-        let preCurrentValue = getAutoBalancerCurrentValue(id: vaultIds[0]) ?? 0.0
-        let preValueOfDeposits = getAutoBalancerValueOfDeposits(id: vaultIds[0]) ?? 0.0
-        if preValueOfDeposits > 0.0 {
-            preVaultRatio = preCurrentValue / preValueOfDeposits
+        let preMetrics = getAutoBalancerMetrics(id: vaultIds[0]) ?? [0.0, 0.0]
+        if preMetrics[1] > 0.0 {
+            preVaultRatio = preMetrics[0] / preMetrics[1]
         }
 
         // Potentially rebalance all agents (not forced)
@@ -371,12 +370,11 @@ fun test_BtcDaily2025_DailyRebalancing() {
         prevVaultRebalanceCount = currentVaultRebalanceCount
         prevPositionRebalanceCount = currentPositionRebalanceCount
 
-        // Calculate vault ratio AFTER rebalancing
+        // Calculate vault ratio AFTER rebalancing (single script call for efficiency)
         var postVaultRatio: UFix64 = 1.0
-        let postCurrentValue = getAutoBalancerCurrentValue(id: vaultIds[0]) ?? 0.0
-        let postValueOfDeposits = getAutoBalancerValueOfDeposits(id: vaultIds[0]) ?? 0.0
-        if postValueOfDeposits > 0.0 {
-            postVaultRatio = postCurrentValue / postValueOfDeposits
+        let postMetrics = getAutoBalancerMetrics(id: vaultIds[0]) ?? [0.0, 0.0]
+        if postMetrics[1] > 0.0 {
+            postVaultRatio = postMetrics[0] / postMetrics[1]
         }
 
         // Calculate HF AFTER rebalancing
