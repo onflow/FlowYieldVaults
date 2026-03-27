@@ -24,3 +24,6 @@ db
 
 # logs
 run_logs/*.log
+
+# flow
+.flow-fork-cache/

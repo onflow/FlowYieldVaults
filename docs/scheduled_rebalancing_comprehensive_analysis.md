@@ -1,10 +1,24 @@
 # Comprehensive Analysis: FlowYieldVaults Scheduled Rebalancing Branch
 
+> Historical note: this document captures review context from November 2025 and includes
+> analysis of earlier scheduler iterations. It is not the authoritative description of the
+> current implementation.
+>
+> Current implementation summary:
+> - scheduler contract: `FlowYieldVaultsSchedulerV1`
+> - registry batch size: `MAX_BATCH_SIZE = 5`
+> - stuck detection: bounded LRU scan via `getStuckScanCandidates(...)`
+> - recovery: direct `Schedule` capability calls to `scheduleNextRebalance(...)`
+>
+> For current behavior and architecture, see:
+> - `docs/SCHEDULED_REBALANCING_GUIDE.md`
+> - `docs/rebalancing_architecture.md`
+
 **Document Version:** 2.0  
 **Date:** November 26, 2025  
 **Source:** Synthesized from multiple independent code review analyses  
 **Original Reviewer:** sisyphusSmiling (onflow/flow-defi)
-**Status:** IMPLEMENTATION COMPLETE
+**Status:** HISTORICAL REVIEW CONTEXT
 
 ---
 
@@ -832,4 +846,3 @@ Strategy creation via StrategyComposer
 *This analysis synthesizes findings from four independent code review analyses of the scheduled-rebalancing branch, all derived from review comments by sisyphusSmiling on behalf of onflow/flow-defi.*
 
 *Implementation completed November 26, 2025.*
-
