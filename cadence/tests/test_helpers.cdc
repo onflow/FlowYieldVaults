@@ -226,7 +226,10 @@ access(all) fun deployContractsForFork() {
 
     // Deploy EVM mock
     var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
-    
+
+    // Redeploy FlowTransactionScheduler mock (replaces forked mainnet contract with reset-capable version)
+    err = Test.deployContract(name: "FlowTransactionScheduler", path: "../contracts/mocks/FlowTransactionScheduler.cdc", arguments: [])
+
     _deploy(config: config)
 }
 
@@ -648,6 +651,16 @@ fun rebalancePosition(signer: Test.TestAccount, pid: UInt64, force: Bool, beFail
         signer
     )
     Test.expect(rebalanceRes, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+access(all)
+fun resetTransactionScheduler() {
+    let result = _executeTransaction(
+        "transactions/reset_scheduler.cdc",
+        [],
+        serviceAccount
+    )
+    Test.expect(result, Test.beSucceeded())
 }
 
 access(all)

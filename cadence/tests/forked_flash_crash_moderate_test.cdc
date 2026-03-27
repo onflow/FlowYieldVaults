@@ -281,6 +281,9 @@ access(all) fun runSimulation(config: SimConfig): SimResult {
     let prices = config.prices
     let initialPrice = prices[0]
 
+    // Clear scheduled transactions inherited from forked mainnet state
+    resetTransactionScheduler()
+
     // Apply initial pricing
     applyPriceTick(btcPrice: initialPrice, ytPrice: ytPriceAtTick(0, tickIntervalSeconds: config.tickIntervalSeconds, yieldAPR: config.yieldAPR), signer: coaOwnerAccount)
 
