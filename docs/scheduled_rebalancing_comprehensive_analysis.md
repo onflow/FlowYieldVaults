@@ -7,7 +7,7 @@
 > Current implementation summary:
 > - scheduler contract: `FlowYieldVaultsSchedulerV1`
 > - registry batch size: `MAX_BATCH_SIZE = 5`
-> - stuck detection: bounded LRU scan via `getStuckScanCandidates(...)`
+> - stuck detection: bounded LRU scan via `pruneAndGetStuckScanCandidates(...)`
 > - recovery: direct `Schedule` capability calls to `scheduleNextRebalance(...)`
 >
 > For current behavior and architecture, see:
