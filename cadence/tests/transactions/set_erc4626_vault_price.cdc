@@ -6,7 +6,20 @@ import "FlowEVMBridgeUtils"
 access(all) fun computeMappingSlot(_ values: [AnyStruct]): String {
     let encoded = EVM.encodeABI(values)
     let hashBytes = HashAlgorithm.KECCAK_256.hash(encoded)
-    return String.encodeHex(hashBytes)
+    return "0x\(String.encodeHex(hashBytes))"
+}
+
+// Helper: Convert UInt256 to zero-padded 64-char hex string (32 bytes) with 0x prefix
+access(all) fun slotHex(_ value: UInt256): String {
+    let raw = value.toBigEndianBytes()
+    var padded: [UInt8] = []
+    var padCount = 32 - raw.length
+    while padCount > 0 {
+        padded.append(0)
+        padCount = padCount - 1
+    }
+    padded = padded.concat(raw)
+    return "0x\(String.encodeHex(padded))"
 }
 
 // Helper: Compute ERC20 balanceOf storage slot
@@ -84,7 +97,7 @@ transaction(
         let finalTargetSupply = targetAssets * supplyMultiplier
         
         let supplyValue = String.encodeHex(finalTargetSupply.toBigEndianBytes())
-        EVM.store(target: vault, slot: String.encodeHex(totalSupplySlot.toBigEndianBytes()), value: supplyValue)
+        EVM.store(target: vault, slot: slotHex(totalSupplySlot), value: supplyValue)
         
         // Update asset.balanceOf(vault) to finalTargetAssets
         let vaultBalanceSlot = computeBalanceOfSlot(holderAddress: vaultAddress, balanceSlot: assetBalanceSlot)
@@ -120,6 +133,6 @@ transaction(
         assert(newSlotBytes.length == 32, message: "Vault storage slot must be exactly 32 bytes, got \(newSlotBytes.length) (lastUpdate: \(lastUpdateBytes.length), maxRate: \(maxRateBytes.length), assets: \(paddedAssets.length))")
         
         let newSlotValue = String.encodeHex(newSlotBytes)
-        EVM.store(target: vault, slot: String.encodeHex(vaultTotalAssetsSlot.toBigEndianBytes()), value: newSlotValue)
+        EVM.store(target: vault, slot: slotHex(vaultTotalAssetsSlot), value: newSlotValue)
     }
 }

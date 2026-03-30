@@ -20,6 +20,12 @@ import "FlowEVMBridgeUtils"
 import "EVMAmountUtils"
 // live oracles
 import "ERC4626PriceOracles"
+// deferred redemption
+import "FlowTransactionScheduler"
+import "FlowEVMBridge"
+import "FlowToken"
+import "ScopedFTProviders"
+import "FungibleTokenMetadataViews"
 
 /// PMStrategiesV1
 ///
@@ -33,6 +39,31 @@ import "ERC4626PriceOracles"
 /// connectors that the true power of the components lies.
 ///
 access(all) contract PMStrategiesV1 {
+
+    access(all) event RedeemRequested(
+        yieldVaultID: UInt64,
+        userAddress: Address,
+        shares: UFix64,
+        estimatedAssets: UFix64,
+        vaultEVMAddressHex: String
+    )
+    access(all) event RedeemClaimed(
+        yieldVaultID: UInt64,
+        userAddress: Address,
+        assetsReceivedEVM: UInt256,
+        vaultEVMAddressHex: String
+    )
+    access(all) event RedeemCancelled(
+        yieldVaultID: UInt64,
+        userAddress: Address,
+        vaultEVMAddressHex: String
+    )
+    access(all) event RedeemRecovered(
+        yieldVaultID: UInt64,
+        userAddress: Address,
+        vaultEVMAddressHex: String,
+        reason: String
+    )
 
     access(all) let univ3FactoryEVMAddress: EVM.EVMAddress
     access(all) let univ3RouterEVMAddress: EVM.EVMAddress
@@ -106,8 +137,13 @@ access(all) contract PMStrategiesV1 {
             let availableBalance = self.availableBalance(ofToken: collateralType)
             return <- self.withdraw(maxAmount: availableBalance, ofToken: collateralType)
         }
-        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
+        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer.
+        /// Panics if a deferred redemption is pending — shares would be stranded on EVM.
         access(contract) fun burnCallback() {
+            assert(
+                PMStrategiesV1.getPendingRedeemInfo(yieldVaultID: self.id()!) == nil,
+                message: "Cannot close vault \(self.id()!) with pending deferred redemption"
+            )
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
@@ -190,8 +226,13 @@ access(all) contract PMStrategiesV1 {
             let availableBalance = self.availableBalance(ofToken: collateralType)
             return <- self.withdraw(maxAmount: availableBalance, ofToken: collateralType)
         }
-        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
+        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer.
+        /// Panics if a deferred redemption is pending — shares would be stranded on EVM.
         access(contract) fun burnCallback() {
+            assert(
+                PMStrategiesV1.getPendingRedeemInfo(yieldVaultID: self.id()!) == nil,
+                message: "Cannot close vault \(self.id()!) with pending deferred redemption"
+            )
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
@@ -274,7 +315,8 @@ access(all) contract PMStrategiesV1 {
             let availableBalance = self.availableBalance(ofToken: collateralType)
             return <- self.withdraw(maxAmount: availableBalance, ofToken: collateralType)
         }
-        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
+        /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer.
+        /// FUSDEVStrategy uses direct instant redemption — no deferred redeem support.
         access(contract) fun burnCallback() {
             FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
         }
@@ -601,54 +643,743 @@ access(all) contract PMStrategiesV1 {
     access(contract) fun _navBalanceFor(strategyType: Type, collateralType: Type, ofToken: Type, id: UInt64): UFix64 {
         if ofToken != collateralType { return 0.0 }
 
-        let ab = FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: id)
-        if ab == nil { return 0.0 }
-        let sharesBalance = ab!.vaultBalance()
-        if sharesBalance == 0.0 { return 0.0 }
+        var nav = 0.0
 
-        let vaultAddr = self._getYieldTokenEVMAddress(forStrategy: strategyType, collateralType: collateralType)
-            ?? panic("No EVM vault address configured for \(strategyType.identifier)")
+        if let ab = FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: id) {
+            let sharesBalance = ab.vaultBalance()
+            if sharesBalance > 0.0 {
+                let vaultAddr = self._getYieldTokenEVMAddress(forStrategy: strategyType, collateralType: collateralType)
+                    ?? panic("No EVM vault address configured for \(strategyType.identifier)")
 
-        let sharesWei = FlowEVMBridgeUtils.ufix64ToUInt256(
-            value: sharesBalance,
-            decimals: FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: vaultAddr)
-        )
+                let sharesWei = FlowEVMBridgeUtils.ufix64ToUInt256(
+                    value: sharesBalance,
+                    decimals: FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: vaultAddr)
+                )
 
-        let navWei = ERC4626Utils.convertToAssets(vault: vaultAddr, shares: sharesWei)
-            ?? panic("convertToAssets failed for vault ".concat(vaultAddr.toString()))
+                let navWei = ERC4626Utils.convertToAssets(vault: vaultAddr, shares: sharesWei)
+                    ?? panic("convertToAssets failed for vault \(vaultAddr.toString())")
 
-        let assetAddr = ERC4626Utils.underlyingAssetEVMAddress(vault: vaultAddr)
-            ?? panic("No underlying asset EVM address found for vault \(vaultAddr.toString())")
+                let assetAddr = ERC4626Utils.underlyingAssetEVMAddress(vault: vaultAddr)
+                    ?? panic("No underlying asset EVM address found for vault \(vaultAddr.toString())")
 
-        return EVMAmountUtils.toCadenceOutForToken(navWei, erc20Address: assetAddr)
+                nav = EVMAmountUtils.toCadenceOutForToken(navWei, erc20Address: assetAddr)
+            }
+        }
+
+        return nav + self.getPendingRedeemNAVBalance(yieldVaultID: id)
     }
 
-    /// Returns the COA capability for this account
+    /// Returns the COA capability for this account, issuing once and storing for reuse.
     /// TODO: this is temporary until we have a better way to pass user's COAs to inner connectors
     access(self)
     fun _getCOACapability(): Capability<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount> {
-        let coaCap = self.account.capabilities.storage.issue<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
-        assert(coaCap.check(), message: "Could not issue COA capability")
-        return coaCap
+        let capPath = /storage/strategiesCOACap
+        if self.account.storage.type(at: capPath) == nil {
+            let coaCap = self.account.capabilities.storage.issue<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
+            assert(coaCap.check(), message: "Could not issue COA capability")
+            self.account.storage.save(coaCap, to: capPath)
+        }
+        return self.account.storage.copy<Capability<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount>>(from: capPath)
+            ?? panic("Could not load COA capability from storage")
+    }
+
+    /// Returns the FlowToken vault capability for fee payment, issuing once and storing for reuse.
+    access(self)
+    fun _getFeeSourceCap(): Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}> {
+        let capPath = /storage/strategiesFeeSource
+        if self.account.storage.type(at: capPath) == nil {
+            let cap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(/storage/flowTokenVault)
+            self.account.storage.save(cap, to: capPath)
+        }
+        return self.account.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: capPath)
+            ?? panic("Could not load fee source capability")
     }
 
     /// Returns a FungibleTokenConnectors.VaultSinkAndSource used to subsidize cross VM token movement in contract-
     /// defined strategies.
     access(self)
     fun _createFeeSource(withID: DeFiActions.UniqueIdentifier?): {DeFiActions.Sink, DeFiActions.Source} {
-        let capPath = /storage/strategiesFeeSource
-        if self.account.storage.type(at: capPath) == nil {
-            let cap = self.account.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(/storage/flowTokenVault)
-            self.account.storage.save(cap, to: capPath)
-        }
-        let vaultCap = self.account.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: capPath)
-            ?? panic("Could not find fee source Capability at \(capPath)")
         return FungibleTokenConnectors.VaultSinkAndSource(
             min: nil,
             max: nil,
-            vault: vaultCap,
+            vault: self._getFeeSourceCap(),
             uniqueID: withID
         )
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // EVM helpers (More Vaults Diamond VaultFacet)
+    // ──────────────────────────────────────────────────────────────────────
+
+    access(self) fun _evmRequestRedeem(coa: auth(EVM.Call) &EVM.CadenceOwnedAccount, vault: EVM.EVMAddress, shares: UInt256) {
+        let res = coa.call(
+            to: vault,
+            data: EVM.encodeABIWithSignature("requestRedeem(uint256)", [shares]),
+            gasLimit: 15_000_000,
+            value: EVM.Balance(attoflow: 0)
+        )
+        assert(res.status == EVM.Status.successful, message: "requestRedeem failed: status \(res.status.rawValue)")
+    }
+
+    access(self) fun _evmClearRequest(coa: auth(EVM.Call) &EVM.CadenceOwnedAccount, vault: EVM.EVMAddress) {
+        let res = coa.call(
+            to: vault,
+            data: EVM.encodeABIWithSignature("clearRequest()", [] as [AnyStruct]),
+            gasLimit: 15_000_000,
+            value: EVM.Balance(attoflow: 0)
+        )
+        assert(res.status == EVM.Status.successful, message: "clearRequest failed: status \(res.status.rawValue)")
+    }
+
+    access(self) fun _evmApprove(coa: auth(EVM.Call) &EVM.CadenceOwnedAccount, token: EVM.EVMAddress, spender: EVM.EVMAddress, amount: UInt256) {
+        let res = coa.call(
+            to: token,
+            data: EVM.encodeABIWithSignature("approve(address,uint256)", [spender, amount]),
+            gasLimit: 15_000_000,
+            value: EVM.Balance(attoflow: 0)
+        )
+        assert(res.status == EVM.Status.successful, message: "approve failed: status \(res.status.rawValue)")
+    }
+
+    /// Calls EVM redeem. Returns the assets received on success, or nil if the EVM call reverted.
+    access(self) fun _evmRedeem(
+        coa: auth(EVM.Call) &EVM.CadenceOwnedAccount,
+        vault: EVM.EVMAddress,
+        shares: UInt256,
+        receiver: EVM.EVMAddress,
+        owner: EVM.EVMAddress
+    ): UInt256? {
+        let res = coa.call(
+            to: vault,
+            data: EVM.encodeABIWithSignature("redeem(uint256,address,address)", [shares, receiver, owner]),
+            gasLimit: 15_000_000,
+            value: EVM.Balance(attoflow: 0)
+        )
+        if res.status != EVM.Status.successful {
+            return nil
+        }
+        let decoded = EVM.decodeABI(types: [Type<UInt256>()], data: res.data)
+        return decoded[0] as! UInt256
+    }
+
+    access(self) fun _evmGetWithdrawalTimelock(vault: EVM.EVMAddress): UInt64? {
+        let coa = self.account.storage.borrow<&EVM.CadenceOwnedAccount>(from: /storage/evm)
+            ?? panic("No COA at /storage/evm for view call")
+        let res = coa.dryCall(
+            to: vault,
+            data: EVM.encodeABIWithSignature("getWithdrawalTimelock()", [] as [AnyStruct]),
+            gasLimit: 5_000_000,
+            value: EVM.Balance(attoflow: 0)
+        )
+        if res.status != EVM.Status.successful || res.data.length == 0 {
+            return nil
+        }
+        let decoded = EVM.decodeABI(types: [Type<UInt256>()], data: res.data)
+        return UInt64(decoded[0] as! UInt256)
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Deferred Redemption (More Vaults withdrawal queue)
+    // ──────────────────────────────────────────────────────────────────────
+
+    /// Tracks a pending standard withdrawal waiting for timelock expiry.
+    access(all) struct PendingRedeemInfo {
+        access(all) let sharesEVM: UInt256
+        access(all) let userCOAEVMAddress: EVM.EVMAddress
+        access(all) let userFlowAddress: Address
+        access(all) let vaultEVMAddress: EVM.EVMAddress
+        access(all) let metadata: {String: AnyStruct}
+
+        init(
+            sharesEVM: UInt256,
+            userCOAEVMAddress: EVM.EVMAddress,
+            userFlowAddress: Address,
+            vaultEVMAddress: EVM.EVMAddress
+        ) {
+            self.sharesEVM = sharesEVM
+            self.userCOAEVMAddress = userCOAEVMAddress
+            self.userFlowAddress = userFlowAddress
+            self.vaultEVMAddress = vaultEVMAddress
+            self.metadata = {}
+        }
+    }
+
+    /// Single handler resource stored in the contract account. Multiple scheduled claims
+    /// share this handler via capability; each schedule's data payload identifies which vault to process.
+    access(all) resource PendingRedeemHandler: FlowTransactionScheduler.TransactionHandler {
+        /// Keyed by yieldVaultID. Each user's YieldVault has a globally unique ID.
+        access(contract) let pendingRedeems: {UInt64: PendingRedeemInfo}
+        /// Keyed by yieldVaultID. Holds scheduled claim resources for status queries and cancellation.
+        access(contract) let scheduledTxns: @{UInt64: FlowTransactionScheduler.ScheduledTransaction}
+        /// Safety margin added after the EVM timelock to ensure the claim executes after expiry.
+        access(all) var schedulerBufferSeconds: UFix64
+        /// Extensibility.
+        access(all) let metadata: {String: AnyStruct}
+
+        init() {
+            self.pendingRedeems = {}
+            self.scheduledTxns <- {}
+            self.schedulerBufferSeconds = 30.0
+            self.metadata = {}
+        }
+
+        access(Configure) fun setSchedulerBufferSeconds(_ seconds: UFix64) {
+            self.schedulerBufferSeconds = seconds
+        }
+
+        access(all) view fun getViews(): [Type] { return [] }
+        access(all) fun resolveView(_ view: Type): AnyStruct? { return nil }
+
+        /// Called by FlowTransactionScheduler when the timelock expires.
+        /// No-ops gracefully if the pending redeem was already cleared.
+        access(FlowTransactionScheduler.Execute) fun executeTransaction(id: UInt64, data: AnyStruct?) {
+            let dataDict = data as? {String: AnyStruct}
+                ?? panic("PendingRedeemHandler: invalid data format")
+            let yieldVaultID = dataDict["yieldVaultID"] as? UInt64
+                ?? panic("PendingRedeemHandler: missing yieldVaultID in data")
+
+            if self.pendingRedeems[yieldVaultID] == nil {
+                return
+            }
+            PMStrategiesV1.claimRedeem(yieldVaultID: yieldVaultID)
+        }
+
+        access(contract) fun setPendingRedeem(id: UInt64, info: PendingRedeemInfo) {
+            self.pendingRedeems[id] = info
+        }
+
+        access(contract) fun removePendingRedeem(id: UInt64) {
+            self.pendingRedeems.remove(key: id)
+        }
+
+        access(contract) view fun getPendingRedeem(id: UInt64): PendingRedeemInfo? {
+            return self.pendingRedeems[id]
+        }
+
+        access(contract) fun setScheduledTx(id: UInt64, tx: @FlowTransactionScheduler.ScheduledTransaction) {
+            if let old <- self.scheduledTxns.remove(key: id) {
+                destroy old
+            }
+            self.scheduledTxns[id] <-! tx
+        }
+
+        access(contract) fun removeScheduledTx(id: UInt64) {
+            if let tx <- self.scheduledTxns.remove(key: id) {
+                // Properly cancel with the scheduler if still scheduled; otherwise just destroy
+                if tx.status() == FlowTransactionScheduler.Status.Scheduled {
+                    destroy FlowTransactionScheduler.cancel(scheduledTx: <-tx)
+                } else {
+                    destroy tx
+                }
+            }
+        }
+
+        access(contract) view fun getScheduledClaim(id: UInt64): &FlowTransactionScheduler.ScheduledTransaction? {
+            return &self.scheduledTxns[id]
+        }
+
+        access(contract) view fun getAllPendingRedeemIDs(): [UInt64] {
+            return self.pendingRedeems.keys
+        }
+
+        access(contract) fun setClaimOutcome(yieldVaultID: UInt64, outcome: String) {
+            if self.metadata["claimOutcomes"] == nil {
+                self.metadata["claimOutcomes"] = {} as {UInt64: String}
+            }
+            let entry: auth(Mutate) &AnyStruct = &self.metadata["claimOutcomes"]!
+            let outcomes = entry as! auth(Mutate) &{UInt64: String}
+            outcomes[yieldVaultID] = outcome
+        }
+
+        access(contract) fun clearClaimOutcome(yieldVaultID: UInt64) {
+            if self.metadata["claimOutcomes"] == nil {
+                return
+            }
+            let entry: auth(Remove) &AnyStruct = &self.metadata["claimOutcomes"]!
+            let outcomes = entry as! auth(Remove) &{UInt64: String}
+            outcomes.remove(key: yieldVaultID)
+        }
+
+        access(contract) view fun getClaimOutcome(yieldVaultID: UInt64): String? {
+            if self.metadata["claimOutcomes"] == nil {
+                return nil
+            }
+            let entry: &AnyStruct = &self.metadata["claimOutcomes"]!
+            let outcomes = entry as! &{UInt64: String}
+            return outcomes[yieldVaultID]
+        }
+    }
+
+    /// Computes the storage path for the PendingRedeemHandler.
+    access(self) view fun _pendingRedeemHandlerPath(): StoragePath {
+        return StoragePath(identifier: "PMStrategiesV1PendingRedeemHandler")!
+    }
+
+    access(self) view fun _handlerCapStoragePath(): StoragePath {
+        return StoragePath(identifier: "PMStrategiesV1PendingRedeemHandlerCap")!
+    }
+
+    /// Borrows the PendingRedeemHandler from contract account storage, or nil if not yet initialized.
+    access(self) view fun _borrowHandler(): &PendingRedeemHandler? {
+        return self.account.storage.borrow<&PendingRedeemHandler>(from: self._pendingRedeemHandlerPath())
+    }
+
+    /// Returns the reusable handler capability for FlowTransactionScheduler, issuing once on first call.
+    access(self) fun _getHandlerSchedulerCap(): Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}> {
+        let capPath = self._handlerCapStoragePath()
+        if self.account.storage.type(at: capPath) == nil {
+            let cap = self.account.capabilities.storage.issue<
+                auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}
+            >(self._pendingRedeemHandlerPath())
+            self.account.storage.save(cap, to: capPath)
+        }
+        return self.account.storage.copy<
+            Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>
+        >(from: capPath)
+            ?? panic("Could not load handler capability from storage")
+    }
+
+    /// Creates a ScopedFTProvider for bridge fee payment from the contract's FlowToken vault.
+    access(self) fun _createBridgeFeeProvider(): @ScopedFTProviders.ScopedFTProvider {
+        return <- ScopedFTProviders.createScopedFTProvider(
+            provider: self._getFeeSourceCap(),
+            filters: [ScopedFTProviders.AllowanceFilter(FlowEVMBridgeUtils.calculateBridgeFee(bytes: 400_000))],
+            expiration: getCurrentBlock().timestamp + 1.0
+        )
+    }
+
+    /// Initiates a deferred redemption: converts underlying amount to shares on-chain,
+    /// withdraws yield tokens from AutoBalancer, bridges to user's COA, calls
+    /// requestRedeem + approve on EVM, records pending state, and schedules automated claim.
+    ///
+    /// @param yieldVaultID The user's YieldVault ID (also the AutoBalancer ID)
+    /// @param amount Underlying asset amount to redeem (e.g., FLOW). Nil = redeem all.
+    /// @param userCOA User's CadenceOwnedAccount reference for EVM calls
+    /// @param userFlowAddress User's Flow address for claim delivery
+    /// @param fees FlowToken vault to pay FlowTransactionScheduler scheduling fees
+    access(all) fun requestRedeem(
+        yieldVaultID: UInt64,
+        amount: UFix64?,
+        userCOA: auth(EVM.Call) &EVM.CadenceOwnedAccount,
+        userFlowAddress: Address,
+        fees: @FlowToken.Vault
+    ) {
+        pre {
+            fees.balance > 0.0: "Scheduling fees must be provided"
+            amount == nil || amount! > 0.0: "Amount must be positive or nil for redeem-all"
+        }
+        let handler = self._borrowHandler()
+            ?? panic("PendingRedeemHandler not initialized")
+        assert(handler.getPendingRedeem(id: yieldVaultID) == nil, message: "Pending redeem already exists for vault \(yieldVaultID)")
+
+        // Validate vault ownership: the user at userFlowAddress must own this YieldVault
+        let managerRef = getAccount(userFlowAddress).capabilities.borrow<&FlowYieldVaults.YieldVaultManager>(
+            FlowYieldVaults.YieldVaultManagerPublicPath
+        ) ?? panic("User has no YieldVaultManager")
+        let yieldVault = managerRef.borrowYieldVault(id: yieldVaultID)
+            ?? panic("User does not own vault \(yieldVaultID)")
+
+        // Derive the vault EVM address from on-chain strategy config
+        let strategyType = CompositeType(yieldVault.getStrategyType())
+            ?? panic("Invalid strategy type \(yieldVault.getStrategyType())")
+        let collateralType = CompositeType(yieldVault.getVaultTypeIdentifier())
+            ?? panic("Invalid collateral type \(yieldVault.getVaultTypeIdentifier())")
+        let vaultEVMAddress = self._getYieldTokenEVMAddress(forStrategy: strategyType, collateralType: collateralType)
+            ?? panic("No EVM vault address configured for \(strategyType.identifier)")
+
+        // Validate COA ownership: the provided COA must belong to userFlowAddress
+        let publicCOA = getAccount(userFlowAddress).capabilities
+            .borrow<&EVM.CadenceOwnedAccount>(/public/evm)
+            ?? panic("User has no public COA at /public/evm")
+        assert(
+            publicCOA.address().bytes == userCOA.address().bytes,
+            message: "Provided COA does not belong to user at \(userFlowAddress)"
+        )
+
+        let source = FlowYieldVaultsAutoBalancers.createExternalSource(id: yieldVaultID)
+            ?? panic("Could not create external source for vault \(yieldVaultID)")
+
+        // Convert underlying amount to target shares, or withdraw all if nil
+        var targetShares = source.minimumAvailable()
+        if let underlyingAmount = amount {
+            let underlyingAddress = ERC4626Utils.underlyingAssetEVMAddress(vault: vaultEVMAddress)
+                ?? panic("Could not get underlying asset address")
+            let assetsEVM = FlowEVMBridgeUtils.convertCadenceAmountToERC20Amount(
+                underlyingAmount, erc20Address: underlyingAddress
+            )
+            let targetSharesEVM = ERC4626Utils.convertToShares(vault: vaultEVMAddress, assets: assetsEVM)
+                ?? panic("convertToShares failed")
+            targetShares = FlowEVMBridgeUtils.convertERC20AmountToCadenceAmount(
+                targetSharesEVM, erc20Address: vaultEVMAddress
+            )
+        }
+
+        // 1. Withdraw yield tokens from AutoBalancer
+        let yieldTokenVault <- source.withdrawAvailable(maxAmount: targetShares)
+        let shares = yieldTokenVault.balance
+        assert(shares > 0.0, message: "No shares available to redeem")
+        assert(
+            amount == nil || shares >= targetShares * 0.9999,
+            message: "Insufficient shares for requested amount: got \(shares), need >= \(targetShares * 0.9999)"
+        )
+
+        // 2. Bridge yield tokens from Cadence to user's COA on EVM
+        let scopedProvider <- self._createBridgeFeeProvider()
+        FlowEVMBridge.bridgeTokensToEVM(
+            vault: <-yieldTokenVault,
+            to: userCOA.address(),
+            feeProvider: &scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+        )
+        destroy scopedProvider
+
+        // 3. Convert actual withdrawn shares to EVM and call requestRedeem
+        let sharesEVM = FlowEVMBridgeUtils.convertCadenceAmountToERC20Amount(shares, erc20Address: vaultEVMAddress)
+        self._evmRequestRedeem(coa: userCOA, vault: vaultEVMAddress, shares: sharesEVM)
+
+        // 4. Approve service COA to redeem on user's behalf
+        let serviceCOA = self._getCOACapability().borrow()
+            ?? panic("Could not borrow service COA")
+        self._evmApprove(coa: userCOA, token: vaultEVMAddress, spender: serviceCOA.address(), amount: sharesEVM)
+
+        // 5. Clear any stale claim outcome from a previous cycle
+        handler.clearClaimOutcome(yieldVaultID: yieldVaultID)
+
+        // 6. Record pending redeem
+        handler.setPendingRedeem(id: yieldVaultID, info: PendingRedeemInfo(
+            sharesEVM: sharesEVM,
+            userCOAEVMAddress: userCOA.address(),
+            userFlowAddress: userFlowAddress,
+            vaultEVMAddress: vaultEVMAddress
+        ))
+
+        // 7. Schedule automated claim after timelock expires.
+        // FlowTransactionScheduler.Scheduled event carries the exact execution timestamp for backend ingestion.
+        let timelockSeconds = self._evmGetWithdrawalTimelock(vault: vaultEVMAddress)
+            ?? panic("Could not query withdrawal timelock")
+
+        let scheduledTx <- FlowTransactionScheduler.schedule(
+            handlerCap: self._getHandlerSchedulerCap(),
+            data: {"yieldVaultID": yieldVaultID},
+            timestamp: getCurrentBlock().timestamp + UFix64(timelockSeconds) + handler.schedulerBufferSeconds,
+            priority: FlowTransactionScheduler.Priority.Low,
+            executionEffort: 2500, // Priority.Low max; claim involves EVM redeem + unwrap/bridge + Cadence deposit
+            fees: <-fees
+        )
+
+        handler.setScheduledTx(id: yieldVaultID, tx: <-scheduledTx)
+
+        // Estimate underlying assets for the redeemed shares
+        let underlyingAddress = ERC4626Utils.underlyingAssetEVMAddress(vault: vaultEVMAddress)
+            ?? panic("Could not get underlying asset address")
+        var estimatedAssets = 0.0
+        if let assetsEVM = ERC4626Utils.previewRedeem(vault: vaultEVMAddress, shares: sharesEVM) {
+            estimatedAssets = FlowEVMBridgeUtils.convertERC20AmountToCadenceAmount(
+                assetsEVM, erc20Address: underlyingAddress
+            )
+        }
+
+        emit RedeemRequested(
+            yieldVaultID: yieldVaultID,
+            userAddress: userFlowAddress,
+            shares: shares,
+            estimatedAssets: estimatedAssets,
+            vaultEVMAddressHex: vaultEVMAddress.toString()
+        )
+    }
+
+    /// Completes a pending deferred redemption. Permissionless — called automatically by
+    /// PendingRedeemHandler.executeTransaction when the timelock expires, or manually by
+    /// anyone to retry if the scheduled execution failed or was missed.
+    ///
+    /// Attempts to redeem shares via service COA. On success, converts underlying ERC-20
+    /// to Cadence and deposits to user's wallet. On EVM redeem failure (e.g. vault paused),
+    /// automatically recovers shares back to the user's AutoBalancer so funds are never left
+    /// in a stuck state.
+    access(all) fun claimRedeem(yieldVaultID: UInt64) {
+        let handler = self._borrowHandler()
+            ?? panic("PendingRedeemHandler not initialized")
+        let info = handler.getPendingRedeem(id: yieldVaultID)
+            ?? panic("No pending redeem for vault \(yieldVaultID)")
+
+        let scheduledClaim = handler.getScheduledClaim(id: yieldVaultID)
+            ?? panic("No scheduled claim for vault \(yieldVaultID)")
+        assert(
+            getCurrentBlock().timestamp >= scheduledClaim.timestamp,
+            message: "Timelock has not expired yet (claimable after \(scheduledClaim.timestamp))"
+        )
+
+        let coa = self._getCOACapability().borrow()
+            ?? panic("Could not borrow service COA")
+
+        // 1. Try redeem: service COA calls redeem(shares, receiver=serviceCOA, owner=userCOA)
+        let assetsReceived = self._evmRedeem(
+            coa: coa,
+            vault: info.vaultEVMAddress,
+            shares: info.sharesEVM,
+            receiver: coa.address(),
+            owner: info.userCOAEVMAddress
+        )
+
+        // 2. If redeem failed or returned zero assets, recover shares to AutoBalancer.
+        //    nil  = EVM revert (e.g., stale oracle) — shares untouched, transferFrom recovers them.
+        //    zero = vault burned shares but delivered nothing — transferFrom will also fail,
+        //           causing this function to revert (atomic), preserving pending state for retry.
+        if assetsReceived == nil || assetsReceived! == 0 {
+            self._recoverSharesToAutoBalancer(yieldVaultID: yieldVaultID, info: info)
+            handler.setClaimOutcome(yieldVaultID: yieldVaultID, outcome: "failed")
+            emit RedeemRecovered(
+                yieldVaultID: yieldVaultID,
+                userAddress: info.userFlowAddress,
+                vaultEVMAddressHex: info.vaultEVMAddress.toString(),
+                reason: assetsReceived == nil ? "evm_revert" : "zero_assets"
+            )
+            handler.removePendingRedeem(id: yieldVaultID)
+            handler.removeScheduledTx(id: yieldVaultID)
+            return
+        }
+
+        // 3. Convert underlying ERC-20 tokens from EVM to Cadence and deliver to user
+        let assets = assetsReceived!
+        let underlyingAddress = ERC4626Utils.underlyingAssetEVMAddress(vault: info.vaultEVMAddress)
+            ?? panic("Could not get underlying asset address")
+
+        let wflowAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: Type<@FlowToken.Vault>())
+        if wflowAddress != nil && underlyingAddress.bytes == wflowAddress!.bytes {
+            let unwrapResult = coa.call(
+                to: underlyingAddress,
+                data: EVM.encodeABIWithSignature("withdraw(uint256)", [assets]),
+                gasLimit: 15_000_000,
+                value: EVM.Balance(attoflow: 0)
+            )
+            assert(unwrapResult.status == EVM.Status.successful, message: "WFLOW unwrap failed")
+            let flowVault <- coa.withdraw(balance: EVM.Balance(attoflow: UInt(assets)))
+            let receiver = getAccount(info.userFlowAddress).capabilities
+                .borrow<&{FungibleToken.Receiver}>(/public/flowTokenReceiver)
+                ?? panic("Could not borrow user's FlowToken Receiver at \(info.userFlowAddress)")
+            receiver.deposit(from: <-flowVault)
+        } else {
+            let underlyingCadenceType = FlowEVMBridgeConfig.getTypeAssociated(with: underlyingAddress)
+                ?? panic("No Cadence type for underlying EVM address \(underlyingAddress.toString())")
+            let bridgeFeeProvider <- self._createBridgeFeeProvider()
+            let tokenVault <- coa.withdrawTokens(
+                type: underlyingCadenceType,
+                amount: assets,
+                feeProvider: &bridgeFeeProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+            )
+            destroy bridgeFeeProvider
+
+            let vaultType = tokenVault.getType()
+            let tokenContract = getAccount(vaultType.address!)
+                .contracts.borrow<&{FungibleToken}>(name: vaultType.contractName!)
+                ?? panic("Could not borrow FungibleToken contract for \(vaultType.identifier)")
+            let vaultData = tokenContract.resolveContractView(
+                    resourceType: vaultType,
+                    viewType: Type<FungibleTokenMetadataViews.FTVaultData>()
+                ) as? FungibleTokenMetadataViews.FTVaultData
+                ?? panic("Could not resolve FTVaultData for \(vaultType.identifier)")
+            let receiver = getAccount(info.userFlowAddress).capabilities
+                .borrow<&{FungibleToken.Receiver}>(vaultData.receiverPath)
+                ?? panic("User has no receiver for \(vaultType.identifier) at \(info.userFlowAddress)")
+            receiver.deposit(from: <-tokenVault)
+        }
+
+        // 4. Cleanup
+        handler.setClaimOutcome(yieldVaultID: yieldVaultID, outcome: "success")
+        emit RedeemClaimed(
+            yieldVaultID: yieldVaultID,
+            userAddress: info.userFlowAddress,
+            assetsReceivedEVM: assets,
+            vaultEVMAddressHex: info.vaultEVMAddress.toString()
+        )
+        handler.removePendingRedeem(id: yieldVaultID)
+        handler.removeScheduledTx(id: yieldVaultID)
+    }
+
+    /// Recovers shares from a user's COA back to their AutoBalancer via the service COA.
+    /// Used by claimRedeem's automatic recovery fallback when the EVM redeem reverts.
+    /// The service COA pulls shares via its ERC-20 allowance (set during requestRedeem),
+    /// bridges them to Cadence, and deposits to AutoBalancer.
+    access(self) fun _recoverSharesToAutoBalancer(yieldVaultID: UInt64, info: PendingRedeemInfo) {
+        let serviceCOA = self._getCOACapability().borrow()
+            ?? panic("Could not borrow service COA")
+
+        // Pull shares from user's COA to service COA via transferFrom (uses existing allowance)
+        let transferResult = serviceCOA.call(
+            to: info.vaultEVMAddress,
+            data: EVM.encodeABIWithSignature(
+                "transferFrom(address,address,uint256)",
+                [info.userCOAEVMAddress, serviceCOA.address(), info.sharesEVM]
+            ),
+            gasLimit: 15_000_000,
+            value: EVM.Balance(attoflow: 0)
+        )
+        assert(transferResult.status == EVM.Status.successful, message: "Share transferFrom to service COA failed")
+
+        self._depositSharesToAutoBalancer(
+            serviceCOA: serviceCOA, vaultEVMAddress: info.vaultEVMAddress,
+            sharesEVM: info.sharesEVM, yieldVaultID: yieldVaultID
+        )
+    }
+
+    /// Bridges shares held by the service COA back to Cadence and deposits them into
+    /// the user's AutoBalancer. Shared by _recoverSharesToAutoBalancer and clearRedeemRequest.
+    access(self) fun _depositSharesToAutoBalancer(
+        serviceCOA: auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount,
+        vaultEVMAddress: EVM.EVMAddress,
+        sharesEVM: UInt256,
+        yieldVaultID: UInt64
+    ) {
+        let yieldTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: vaultEVMAddress)
+            ?? panic("Could not resolve Cadence type for vault \(vaultEVMAddress.toString())")
+        let scopedProvider <- self._createBridgeFeeProvider()
+        let yieldTokenVault <- serviceCOA.withdrawTokens(
+            type: yieldTokenType,
+            amount: sharesEVM,
+            feeProvider: &scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+        )
+        destroy scopedProvider
+
+        let sink = FlowYieldVaultsAutoBalancers.createExternalSink(id: yieldVaultID)
+            ?? panic("Could not create external sink for vault \(yieldVaultID)")
+        sink.depositCapacity(from: &yieldTokenVault as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
+        assert(yieldTokenVault.balance == 0.0, message: "Yield tokens should be fully deposited back")
+        destroy yieldTokenVault
+    }
+
+    /// Cancels a pending deferred redemption: clears the EVM request, transfers shares back
+    /// from user's COA to service COA, bridges back to Cadence, deposits to AutoBalancer.
+    ///
+    /// @param yieldVaultID The user's YieldVault ID
+    /// @param userCOA User's CadenceOwnedAccount reference for EVM calls
+    access(all) fun clearRedeemRequest(
+        yieldVaultID: UInt64,
+        userCOA: auth(EVM.Call) &EVM.CadenceOwnedAccount
+    ) {
+        let handler = self._borrowHandler()
+            ?? panic("PendingRedeemHandler not initialized")
+        let info = handler.getPendingRedeem(id: yieldVaultID)
+            ?? panic("No pending redeem for vault \(yieldVaultID)")
+
+        assert(
+            userCOA.address().bytes == info.userCOAEVMAddress.bytes,
+            message: "COA address does not match pending redeem requester"
+        )
+
+        // Extra safety: verify the COA is published by the original requester's Flow account
+        let publicCOA = getAccount(info.userFlowAddress).capabilities
+            .borrow<&EVM.CadenceOwnedAccount>(/public/evm)
+            ?? panic("Original requester has no public COA at /public/evm")
+        assert(
+            publicCOA.address().bytes == userCOA.address().bytes,
+            message: "Provided COA does not belong to original requester at \(info.userFlowAddress)"
+        )
+
+        // 1. Clear request on EVM.
+        // Note: we rely on the EVM revert (assert status==successful) to confirm the clear.
+        self._evmClearRequest(coa: userCOA, vault: info.vaultEVMAddress)
+
+        // 2. Transfer shares from user's COA back to service COA via ERC-20 transfer
+        let serviceCOA = self._getCOACapability().borrow()
+            ?? panic("Could not borrow service COA")
+        let transferResult = userCOA.call(
+            to: info.vaultEVMAddress,
+            data: EVM.encodeABIWithSignature(
+                "transfer(address,uint256)",
+                [serviceCOA.address(), info.sharesEVM]
+            ),
+            gasLimit: 15_000_000,
+            value: EVM.Balance(attoflow: 0)
+        )
+        assert(transferResult.status == EVM.Status.successful, message: "Share transfer back to service COA failed")
+
+        // 2b. Revoke lingering ERC-20 approval (transfer doesn't consume allowance)
+        self._evmApprove(coa: userCOA, token: info.vaultEVMAddress, spender: serviceCOA.address(), amount: 0)
+
+        // 3-4. Bridge shares back to Cadence and deposit to AutoBalancer
+        self._depositSharesToAutoBalancer(
+            serviceCOA: serviceCOA, vaultEVMAddress: info.vaultEVMAddress,
+            sharesEVM: info.sharesEVM, yieldVaultID: yieldVaultID
+        )
+
+        // 5. Cancel scheduled transaction and cleanup
+        handler.clearClaimOutcome(yieldVaultID: yieldVaultID)
+        emit RedeemCancelled(
+            yieldVaultID: yieldVaultID,
+            userAddress: info.userFlowAddress,
+            vaultEVMAddressHex: info.vaultEVMAddress.toString()
+        )
+        handler.removeScheduledTx(id: yieldVaultID)
+        handler.removePendingRedeem(id: yieldVaultID)
+    }
+
+    /// Returns the NAV value of pending redeem shares for a yield vault, or 0 if none.
+    /// Converts shares → underlying via ERC-4626 convertToAssets, matching the same
+    /// conversion used by _navBalanceFor (which calls this function).
+    access(all) fun getPendingRedeemNAVBalance(yieldVaultID: UInt64): UFix64 {
+        if let handler = self._borrowHandler() {
+            if let info = handler.getPendingRedeem(id: yieldVaultID) {
+                let navWei = ERC4626Utils.convertToAssets(vault: info.vaultEVMAddress, shares: info.sharesEVM)
+                    ?? panic("convertToAssets failed for pending redeem")
+                let assetAddr = ERC4626Utils.underlyingAssetEVMAddress(vault: info.vaultEVMAddress)
+                    ?? panic("No underlying asset address for vault")
+                return EVMAmountUtils.toCadenceOutForToken(navWei, erc20Address: assetAddr)
+            }
+        }
+        return 0.0
+    }
+
+    /// Returns the full PendingRedeemInfo for a given yield vault, or nil if none.
+    access(all) view fun getPendingRedeemInfo(yieldVaultID: UInt64): PendingRedeemInfo? {
+        if let handler = self._borrowHandler() {
+            return handler.getPendingRedeem(id: yieldVaultID)
+        }
+        return nil
+    }
+
+    /// Returns all yield vault IDs with active pending redeems; intended for operational audit and debugging.
+    access(all) view fun getAllPendingRedeemIDs(): [UInt64] {
+        if let handler = self._borrowHandler() {
+            return handler.getAllPendingRedeemIDs()
+        }
+        return []
+    }
+
+    /// Returns the scheduled claim transaction for a yield vault, or nil if none.
+    /// Callers can read .id, .timestamp, and .status() on the returned reference.
+    access(all) view fun getScheduledClaim(yieldVaultID: UInt64): &FlowTransactionScheduler.ScheduledTransaction? {
+        if let handler = self._borrowHandler() {
+            return handler.getScheduledClaim(id: yieldVaultID)
+        }
+        return nil
+    }
+
+    /// Returns the current scheduler buffer (seconds added after EVM timelock), or nil if handler not initialized.
+    access(all) view fun getSchedulerBufferSeconds(): UFix64? {
+        if let handler = self._borrowHandler() {
+            return handler.schedulerBufferSeconds
+        }
+        return nil
+    }
+
+    /// Returns the claim outcome for a yield vault: "success" if tokens were delivered,
+    /// "failed" if shares were recovered to AutoBalancer, or nil if no outcome recorded
+    /// (still pending, cancelled by user, or never requested).
+    access(all) view fun getClaimOutcome(yieldVaultID: UInt64): String? {
+        if let handler = self._borrowHandler() {
+            return handler.getClaimOutcome(yieldVaultID: yieldVaultID)
+        }
+        return nil
+    }
+
+    /// Initializes the PendingRedeemHandler. Must be called once via admin transaction
+    /// after contract update, before any deferred redemptions can be processed.
+    /// access(all) is safe: idempotent no-op when handler exists, writes only to contract's own storage.
+    access(all) fun initPendingRedeemHandler() {
+        let path = self._pendingRedeemHandlerPath()
+        if self.account.storage.type(at: path) != nil {
+            return
+        }
+        self.account.storage.save(<-create PendingRedeemHandler(), to: path)
     }
 
     init(

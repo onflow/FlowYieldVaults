@@ -29,6 +29,16 @@ access(all) contract FlowYieldVaultsAutoBalancers {
     /// The path prefix used for StoragePath & PublicPath derivations
     access(all) let pathPrefix: String
 
+    /// Storage path for the shared execution callback resource that reports to the registry (one per account)
+    access(self) let registryReportCallbackStoragePath: StoragePath
+
+    /// Callback resource invoked by each AutoBalancer after execution; calls Registry.reportExecution with its id
+    access(all) resource RegistryReportCallback: DeFiActions.AutoBalancerExecutionCallback {
+        access(all) fun onExecuted(balancerUUID: UInt64) {
+            FlowYieldVaultsSchedulerRegistry.reportExecution(yieldVaultID: balancerUUID)
+        }
+    }
+
     /* --- PUBLIC METHODS --- */
 
     /// Returns the path (StoragePath or PublicPath) at which an AutoBalancer is stored with the associated
@@ -58,6 +68,19 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         return nil
     }
 
+    /// Creates a sink to an AutoBalancer for external deposits (e.g., cancel deferred redemption).
+    ///
+    /// @param id: The yield vault/AutoBalancer ID
+    /// @return Sink that can deposit to the AutoBalancer, or nil if not found
+    ///
+    access(account) fun createExternalSink(id: UInt64): {DeFiActions.Sink}? {
+        let storagePath = self.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
+        if let autoBalancer = self.account.storage.borrow<auth(DeFiActions.Get) &DeFiActions.AutoBalancer>(from: storagePath) {
+            return autoBalancer.createBalancerSink()
+        }
+        return nil
+    }
+
     /// Checks if an AutoBalancer has at least one active (Scheduled) transaction.
     /// Used by Supervisor to detect stuck yield vaults that need recovery.
     ///
@@ -69,7 +92,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         if autoBalancer == nil {
             return false
         }
-        
+
         let txnIDs = autoBalancer!.getScheduledTransactionIDs()
         for txnID in txnIDs {
             if autoBalancer!.borrowScheduledTransaction(id: txnID)?.status() == FlowTransactionScheduler.Status.Scheduled {
@@ -93,24 +116,24 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         if autoBalancer == nil {
             return false
         }
-        
+
         // Check if yield vault has recurring config (should be executing periodically)
         let config = autoBalancer!.getRecurringConfig()
         if config == nil {
             return false // Not configured for recurring, can't be "stuck"
         }
-        
+
         // Check if there's an active schedule
         if self.hasActiveSchedule(id: id) {
             return false // Has active schedule, not stuck
         }
-        
+
         // Check if yield vault is overdue
         let nextExpected = autoBalancer!.calculateNextExecutionTimestampAsConfigured()
         if nextExpected == nil {
             return true // Can't calculate next time, likely stuck
         }
-        
+
         // If next expected time has passed and no active schedule, yield vault is stuck
         return nextExpected! < getCurrentBlock().timestamp
     }
@@ -150,6 +173,20 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         assert(!publishedCap,
             message: "Published Capability collision found when publishing AutoBalancer for UniqueIdentifier.id \(uniqueID.id) at path \(publicPath)")
 
+        let registryReportCallbackCapabilityStoragePath =
+            StoragePath(identifier: "FlowYieldVaultsRegistryReportCallbackCapability")!
+        if self.account.storage.type(at: registryReportCallbackCapabilityStoragePath) == nil {
+            let sharedReportCap = self.account.capabilities.storage.issue<&{DeFiActions.AutoBalancerExecutionCallback}>(
+                self.registryReportCallbackStoragePath
+            )
+            self.account.storage.save(sharedReportCap, to: registryReportCallbackCapabilityStoragePath)
+        }
+        let reportCap = self.account.storage.copy<Capability<&{DeFiActions.AutoBalancerExecutionCallback}>>(
+            from: registryReportCallbackCapabilityStoragePath
+        ) ?? panic(
+            "Missing shared registry report callback capability at \(registryReportCallbackCapabilityStoragePath)"
+        )
+
         // create & save AutoBalancer with optional recurring config
         let autoBalancer <- DeFiActions.createAutoBalancer(
                 oracle: oracle,
@@ -161,6 +198,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
                 recurringConfig: recurringConfig,
                 uniqueID: uniqueID
             )
+        autoBalancer.setExecutionCallback(reportCap)
         self.account.storage.save(<-autoBalancer, to: storagePath)
         let autoBalancerRef = self._borrowAutoBalancer(uniqueID.id)
 
@@ -224,7 +262,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         let publicPath = self.deriveAutoBalancerPath(id: id, storage: false) as! PublicPath
         // unpublish the public AutoBalancer Capability
         let _ = self.account.capabilities.unpublish(publicPath)
-        
+
         // Collect controller IDs first (can't modify during iteration)
         var controllersToDelete: [UInt64] = []
         self.account.capabilities.storage.forEachController(forPath: storagePath, fun(_ controller: &StorageCapabilityController): Bool {
@@ -237,7 +275,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
                 controller.delete()
             }
         }
-        
+
         // load & burn the AutoBalancer (this also handles any pending scheduled transactions via burnCallback)
         let autoBalancer <-self.account.storage.load<@DeFiActions.AutoBalancer>(from: storagePath)
         Burner.burn(<-autoBalancer)
@@ -245,5 +283,11 @@ access(all) contract FlowYieldVaultsAutoBalancers {
 
     init() {
         self.pathPrefix = "FlowYieldVaultsAutoBalancer_"
+        self.registryReportCallbackStoragePath = StoragePath(identifier: "FlowYieldVaultsRegistryReportCallback")!
+
+        // Ensure shared execution callback exists (reports this account's executions to Registry)
+        if self.account.storage.type(at: self.registryReportCallbackStoragePath) == nil {
+            self.account.storage.save(<-create RegistryReportCallback(), to: self.registryReportCallbackStoragePath)
+        }
     }
 }

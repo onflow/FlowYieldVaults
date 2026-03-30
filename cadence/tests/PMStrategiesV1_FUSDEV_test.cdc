@@ -1,4 +1,4 @@
-#test_fork(network: "mainnet", height: 143600000)  // Pinned: FUSDEV vault has liquidity issues after ~143650000
+#test_fork(network: "mainnet", height: 145_589_651)  // Pinned: FUSDEV vault has liquidity issues after ~143650000
 
 import Test
 

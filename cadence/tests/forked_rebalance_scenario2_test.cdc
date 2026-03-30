@@ -334,6 +334,9 @@ fun test_RebalanceYieldVaultScenario2() {
 	// )
 }
 
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
 
 // Enhanced diagnostic precision tracking function with full call stack tracing
 access(all) fun performDiagnosticPrecisionTrace(
