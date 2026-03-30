@@ -81,11 +81,31 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         return nil
     }
 
-    /// Checks if an AutoBalancer has at least one active (Scheduled) transaction.
+    /// Checks if an AutoBalancer has at least one active internally-managed transaction.
     /// Used by Supervisor to detect stuck yield vaults that need recovery.
     ///
+    /// A transaction is considered active when it is:
+    /// - still `Scheduled`, or
+    /// - already marked `Executed` by FlowTransactionScheduler and still within a bounded
+    ///   grace period after its scheduled timestamp.
+    ///
+    /// The second case matters because FlowTransactionScheduler flips status to `Executed`
+    /// before the handler actually runs. Without treating that in-flight window as active,
+    /// the Supervisor can falsely classify healthy vaults as stuck and recover them twice.
+    /// But that window must be bounded: if the handler panics after the optimistic status
+    /// update, the vault must eventually become recoverable instead of remaining "active"
+    /// The second case matters because FlowTransactionScheduler flips status to `Executed`
+    /// before the handler actually runs (though within the same block and collection). 
+    /// Without treating that in-flight window as active, the Supervisor can falsely classify healthy vaults as stuck and recover them twice.
+    /// In particular, this can happen when:
+    ///  - the supervisor and the handler and both executed in the same block, and
+    ///  - the supervisor is executed before the handler
+    /// But that window must be bounded: if the handler panics after the optimistic status
+    /// update, the vault must eventually become recoverable instead of remaining "active"
+    /// forever.
+    ///
     /// @param id: The yield vault/AutoBalancer ID
-    /// @return Bool: true if there's at least one Scheduled transaction, false otherwise
+    /// @return Bool: true if there's at least one active internally-managed transaction, false otherwise
     ///
     access(all) fun hasActiveSchedule(id: UInt64): Bool {
         let autoBalancer = self.borrowAutoBalancer(id: id)
@@ -93,10 +113,21 @@ access(all) contract FlowYieldVaultsAutoBalancers {
             return false
         }
 
+        let currentTimestamp = getCurrentBlock().timestamp
+        let optimisticExecutionGracePeriod: UFix64 = 15.0
         let txnIDs = autoBalancer!.getScheduledTransactionIDs()
         for txnID in txnIDs {
-            if autoBalancer!.borrowScheduledTransaction(id: txnID)?.status() == FlowTransactionScheduler.Status.Scheduled {
-                return true
+            if let scheduledTxn = autoBalancer!.borrowScheduledTransaction(id: txnID) {
+                if let status = scheduledTxn.status() {
+                    if status == FlowTransactionScheduler.Status.Scheduled {
+                        return true
+                    }
+
+                    if status == FlowTransactionScheduler.Status.Executed
+                        && currentTimestamp <= scheduledTxn.timestamp + optimisticExecutionGracePeriod {
+                        return true
+                    }
+                }
             }
         }
         return false
@@ -123,7 +154,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
             return false // Not configured for recurring, can't be "stuck"
         }
 
-        // Check if there's an active schedule
+        // Check if there's an active schedule or an in-flight due execution
         if self.hasActiveSchedule(id: id) {
             return false // Has active schedule, not stuck
         }
@@ -226,8 +257,14 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         let scheduleCap = self.account.capabilities.storage
             .issue<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>(storagePath)
 
-        // Register yield vault in registry for global mapping of live yield vault IDs
-        FlowYieldVaultsSchedulerRegistry.register(yieldVaultID: uniqueID.id, handlerCap: handlerCap, scheduleCap: scheduleCap)
+        // Register the yield vault in the global scheduler registry.
+        // Only recurring vaults participate in the Supervisor's stuck-scan ordering.
+        FlowYieldVaultsSchedulerRegistry.register(
+            yieldVaultID: uniqueID.id,
+            handlerCap: handlerCap,
+            scheduleCap: scheduleCap,
+            participatesInStuckScan: recurringConfig != nil
+        )
 
         // Start the native AutoBalancer self-scheduling chain if recurringConfig was provided
         // This schedules the first rebalance; subsequent ones are scheduled automatically

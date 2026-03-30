@@ -2,7 +2,7 @@
 
 > Historical note: this proposal describes the recovery design that was later implemented.
 > Current code names are `FlowYieldVaultsSchedulerV1` and `FlowYieldVaultsSchedulerRegistry`.
-> Current stuck detection scans up to `MAX_BATCH_SIZE` least-recently-executed vaults from
+> Current stuck detection scans up to `MAX_BATCH_SIZE` least-recently-executed recurring scan participants from
 > the registry's LRU ordering, not the full registered set.
 
 ## Problem Statement
@@ -42,7 +42,12 @@ Instead of modifying DeFiActions to add a `restartRecurring` flag, we use the ex
    let scheduleCap = self.account.capabilities.storage
        .issue<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>(storagePath)
 
-   FlowYieldVaultsSchedulerRegistry.register(yieldVaultID: uniqueID.id, handlerCap: handlerCap, scheduleCap: scheduleCap)
+   FlowYieldVaultsSchedulerRegistry.register(
+       yieldVaultID: uniqueID.id,
+       handlerCap: handlerCap,
+       scheduleCap: scheduleCap,
+       participatesInStuckScan: recurringConfig != nil
+   )
    ```
 
 2. **Supervisor Recovery**
@@ -154,7 +159,8 @@ access(self) var scheduleCaps: {UInt64: Capability<auth(DeFiActions.Schedule) &D
 access(account) fun register(
     yieldVaultID: UInt64,
     handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>,
-    scheduleCap: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>
+    scheduleCap: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>,
+    participatesInStuckScan: Bool
 )
 
 access(account) view fun getScheduleCap(yieldVaultID: UInt64): Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>?

@@ -22,7 +22,7 @@ This document reflects the current scheduler architecture in this repository.
 2. Direct AutoBalancer capabilities, with no scheduling wrapper layer.
 3. Native self-scheduling for healthy recurring AutoBalancers.
 4. Recovery-only Supervisor with bounded scanning and bounded pending-queue processing.
-5. LRU stuck-scan ordering, so the longest-idle vaults are checked first.
+5. LRU stuck-scan ordering across recurring scan participants, so the longest-idle recurring vaults are checked first.
 
 ### Main Components
 
@@ -36,11 +36,11 @@ FlowYieldVaults Account
     |       +-- Starts first native schedule
     |
     +-- FlowYieldVaultsSchedulerRegistry
-    |       +-- yieldVaultRegistry: {UInt64: Bool}
+    |       +-- yieldVaultRegistry: {UInt64: Bool} (all live yield vault IDs)
     |       +-- handlerCaps
     |       +-- scheduleCaps
     |       +-- pendingQueue
-    |       +-- listNodes / listHead / listTail (LRU stuck-scan order)
+    |       +-- listNodes / listHead / listTail (LRU recurring-only stuck-scan order)
     |       +-- supervisorCap
     |
     +-- FlowYieldVaultsSchedulerV1
@@ -68,14 +68,14 @@ FlowYieldVaults Account
 2. The AutoBalancer rebalances.
 3. If recurring scheduling is configured, the AutoBalancer schedules its next run.
 4. The shared execution callback reports success to the registry.
-5. `reportExecution()` moves that vault to the most-recently-executed end of the LRU list.
+5. `reportExecution()` moves that vault to the head of the LRU list (most recently executed).
 
 ### Recovery Operation
 
 Each Supervisor run has two bounded steps:
 
 1. Stuck detection:
-   - reads up to `MAX_BATCH_SIZE` least-recently-executed vault IDs from `getStuckScanCandidates(...)`
+   - reads up to `MAX_BATCH_SIZE` least-recently-executed recurring-participant vault IDs from `pruneAndGetStuckScanCandidates(...)`
    - checks whether each candidate is overdue and lacks an active schedule
    - enqueues stuck vaults into `pendingQueue`
 
@@ -98,7 +98,7 @@ If the Supervisor itself is configured with a recurring interval, it self-resche
   - registered vault tracking
   - pending queue
   - handler/schedule capability storage
-  - LRU stuck-scan ordering
+  - LRU stuck-scan ordering for recurring participants
 
 - `FlowYieldVaultsSchedulerV1.cdc`
   - Supervisor recovery handler
