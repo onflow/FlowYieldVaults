@@ -339,6 +339,48 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
 
             destroy resultVaults
+
+            // Step 9: Drain any remaining FUSDEV shares from the AutoBalancer — excess yield
+            // not consumed during debt repayment — and convert them directly to collateral.
+            // The SwapSource inside closePosition only pulled what was needed to repay the debt;
+            // any surplus shares are still held by the AutoBalancer and are recovered here.
+            let excessShares <- yieldTokenSource.withdrawAvailable(maxAmount: UFix64.max)
+            if excessShares.balance > 0.0 {
+                let moetQuote = yieldToMoetSwapper.quoteOut(forProvided: excessShares.balance, reverse: false)
+                if moetQuote.outAmount > 0.0 {
+                    let moetVault <- yieldToMoetSwapper.swap(quote: moetQuote, inVault: <-excessShares)
+                    let collQuote = debtToCollateralSwapper.quoteOut(forProvided: moetVault.balance, reverse: false)
+                    if collQuote.outAmount > 0.0 {
+                        let extraCollateral <- debtToCollateralSwapper.swap(quote: collQuote, inVault: <-moetVault)
+                        collateralVault.deposit(from: <-extraCollateral)
+                    } else {
+                        emit DustBurned(
+                            tokenType: moetVault.getType().identifier,
+                            balance: moetVault.balance,
+                            quoteInType: collQuote.inType.identifier,
+                            quoteOutType: collQuote.outType.identifier,
+                            quoteInAmount: collQuote.inAmount,
+                            quoteOutAmount: collQuote.outAmount,
+                            swapperType: debtToCollateralSwapper.getType().identifier
+                        )
+                        Burner.burn(<-moetVault)
+                    }
+                } else {
+                    emit DustBurned(
+                        tokenType: excessShares.getType().identifier,
+                        balance: excessShares.balance,
+                        quoteInType: moetQuote.inType.identifier,
+                        quoteOutType: moetQuote.outType.identifier,
+                        quoteInAmount: moetQuote.inAmount,
+                        quoteOutAmount: moetQuote.outAmount,
+                        swapperType: yieldToMoetSwapper.getType().identifier
+                    )
+                    Burner.burn(<-excessShares)
+                }
+            } else {
+                Burner.burn(<-excessShares)
+            }
+
             self._markPositionClosed()
             return <- collateralVault
         }
