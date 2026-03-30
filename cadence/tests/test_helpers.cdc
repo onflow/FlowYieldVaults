@@ -607,6 +607,16 @@ fun setDepositLimitFraction(signer: Test.TestAccount, tokenTypeIdentifier: Strin
     Test.expect(setRes, Test.beSucceeded())
 }
 
+access(all)
+fun resetTransactionScheduler() {
+    let result = _executeTransaction(
+        "transactions/reset_scheduler.cdc",
+        [],
+        serviceAccount
+    )
+    Test.expect(result, Test.beSucceeded())
+}
+
 /* --- Transaction Helpers --- */
 
 access(all)
