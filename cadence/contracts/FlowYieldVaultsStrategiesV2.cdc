@@ -421,7 +421,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             return issuer!.getCollateralConfig(strategyType: strategyType, collateralType: collateralType)
         }
 
-        /// Builds a YIELD→MOET MultiSwapper (AMM direct + ERC4626 redeem path).
+        /// Builds a YIELD→MOET MultiSwapper that contains 2 paths (AMM direct + ERC4626 redeem path).
+        // AMM direct path: YIELD (FUSDEV) -> MOET
+        // ERC4626 redeem path: YIELD (FUSDEV) -> PYUSD0 -> MOET
         access(self) fun _buildYieldToDebtSwapper(
             tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
             uniqueID: DeFiActions.UniqueIdentifier
