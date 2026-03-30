@@ -348,7 +348,6 @@ access(self) fun _deploy(config: DeploymentConfig) {
         )
         Test.expect(err, Test.beNil())
     }
-
     err = Test.deployContract(
         name: "FlowYieldVaultsClosedBeta",
         path: "../contracts/FlowYieldVaultsClosedBeta.cdc",
@@ -596,6 +595,16 @@ fun positionAvailableBalance(
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 
     return res.returnValue as! UFix64
+}
+
+access(all)
+fun resetTransactionScheduler() {
+    let result = _executeTransaction(
+        "transactions/reset_scheduler.cdc",
+        [],
+        serviceAccount
+    )
+    Test.expect(result, Test.beSucceeded())
 }
 
 /* --- Transaction Helpers --- */
