@@ -74,9 +74,9 @@ transaction(
         assert(vaultDecimalsResult.status == EVM.Status.successful, message: "Failed to query vault decimals")
         let vaultDecimals = (EVM.decodeABI(types: [Type<UInt8>()], data: vaultDecimalsResult.data)[0] as! UInt8)
         
-        // Use 2^120 as base — massive value to drown out interest accrual noise,
-        // with room for multipliers up to ~256x within 128-bit _totalAssets field
-        let targetAssets: UInt256 = 1 << 120
+        // Use 2^117 as base — massive value to drown out interest accrual noise,
+        // with room for multipliers up to ~2048x within 128-bit _totalAssets field
+        let targetAssets: UInt256 = 1 << 117
         // Apply price multiplier via raw fixed-point arithmetic
         // UFix64 internally stores value * 10^8, so we extract the raw representation
         // and do: finalTargetAssets = targetAssets * rawMultiplier / 10^8
