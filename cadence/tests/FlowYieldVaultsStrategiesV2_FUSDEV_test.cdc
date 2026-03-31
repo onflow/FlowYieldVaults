@@ -221,6 +221,14 @@ access(all) fun setup() {
     )
     Test.expect(err, Test.beNil())
 
+    log("Deploying FlowYieldVaultsAutoBalancers...")
+    err = Test.deployContract(
+        name: "FlowYieldVaultsAutoBalancers",
+        path: "../../cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
     log("Deploying FlowYieldVaultsAutoBalancersV1...")
     err = Test.deployContract(
         name: "FlowYieldVaultsAutoBalancersV1",
@@ -430,6 +438,7 @@ access(all) fun testWithdrawFromFUSDEVYieldVault_WFLOW() {
 
 access(all) fun testCloseFUSDEVYieldVault_WFLOW() {
     let vaultBalBefore = (_executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [flowUser.address, flowVaultID]).returnValue! as! UFix64?) ?? 0.0
+    let collateralBefore = (_executeScript("../scripts/flow-yield-vaults/get_flow_balance.cdc", [flowUser.address]).returnValue! as! UFix64)
     log("Closing WFLOW vault ".concat(flowVaultID.toString()).concat(" (balance: ").concat(vaultBalBefore.toString()).concat(")..."))
     Test.expect(
         _executeTransactionFile("../transactions/flow-yield-vaults/close_yield_vault.cdc", [flowVaultID], [flowUser]),
@@ -438,7 +447,13 @@ access(all) fun testCloseFUSDEVYieldVault_WFLOW() {
     let vaultBalAfter = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [flowUser.address, flowVaultID])
     Test.expect(vaultBalAfter, Test.beSucceeded())
     Test.assert(vaultBalAfter.returnValue == nil, message: "WFLOW vault should no longer exist after close")
-    log("WFLOW yield vault closed successfully")
+    let collateralAfter = (_executeScript("../scripts/flow-yield-vaults/get_flow_balance.cdc", [flowUser.address]).returnValue! as! UFix64)
+    // After close the debt is fully repaid (closePosition would have reverted otherwise).
+    // Assert that the collateral returned is within 5% of the vault NAV before close,
+    // accounting for UniV3 swap fees and any pre-supplement collateral sold to cover shortfall.
+    Test.assert(equalAmounts(a: collateralAfter, b: collateralBefore + vaultBalBefore, tolerance: vaultBalBefore / 20.0),
+        message: "WFLOW close: expected ~".concat(vaultBalBefore.toString()).concat(" FLOW returned, collateralBefore=").concat(collateralBefore.toString()).concat(" collateralAfter=").concat(collateralAfter.toString()))
+    log("WFLOW yield vault closed successfully, collateral returned: ".concat(collateralAfter.toString()))
 }
 
 /* =========================================================
@@ -493,7 +508,9 @@ access(all) fun testWithdrawFromFUSDEVYieldVault_WBTC() {
 }
 
 access(all) fun testCloseFUSDEVYieldVault_WBTC() {
+    let wbtcBalancePath: PublicPath = /public/EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579Receiver
     let vaultBalBefore = (_executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [wbtcUser.address, wbtcVaultID]).returnValue! as! UFix64?) ?? 0.0
+    let collateralBefore = (_executeScript("../scripts/tokens/get_balance.cdc", [wbtcUser.address, wbtcBalancePath]).returnValue! as! UFix64?) ?? 0.0
     log("Closing WBTC vault ".concat(wbtcVaultID.toString()).concat(" (balance: ").concat(vaultBalBefore.toString()).concat(")..."))
     Test.expect(
         _executeTransactionFile("../transactions/flow-yield-vaults/close_yield_vault.cdc", [wbtcVaultID], [wbtcUser]),
@@ -502,7 +519,12 @@ access(all) fun testCloseFUSDEVYieldVault_WBTC() {
     let vaultBalAfter = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [wbtcUser.address, wbtcVaultID])
     Test.expect(vaultBalAfter, Test.beSucceeded())
     Test.assert(vaultBalAfter.returnValue == nil, message: "WBTC vault should no longer exist after close")
-    log("WBTC yield vault closed successfully")
+    let collateralAfter = (_executeScript("../scripts/tokens/get_balance.cdc", [wbtcUser.address, wbtcBalancePath]).returnValue! as! UFix64?) ?? 0.0
+    // After close the debt is fully repaid (closePosition would have reverted otherwise).
+    // Assert that the collateral returned is within 5% of the vault NAV before close.
+    Test.assert(equalAmounts(a: collateralAfter, b: collateralBefore + vaultBalBefore, tolerance: vaultBalBefore / 20.0),
+        message: "WBTC close: expected ~".concat(vaultBalBefore.toString()).concat(" WBTC returned, collateralBefore=").concat(collateralBefore.toString()).concat(" collateralAfter=").concat(collateralAfter.toString()))
+    log("WBTC yield vault closed successfully, collateral returned: ".concat(collateralAfter.toString()))
 }
 
 /* =========================================================
@@ -557,7 +579,9 @@ access(all) fun testWithdrawFromFUSDEVYieldVault_WETH() {
 }
 
 access(all) fun testCloseFUSDEVYieldVault_WETH() {
+    let wethBalancePath: PublicPath = /public/EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590Receiver
     let vaultBalBefore = (_executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [wethUser.address, wethVaultID]).returnValue! as! UFix64?) ?? 0.0
+    let collateralBefore = (_executeScript("../scripts/tokens/get_balance.cdc", [wethUser.address, wethBalancePath]).returnValue! as! UFix64?) ?? 0.0
     log("Closing WETH vault ".concat(wethVaultID.toString()).concat(" (balance: ").concat(vaultBalBefore.toString()).concat(")..."))
     Test.expect(
         _executeTransactionFile("../transactions/flow-yield-vaults/close_yield_vault.cdc", [wethVaultID], [wethUser]),
@@ -566,7 +590,12 @@ access(all) fun testCloseFUSDEVYieldVault_WETH() {
     let vaultBalAfter = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [wethUser.address, wethVaultID])
     Test.expect(vaultBalAfter, Test.beSucceeded())
     Test.assert(vaultBalAfter.returnValue == nil, message: "WETH vault should no longer exist after close")
-    log("WETH yield vault closed successfully")
+    let collateralAfter = (_executeScript("../scripts/tokens/get_balance.cdc", [wethUser.address, wethBalancePath]).returnValue! as! UFix64?) ?? 0.0
+    // After close the debt is fully repaid (closePosition would have reverted otherwise).
+    // Assert that the collateral returned is within 5% of the vault NAV before close.
+    Test.assert(equalAmounts(a: collateralAfter, b: collateralBefore + vaultBalBefore, tolerance: vaultBalBefore / 20.0),
+        message: "WETH close: expected ~".concat(vaultBalBefore.toString()).concat(" WETH returned, collateralBefore=").concat(collateralBefore.toString()).concat(" collateralAfter=").concat(collateralAfter.toString()))
+    log("WETH yield vault closed successfully, collateral returned: ".concat(collateralAfter.toString()))
 }
 
 /* =========================================================
