@@ -48,8 +48,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     ///   "syWFLOWvDebtTokenTypes"     → {UInt64: Type}
     ///   "moreERC4626Configs"         → {Type: {Type: {Type: MoreERC4626CollateralConfig}}}
     
-    // @deprecated - should be used only for working with legacy positions
-    ///   "originalCollateralTypes"    → {UInt64: Type}
     access(contract) let config: {String: AnyStruct}
 
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
@@ -2016,27 +2014,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
     access(contract) fun _purgeMoreERC4626Configs() {
         FlowYieldVaultsStrategiesV2.config["moreERC4626Configs"] = {} as {Type: {Type: {Type: MoreERC4626CollateralConfig}}}
-    }
-
-    // --- "originalCollateralTypes" partition ---
-    // Stores the original (external) collateral type per strategy uniqueID when a MOET pre-swap
-    // is in effect. E.g. PYUSD0 when the position internally holds MOET.
-
-    access(contract) view fun _getOriginalCollateralType(_ id: UInt64): Type? {
-        let partition = FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] as! {UInt64: Type}? ?? {}
-        return partition[id]
-    }
-
-    access(contract) fun _setOriginalCollateralType(_ id: UInt64, _ t: Type) {
-        var partition = FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] as! {UInt64: Type}? ?? {}
-        partition[id] = t
-        FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] = partition
-    }
-
-    access(contract) fun _removeOriginalCollateralType(_ id: UInt64) {
-        var partition = FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] as! {UInt64: Type}? ?? {}
-        partition.remove(key: id)
-        FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] = partition
     }
 
     init(
