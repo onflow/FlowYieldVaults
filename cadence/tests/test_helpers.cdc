@@ -226,7 +226,10 @@ access(all) fun deployContractsForFork() {
 
     // Deploy EVM mock
     var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
-    
+
+    // Redeploy FlowTransactionScheduler mock (replaces forked mainnet contract with reset-capable version)
+    err = Test.deployContract(name: "FlowTransactionScheduler", path: "../contracts/mocks/FlowTransactionScheduler.cdc", arguments: [])
+
     _deploy(config: config)
 }
 
@@ -607,6 +610,18 @@ fun resetTransactionScheduler() {
     Test.expect(result, Test.beSucceeded())
 }
 
+/// Set position health thresholds (minHealth, targetHealth, maxHealth) on an existing position.
+/// This borrows the Pool from the flowALP account and directly modifies the InternalPosition.
+access(all)
+fun setPositionHealth(signer: Test.TestAccount, pid: UInt64, minHealth: UFix64, targetHealth: UFix64, maxHealth: UFix64) {
+    let result = _executeTransaction(
+        "transactions/set_position_health.cdc",
+        [pid, minHealth, targetHealth, maxHealth],
+        signer
+    )
+    Test.expect(result, Test.beSucceeded())
+}
+
 /* --- Transaction Helpers --- */
 
 access(all)
@@ -788,8 +803,11 @@ fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}
     for symbol in symbolPrices.keys {
         // BandOracle uses 1e9 multiplier for prices
         // e.g., $1.00 = 1_000_000_000, $0.50 = 500_000_000
+        // Split into whole + fractional to avoid UFix64 overflow for large prices (e.g. BTC > $184)
         let price = symbolPrices[symbol]!
-        symbolsRates[symbol] = UInt64(price * 1_000_000_000.0)
+        let whole = UInt64(price)
+        let frac = price - UFix64(whole)
+        symbolsRates[symbol] = whole * 1_000_000_000 + UInt64(frac * 1_000_000_000.0)
     }
     
     let setRes = _executeTransaction(
@@ -1121,4 +1139,65 @@ access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
         }
     }
     return 0.0
+}
+
+access(all)
+fun setupGenericVault(signer: Test.TestAccount, vaultIdentifier: String) {
+    let setupResult = _executeTransaction(
+        "../../lib/flow-evm-bridge/cadence/transactions/example-assets/setup/setup_generic_vault.cdc",
+        [vaultIdentifier],
+        signer
+    )
+    Test.expect(setupResult, Test.beSucceeded())
+}
+
+access(all)
+fun setERC20Balance(
+    signer: Test.TestAccount,
+    tokenAddress: String,
+    holderAddress: String,
+    balanceSlot: UInt256,
+    amount: UInt256
+) {
+    let res = _executeTransaction(
+        "transactions/set_erc20_balance.cdc",
+        [tokenAddress, holderAddress, balanceSlot, amount],
+        signer
+    )
+    Test.expect(res, Test.beSucceeded())
+}
+
+access(all)
+fun mintBTC(signer: Test.TestAccount, amount: UFix64) {
+    let wbtcAddress = "0x717dae2baf7656be9a9b01dee31d571a9d4c9579"
+    let wbtcTokenId = "A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault"
+    let wbtcBalanceSlot: UInt256 = 5
+
+    // Ensure signer has a COA (needs some FLOW for gas)
+    if getCOA(signer.address) == nil {
+        createCOA(signer, fundingAmount: 1.0)
+    }
+    let coaAddress = getCOA(signer.address)!
+
+    // Set wBTC ERC20 balance for the signer's COA on EVM
+    // wBTC has 8 decimals, so multiply amount by 1e8
+    // Split to avoid UFix64 overflow for large amounts
+    let whole = UInt256(amount)
+    let frac = amount - UFix64(UInt64(amount))
+    let amountSmallestUnit = whole * 100_000_000 + UInt256(frac * 100_000_000.0)
+    setERC20Balance(
+        signer: signer,
+        tokenAddress: wbtcAddress,
+        holderAddress: coaAddress,
+        balanceSlot: wbtcBalanceSlot,
+        amount: amountSmallestUnit
+    )
+
+    // Bridge wBTC from EVM to Cadence
+    let bridgeRes = _executeTransaction(
+        "../../lib/flow-evm-bridge/cadence/transactions/bridge/tokens/bridge_tokens_from_evm.cdc",
+        [wbtcTokenId, amountSmallestUnit],
+        signer
+    )
+    Test.expect(bridgeRes, Test.beSucceeded())
 }

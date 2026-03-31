@@ -201,22 +201,22 @@ transaction(
         assert(slot0Value.length == 64, message: "slot0 must be 64 hex chars")
 
         // --- Slot 0: slot0 (packed) ---
-        EVM.store(target: poolAddr, slot: "0", value: slot0Value)
+        EVM.store(target: poolAddr, slot: slotHex(0), value: slot0Value)
 
         // Verify round-trip
-        let readBack = EVM.load(target: poolAddr, slot: "0")
+        let readBack = EVM.load(target: poolAddr, slot: slotHex(0))
         let readBackHex = String.encodeHex(readBack)
         assert(readBackHex == slot0Value, message: "slot0 read-back mismatch - storage corruption!")
 
         // --- Slots 1-3: feeGrowthGlobal0X128, feeGrowthGlobal1X128, protocolFees = 0 ---
         let zero32 = "0000000000000000000000000000000000000000000000000000000000000000"
-        EVM.store(target: poolAddr, slot: "1", value: zero32)
-        EVM.store(target: poolAddr, slot: "2", value: zero32)
-        EVM.store(target: poolAddr, slot: "3", value: zero32)
+        EVM.store(target: poolAddr, slot: slotHex(1), value: zero32)
+        EVM.store(target: poolAddr, slot: slotHex(2), value: zero32)
+        EVM.store(target: poolAddr, slot: slotHex(3), value: zero32)
 
         // --- Slot 4: liquidity = uint128 max ---
         let liquidityAmount: UInt256 = 340282366920938463463374607431768211455 // 2^128 - 1
-        EVM.store(target: poolAddr, slot: "4", value: toHex32(liquidityAmount))
+        EVM.store(target: poolAddr, slot: slotHex(4), value: toHex32(liquidityAmount))
 
         // --- Initialize boundary ticks ---
         // Tick storage layout per tick (4 consecutive slots):
@@ -293,7 +293,7 @@ transaction(
 
         assert(obs0Bytes.length == 32, message: "observations[0] must be exactly 32 bytes")
 
-        EVM.store(target: poolAddr, slot: "8", value: String.encodeHex(obs0Bytes))
+        EVM.store(target: poolAddr, slot: slotHex(8), value: String.encodeHex(obs0Bytes))
 
         // --- Fund pool with token balances ---
         // Calculate 1 billion tokens in each token's decimal format
