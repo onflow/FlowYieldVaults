@@ -201,15 +201,6 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mor
     --network mainnet \
     --signer mainnet-admin
 
-# MOET pre-swap: PYUSD0→MOET via UniV3 fee 100 (FlowALP only accepts MOET as stablecoin collateral)
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_moet_preswap_config.cdc \
-    'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.MoreERC4626StrategyComposer' \
-    'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
-    '["0x99aF3EeA856556646C98c8B9b2548Fe815240750","0x213979bb8a9a86966999b3aa797c1fcf3b967ae2"]' \
-    '[100]' \
-    --network mainnet \
-    --signer mainnet-admin
-
 # WBTC: no WFLOW/WBTC pool — use 2-hop WFLOW→WETH→WBTC (fees 3000/3000)
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc \
     'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.syWFLOWvStrategy' \

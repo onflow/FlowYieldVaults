@@ -109,6 +109,23 @@ fun _latestVaultID(_ user: Test.TestAccount): UInt64 {
     return ids![ids!.length - 1]
 }
 
+/// Returns the syWFLOWv share balance held in the AutoBalancer for the given vault ID,
+/// or nil if no AutoBalancer exists.
+access(all)
+fun _autoBalancerBalance(_ vaultID: UInt64): UFix64? {
+    let r = _executeScript("../scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc", [vaultID])
+    Test.expect(r, Test.beSucceeded())
+    return r.returnValue! as! UFix64?
+}
+
+/// Returns the WETH Cadence vault balance for the given account.
+access(all)
+fun _wethBalance(_ user: Test.TestAccount): UFix64 {
+    let r = _executeScript("../scripts/tokens/get_vault_balance_by_type.cdc", [user.address, wethVaultIdentifier])
+    Test.expect(r, Test.beSucceeded())
+    return (r.returnValue! as! UFix64?) ?? 0.0
+}
+
 /* --- Setup --- */
 
 access(all) fun setup() {
@@ -245,22 +262,6 @@ access(all) fun setup() {
             [100 as UInt32],
             [wflowEVMAddress, pyusd0EVMAddress],     // debtToCollateral
             [3000 as UInt32]
-        ],
-        [adminAccount]
-    )
-    Test.expect(result, Test.beSucceeded())
-
-    // Configure PYUSD0 → MOET pre-swap for MoreERC4626StrategyComposer.
-    // FlowALP only accepts MOET as its stablecoin collateral; PYUSD0 must be swapped first.
-    // PYUSD0/MOET is a stablecoin pair — fee tier 100 (0.01%).
-    log("Configuring MOET pre-swap: MoreERC4626StrategyComposer + PYUSD0 → MOET (fee 100)...")
-    result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/admin/upsert_moet_preswap_config.cdc",
-        [
-            composerIdentifier,
-            pyusd0VaultIdentifier,
-            [pyusd0EVMAddress, moetEVMAddress] as [String],  // PYUSD0 → MOET
-            [100 as UInt32]
         ],
         [adminAccount]
     )
@@ -634,4 +635,120 @@ access(all) fun testCannotDepositWrongTokenToYieldVault() {
     )
     Test.expect(depositResult, Test.beFailed())
     log("Correctly rejected wrong-token deposit (WBTC into WETH vault)")
+}
+
+/* =========================================================
+   Excess-yield test
+   ========================================================= */
+
+/// Opens a syWFLOWvStrategy WETH vault, injects extra syWFLOWv to create an excess scenario,
+/// closes the vault, and verifies the resulting collateral return and excess conversion behaviour.
+///
+/// Scenario:
+///   1. Open a syWFLOWvStrategy vault with 0.001 WETH.
+///   2. Convert 50 FLOW → syWFLOWv and deposit directly into the AutoBalancer.
+///      → AutoBalancer balance now exceeds what is needed to repay the FLOW debt.
+///   3. Close the vault.
+///      → Step 8 of closePosition() drains the remaining syWFLOWv, converts it
+///        syWFLOWv → FLOW → WETH, and adds it to the returned collateral.
+///   4. Verify collateral is returned and the user gains WETH from the excess.
+access(all) fun testCloseSyWFLOWvVaultWithExcessYieldTokens_WETH() {
+    log("=== testCloseSyWFLOWvVaultWithExcessYieldTokens_WETH ===")
+
+    let wethBefore = _wethBalance(wethUser)
+    log("WETH balance before vault creation: ".concat(wethBefore.toString()))
+
+    let collateralAmount: UFix64 = 0.001
+    log("Creating syWFLOWvStrategy vault with ".concat(collateralAmount.toString()).concat(" WETH..."))
+    let createResult = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        [syWFLOWvStrategyIdentifier, wethVaultIdentifier, collateralAmount],
+        [wethUser]
+    )
+    Test.expect(createResult, Test.beSucceeded())
+
+    let vaultID = _latestVaultID(wethUser)
+    log("Created vault ID: ".concat(vaultID.toString()))
+
+    let vaultBalAfterCreate = _executeScript(
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        [wethUser.address, vaultID]
+    )
+    Test.expect(vaultBalAfterCreate, Test.beSucceeded())
+    let vaultBal = vaultBalAfterCreate.returnValue! as! UFix64?
+    Test.assert(vaultBal != nil && vaultBal! > 0.0,
+        message: "Expected positive vault balance after create, got: ".concat((vaultBal ?? 0.0).toString()))
+    log("Vault balance (WETH collateral value): ".concat(vaultBal!.toString()))
+
+    let abBalBefore = _autoBalancerBalance(vaultID)
+    Test.assert(abBalBefore != nil && abBalBefore! > 0.0,
+        message: "Expected positive AutoBalancer balance after vault creation, got: ".concat((abBalBefore ?? 0.0).toString()))
+    log("AutoBalancer syWFLOWv balance before injection: ".concat(abBalBefore!.toString()))
+
+    // Convert 50 FLOW → syWFLOWv and inject into the AutoBalancer.
+    let injectionFlowAmount: UFix64 = 50.0
+    log("Injecting ".concat(injectionFlowAmount.toString()).concat(" FLOW worth of syWFLOWv into AutoBalancer..."))
+    let injectResult = _executeTransactionFile(
+        "transactions/inject_syWFLOWv_to_autobalancer.cdc",
+        [vaultID, syWFLOWvEVMAddress, injectionFlowAmount],
+        [wethUser]
+    )
+    Test.expect(injectResult, Test.beSucceeded())
+
+    let abBalAfter = _autoBalancerBalance(vaultID)
+    Test.assert(abBalAfter != nil,
+        message: "AutoBalancer should still exist after injection")
+    Test.assert(abBalAfter! > abBalBefore!,
+        message: "AutoBalancer balance should have increased after injection. Before: "
+            .concat(abBalBefore!.toString()).concat(" After: ").concat(abBalAfter!.toString()))
+    let injectedShares = abBalAfter! - abBalBefore!
+    log("AutoBalancer syWFLOWv balance after injection: ".concat(abBalAfter!.toString()))
+    log("Injected ".concat(injectedShares.toString()).concat(" syWFLOWv shares (excess over original debt coverage)"))
+
+    log("Closing vault ".concat(vaultID.toString()).concat("..."))
+    let closeResult = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/close_yield_vault.cdc",
+        [vaultID],
+        [wethUser]
+    )
+    Test.expect(closeResult, Test.beSucceeded())
+
+    let vaultBalAfterClose = _executeScript(
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        [wethUser.address, vaultID]
+    )
+    Test.expect(vaultBalAfterClose, Test.beSucceeded())
+    Test.assert(vaultBalAfterClose.returnValue! as! UFix64? == nil,
+        message: "Vault ".concat(vaultID.toString()).concat(" should not exist after close"))
+    log("Vault no longer exists — close confirmed")
+
+    let abBalFinal = _autoBalancerBalance(vaultID)
+    Test.assert(abBalFinal == nil,
+        message: "AutoBalancer should be nil (burned) after vault close, but got: ".concat((abBalFinal ?? 0.0).toString()))
+    log("AutoBalancer is nil after close — torn down during _cleanupAutoBalancer")
+
+    let wethAfter = _wethBalance(wethUser)
+    log("WETH balance after close: ".concat(wethAfter.toString()))
+
+    let tolerance: UFix64 = collateralAmount * 0.05
+    Test.assert(
+        wethAfter >= wethBefore - tolerance,
+        message: "User should have received ~".concat(collateralAmount.toString())
+            .concat(" WETH back (minus swap fees). Before: ").concat(wethBefore.toString())
+            .concat(", After: ").concat(wethAfter.toString())
+            .concat(", Expected min: ").concat((wethBefore - tolerance).toString())
+    )
+
+    // 50 FLOW ≈ $35–50 ≈ 0.012–0.017 WETH — well above any fee loss on 0.001 WETH collateral.
+    Test.assert(
+        wethAfter > wethBefore,
+        message: "User should have received MORE WETH than before (excess syWFLOWv converted to collateral). "
+            .concat("Before: ").concat(wethBefore.toString())
+            .concat(", After: ").concat(wethAfter.toString())
+    )
+    let wethNet = wethAfter - wethBefore
+    log("Net WETH gain from excess syWFLOWv conversion: ".concat(wethNet.toString())
+        .concat(" WETH (injected ≈").concat(injectionFlowAmount.toString()).concat(" FLOW worth)"))
+
+    log("=== testCloseSyWFLOWvVaultWithExcessYieldTokens_WETH PASSED ===")
 }

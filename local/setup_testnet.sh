@@ -163,18 +163,6 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_str
 # 	--network testnet \
 # 	--signer testnet-admin
 
-# configure PYUSD0 as MOET-preswap collateral for FUSDEVStrategy (MorphoERC4626StrategyComposer)
-# path: PYUSD0 → MOET (1-hop, fee 100 = 0.01%)
-# testnet PYUSD0 EVM: 0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f
-# testnet MOET EVM: 0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9
-# flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_moet_preswap_config.cdc \
-# 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.MorphoERC4626StrategyComposer' \
-# 	'A.dfc20aee650fcbdf.EVMVMBridgedToken_d7d43ab7b365f0d0789ae83f4385fa710ffdc98f.Vault' \
-# 	'["0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f","0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9"]' \
-# 	'[100]' \
-# 	--network testnet \
-# 	--signer testnet-admin
-
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.MorphoERC4626StrategyComposer' \
@@ -232,18 +220,6 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mor
 	'[100]' \
 	'["0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e","0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f"]' \
 	'[500]' \
-	--network testnet \
-	--signer testnet-admin
-
-# configure PYUSD0 as MOET-preswap collateral for syWFLOWvStrategy (MoreERC4626StrategyComposer)
-# path: PYUSD0 → MOET (1-hop, fee 100 = 0.01%)
-# testnet PYUSD0 EVM: 0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f
-# testnet MOET EVM: 0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_moet_preswap_config.cdc \
-	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.MoreERC4626StrategyComposer' \
-	'A.dfc20aee650fcbdf.EVMVMBridgedToken_d7d43ab7b365f0d0789ae83f4385fa710ffdc98f.Vault' \
-	'["0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f","0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9"]' \
-	'[100]' \
 	--network testnet \
 	--signer testnet-admin
 
