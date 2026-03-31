@@ -115,7 +115,7 @@ access(all)
 fun _autoBalancerBalance(_ vaultID: UInt64): UFix64? {
     let r = _executeScript("../scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc", [vaultID])
     Test.expect(r, Test.beSucceeded())
-    return r.returnValue! as! UFix64?
+    return r.returnValue as? UFix64
 }
 
 /// Returns the WETH Cadence vault balance for the given account.
@@ -123,7 +123,7 @@ access(all)
 fun _wethBalance(_ user: Test.TestAccount): UFix64 {
     let r = _executeScript("../scripts/tokens/get_vault_balance_by_type.cdc", [user.address, wethVaultIdentifier])
     Test.expect(r, Test.beSucceeded())
-    return (r.returnValue! as! UFix64?) ?? 0.0
+    return (r.returnValue as? UFix64) ?? 0.0
 }
 
 /* --- Setup --- */
@@ -718,7 +718,7 @@ access(all) fun testCloseSyWFLOWvVaultWithExcessYieldTokens_WETH() {
         [wethUser.address, vaultID]
     )
     Test.expect(vaultBalAfterClose, Test.beSucceeded())
-    Test.assert(vaultBalAfterClose.returnValue! as! UFix64? == nil,
+    Test.assert(vaultBalAfterClose.returnValue == nil,
         message: "Vault ".concat(vaultID.toString()).concat(" should not exist after close"))
     log("Vault no longer exists — close confirmed")
 
