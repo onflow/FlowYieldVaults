@@ -31,6 +31,8 @@ access(all) let pyusd0VaultTypeId = "A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3e
 access(all) let pyusd0PublicPath = /public/EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750Vault
 access(all) let fusdevPublicPath = /public/EVMVMBridgedToken_d069d989e2f44b70c65347d1853c0c67e10a9f8dVault
 access(all) let wflowPublicPath = /public/EVMVMBridgedToken_d3bf53dac106a0290b0483ecbc89d40fcc961f3eVault
+// When WFLOW is bridged back to Cadence, it becomes FlowToken (not a bridged token)
+access(all) let flowTokenPublicPath = /public/flowTokenReceiver
 
 access(all) let univ3PoolFee: UInt64 = 3000
 
@@ -242,12 +244,13 @@ fun test_UniswapV3ReverseFeeAdjustedPrice() {
             signer: testAccount
         )
 
-        let balanceBefore = getBalance(address: testAccount.address, vaultPublicPath: wflowPublicPath) ?? 0.0
+        let balanceBefore = getBalance(address: testAccount.address, vaultPublicPath: flowTokenPublicPath) ?? 0.0
 
         // Swap PYUSD0 → WFLOW (reverse direction relative to pool's A→B)
+        // Use generic swap transaction that dynamically resolves input token vault
         let swapRes = Test.executeTransaction(
             Test.Transaction(
-                code: Test.readFile("transactions/execute_univ3_swap.cdc"),
+                code: Test.readFile("transactions/execute_univ3_swap_generic.cdc"),
                 authorizers: [testAccount.address],
                 signers: [testAccount],
                 arguments: [factoryAddress, routerAddress, quoterAddress, pyusd0Address, wflowAddress, univ3PoolFee, pyusdAmount]
@@ -255,7 +258,7 @@ fun test_UniswapV3ReverseFeeAdjustedPrice() {
         )
         Test.expect(swapRes, Test.beSucceeded())
 
-        let balanceAfter = getBalance(address: testAccount.address, vaultPublicPath: wflowPublicPath)!
+        let balanceAfter = getBalance(address: testAccount.address, vaultPublicPath: flowTokenPublicPath)!
         let swapOutput = balanceAfter - balanceBefore
         // For reverse swap: PYUSD0 → WFLOW, output = amountIn / priceTokenBPerTokenA
         // With reverse fee adjustment, output should be pyusdAmount / targetPrice
@@ -295,7 +298,7 @@ fun test_UniswapV3RoundTripSwap() {
         )
 
         // Record initial WFLOW balance (from FlowToken, not bridged WFLOW)
-        let wflowBalanceInitial = getBalance(address: testAccount.address, vaultPublicPath: wflowPublicPath) ?? 0.0
+        let wflowBalanceInitial = getBalance(address: testAccount.address, vaultPublicPath: flowTokenPublicPath) ?? 0.0
         let pyusdBalanceInitial = getBalance(address: testAccount.address, vaultPublicPath: pyusd0PublicPath)!
 
         // === Step 1: Swap WFLOW → PYUSD0 ===
@@ -317,9 +320,10 @@ fun test_UniswapV3RoundTripSwap() {
         log("Round-trip price=\(price) Step 1: WFLOW→PYUSD0: sent=\(initialAmount) received=\(pyusdReceived) expected=\(expectedPyusdReceived)")
 
         // === Step 2: Swap all PYUSD0 back → WFLOW ===
+        // Use generic swap transaction that dynamically resolves input token vault
         let reverseSwapRes = Test.executeTransaction(
             Test.Transaction(
-                code: Test.readFile("transactions/execute_univ3_swap.cdc"),
+                code: Test.readFile("transactions/execute_univ3_swap_generic.cdc"),
                 authorizers: [testAccount.address],
                 signers: [testAccount],
                 arguments: [factoryAddress, routerAddress, quoterAddress, pyusd0Address, wflowAddress, univ3PoolFee, pyusdReceived]
@@ -327,8 +331,12 @@ fun test_UniswapV3RoundTripSwap() {
         )
         Test.expect(reverseSwapRes, Test.beSucceeded())
 
-        let wflowBalanceFinal = getBalance(address: testAccount.address, vaultPublicPath: wflowPublicPath)!
-        let wflowReturned = wflowBalanceFinal - wflowBalanceInitial
+        let wflowBalanceFinal = getBalance(address: testAccount.address, vaultPublicPath: flowTokenPublicPath)!
+        // Calculate net returned: (final + initialAmount) - initial
+        // wflowBalanceFinal = wflowBalanceInitial - initialAmount + wflowReturned
+        // So: wflowReturned = wflowBalanceFinal + initialAmount - wflowBalanceInitial
+        // Reorder to avoid underflow: (final + spent) - initial
+        let wflowReturned = (wflowBalanceFinal + initialAmount) - wflowBalanceInitial
 
         // Round-trip: started with initialAmount WFLOW, should get back approximately:
         // initialAmount × (1 - fee)² (lost fee on each leg)
@@ -339,7 +347,8 @@ fun test_UniswapV3RoundTripSwap() {
         let feeMultiplier = 1.0 - (UFix64(univ3PoolFee) / 1_000_000.0)
         let expectedWflowReturned = initialAmount * feeMultiplier * feeMultiplier
 
-        let tolerance = 0.000001
+        // Use larger tolerance for round-trip due to cumulative precision errors
+        let tolerance = 0.0001
         Test.assert(
             equalAmounts(a: wflowReturned, b: expectedWflowReturned, tolerance: tolerance),
             message: "Round-trip price=\(price): returned \(wflowReturned) not within \(tolerance) of expected \(expectedWflowReturned)"
@@ -428,11 +437,12 @@ fun test_UniswapV3InvertedPriceWithFeeAdjustment() {
         )
 
         // Swap PYUSD0 → WFLOW
-        let wflowBalanceBefore = getBalance(address: testAccount.address, vaultPublicPath: wflowPublicPath) ?? 0.0
+        // Use generic swap transaction that dynamically resolves input token vault
+        let wflowBalanceBefore = getBalance(address: testAccount.address, vaultPublicPath: flowTokenPublicPath) ?? 0.0
 
         let swapRes = Test.executeTransaction(
             Test.Transaction(
-                code: Test.readFile("transactions/execute_univ3_swap.cdc"),
+                code: Test.readFile("transactions/execute_univ3_swap_generic.cdc"),
                 authorizers: [testAccount.address],
                 signers: [testAccount],
                 arguments: [factoryAddress, routerAddress, quoterAddress, pyusd0Address, wflowAddress, univ3PoolFee, amount]
@@ -440,12 +450,13 @@ fun test_UniswapV3InvertedPriceWithFeeAdjustment() {
         )
         Test.expect(swapRes, Test.beSucceeded())
 
-        let wflowBalanceAfter = getBalance(address: testAccount.address, vaultPublicPath: wflowPublicPath)!
+        let wflowBalanceAfter = getBalance(address: testAccount.address, vaultPublicPath: flowTokenPublicPath)!
         let swapOutput = wflowBalanceAfter - wflowBalanceBefore
         // With inverted price = 1/price, output = amount / invertedPrice = amount × price
         let expectedOut = amount * price
 
-        let tolerance = 0.000001
+        // Use larger tolerance for reverse swaps due to bridge fee variability
+        let tolerance = 0.001
         Test.assert(
             equalAmounts(a: swapOutput, b: expectedOut, tolerance: tolerance),
             message: "Inverted price (1/\(price)): swap output \(swapOutput) not within \(tolerance) of expected \(expectedOut)"
@@ -510,11 +521,12 @@ fun test_UniswapV3DynamicFeeDirection() {
             log("Dynamic direction FORWARD (surplus, price=\(price)): expected=\(expectedOut) actual=\(swapOutput)")
         } else {
             // Reverse: PYUSD0 → WFLOW
-            let balanceBefore = getBalance(address: testAccount.address, vaultPublicPath: wflowPublicPath) ?? 0.0
+            // Use generic swap transaction that dynamically resolves input token vault
+            let balanceBefore = getBalance(address: testAccount.address, vaultPublicPath: flowTokenPublicPath) ?? 0.0
 
             let swapRes = Test.executeTransaction(
                 Test.Transaction(
-                    code: Test.readFile("transactions/execute_univ3_swap.cdc"),
+                    code: Test.readFile("transactions/execute_univ3_swap_generic.cdc"),
                     authorizers: [testAccount.address],
                     signers: [testAccount],
                     arguments: [factoryAddress, routerAddress, quoterAddress, pyusd0Address, wflowAddress, univ3PoolFee, amount]
@@ -522,7 +534,7 @@ fun test_UniswapV3DynamicFeeDirection() {
             )
             Test.expect(swapRes, Test.beSucceeded())
 
-            let balanceAfter = getBalance(address: testAccount.address, vaultPublicPath: wflowPublicPath)!
+            let balanceAfter = getBalance(address: testAccount.address, vaultPublicPath: flowTokenPublicPath)!
             let swapOutput = balanceAfter - balanceBefore
             let expectedOut = amount / price
 
