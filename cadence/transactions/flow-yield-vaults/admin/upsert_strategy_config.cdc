@@ -45,16 +45,13 @@ transaction(
             return out
         }
 
-        let composerType = Type<@FlowYieldVaultsStrategiesV2.MorphoERC4626StrategyComposer>()
-
         if swapPath.length > 0 {
-            issuer.addOrUpdateCollateralConfig(
-                composer: composerType,
+            issuer.addOrUpdateMorphoCollateralConfig(
                 strategyType: strategyType,
                 collateralVaultType: tokenType,
                 yieldTokenEVMAddress: yieldEVM,
                 yieldToCollateralAddressPath: toEVM(swapPath),
-                yieldToCollateralFeePath: fees 
+                yieldToCollateralFeePath: fees
             )
         }
     }
