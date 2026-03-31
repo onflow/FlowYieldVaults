@@ -1632,60 +1632,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
     access(all) entitlement Configure
 
-    access(self)
-    fun makeCollateralConfig(
-        yieldTokenEVMAddress: EVM.EVMAddress,
-        yieldToCollateralAddressPath: [EVM.EVMAddress],
-        yieldToCollateralFeePath: [UInt32]
-    ): CollateralConfig {
-        pre {
-            yieldToCollateralAddressPath.length > 1:
-                "Invalid Uniswap V3 swap path length"
-            yieldToCollateralFeePath.length == yieldToCollateralAddressPath.length - 1:
-                "Uniswap V3 fee path length must be path length - 1"
-            yieldToCollateralAddressPath[0].equals(yieldTokenEVMAddress):
-                "UniswapV3 swap path must start with yield token"
-        }
 
-        return CollateralConfig(
-            yieldTokenEVMAddress:  yieldTokenEVMAddress,
-            yieldToCollateralUniV3AddressPath: yieldToCollateralAddressPath,
-            yieldToCollateralUniV3FeePath: yieldToCollateralFeePath
-        )
-    }
-
-    access(self)
-    fun makeMoreERC4626CollateralConfig(
-        yieldTokenEVMAddress: EVM.EVMAddress,
-        yieldToUnderlyingAddressPath: [EVM.EVMAddress],
-        yieldToUnderlyingFeePath: [UInt32],
-        debtToCollateralAddressPath: [EVM.EVMAddress],
-        debtToCollateralFeePath: [UInt32]
-    ): MoreERC4626CollateralConfig {
-        pre {
-            yieldToUnderlyingAddressPath.length > 1:
-                "Invalid Uniswap V3 swap path length"
-            yieldToUnderlyingFeePath.length == yieldToUnderlyingAddressPath.length - 1:
-                "Uniswap V3 fee path length must be path length - 1"
-            yieldToUnderlyingAddressPath[0].equals(yieldTokenEVMAddress):
-                "UniswapV3 swap path must start with yield token"
-            debtToCollateralAddressPath.length > 1:
-                "Invalid debt-to-collateral Uniswap V3 path length"
-            debtToCollateralFeePath.length == debtToCollateralAddressPath.length - 1:
-                "Debt-to-collateral Uniswap V3 fee path length must be path length - 1"
-            debtToCollateralAddressPath[0].equals(yieldToUnderlyingAddressPath[yieldToUnderlyingAddressPath.length - 1]):
-                "debtToCollateral UniV3 path must start with the underlying asset (end of yieldToUnderlying path)"
-        }
-        return MoreERC4626CollateralConfig(
-            yieldTokenEVMAddress: yieldTokenEVMAddress,
-            yieldToUnderlyingUniV3AddressPath: yieldToUnderlyingAddressPath,
-            yieldToUnderlyingUniV3FeePath: yieldToUnderlyingFeePath,
-            debtToCollateralUniV3AddressPath: debtToCollateralAddressPath,
-            debtToCollateralUniV3FeePath: debtToCollateralFeePath
-        )
-    }
-
-    /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
+/// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
     /// may utilize resource consumption (i.e. account storage). Since Strategy creation consumes account storage
     /// via configured AutoBalancers
     access(all) resource StrategyComposerIssuer : FlowYieldVaults.StrategyComposerIssuer {
@@ -1826,10 +1774,10 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     "Collateral type \(collateralVaultType.identifier) is not a FungibleToken.Vault"
             }
 
-            let base = FlowYieldVaultsStrategiesV2.makeCollateralConfig(
+            let base = CollateralConfig(
                 yieldTokenEVMAddress: yieldTokenEVMAddress,
-                yieldToCollateralAddressPath: yieldToCollateralAddressPath,
-                yieldToCollateralFeePath: yieldToCollateralFeePath
+                yieldToCollateralUniV3AddressPath: yieldToCollateralAddressPath,
+                yieldToCollateralUniV3FeePath: yieldToCollateralFeePath
             )
             self.upsertMorphoConfig(config: { strategyType: { collateralVaultType: base } })
         }
@@ -1850,12 +1798,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     "Collateral type \(collateralVaultType.identifier) is not a FungibleToken.Vault"
             }
 
-            let cfg = FlowYieldVaultsStrategiesV2.makeMoreERC4626CollateralConfig(
+            let cfg = MoreERC4626CollateralConfig(
                 yieldTokenEVMAddress: yieldTokenEVMAddress,
-                yieldToUnderlyingAddressPath: yieldToUnderlyingAddressPath,
-                yieldToUnderlyingFeePath: yieldToUnderlyingFeePath,
-                debtToCollateralAddressPath: debtToCollateralAddressPath,
-                debtToCollateralFeePath: debtToCollateralFeePath
+                yieldToUnderlyingUniV3AddressPath: yieldToUnderlyingAddressPath,
+                yieldToUnderlyingUniV3FeePath: yieldToUnderlyingFeePath,
+                debtToCollateralUniV3AddressPath: debtToCollateralAddressPath,
+                debtToCollateralUniV3FeePath: debtToCollateralFeePath
             )
             self.upsertMoreERC4626Config(config: { strategyType: { collateralVaultType: cfg } })
         }

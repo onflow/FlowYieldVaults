@@ -400,9 +400,10 @@ access(all) fun testCreateSyWFLOWvYieldVault_PYUSD0() {
     Test.assert(balance != nil && balance! > 0.0, message: "Expected positive balance after create (PYUSD0)")
     log("PYUSD0 vault balance after create: ".concat(balance!.toString()))
 
-    // Verify the PYUSD0→MOET pre-swap DID NOT happen by checking FlowALPv0.Deposited events:
-    //   - There must be NO Deposited event with vaultType = MOET (pre-swapped collateral)
-    //   - There must be a Deposited event with vaultType = PYUSD0 (should never reach FlowALP)
+    // Verify PYUSD0 was deposited directly into FlowALP as collateral (no intermediate token swap).
+    // syWFLOWvStrategy does not involve MOET at any point — PYUSD0 is deposited as-is.
+    //   - There must be a Deposited event with vaultType = PYUSD0 (collateral deposited directly)
+    //   - There must be NO Deposited event with vaultType = MOET (no pre-swap should occur)
     let depositedEvents = Test.eventsOfType(Type<FlowALPv0.Deposited>())
     log("FlowALPv0.Deposited events: ".concat(depositedEvents.length.toString()))
 
@@ -419,11 +420,11 @@ access(all) fun testCreateSyWFLOWvYieldVault_PYUSD0() {
             foundPyusd0Deposit = true
         }
     }
-    Test.assert(!foundMoetDeposit,
-        message: "Unxpected FlowALPv0.Deposited event with MOET — pre-swap did not deposit PYUSD0 into FlowALP")
     Test.assert(foundPyusd0Deposit,
-        message: "Expected FlowALPv0.Deposited event with PYUSD0 — pre-swap was bypassed")
-    log("Confirmed: FlowALP received PYUSD0 as collateral (MOET was NOT pre-swapped before FlowALP deposit)")
+        message: "Expected FlowALPv0.Deposited event with PYUSD0 — PYUSD0 collateral was not deposited into FlowALP")
+    Test.assert(!foundMoetDeposit,
+        message: "Unexpected FlowALPv0.Deposited event with MOET — syWFLOWvStrategy should not involve MOET")
+    log("Confirmed: FlowALP received PYUSD0 directly as collateral (no MOET involvement)")
 }
 
 access(all) fun testDepositToSyWFLOWvYieldVault_PYUSD0() {

@@ -17,8 +17,8 @@ import "FlowYieldVaultsClosedBeta"
 /// assert the correct rejection.
 ///
 /// Strategy:
-///   <collateral> → FlowALP borrow MOET → swap MOET→PYUSD0 → ERC4626 deposit → FUSDEV (Morpho vault)
-///   Close: FUSDEV → PYUSD0 (redeem) → MOET → repay FlowALP → <collateral> returned to user
+///   <collateral> → FlowALP borrow PYUSD0 → ERC4626 deposit → FUSDEV (Morpho vault)
+///   Close: FUSDEV → PYUSD0 (ERC4626 redeem) → repay FlowALP → <collateral> returned to user
 ///
 /// Mainnet addresses:
 ///   - Admin (FlowYieldVaults deployer): 0xb1d63873c3cc9f79
@@ -668,10 +668,11 @@ access(all) fun testCannotDepositWrongTokenToYieldVault() {
 ///   1. Open a FUSDEVStrategy vault with 0.001 WETH.
 ///   2. Swap 5 FLOW → PYUSD0 via EVM UniV3 WFLOW/PYUSD0 pool.
 ///   3. Convert PYUSD0 → FUSDEV and deposit directly into the AutoBalancer (public deposit()).
-///      → AutoBalancer balance now exceeds what is needed to repay the MOET debt.
+///      → AutoBalancer balance now exceeds what is needed to repay the PYUSD0 debt.
 ///   4. Close the vault.
-///      → Step 9 of closePosition() drains the remaining FUSDEV, converts it
-///        FUSDEV → MOET → collateral, and adds it to the returned collateral.
+///      → Step 9 of closePosition() drains the remaining FUSDEV, converts it to
+///        collateral via MultiSwapper (direct or FUSDEV → PYUSD0 → collateral),
+///        and adds it to the returned collateral.
 ///   5. Verify collateral is returned and the user gains WETH from the excess.
 access(all) fun testCloseFUSDEVVaultWithExcessYieldTokens_WETH() {
     log("=== testCloseFUSDEVVaultWithExcessYieldTokens_WETH ===")
