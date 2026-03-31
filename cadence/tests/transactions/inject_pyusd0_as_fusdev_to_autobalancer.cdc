@@ -1,9 +1,6 @@
 import "FungibleToken"
-import "FungibleTokenMetadataViews"
-import "ViewResolver"
 import "FlowToken"
 import "EVM"
-import "FlowEVMBridgeConfig"
 import "FungibleTokenConnectors"
 import "MorphoERC4626SwapConnectors"
 import "FlowYieldVaultsAutoBalancersV1"
@@ -49,23 +46,9 @@ transaction(
             isReversed: false
         )
 
-        // Locate the signer's PYUSD0 Cadence vault dynamically via FTVaultData.
-        let pyusd0EVM = EVM.addressFromString("0x99aF3EeA856556646C98c8B9b2548Fe815240750")
-        let pyusd0Type = FlowEVMBridgeConfig.getTypeAssociated(with: pyusd0EVM)
-            ?? panic("PYUSD0 EVM address not registered in bridge config")
-        let pyusd0CompType = CompositeType(pyusd0Type.identifier)
-            ?? panic("Cannot construct CompositeType for PYUSD0: ".concat(pyusd0Type.identifier))
-        let pyusd0Contract = getAccount(pyusd0CompType.address!).contracts.borrow<&{FungibleToken}>(name: pyusd0CompType.contractName!)
-            ?? panic("Cannot borrow FungibleToken contract for PYUSD0")
-        let pyusd0VaultData = pyusd0Contract.resolveContractView(
-            resourceType: pyusd0CompType,
-            viewType: Type<FungibleTokenMetadataViews.FTVaultData>()
-        ) as? FungibleTokenMetadataViews.FTVaultData
-            ?? panic("Cannot resolve FTVaultData for PYUSD0")
-
         let pyusd0Provider = signer.storage.borrow<auth(FungibleToken.Withdraw) &{FungibleToken.Provider}>(
-            from: pyusd0VaultData.storagePath
-        ) ?? panic("No PYUSD0 vault found at ".concat(pyusd0VaultData.storagePath.toString()))
+            from: /storage/EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750Vault
+        ) ?? panic("No PYUSD0 vault found")
 
         let pyusd0In <- pyusd0Provider.withdraw(amount: pyusd0Amount)
 

@@ -18,32 +18,25 @@ transaction(amount: UFix64) {
         sender: auth(BorrowValue) &Account,
         rcvr: auth(Storage, IssueStorageCapabilityController, PublishCapability, UnpublishCapability) &Account
     ) {
-        let pyusd0Type = CompositeType("A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault")!
-        let viewResolver = getAccount(pyusd0Type.address!).contracts.borrow<&{ViewResolver}>(name: pyusd0Type.contractName!)
-            ?? panic("Could not borrow ViewResolver for PYUSD0")
-        let vaultData = viewResolver.resolveContractView(
-            resourceType: pyusd0Type,
-            viewType: Type<FungibleTokenMetadataViews.FTVaultData>()
-        ) as! FungibleTokenMetadataViews.FTVaultData?
-            ?? panic("Could not resolve FTVaultData for PYUSD0")
+        let storagePath = /storage/EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750Vault
 
-        // Withdraw from sender
-        let senderVault = sender.storage.borrow<auth(FungibleToken.Withdraw) &{FungibleToken.Provider}>(
-            from: vaultData.storagePath
-        ) ?? panic("Sender has no PYUSD0 vault at ".concat(vaultData.storagePath.toString()))
-        self.vault <- senderVault.withdraw(amount: amount)
+        self.vault <- (sender.storage.borrow<auth(FungibleToken.Withdraw) &{FungibleToken.Provider}>(from: storagePath)
+            ?? panic("Sender has no PYUSD0 vault")).withdraw(amount: amount)
 
         // Set up receiver's PYUSD0 vault if not present
-        if rcvr.storage.borrow<&{FungibleToken.Vault}>(from: vaultData.storagePath) == nil {
-            rcvr.storage.save(<-vaultData.createEmptyVault(), to: vaultData.storagePath)
+        if rcvr.storage.borrow<&{FungibleToken.Vault}>(from: storagePath) == nil {
+            let pyusd0Type = CompositeType("A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault")!
+            let vaultData = getAccount(pyusd0Type.address!).contracts.borrow<&{ViewResolver}>(name: pyusd0Type.contractName!)!
+                .resolveContractView(resourceType: pyusd0Type, viewType: Type<FungibleTokenMetadataViews.FTVaultData>())
+                as! FungibleTokenMetadataViews.FTVaultData?
+                ?? panic("Could not resolve FTVaultData for PYUSD0")
+            rcvr.storage.save(<-vaultData.createEmptyVault(), to: storagePath)
             rcvr.capabilities.unpublish(vaultData.receiverPath)
             rcvr.capabilities.unpublish(vaultData.metadataPath)
-            let receiverCap = rcvr.capabilities.storage.issue<&{FungibleToken.Vault}>(vaultData.storagePath)
-            let metadataCap = rcvr.capabilities.storage.issue<&{FungibleToken.Vault}>(vaultData.storagePath)
-            rcvr.capabilities.publish(receiverCap, at: vaultData.receiverPath)
-            rcvr.capabilities.publish(metadataCap, at: vaultData.metadataPath)
+            rcvr.capabilities.publish(rcvr.capabilities.storage.issue<&{FungibleToken.Vault}>(storagePath), at: vaultData.receiverPath)
+            rcvr.capabilities.publish(rcvr.capabilities.storage.issue<&{FungibleToken.Vault}>(storagePath), at: vaultData.metadataPath)
         }
-        self.receiver = rcvr.storage.borrow<&{FungibleToken.Vault}>(from: vaultData.storagePath)
+        self.receiver = rcvr.storage.borrow<&{FungibleToken.Vault}>(from: storagePath)
             ?? panic("Could not borrow receiver PYUSD0 vault")
     }
 
