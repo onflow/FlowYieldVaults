@@ -42,6 +42,10 @@ access(all) let adminAccount = Test.getAccount(0xb1d63873c3cc9f79)
 /// Used for WFLOW lifecycle tests and for the negative PYUSD0 collateral test.
 access(all) let flowUser = Test.getAccount(0x443472749ebdaac8)
 
+/// Large PYUSD0 holder (~70k PYUSD0) — used solely to seed the FlowALP pool's
+/// PYUSD0 reserves so the pool can service PYUSD0 drawdowns for FUSDEVStrategy positions.
+access(all) let pyusd0Holder = Test.getAccount(0x24263c125b7770e0)
+
 /// FlowToken contract account — used to provision FLOW to flowUser in setup.
 access(all) let flowTokenAccount = Test.getAccount(0x1654653399040a61)
 
@@ -307,6 +311,28 @@ access(all) fun setup() {
         "../transactions/flow-yield-vaults/admin/grant_beta.cdc",
         [],
         [adminAccount, wbtcUser]
+    )
+    Test.expect(result, Test.beSucceeded())
+
+    // Seed the FlowALP pool with PYUSD0 reserves.
+    // FUSDEVStrategy borrows PYUSD0 as its debt token (drawDownSink expects PYUSD0).
+    // The pool can mint MOET but must draw non-MOET tokens from reserves[tokenType].
+    // pyusd0Holder (0x24263c125b7770e0) holds ~70k PYUSD0 on mainnet — grant pool
+    // access and have them deposit 1000 PYUSD0 so the pool can service drawdowns.
+    let alpAdmin = Test.getAccount(0x6b00ff876c299c61)
+    log("Granting pyusd0Holder FlowALP pool cap for PYUSD0 reserve position...")
+    result = _executeTransactionFile(
+        "../../lib/FlowALP/cadence/tests/transactions/flow-alp/pool-management/03_grant_beta.cdc",
+        [],
+        [alpAdmin, pyusd0Holder]
+    )
+    Test.expect(result, Test.beSucceeded())
+
+    log("Creating 1000 PYUSD0 reserve position in FlowALP pool (pushToDrawDownSink: false)...")
+    result = _executeTransactionFile(
+        "../../lib/FlowALP/cadence/transactions/flow-alp/position/create_position.cdc",
+        [1000.0 as UFix64, /storage/EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750Vault as StoragePath, false as Bool],
+        [pyusd0Holder]
     )
     Test.expect(result, Test.beSucceeded())
 
