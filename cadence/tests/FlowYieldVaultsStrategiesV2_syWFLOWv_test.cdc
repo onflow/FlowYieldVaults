@@ -64,7 +64,6 @@ access(all) let wethVaultIdentifier   = "A.1e4aa0b87d10b141.EVMVMBridgedToken_2f
 access(all) let syWFLOWvEVMAddress = "0xCBf9a7753F9D2d0e8141ebB36d99f87AcEf98597"
 access(all) let wflowEVMAddress    = "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
 access(all) let pyusd0EVMAddress   = "0x99aF3EeA856556646C98c8B9b2548Fe815240750"
-access(all) let moetEVMAddress     = "0x213979bb8a9a86966999b3aa797c1fcf3b967ae2"
 access(all) let wbtcEVMAddress     = "0x717DAE2BaF7656BE9a9B01deE31d571a9d4c9579"
 access(all) let wethEVMAddress     = "0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590"
 

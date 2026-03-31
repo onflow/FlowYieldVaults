@@ -9,7 +9,7 @@ import "FlowYieldVaultsAutoBalancersV1"
 /// shares directly into the AutoBalancer for the given yield vault ID.
 ///
 /// This simulates accumulated yield in the AutoBalancer, producing a scenario where
-/// the yield token (FUSDEV) balance is greater than the vault's outstanding MOET debt.
+/// the yield token (FUSDEV) balance is greater than the vault's outstanding PYUSD0 debt.
 ///
 /// The signer must hold PYUSD0 in their Cadence vault and have a COA at /storage/evm.
 /// FLOW at /storage/flowTokenVault is used for bridge fees.

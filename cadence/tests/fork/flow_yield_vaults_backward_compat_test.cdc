@@ -85,12 +85,10 @@ access(all) fun setup() {
             path: "../../contracts/FlowYieldVaultsSchedulerV1.cdc",
             arguments: []
         ),
-
-        // @TODO restore in strategies PR
-        // ContractSpec(
-        //     path: "../../contracts/FlowYieldVaultsStrategiesV2.cdc",
-        //     arguments: [univ3Factory, univ3Router, univ3Quoter]
-        // ),
+        ContractSpec(
+            path: "../../contracts/FlowYieldVaultsStrategiesV2.cdc",
+            arguments: [univ3Factory, univ3Router, univ3Quoter]
+        ),
         ContractSpec(
             path: "../../contracts/PMStrategiesV1.cdc",
             arguments: [univ3Factory, univ3Router, univ3Quoter]

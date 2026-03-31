@@ -26,13 +26,20 @@ transaction(
     debtToCollateralPath: [String],
     debtToCollateralFees: [UInt32]
 ) {
+    let issuer: auth(FlowYieldVaultsStrategiesV2.Configure) &FlowYieldVaultsStrategiesV2.StrategyComposerIssuer
+    let strategyType: Type
+    let tokenType: Type
+    let yieldTokenEVMAddr: EVM.EVMAddress
+    let yieldToUnderlyingAddressPath: [EVM.EVMAddress]
+    let debtToCollateralAddressPath: [EVM.EVMAddress]
+
     prepare(acct: auth(Storage) &Account) {
-        let strategyType = CompositeType(strategyTypeIdentifier)
+        self.strategyType = CompositeType(strategyTypeIdentifier)
             ?? panic("Invalid strategyTypeIdentifier \(strategyTypeIdentifier)")
-        let tokenType = CompositeType(tokenTypeIdentifier)
+        self.tokenType = CompositeType(tokenTypeIdentifier)
             ?? panic("Invalid tokenTypeIdentifier \(tokenTypeIdentifier)")
 
-        let issuer = acct.storage.borrow<
+        self.issuer = acct.storage.borrow<
             auth(FlowYieldVaultsStrategiesV2.Configure) &FlowYieldVaultsStrategiesV2.StrategyComposerIssuer
         >(from: FlowYieldVaultsStrategiesV2.IssuerStoragePath)
             ?? panic("Missing StrategyComposerIssuer at IssuerStoragePath")
@@ -43,13 +50,19 @@ transaction(
             return out
         }
 
-        issuer.addOrUpdateMoreERC4626CollateralConfig(
-            strategyType: strategyType,
-            collateralVaultType: tokenType,
-            yieldTokenEVMAddress: EVM.addressFromString(yieldTokenEVMAddress),
-            yieldToUnderlyingAddressPath: toEVM(yieldToUnderlyingPath),
+        self.yieldTokenEVMAddr = EVM.addressFromString(yieldTokenEVMAddress)
+        self.yieldToUnderlyingAddressPath = toEVM(yieldToUnderlyingPath)
+        self.debtToCollateralAddressPath = toEVM(debtToCollateralPath)
+    }
+
+    execute {
+        self.issuer.addOrUpdateMoreERC4626CollateralConfig(
+            strategyType: self.strategyType,
+            collateralVaultType: self.tokenType,
+            yieldTokenEVMAddress: self.yieldTokenEVMAddr,
+            yieldToUnderlyingAddressPath: self.yieldToUnderlyingAddressPath,
             yieldToUnderlyingFeePath: yieldToUnderlyingFees,
-            debtToCollateralAddressPath: toEVM(debtToCollateralPath),
+            debtToCollateralAddressPath: self.debtToCollateralAddressPath,
             debtToCollateralFeePath: debtToCollateralFees
         )
     }
