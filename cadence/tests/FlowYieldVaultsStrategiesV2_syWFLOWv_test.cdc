@@ -689,7 +689,7 @@ access(all) fun testCloseSyWFLOWvVaultWithExcessYieldTokens_WETH() {
     let injectionFlowAmount: UFix64 = 50.0
     log("Injecting ".concat(injectionFlowAmount.toString()).concat(" FLOW worth of syWFLOWv into AutoBalancer..."))
     let injectResult = _executeTransactionFile(
-        "transactions/inject_syWFLOWv_to_autobalancer.cdc",
+        "transactions/inject_flow_as_sywflowv_to_autobalancer.cdc",
         [vaultID, syWFLOWvEVMAddress, injectionFlowAmount],
         [wethUser]
     )
