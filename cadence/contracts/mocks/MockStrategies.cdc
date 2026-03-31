@@ -110,13 +110,19 @@ access(all) contract MockStrategies {
 
         /// Returns the Vault types which can be used to initialize a given Strategy
         access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
-            return { Type<@FlowToken.Vault>(): true }
+            return {
+                Type<@FlowToken.Vault>(): true,
+                Type<@MOET.Vault>(): true
+            }
         }
 
         /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the
         /// provided Vault type
         access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
-            return { Type<@FlowToken.Vault>(): true }
+            return {
+                Type<@FlowToken.Vault>(): true,
+                Type<@MOET.Vault>(): true
+            }
         }
 
         /// Composes a Strategy of the given type with the provided funds
