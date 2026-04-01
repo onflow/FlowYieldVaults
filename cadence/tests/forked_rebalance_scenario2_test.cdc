@@ -159,8 +159,6 @@ fun logPositionDetails(label: String, pid: UInt64) {
 
 access(all)
 fun test_RebalanceYieldVaultScenario2() {
-	// Test.reset(to: snapshot)
-
 	let fundingAmount = 1000.0
 
 	let user = Test.createAccount()
