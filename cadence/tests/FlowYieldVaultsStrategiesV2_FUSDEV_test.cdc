@@ -136,6 +136,14 @@ fun _wethBalance(_ user: Test.TestAccount): UFix64 {
     return (r.returnValue as? UFix64) ?? 0.0
 }
 
+/// Returns the native FLOW balance for the given account.
+access(all)
+fun _flowBalance(_ user: Test.TestAccount): UFix64 {
+    let r = _executeScript("../scripts/flow-yield-vaults/get_flow_balance.cdc", [user.address])
+    Test.expect(r, Test.beSucceeded())
+    return (r.returnValue as? UFix64) ?? 0.0
+}
+
 /* --- Setup --- */
 
 access(all) fun setup() {
@@ -661,68 +669,63 @@ access(all) fun testCannotDepositWrongTokenToYieldVault() {
    Excess-yield tests
    ========================================================= */
 
-/// Opens a FUSDEVStrategy WETH vault, injects extra FUSDEV to create an excess scenario,
-/// closes the vault, and verifies the resulting collateral return and excess burn behaviour.
+/// Opens a FUSDEVStrategy WFLOW vault, injects extra FUSDEV to create an excess scenario,
+/// closes the vault, and verifies that the excess is returned as FLOW to the user.
+///
+/// Using FLOW as collateral makes the excess-return clearly visible: the user ends up with
+/// more FLOW than they started with, because the injected FUSDEV shares are converted back
+/// to FLOW (via FUSDEV → PYUSD0 → WFLOW) and added to the returned collateral.
 ///
 /// Scenario:
-///   1. Open a FUSDEVStrategy vault with 0.001 WETH.
-///   2. Swap 5 FLOW → PYUSD0 via EVM UniV3 WFLOW/PYUSD0 pool.
-///   3. Convert PYUSD0 → FUSDEV and deposit directly into the AutoBalancer (public deposit()).
+///   1. Open a FUSDEVStrategy vault with 10.0 FLOW.
+///   2. Convert 5.0 PYUSD0 → FUSDEV and deposit directly into the AutoBalancer.
+///      (flowUser already holds PYUSD0 on mainnet — no transfer needed.)
 ///      → AutoBalancer balance now exceeds what is needed to repay the PYUSD0 debt.
-///   4. Close the vault.
+///   3. Close the vault.
 ///      → Step 9 of closePosition() drains the remaining FUSDEV, converts it to
-///        collateral via MultiSwapper (direct or FUSDEV → PYUSD0 → collateral),
-///        and adds it to the returned collateral.
-///   5. Verify collateral is returned and the user gains WETH from the excess.
-access(all) fun testCloseFUSDEVVaultWithExcessYieldTokens_WETH() {
-    log("=== testCloseFUSDEVVaultWithExcessYieldTokens_WETH ===")
+///        FLOW via MultiSwapper (FUSDEV → PYUSD0 → WFLOW), and adds it to the
+///        returned collateral.
+///   4. Verify flowAfter > flowBefore: the user gained net FLOW from the excess.
+access(all) fun testCloseFUSDEVVaultWithExcessYieldTokens_WFLOW() {
+    log("=== testCloseFUSDEVVaultWithExcessYieldTokens_WFLOW ===")
 
-    let wethBefore = _wethBalance(wethUser)
-    log("WETH balance before vault creation: ".concat(wethBefore.toString()))
+    let flowBefore = _flowBalance(flowUser)
+    log("FLOW balance before vault creation: ".concat(flowBefore.toString()))
 
-    let collateralAmount: UFix64 = 0.001
-    log("Creating FUSDEVStrategy vault with ".concat(collateralAmount.toString()).concat(" WETH..."))
+    let collateralAmount: UFix64 = 10.0
+    log("Creating FUSDEVStrategy vault with ".concat(collateralAmount.toString()).concat(" FLOW..."))
     let createResult = _executeTransactionFile(
         "../transactions/flow-yield-vaults/create_yield_vault.cdc",
-        [fusdEvStrategyIdentifier, wethVaultIdentifier, collateralAmount],
-        [wethUser]
+        [fusdEvStrategyIdentifier, flowVaultIdentifier, collateralAmount],
+        [flowUser]
     )
     Test.expect(createResult, Test.beSucceeded())
 
-    let vaultID = _latestVaultID(wethUser)
+    let vaultID = _latestVaultID(flowUser)
     log("Created vault ID: ".concat(vaultID.toString()))
 
     let vaultBalAfterCreate = _executeScript(
         "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
-        [wethUser.address, vaultID]
+        [flowUser.address, vaultID]
     )
     Test.expect(vaultBalAfterCreate, Test.beSucceeded())
     let vaultBal = vaultBalAfterCreate.returnValue! as! UFix64?
     Test.assert(vaultBal != nil && vaultBal! > 0.0,
         message: "Expected positive vault balance after create, got: ".concat((vaultBal ?? 0.0).toString()))
-    log("Vault balance (WETH collateral value): ".concat(vaultBal!.toString()))
+    log("Vault balance (FLOW collateral value): ".concat(vaultBal!.toString()))
 
     let abBalBefore = _autoBalancerBalance(vaultID)
     Test.assert(abBalBefore != nil && abBalBefore! > 0.0,
         message: "Expected positive AutoBalancer balance after vault creation, got: ".concat((abBalBefore ?? 0.0).toString()))
     log("AutoBalancer FUSDEV balance before injection: ".concat(abBalBefore!.toString()))
 
-    // Transfer PYUSD0 from pyusd0Holder to wethUser (avoids EVM swap; pyusd0Holder has ~70k PYUSD0).
+    // flowUser already holds PYUSD0 on mainnet — inject directly without a transfer.
     let injectionPYUSD0Amount: UFix64 = 5.0
-    log("Transferring ".concat(injectionPYUSD0Amount.toString()).concat(" PYUSD0 from pyusd0Holder to wethUser..."))
-    let transferResult = _executeTransactionFile(
-        "transactions/transfer_pyusd0.cdc",
-        [injectionPYUSD0Amount],
-        [pyusd0Holder, wethUser]
-    )
-    Test.expect(transferResult, Test.beSucceeded())
-
-    // Inject PYUSD0 → FUSDEV into the AutoBalancer.
     log("Injecting ".concat(injectionPYUSD0Amount.toString()).concat(" PYUSD0 worth of FUSDEV into AutoBalancer..."))
     let injectResult = _executeTransactionFile(
         "transactions/inject_pyusd0_as_fusdev_to_autobalancer.cdc",
         [vaultID, fusdEvEVMAddress, injectionPYUSD0Amount],
-        [wethUser]
+        [flowUser]
     )
     Test.expect(injectResult, Test.beSucceeded())
 
@@ -740,13 +743,13 @@ access(all) fun testCloseFUSDEVVaultWithExcessYieldTokens_WETH() {
     let closeResult = _executeTransactionFile(
         "../transactions/flow-yield-vaults/close_yield_vault.cdc",
         [vaultID],
-        [wethUser]
+        [flowUser]
     )
     Test.expect(closeResult, Test.beSucceeded())
 
     let vaultBalAfterClose = _executeScript(
         "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
-        [wethUser.address, vaultID]
+        [flowUser.address, vaultID]
     )
     Test.expect(vaultBalAfterClose, Test.beSucceeded())
     Test.assert(vaultBalAfterClose.returnValue == nil,
@@ -758,28 +761,21 @@ access(all) fun testCloseFUSDEVVaultWithExcessYieldTokens_WETH() {
         message: "AutoBalancer should be nil (burned) after vault close, but got: ".concat((abBalFinal ?? 0.0).toString()))
     log("AutoBalancer is nil after close — torn down during _cleanupAutoBalancer")
 
-    let wethAfter = _wethBalance(wethUser)
-    log("WETH balance after close: ".concat(wethAfter.toString()))
+    let flowAfter = _flowBalance(flowUser)
+    log("FLOW balance after close: ".concat(flowAfter.toString()))
 
-    let tolerance: UFix64 = collateralAmount * 0.05
+    // 5 PYUSD0 ≈ $5 at current prices — well above tx fees incurred during this test.
+    // The net gain should be clearly positive: excess FUSDEV → PYUSD0 → WFLOW adds more
+    // FLOW back than the transactions consume in fees.
     Test.assert(
-        wethAfter >= wethBefore - tolerance,
-        message: "User should have received ~".concat(collateralAmount.toString())
-            .concat(" WETH back (minus swap fees). Before: ").concat(wethBefore.toString())
-            .concat(", After: ").concat(wethAfter.toString())
-            .concat(", Expected min: ").concat((wethBefore - tolerance).toString())
+        flowAfter > flowBefore,
+        message: "User should have more FLOW than before (excess FUSDEV converted back to FLOW). "
+            .concat("Before: ").concat(flowBefore.toString())
+            .concat(", After: ").concat(flowAfter.toString())
     )
+    let flowNet = flowAfter - flowBefore
+    log("Net FLOW gain from excess FUSDEV conversion: ".concat(flowNet.toString())
+        .concat(" FLOW (injected ~").concat(injectionPYUSD0Amount.toString()).concat(" PYUSD0 worth)"))
 
-    // 5 PYUSD0 ≈ $5 at current prices ≈ 0.002 WETH — well above any fee loss on 0.001 WETH collateral.
-    Test.assert(
-        wethAfter > wethBefore,
-        message: "User should have received MORE WETH than before (excess FUSDEV converted to collateral). "
-            .concat("Before: ").concat(wethBefore.toString())
-            .concat(", After: ").concat(wethAfter.toString())
-    )
-    let wethNet = wethAfter - wethBefore
-    log("Net WETH gain from excess FUSDEV conversion: ".concat(wethNet.toString())
-        .concat(" WETH (injected ≈").concat(injectionPYUSD0Amount.toString()).concat(" PYUSD0 worth)"))
-
-    log("=== testCloseFUSDEVVaultWithExcessYieldTokens_WETH PASSED ===")
+    log("=== testCloseFUSDEVVaultWithExcessYieldTokens_WFLOW PASSED ===")
 }

@@ -125,6 +125,14 @@ fun _wethBalance(_ user: Test.TestAccount): UFix64 {
     return (r.returnValue as? UFix64) ?? 0.0
 }
 
+/// Returns the PYUSD0 Cadence vault balance for the given account.
+access(all)
+fun _pyusd0Balance(_ user: Test.TestAccount): UFix64 {
+    let r = _executeScript("../scripts/tokens/get_vault_balance_by_type.cdc", [user.address, pyusd0VaultIdentifier])
+    Test.expect(r, Test.beSucceeded())
+    return (r.returnValue as? UFix64) ?? 0.0
+}
+
 /* --- Setup --- */
 
 access(all) fun setup() {
@@ -641,57 +649,62 @@ access(all) fun testCannotDepositWrongTokenToYieldVault() {
    Excess-yield test
    ========================================================= */
 
-/// Opens a syWFLOWvStrategy WETH vault, injects extra syWFLOWv to create an excess scenario,
-/// closes the vault, and verifies the resulting collateral return and excess conversion behaviour.
+/// Opens a syWFLOWvStrategy PYUSD0 vault, injects extra syWFLOWv to create an excess scenario,
+/// closes the vault, and verifies that the excess is returned as PYUSD0 to the user.
+///
+/// Using PYUSD0 as collateral makes the excess-return clearly visible: the user ends up with
+/// more PYUSD0 than they started with, because the injected syWFLOWv shares are converted back
+/// to PYUSD0 (via syWFLOWv → FLOW → PYUSD0) and added to the returned collateral.
 ///
 /// Scenario:
-///   1. Open a syWFLOWvStrategy vault with 0.001 WETH.
+///   1. Open a syWFLOWvStrategy vault with 2.0 PYUSD0.
 ///   2. Convert 50 FLOW → syWFLOWv and deposit directly into the AutoBalancer.
+///      (pyusd0User already holds FLOW on mainnet — no setup needed.)
 ///      → AutoBalancer balance now exceeds what is needed to repay the FLOW debt.
 ///   3. Close the vault.
-///      → Step 8 of closePosition() drains the remaining syWFLOWv, converts it
-///        syWFLOWv → FLOW → WETH, and adds it to the returned collateral.
-///   4. Verify collateral is returned and the user gains WETH from the excess.
-access(all) fun testCloseSyWFLOWvVaultWithExcessYieldTokens_WETH() {
-    log("=== testCloseSyWFLOWvVaultWithExcessYieldTokens_WETH ===")
+///      → Step 8 of closePosition() drains the remaining syWFLOWv, converts it to
+///        PYUSD0 (syWFLOWv → FLOW → PYUSD0), and adds it to the returned collateral.
+///   4. Verify pyusd0After > pyusd0Before: the user gained net PYUSD0 from the excess.
+access(all) fun testCloseSyWFLOWvVaultWithExcessYieldTokens_PYUSD0() {
+    log("=== testCloseSyWFLOWvVaultWithExcessYieldTokens_PYUSD0 ===")
 
-    let wethBefore = _wethBalance(wethUser)
-    log("WETH balance before vault creation: ".concat(wethBefore.toString()))
+    let pyusd0Before = _pyusd0Balance(pyusd0User)
+    log("PYUSD0 balance before vault creation: ".concat(pyusd0Before.toString()))
 
-    let collateralAmount: UFix64 = 0.001
-    log("Creating syWFLOWvStrategy vault with ".concat(collateralAmount.toString()).concat(" WETH..."))
+    let collateralAmount: UFix64 = 2.0
+    log("Creating syWFLOWvStrategy vault with ".concat(collateralAmount.toString()).concat(" PYUSD0..."))
     let createResult = _executeTransactionFile(
         "../transactions/flow-yield-vaults/create_yield_vault.cdc",
-        [syWFLOWvStrategyIdentifier, wethVaultIdentifier, collateralAmount],
-        [wethUser]
+        [syWFLOWvStrategyIdentifier, pyusd0VaultIdentifier, collateralAmount],
+        [pyusd0User]
     )
     Test.expect(createResult, Test.beSucceeded())
 
-    let vaultID = _latestVaultID(wethUser)
+    let vaultID = _latestVaultID(pyusd0User)
     log("Created vault ID: ".concat(vaultID.toString()))
 
     let vaultBalAfterCreate = _executeScript(
         "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
-        [wethUser.address, vaultID]
+        [pyusd0User.address, vaultID]
     )
     Test.expect(vaultBalAfterCreate, Test.beSucceeded())
     let vaultBal = vaultBalAfterCreate.returnValue! as! UFix64?
     Test.assert(vaultBal != nil && vaultBal! > 0.0,
         message: "Expected positive vault balance after create, got: ".concat((vaultBal ?? 0.0).toString()))
-    log("Vault balance (WETH collateral value): ".concat(vaultBal!.toString()))
+    log("Vault balance (PYUSD0 collateral value): ".concat(vaultBal!.toString()))
 
     let abBalBefore = _autoBalancerBalance(vaultID)
     Test.assert(abBalBefore != nil && abBalBefore! > 0.0,
         message: "Expected positive AutoBalancer balance after vault creation, got: ".concat((abBalBefore ?? 0.0).toString()))
     log("AutoBalancer syWFLOWv balance before injection: ".concat(abBalBefore!.toString()))
 
-    // Convert 50 FLOW → syWFLOWv and inject into the AutoBalancer.
-    let injectionFlowAmount: UFix64 = 50.0
+    // pyusd0User holds FLOW on mainnet — inject directly without any setup.
+    let injectionFlowAmount: UFix64 = 10.0
     log("Injecting ".concat(injectionFlowAmount.toString()).concat(" FLOW worth of syWFLOWv into AutoBalancer..."))
     let injectResult = _executeTransactionFile(
         "transactions/inject_flow_as_sywflowv_to_autobalancer.cdc",
         [vaultID, syWFLOWvEVMAddress, injectionFlowAmount],
-        [wethUser]
+        [pyusd0User]
     )
     Test.expect(injectResult, Test.beSucceeded())
 
@@ -709,13 +722,13 @@ access(all) fun testCloseSyWFLOWvVaultWithExcessYieldTokens_WETH() {
     let closeResult = _executeTransactionFile(
         "../transactions/flow-yield-vaults/close_yield_vault.cdc",
         [vaultID],
-        [wethUser]
+        [pyusd0User]
     )
     Test.expect(closeResult, Test.beSucceeded())
 
     let vaultBalAfterClose = _executeScript(
         "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
-        [wethUser.address, vaultID]
+        [pyusd0User.address, vaultID]
     )
     Test.expect(vaultBalAfterClose, Test.beSucceeded())
     Test.assert(vaultBalAfterClose.returnValue == nil,
@@ -727,28 +740,21 @@ access(all) fun testCloseSyWFLOWvVaultWithExcessYieldTokens_WETH() {
         message: "AutoBalancer should be nil (burned) after vault close, but got: ".concat((abBalFinal ?? 0.0).toString()))
     log("AutoBalancer is nil after close — torn down during _cleanupAutoBalancer")
 
-    let wethAfter = _wethBalance(wethUser)
-    log("WETH balance after close: ".concat(wethAfter.toString()))
+    let pyusd0After = _pyusd0Balance(pyusd0User)
+    log("PYUSD0 balance after close: ".concat(pyusd0After.toString()))
 
-    let tolerance: UFix64 = collateralAmount * 0.05
+    // 10 FLOW ≈ $0.3–0.5 at current prices — well above tx fees incurred during this test.
+    // The net gain should be clearly positive: excess syWFLOWv → FLOW → PYUSD0 adds more
+    // PYUSD0 back than the transactions consume in fees.
     Test.assert(
-        wethAfter >= wethBefore - tolerance,
-        message: "User should have received ~".concat(collateralAmount.toString())
-            .concat(" WETH back (minus swap fees). Before: ").concat(wethBefore.toString())
-            .concat(", After: ").concat(wethAfter.toString())
-            .concat(", Expected min: ").concat((wethBefore - tolerance).toString())
+        pyusd0After > pyusd0Before,
+        message: "User should have more PYUSD0 than before (excess syWFLOWv converted back to PYUSD0). "
+            .concat("Before: ").concat(pyusd0Before.toString())
+            .concat(", After: ").concat(pyusd0After.toString())
     )
+    let pyusd0Net = pyusd0After - pyusd0Before
+    log("Net PYUSD0 gain from excess syWFLOWv conversion: ".concat(pyusd0Net.toString())
+        .concat(" PYUSD0 (injected ~").concat(injectionFlowAmount.toString()).concat(" FLOW worth)"))
 
-    // 50 FLOW ≈ $35–50 ≈ 0.012–0.017 WETH — well above any fee loss on 0.001 WETH collateral.
-    Test.assert(
-        wethAfter > wethBefore,
-        message: "User should have received MORE WETH than before (excess syWFLOWv converted to collateral). "
-            .concat("Before: ").concat(wethBefore.toString())
-            .concat(", After: ").concat(wethAfter.toString())
-    )
-    let wethNet = wethAfter - wethBefore
-    log("Net WETH gain from excess syWFLOWv conversion: ".concat(wethNet.toString())
-        .concat(" WETH (injected ≈").concat(injectionFlowAmount.toString()).concat(" FLOW worth)"))
-
-    log("=== testCloseSyWFLOWvVaultWithExcessYieldTokens_WETH PASSED ===")
+    log("=== testCloseSyWFLOWvVaultWithExcessYieldTokens_PYUSD0 PASSED ===")
 }
