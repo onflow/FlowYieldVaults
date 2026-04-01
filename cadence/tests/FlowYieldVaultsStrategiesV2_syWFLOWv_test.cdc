@@ -721,8 +721,8 @@ access(all) fun testCloseSyWFLOWvVaultWithExcessYieldTokens_PYUSD0() {
     )
     Test.expect(vaultBalAfterCreate, Test.beSucceeded())
     let vaultBal = vaultBalAfterCreate.returnValue! as! UFix64?
-    Test.assert(vaultBal != nil && vaultBal! > 0.0,
-        message: "Expected positive vault balance after create, got: \(vaultBal ?? 0.0)")
+    Test.assert(equalAmounts(a: vaultBal!, b: collateralAmount, tolerance: collateralAmount * tolerancePct),
+        message: "Expected vault balance ~\(collateralAmount) after create, got: \(vaultBal ?? 0.0)")
     log("Vault balance (PYUSD0 collateral value): \(vaultBal!)")
 
     let abBalBefore = _autoBalancerBalance(vaultID)
