@@ -445,7 +445,7 @@ fun test_RebalanceYieldVaultScenario2() {
         Test.assert(percentToleranceCheck, message: "Percent difference \(yieldVaultPercentDiff)% is not within tolerance \(0.01)%")
 	}
 
-	// closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
+	closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
 
 	// let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	// log("[TEST] flow balance after \(flowBalanceAfter)")

@@ -541,16 +541,15 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 
 	// Close the yield vault
-	// log("\n[Scenario5] Closing yield vault...")
-    // TODO: closeYieldVault currently fails due to precision issues
-	// closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
+	log("\n[Scenario5] Closing yield vault...")
+	closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
 
-	// // User should receive their collateral back; vault should be destroyed.
-	// let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
-	// Test.assert(flowBalanceAfter > flowBalanceBefore,
-	// 	message: "Expected user FLOW balance to increase after closing vault, got \(flowBalanceAfter) (was \(flowBalanceBefore))")
+	// User should receive their collateral back; vault should be destroyed.
+	let flowBalanceAfter = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	Test.assert(flowBalanceAfter > flowBalanceBefore,
+		message: "Expected user FLOW balance to increase after closing vault, got \(flowBalanceAfter) (was \(flowBalanceBefore))")
 
-	// yieldVaultIDs = getYieldVaultIDs(address: user.address)
-	// Test.assert(yieldVaultIDs == nil || yieldVaultIDs!.length == 0,
-	// 	message: "Expected no yield vaults after close but found \(yieldVaultIDs?.length ?? 0)")
+	yieldVaultIDs = getYieldVaultIDs(address: user.address)
+	Test.assert(yieldVaultIDs == nil || yieldVaultIDs!.length == 0,
+		message: "Expected no yield vaults after close but found \(yieldVaultIDs?.length ?? 0)")
 }

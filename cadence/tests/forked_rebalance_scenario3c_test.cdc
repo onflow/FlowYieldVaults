@@ -358,8 +358,7 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
         message: "Expected MOET debt after yield price increase to be \(expectedDebtValues[2]) but got \(debtAfterYieldIncrease)"
     )
 
-    // TODO: closeYieldVault currently fails due to precision issues
-    // closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
+    closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
 
     log("\n=== TEST COMPLETE ===")
 }

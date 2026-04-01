@@ -381,8 +381,7 @@ fun test_RebalanceYieldVaultScenario3B() {
 	log("Difference: \(positionFlowBalance - yieldVaultBalance)")
 	log("========================================\n")
 
-	// Skip closeYieldVault for now due to getYieldVaultBalance precision issues
-    // closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
+    closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
     
     log("\n=== TEST COMPLETE ===")
 }
