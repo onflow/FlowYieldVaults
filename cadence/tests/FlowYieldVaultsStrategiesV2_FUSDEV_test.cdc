@@ -690,10 +690,10 @@ access(all) fun testCloseFUSDEVVaultWithExcessYieldTokens_WFLOW() {
     log("=== testCloseFUSDEVVaultWithExcessYieldTokens_WFLOW ===")
 
     let flowBefore = _flowBalance(flowUser)
-    log("FLOW balance before vault creation: ".concat(flowBefore.toString()))
+    log("FLOW balance before vault creation: \(flowBefore)")
 
     let collateralAmount: UFix64 = 10.0
-    log("Creating FUSDEVStrategy vault with ".concat(collateralAmount.toString()).concat(" FLOW..."))
+    log("Creating FUSDEVStrategy vault with \(collateralAmount) FLOW...")
     let createResult = _executeTransactionFile(
         "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [fusdEvStrategyIdentifier, flowVaultIdentifier, collateralAmount],
@@ -702,7 +702,7 @@ access(all) fun testCloseFUSDEVVaultWithExcessYieldTokens_WFLOW() {
     Test.expect(createResult, Test.beSucceeded())
 
     let vaultID = _latestVaultID(flowUser)
-    log("Created vault ID: ".concat(vaultID.toString()))
+    log("Created vault ID: \(vaultID)")
 
     let vaultBalAfterCreate = _executeScript(
         "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
@@ -711,17 +711,17 @@ access(all) fun testCloseFUSDEVVaultWithExcessYieldTokens_WFLOW() {
     Test.expect(vaultBalAfterCreate, Test.beSucceeded())
     let vaultBal = vaultBalAfterCreate.returnValue! as! UFix64?
     Test.assert(vaultBal != nil && vaultBal! > 0.0,
-        message: "Expected positive vault balance after create, got: ".concat((vaultBal ?? 0.0).toString()))
-    log("Vault balance (FLOW collateral value): ".concat(vaultBal!.toString()))
+        message: "Expected positive vault balance after create, got: \(vaultBal ?? 0.0)")
+    log("Vault balance (FLOW collateral value): \(vaultBal!)")
 
     let abBalBefore = _autoBalancerBalance(vaultID)
     Test.assert(abBalBefore != nil && abBalBefore! > 0.0,
-        message: "Expected positive AutoBalancer balance after vault creation, got: ".concat((abBalBefore ?? 0.0).toString()))
-    log("AutoBalancer FUSDEV balance before injection: ".concat(abBalBefore!.toString()))
+        message: "Expected positive AutoBalancer balance after vault creation, got: \(abBalBefore ?? 0.0)")
+    log("AutoBalancer FUSDEV balance before injection: \(abBalBefore!)")
 
     // flowUser already holds PYUSD0 on mainnet — inject directly without a transfer.
     let injectionPYUSD0Amount: UFix64 = 5.0
-    log("Injecting ".concat(injectionPYUSD0Amount.toString()).concat(" PYUSD0 worth of FUSDEV into AutoBalancer..."))
+    log("Injecting \(injectionPYUSD0Amount) PYUSD0 worth of FUSDEV into AutoBalancer...")
     let injectResult = _executeTransactionFile(
         "transactions/inject_pyusd0_as_fusdev_to_autobalancer.cdc",
         [vaultID, fusdEvEVMAddress, injectionPYUSD0Amount],
@@ -733,13 +733,12 @@ access(all) fun testCloseFUSDEVVaultWithExcessYieldTokens_WFLOW() {
     Test.assert(abBalAfter != nil,
         message: "AutoBalancer should still exist after injection")
     Test.assert(abBalAfter! > abBalBefore!,
-        message: "AutoBalancer FUSDEV balance should have increased after injection. Before: "
-            .concat(abBalBefore!.toString()).concat(" After: ").concat(abBalAfter!.toString()))
+        message: "AutoBalancer FUSDEV balance should have increased after injection. Before: \(abBalBefore!) After: \(abBalAfter!)")
     let injectedShares = abBalAfter! - abBalBefore!
-    log("AutoBalancer FUSDEV balance after injection: ".concat(abBalAfter!.toString()))
-    log("Injected ".concat(injectedShares.toString()).concat(" FUSDEV shares (excess over original debt coverage)"))
+    log("AutoBalancer FUSDEV balance after injection: \(abBalAfter!)")
+    log("Injected \(injectedShares) FUSDEV shares (excess over original debt coverage)")
 
-    log("Closing vault ".concat(vaultID.toString()).concat("..."))
+    log("Closing vault \(vaultID)...")
     let closeResult = _executeTransactionFile(
         "../transactions/flow-yield-vaults/close_yield_vault.cdc",
         [vaultID],
@@ -753,29 +752,26 @@ access(all) fun testCloseFUSDEVVaultWithExcessYieldTokens_WFLOW() {
     )
     Test.expect(vaultBalAfterClose, Test.beSucceeded())
     Test.assert(vaultBalAfterClose.returnValue == nil,
-        message: "Vault ".concat(vaultID.toString()).concat(" should not exist after close"))
+        message: "Vault \(vaultID) should not exist after close")
     log("Vault no longer exists — close confirmed")
 
     let abBalFinal = _autoBalancerBalance(vaultID)
     Test.assert(abBalFinal == nil,
-        message: "AutoBalancer should be nil (burned) after vault close, but got: ".concat((abBalFinal ?? 0.0).toString()))
+        message: "AutoBalancer should be nil (burned) after vault close, but got: \(abBalFinal ?? 0.0)")
     log("AutoBalancer is nil after close — torn down during _cleanupAutoBalancer")
 
     let flowAfter = _flowBalance(flowUser)
-    log("FLOW balance after close: ".concat(flowAfter.toString()))
+    log("FLOW balance after close: \(flowAfter)")
 
     // 5 PYUSD0 ≈ $5 at current prices — well above tx fees incurred during this test.
     // The net gain should be clearly positive: excess FUSDEV → PYUSD0 → WFLOW adds more
     // FLOW back than the transactions consume in fees.
     Test.assert(
         flowAfter > flowBefore,
-        message: "User should have more FLOW than before (excess FUSDEV converted back to FLOW). "
-            .concat("Before: ").concat(flowBefore.toString())
-            .concat(", After: ").concat(flowAfter.toString())
+        message: "User should have more FLOW than before (excess FUSDEV converted back to FLOW). Before: \(flowBefore), After: \(flowAfter)"
     )
     let flowNet = flowAfter - flowBefore
-    log("Net FLOW gain from excess FUSDEV conversion: ".concat(flowNet.toString())
-        .concat(" FLOW (injected ~").concat(injectionPYUSD0Amount.toString()).concat(" PYUSD0 worth)"))
+    log("Net FLOW gain from excess FUSDEV conversion: \(flowNet) FLOW (injected ~\(injectionPYUSD0Amount) PYUSD0 worth)")
 
     log("=== testCloseFUSDEVVaultWithExcessYieldTokens_WFLOW PASSED ===")
 }
