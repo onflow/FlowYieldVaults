@@ -417,7 +417,6 @@ access(all) fun testCreateSyWFLOWvYieldVault_PYUSD0() {
     let bal = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [pyusd0User.address, pyusd0VaultID])
     Test.expect(bal, Test.beSucceeded())
     let balance = bal.returnValue! as! UFix64?
-    Test.assert(balance != nil && balance! > 0.0, message: "Expected positive balance after create (PYUSD0)")
     Test.assert(equalAmounts(a: balance!, b: collateralAmount, tolerance: collateralAmount * tolerancePct),
         message: "PYUSD0 vault balance after create should be ~\(collateralAmount), got \(balance!)")
     log("PYUSD0 vault balance after create: \(balance!)")
@@ -515,7 +514,6 @@ access(all) fun testCreateSyWFLOWvYieldVault_WBTC() {
     let bal = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [wbtcUser.address, wbtcVaultID])
     Test.expect(bal, Test.beSucceeded())
     let balance = bal.returnValue! as! UFix64?
-    Test.assert(balance != nil && balance! > 0.0, message: "Expected positive balance after create (WBTC)")
     Test.assert(equalAmounts(a: balance!, b: collateralAmount, tolerance: collateralAmount * tolerancePct),
         message: "WBTC vault balance after create should be ~\(collateralAmount), got \(balance!)")
     log("WBTC vault balance after create: \(balance!)")
@@ -587,7 +585,6 @@ access(all) fun testCreateSyWFLOWvYieldVault_WETH() {
     let bal = _executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [wethUser.address, wethVaultID])
     Test.expect(bal, Test.beSucceeded())
     let balance = bal.returnValue! as! UFix64?
-    Test.assert(balance != nil && balance! > 0.0, message: "Expected positive balance after create (WETH)")
     Test.assert(equalAmounts(a: balance!, b: collateralAmount, tolerance: collateralAmount * tolerancePct),
         message: "WETH vault balance after create should be ~\(collateralAmount), got \(balance!)")
     log("WETH vault balance after create: \(balance!)")
