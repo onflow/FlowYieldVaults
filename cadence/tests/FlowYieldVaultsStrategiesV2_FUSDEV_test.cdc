@@ -85,6 +85,9 @@ access(all) var flowVaultID: UInt64  = 0
 access(all) var wbtcVaultID: UInt64  = 0
 access(all) var wethVaultID: UInt64  = 0
 
+/// Relative tolerance used in all balance assertions (1%).
+access(all) let tolerancePct: UFix64 = 0.01
+
 /* --- Helpers --- */
 
 access(all)
@@ -442,7 +445,7 @@ access(all) fun testDepositToFUSDEVYieldVault_WFLOW() {
         Test.beSucceeded()
     )
     let after = (_executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [flowUser.address, flowVaultID]).returnValue! as! UFix64?)!
-    Test.assert(equalAmounts(a: after, b: before + depositAmount, tolerance: 0.1),
+    Test.assert(equalAmounts(a: after, b: before + depositAmount, tolerance: (before + depositAmount) * tolerancePct),
         message: "WFLOW deposit: expected ~".concat((before + depositAmount).toString()).concat(", got ").concat(after.toString()))
     log("WFLOW vault balance after deposit: ".concat(after.toString()))
 }
@@ -456,7 +459,7 @@ access(all) fun testWithdrawFromFUSDEVYieldVault_WFLOW() {
         Test.beSucceeded()
     )
     let after = (_executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [flowUser.address, flowVaultID]).returnValue! as! UFix64?)!
-    Test.assert(equalAmounts(a: after, b: before - withdrawAmount, tolerance: 0.1),
+    Test.assert(equalAmounts(a: after, b: before - withdrawAmount, tolerance: (before - withdrawAmount) * tolerancePct),
         message: "WFLOW withdraw: expected ~".concat((before - withdrawAmount).toString()).concat(", got ").concat(after.toString()))
     log("WFLOW vault balance after withdrawal: ".concat(after.toString()))
 }
@@ -476,7 +479,7 @@ access(all) fun testCloseFUSDEVYieldVault_WFLOW() {
     // After close the debt is fully repaid (closePosition would have reverted otherwise).
     // Assert that the collateral returned is within 5% of the vault NAV before close,
     // accounting for UniV3 swap fees and any pre-supplement collateral sold to cover shortfall.
-    Test.assert(equalAmounts(a: collateralAfter, b: collateralBefore + vaultBalBefore, tolerance: vaultBalBefore / 20.0),
+    Test.assert(equalAmounts(a: collateralAfter, b: collateralBefore + vaultBalBefore, tolerance: vaultBalBefore * tolerancePct),
         message: "WFLOW close: expected ~".concat(vaultBalBefore.toString()).concat(" FLOW returned, collateralBefore=").concat(collateralBefore.toString()).concat(" collateralAfter=").concat(collateralAfter.toString()))
     log("WFLOW yield vault closed successfully, collateral returned: ".concat(collateralAfter.toString()))
 }
@@ -513,7 +516,7 @@ access(all) fun testDepositToFUSDEVYieldVault_WBTC() {
         Test.beSucceeded()
     )
     let after = (_executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [wbtcUser.address, wbtcVaultID]).returnValue! as! UFix64?)!
-    Test.assert(equalAmounts(a: after, b: before + depositAmount, tolerance: 0.000005),
+    Test.assert(equalAmounts(a: after, b: before + depositAmount, tolerance: (before + depositAmount) * tolerancePct),
         message: "WBTC deposit: expected ~".concat((before + depositAmount).toString()).concat(", got ").concat(after.toString()))
     log("WBTC vault balance after deposit: ".concat(after.toString()))
 }
@@ -527,7 +530,7 @@ access(all) fun testWithdrawFromFUSDEVYieldVault_WBTC() {
         Test.beSucceeded()
     )
     let after = (_executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [wbtcUser.address, wbtcVaultID]).returnValue! as! UFix64?)!
-    Test.assert(equalAmounts(a: after, b: before - withdrawAmount, tolerance: 0.000005),
+    Test.assert(equalAmounts(a: after, b: before - withdrawAmount, tolerance: (before - withdrawAmount) * tolerancePct),
         message: "WBTC withdraw: expected ~".concat((before - withdrawAmount).toString()).concat(", got ").concat(after.toString()))
     log("WBTC vault balance after withdrawal: ".concat(after.toString()))
 }
@@ -547,7 +550,7 @@ access(all) fun testCloseFUSDEVYieldVault_WBTC() {
     let collateralAfter = (_executeScript("../scripts/tokens/get_balance.cdc", [wbtcUser.address, wbtcBalancePath]).returnValue! as! UFix64?) ?? 0.0
     // After close the debt is fully repaid (closePosition would have reverted otherwise).
     // Assert that the collateral returned is within 5% of the vault NAV before close.
-    Test.assert(equalAmounts(a: collateralAfter, b: collateralBefore + vaultBalBefore, tolerance: vaultBalBefore / 20.0),
+    Test.assert(equalAmounts(a: collateralAfter, b: collateralBefore + vaultBalBefore, tolerance: vaultBalBefore * tolerancePct),
         message: "WBTC close: expected ~".concat(vaultBalBefore.toString()).concat(" WBTC returned, collateralBefore=").concat(collateralBefore.toString()).concat(" collateralAfter=").concat(collateralAfter.toString()))
     log("WBTC yield vault closed successfully, collateral returned: ".concat(collateralAfter.toString()))
 }
@@ -584,7 +587,7 @@ access(all) fun testDepositToFUSDEVYieldVault_WETH() {
         Test.beSucceeded()
     )
     let after = (_executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [wethUser.address, wethVaultID]).returnValue! as! UFix64?)!
-    Test.assert(equalAmounts(a: after, b: before + depositAmount, tolerance: 0.00005),
+    Test.assert(equalAmounts(a: after, b: before + depositAmount, tolerance: (before + depositAmount) * tolerancePct),
         message: "WETH deposit: expected ~".concat((before + depositAmount).toString()).concat(", got ").concat(after.toString()))
     log("WETH vault balance after deposit: ".concat(after.toString()))
 }
@@ -598,7 +601,7 @@ access(all) fun testWithdrawFromFUSDEVYieldVault_WETH() {
         Test.beSucceeded()
     )
     let after = (_executeScript("../scripts/flow-yield-vaults/get_yield_vault_balance.cdc", [wethUser.address, wethVaultID]).returnValue! as! UFix64?)!
-    Test.assert(equalAmounts(a: after, b: before - withdrawAmount, tolerance: 0.00005),
+    Test.assert(equalAmounts(a: after, b: before - withdrawAmount, tolerance: (before - withdrawAmount) * tolerancePct),
         message: "WETH withdraw: expected ~".concat((before - withdrawAmount).toString()).concat(", got ").concat(after.toString()))
     log("WETH vault balance after withdrawal: ".concat(after.toString()))
 }
@@ -618,7 +621,7 @@ access(all) fun testCloseFUSDEVYieldVault_WETH() {
     let collateralAfter = (_executeScript("../scripts/tokens/get_balance.cdc", [wethUser.address, wethBalancePath]).returnValue! as! UFix64?) ?? 0.0
     // After close the debt is fully repaid (closePosition would have reverted otherwise).
     // Assert that the collateral returned is within 5% of the vault NAV before close.
-    Test.assert(equalAmounts(a: collateralAfter, b: collateralBefore + vaultBalBefore, tolerance: vaultBalBefore / 20.0),
+    Test.assert(equalAmounts(a: collateralAfter, b: collateralBefore + vaultBalBefore, tolerance: vaultBalBefore * tolerancePct),
         message: "WETH close: expected ~".concat(vaultBalBefore.toString()).concat(" WETH returned, collateralBefore=").concat(collateralBefore.toString()).concat(" collateralAfter=").concat(collateralAfter.toString()))
     log("WETH yield vault closed successfully, collateral returned: ".concat(collateralAfter.toString()))
 }
@@ -710,12 +713,12 @@ access(all) fun testCloseFUSDEVVaultWithExcessYieldTokens_WFLOW() {
     )
     Test.expect(vaultBalAfterCreate, Test.beSucceeded())
     let vaultBal = vaultBalAfterCreate.returnValue! as! UFix64?
-    Test.assert(vaultBal != nil && vaultBal! > 0.0,
-        message: "Expected positive vault balance after create, got: \(vaultBal ?? 0.0)")
+    Test.assert(equalAmounts(a: vaultBal!, b: collateralAmount, tolerance: collateralAmount * tolerancePct),
+        message: "Expected vault balance ~\(collateralAmount) after create, got: \(vaultBal ?? 0.0)")
     log("Vault balance (FLOW collateral value): \(vaultBal!)")
 
     let abBalBefore = _autoBalancerBalance(vaultID)
-    Test.assert(abBalBefore != nil && abBalBefore! > 0.0,
+    Test.assert(abBalBefore! > 0.0,
         message: "Expected positive AutoBalancer balance after vault creation, got: \(abBalBefore ?? 0.0)")
     log("AutoBalancer FUSDEV balance before injection: \(abBalBefore!)")
 

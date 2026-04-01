@@ -726,7 +726,7 @@ access(all) fun testCloseSyWFLOWvVaultWithExcessYieldTokens_PYUSD0() {
     log("Vault balance (PYUSD0 collateral value): \(vaultBal!)")
 
     let abBalBefore = _autoBalancerBalance(vaultID)
-    Test.assert(abBalBefore != nil && abBalBefore! > 0.0,
+    Test.assert(abBalBefore! > 0.0,
         message: "Expected positive AutoBalancer balance after vault creation, got: \(abBalBefore ?? 0.0)")
     log("AutoBalancer syWFLOWv balance before injection: \(abBalBefore!)")
 
