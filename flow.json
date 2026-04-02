@@ -1201,16 +1201,6 @@
 		},
 		"mainnet": {
 			"mainnet-admin": [
-				{
-					"name": "MockOracle",
-					"args": [
-						{
-							"value": "A.6b00ff876c299c61.MOET.Vault",
-							"type": "String"
-						}
-					]
-				},
-				"MockSwapper",
 				"UInt64LinkedList",
 				"AutoBalancers",
 				"FlowYieldVaultsSchedulerRegistry",
