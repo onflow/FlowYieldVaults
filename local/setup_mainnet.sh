@@ -133,6 +133,41 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governan
 #	--network mainnet --signer mainnet-flow-alp-deployer
 # create pool
 
+######## Stability Fee Rate ########
+# Set stability fee rate to 0 for internal testing
+flow transactions send \
+	./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_stability_fee_rate.cdc \
+	"A.1654653399040a61.FlowToken.Vault" \
+	"0.0" \
+	--signer mainnet-flow-alp-deployer \
+	--network mainnet
+
+# PYUSD0
+flow transactions send \
+	./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_stability_fee_rate.cdc \
+	"A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault" \
+	"0.0" \
+	--signer mainnet-flow-alp-deployer \
+	--network mainnet
+
+# WBTC (cbBTC)
+flow transactions send \
+	./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_stability_fee_rate.cdc \
+	"A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault" \
+	"0.0" \
+	--signer mainnet-flow-alp-deployer \
+	--network mainnet
+
+# WETH
+flow transactions send \
+	./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_stability_fee_rate.cdc \
+	"A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault" \
+	"0.0" \
+	--signer mainnet-flow-alp-deployer \
+	--network mainnet
+
+#########
+
 # add liquidity to pool
 
 # configure FlowYieldVaults
@@ -381,4 +416,5 @@ flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-ma
 #   --compute-limit 9999 \
 #   --network mainnet \
 #   --signer <TEST_USER>
+#
 #
