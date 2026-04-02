@@ -136,6 +136,7 @@ fun setup() {
 }
 
 access(all) var testSnapshot: UInt64 = 0
+// Verify that the YieldVault correctly rebalances yield token holdings when FLOW price changes
 access(all)
 fun test_ForkedRebalanceYieldVaultScenario1() {
 	let fundingAmount = 1000.0
