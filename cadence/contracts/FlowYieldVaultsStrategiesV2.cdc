@@ -384,8 +384,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     // destroy empty vault
                     Burner.burn(<-v)
                 } else {
-                    // Quote first. A zero quote for a non-empty vault indicates a broken route or
-                    // unavailable liquidity, not safe-to-burn dust.
+                    // Quote first. A zero quote for a non-empty vault is ambiguous: it may reflect an
+                    // unquotable route or a tiny residual, so it is not safe to assume this value can
+                    // be burned without further justification.
                     let quote = debtToCollateralSwapper.quoteOut(forProvided: v.balance, reverse: false)
                     if quote.outAmount > 0.0 {
                         let swapped <- debtToCollateralSwapper.swap(quote: quote, inVault: <-v)
@@ -785,8 +786,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     // destroy empty vault
                     Burner.burn(<-v)
                 } else {
-                    // A zero quote for a non-empty FLOW residual indicates a broken route or
-                    // unavailable liquidity, not safe-to-burn dust.
+                    // Quote first. A zero quote for a non-empty vault is ambiguous: it may reflect an
+                    // unquotable route or a tiny residual, so it is not safe to assume this value can
+                    // be burned without further justification.
                     let quote = flowToCollateral.quoteOut(forProvided: v.balance, reverse: false)
                     if quote.outAmount > 0.0 {
                         let swapped <- flowToCollateral.swap(quote: quote, inVault: <-v)
