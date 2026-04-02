@@ -257,7 +257,6 @@ fun test_RebalanceYieldVaultScenario3A() {
         signer: coaOwnerAccount
     )
 
-	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: flowALPAccount, pid: pid, force: true, beFailed: false)
 
 	// Debug: Log position details

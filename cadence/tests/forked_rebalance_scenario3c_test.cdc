@@ -235,7 +235,6 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
         signer: coaOwnerAccount
     )
 
-    rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
     rebalancePosition(signer: flowALPAccount, pid: pid, force: true, beFailed: false)
 
     let yieldTokensAfterFlowPriceIncrease = getAutoBalancerBalance(id: yieldVaultIDs![0])!
