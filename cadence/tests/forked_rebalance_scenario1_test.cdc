@@ -198,8 +198,8 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 		5.0:      3076.92307692   // rebalance: health 6.50 > 1.5
 	}
 
-	// Likely 0.0
-	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	// 	confirm user exists.
+	getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
     transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
     grantBeta(flowYieldVaultsAccount, user)
 
