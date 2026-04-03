@@ -49,7 +49,7 @@ transaction(
     let oldSupervisor: @FlowYieldVaultsSchedulerV1.Supervisor?
     let supervisor: auth(FlowYieldVaultsSchedulerV1.Schedule) &FlowYieldVaultsSchedulerV1.Supervisor
 
-    prepare(signer: auth(BorrowValue, CopyValue, LoadValue, StorageCapabilities) &Account) {
+    prepare(signer: auth(BorrowValue, CopyValue, LoadValue, SaveValue, StorageCapabilities) &Account) {
         pre {
             interval > 0: "interval must be greater than 0"
             executionEffort > 0: "executionEffort must be greater than 0"
@@ -80,9 +80,20 @@ transaction(
             self.autoBalancerIDs.append(id)
         }
 
-        self.fundingVault = signer.storage
-            .copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: /storage/strategiesFeeSource)
-            ?? panic("Could not find funding vault Capability at /storage/strategiesFeeSource")
+        let fundingVaultStoragePath = /storage/strategiesFeeSource
+        var fundingVault = signer.storage
+            .copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: fundingVaultStoragePath)
+
+        if fundingVault == nil {
+            let issuedFundingVault = signer.capabilities.storage
+                .issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(/storage/flowTokenVault)
+            signer.storage.save(issuedFundingVault, to: fundingVaultStoragePath)
+            fundingVault = signer.storage
+                .copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: fundingVaultStoragePath)
+        }
+
+        self.fundingVault = fundingVault
+            ?? panic("Could not find or create funding vault Capability at /storage/strategiesFeeSource")
 
         self.refundReceiver = signer.storage
             .borrow<&{FungibleToken.Vault}>(from: /storage/flowTokenVault)
