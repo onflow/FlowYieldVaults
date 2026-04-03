@@ -11,6 +11,7 @@ import "MOET"
 import "FlowYieldVaultsStrategiesV2"
 import "FlowALPv0"
 import "FlowYieldVaults"
+import "DeFiActions"
 
 
 // ============================================================================
@@ -212,89 +213,131 @@ fun test_RebalanceYieldVaultScenario2() {
 	// ===================================================================================
 	// PHASE 2: YIELD PRICE DECREASES (3.0 → 0.5)
 	// ===================================================================================
-	// When Value/Baseline < 0.95, AutoBalancer needs to restore balance by pulling
-	// from Position collateral. Position may de-lever if health drops below 1.1.
+	// When Value/Baseline < 0.95, AutoBalancer detects a deficit and attempts to pull
+	// collateral from Position. However, deficit rebalancing DOES NOT actually execute.
 	//
-	// STEP-BY-STEP CALCULATION (Price 3.0 → 2.5):
-	//   State at P=3.0: C=2032.92, D=1251.03, U=417.01, B=1251.03
-	//   1. YIELD Value = U × P = 417.01 × 2.5 = 1042.53
-	//   2. Value/Baseline = 1042.53 / 1251.03 = 0.83 < 0.95 → triggers rebalance
-	//   3. Deficit = Baseline - Value = 1251.03 - 1042.53 = 208.50
-	//   4. AutoBalancer pulls 208.50 from Position collateral
-	//   5. C_new = 2032.92 - 208.50 = 1824.42
-	//   6. AutoBalancer buys YIELD: 208.50 / 2.5 = 83.40 units
-	//   7. New Units = 417.01 + 83.40 = 500.41
-	//   8. Position health = 1824.42 × 0.8 / 1251.03 = 1.17 (in [1.1, 1.5], no de-lever)
-	//   9. Position re-targets: D_new = 1824.42 × 0.8 / 1.3 = 1122.72
-	//  10. Repay debt: 1251.03 - 1122.72 = 128.31 (sell YIELD)
-	//  11. Sell YIELD: 128.31 / 2.5 = 51.32 units
-	//  12. Final: C=1746.22 ✓ (after accounting for round-trip swap costs)
+	// WHY DEFICIT REBALANCING FAILS:
+	//   After UP phase, Position health is exactly at target (H=1.3). The PositionSource
+	//   is configured with `pullFromTopUpSource: false` (FlowYieldVaultsStrategiesV2.cdc:439).
 	//
-	// KEY INSIGHT - ROUND-TRIP INEFFICIENCY:
-	//   At P=1.0 (back to original price): C=886.14, not 1000!
-	//   Loss = (1000 - 886.14) / 1000 = 11.4%
-	//   This loss comes from AutoBalancer selling ALL surplus (to B),
-	//   then Position borrowing to re-lever (buying back YIELD).
-	//   Each rebalance cycle has swap friction that accumulates.
+	//   When AutoBalancer calls positionSource.withdrawAvailable():
+	//   1. PositionSource calls pool.availableBalance() with pullFromTopUpSource=false
+	//   2. availableBalance() calls maxWithdraw() (FlowALPv0.cdc:1405-1414)
+	//   3. maxWithdraw() checks: if preHealth <= targetHealth, return 0.0
+	//   4. Position health = 1.3 = target health → returns 0.0
+	//   5. Empty vault returned, no rebalancing occurs
+	//
+	// WHAT ACTUALLY HAPPENS (Price 3.0 → 2.5):
+	//   State at P=3.0: C=2032.92, D=1251.03, U=417.01, B=1251.03, H=1.30
+	//
+	//   1. DEFICIT DETECTION:
+	//      Yield Value = U × P_new = 417.01 × 2.5 = 1042.53
+	//      Value/Baseline = 1042.53 / 1251.03 = 0.833 < 0.95 → triggers rebalance attempt
+	//      Deficit = Baseline - Value = 1251.03 - 1042.53 = 208.50
+	//
+	//   2. AUTOBALANCER TRIES TO PULL FROM POSITION:
+	//      Calls positionSwapSource.withdrawAvailable(208.50)
+	//      But Position health = 1.3 (already at target minimum)
+	//      maxWithdraw() returns 0.0 → empty vault returned
+	//      No DeFiActions.Rebalanced event emitted (executed = false)
+	//
+	//   3. RESULT - NO ACTUAL REBALANCING:
+	//      Position stays unchanged: C=2032.92, D=1251.03, H=1.30
+	//      YieldVault value drops: U × P_new = 417.01 × 2.5 = 1042.53
+	//      Baseline stays at 1251.03 (not updated since no rebalance executed)
+	//
+	// CONSEQUENCE:
+	//   During DOWN phase, Position collateral remains constant at 2032.92 while
+	//   YieldVault value drops with the yield token price. The gap between Position
+	//   collateral and YieldVault value grows with each price decrease.
 	//
 	// ===================================================================================
-	// EXPECTED VALUES TABLE (all values cumulative from previous state)
+	// ACTUAL VALUES FROM TEST (queried from contracts after each rebalance)
 	// ===================================================================================
-	// Formulas for PRICE INCREASE (re-levering):
-	//   C_new = C_old + B_old × (P_new/P_old - 1)
-	//   D_new = C_new × CF / H_target = C_new × 0.8 / 1.3
-	//   U_new = D_new / P_new
-	//   B_new = D_new
-	//
-	// Formulas for PRICE DECREASE (de-levering when health < 1.1):
-	//   Deficit = B_old - (U_old × P_new)
-	//   C_temp = C_old - Deficit (AutoBalancer pulls from collateral)
-	//   If health < 1.1: de-lever to H_target=1.3
-	//   D_new = C_temp × CF / H_target
-	//   U_new = D_new / P_new
-	//   B_new = D_new
-	// ===================================================================================
+	// Legend:
+	//   C = Position Collateral (FLOW)
+	//   D = Position Debt (MOET)
+	//   U = Yield Token Units (AutoBalancer balance)
+	//   B = Baseline (AutoBalancer valueOfDeposits)
+	//   H = Position Health
+	//   V = Yield Value (U × P, current value of yield tokens)
 	//
 	// Initial: C=1000.00, D=615.38, U=615.38, B=615.38, H=1.30
 	//
-	// Price | Dir  | Collateral |   Debt   | YIELD Units | Baseline | Health | Notes
-	// ------|------|------------|----------|-------------|----------|--------|---------------------------
-	// 1.10  | UP   |    1061.54 |   653.26 |      593.87 |   653.26 |   1.30 | Surplus=61.54
-	// 1.20  | UP   |    1120.93 |   689.80 |      574.83 |   689.80 |   1.30 |
-	// 1.30  | UP   |    1178.41 |   725.18 |      557.83 |   725.18 |   1.30 |
-	// 1.50  | UP   |    1289.97 |   793.83 |      529.22 |   793.83 |   1.30 |
-	// 2.00  | UP   |    1554.58 |   956.67 |      478.34 |   956.67 |   1.30 |
-	// 3.00  | UP   |    2032.92 |  1251.03 |      417.01 |  1251.03 |   1.30 | Peak
-	// ------|------|------------|----------|-------------|----------|--------|---------------------------
-	// 2.50  | DOWN |    1746.22 |  1074.60 |      429.84 |  1074.60 |   1.30 | Deficit triggers rebalance
-	// 2.00  | DOWN |    1459.53 |   897.40 |      448.70 |   897.40 |   1.30 |
-	// 1.50  | DOWN |    1172.84 |   721.44 |      480.96 |   721.44 |   1.30 |
-	// 1.00  | DOWN |     886.14 |   545.32 |      545.32 |   545.32 |   1.30 | ~11% loss at original P!
-	// 0.80  | DOWN |     771.47 |   474.74 |      593.43 |   474.74 |   1.30 |
-	// 0.50  | DOWN |     599.45 |   368.89 |      737.78 |   368.89 |   1.30 | 40% loss from original
 	// ===================================================================================
+	// PHASE 1: PRICE INCREASE (surplus rebalancing works)
+	// ===================================================================================
+	// Price | C (Collateral)  | D (Debt)       | U (Yield Units) | B (Baseline)   | H    | V (Value)
+	// ------|-----------------|----------------|-----------------|----------------|------|------------
+	// 1.10  | 1061.53846038   | 653.25443715   | 593.86767012    | 653.25443712   | 1.30 | 653.25
+	// 1.20  | 1120.92522667   | 689.80013948   | 574.83344953    | 689.80013943   | 1.30 | 689.80
+	// 1.30  | 1178.40856969   | 725.17450442   | 557.82654183    | 725.17450436   | 1.30 | 725.17
+	// 1.50  | 1289.97387761   | 793.83007852   | 529.22005231    | 793.83007845   | 1.30 | 793.83
+	// 2.00  | 1554.58390268   | 956.66701703   | 478.33350847    | 956.66701695   | 1.30 | 956.67
+	// 3.00  | 2032.91741019   | 1251.02609857  | 417.00869949    | 1251.02609847  | 1.30 | 1251.03 (PEAK)
 	//
-	// KEY OBSERVATIONS:
-	// 1. During UP phase: D, B increase (more leverage); U decreases (fewer units at higher price)
-	// 2. During DOWN phase: D, B decrease (de-leverage); U increases (more units at lower price)
-	// 3. At P=1.00 (original): C=886.14 vs initial 1000 → 11.4% value lost to round-trips
-	// 4. The loss comes from: sell high → buy back at same price costs swap fees each cycle
 	// ===================================================================================
-	let yieldPriceChanges = [1.1, 1.2, 1.3, 1.5, 2.0, 3.0, 2.5, 2.0, 1.5, 1.0, 0.8, 0.5]
-	let expectedFlowBalance = [
-		1061.53846154,   // 1.10 UP
-		1120.92522862,   // 1.20 UP
-		1178.40857368,   // 1.30 UP
-		1289.97388243,   // 1.50 UP
-		1554.58390959,   // 2.00 UP
-		2032.91742023,   // 3.00 UP (peak)
-		// Price decreases from peak (cumulative)
-		1746.22392914,   // 2.50 DOWN
-		1459.53044824,   // 2.00 DOWN
-		1172.83696734,   // 1.50 DOWN
-		886.14348644,    // 1.00 DOWN (back to original price, but ~11% loss from round-trips)
-		771.46609409,    // 0.80 DOWN
-		599.45000554     // 0.50 DOWN (below original value, demonstrates losses accumulate)
+	// PHASE 2: PRICE DECREASE (deficit rebalancing BLOCKED - all values stay constant!)
+	// ===================================================================================
+	// Price | C (Collateral)  | D (Debt)       | U (Yield Units) | B (Baseline)   | H    | V (Value)
+	// ------|-----------------|----------------|-----------------|----------------|------|------------
+	// 2.50  | 2032.91741019   | 1251.02609857  | 417.00869949    | 1251.02609847  | 1.30 | 1042.52
+	// 2.00  | 2032.91741019   | 1251.02609857  | 417.00869949    | 1251.02609847  | 1.30 | 834.02
+	// 1.50  | 2032.91741019   | 1251.02609857  | 417.00869949    | 1251.02609847  | 1.30 | 625.51
+	// 1.00  | 2032.91741019   | 1251.02609857  | 417.00869949    | 1251.02609847  | 1.30 | 417.01
+	// 0.80  | 2032.91741019   | 1251.02609857  | 417.00869949    | 1251.02609847  | 1.30 | 333.61
+	// 0.50  | 2032.91741019   | 1251.02609857  | 417.00869949    | 1251.02609847  | 1.30 | 208.50
+	//
+	// ===================================================================================
+	// KEY OBSERVATIONS FROM ACTUAL DATA:
+	// ===================================================================================
+	// 1. During UP phase: C, D, U, B all increase together as surplus rebalancing executes
+	// 2. During DOWN phase: C, D, U, B ALL STAY CONSTANT at peak values!
+	//    - Position: C=2032.92, D=1251.03 (unchanged)
+	//    - AutoBalancer: U=417.01, B=1251.03 (unchanged)
+	// 3. Only V (yield value = U × P) changes because price changes, but U stays constant
+	// 4. This PROVES deficit rebalancing is NOT executing - no tokens are being moved
+	// 5. The YieldVault balance (expectedFlowBalance) is computed from swap quotes,
+	//    not from C, D, U, or B directly
+	// ===================================================================================
+	var yieldPriceChanges = [1.1, 1.2, 1.3, 1.5, 2.0, 3.0, 2.5, 2.0, 1.5, 1.0, 0.8, 0.5]
+	// expectedFlowBalance = YieldVault balance (computed via Strategy.availableBalance swap quote)
+	// Note: This is NOT the same as Position collateral or U×P. It represents
+	// the FLOW value obtainable by swapping yield tokens through the pool.
+	var expectedFlowBalance = [
+		// UP phase: Position collateral ≈ YieldVault balance (surplus rebalancing works)
+		1061.53846154,   // 1.10 UP - C=1061.54, same as YieldVault
+		1120.92522862,   // 1.20 UP - C=1120.93, same as YieldVault
+		1178.40857368,   // 1.30 UP - C=1178.41, same as YieldVault
+		1289.97388243,   // 1.50 UP - C=1289.97, same as YieldVault
+		1554.58390959,   // 2.00 UP - C=1554.58, same as YieldVault
+		2032.91742023,   // 3.00 UP (peak) - C=2032.92, same as YieldVault
+		// DOWN phase: Position stays at 2032.92, YieldVault drops (no deficit rebalance)
+		1746.22392914,   // 2.50 DOWN - C=2032.92 (unchanged), YieldVault drops
+		1459.53044824,   // 2.00 DOWN - C=2032.92 (unchanged), YieldVault drops
+		1172.83696734,   // 1.50 DOWN - C=2032.92 (unchanged), YieldVault drops
+		886.14348644,    // 1.00 DOWN - C=2032.92 (unchanged), YieldVault drops
+		771.46609409,    // 0.80 DOWN - C=2032.92 (unchanged), YieldVault drops
+		599.45000554     // 0.50 DOWN - C=2032.92 (unchanged), YieldVault drops
+	]
+
+	// Expected state values: [C (Collateral), D (Debt), U (Yield Units), H (Health)]
+	// Values from actual test runs (see comment table above)
+	let expectedState: [[UFix64; 4]] = [
+		// UP phase: surplus rebalancing works, C/D/U all change
+		[1061.53846038, 653.25443715, 593.86767012, 1.30],  // P=1.10
+		[1120.92522667, 689.80013948, 574.83344953, 1.30],  // P=1.20
+		[1178.40856969, 725.17450442, 557.82654183, 1.30],  // P=1.30
+		[1289.97387761, 793.83007852, 529.22005231, 1.30],  // P=1.50
+		[1554.58390268, 956.66701703, 478.33350847, 1.30],  // P=2.00
+		[2032.91741019, 1251.02609857, 417.00869949, 1.30], // P=3.00 (PEAK)
+		// DOWN phase: deficit rebalancing BLOCKED, all values stay at peak
+		[2032.91741019, 1251.02609857, 417.00869949, 1.30], // P=2.50 (unchanged)
+		[2032.91741019, 1251.02609857, 417.00869949, 1.30], // P=2.00 (unchanged)
+		[2032.91741019, 1251.02609857, 417.00869949, 1.30], // P=1.50 (unchanged)
+		[2032.91741019, 1251.02609857, 417.00869949, 1.30], // P=1.00 (unchanged)
+		[2032.91741019, 1251.02609857, 417.00869949, 1.30], // P=0.80 (unchanged)
+		[2032.91741019, 1251.02609857, 417.00869949, 1.30]  // P=0.50 (unchanged)
 	]
 
 	// Likely 0.0
@@ -340,7 +383,7 @@ fun test_RebalanceYieldVaultScenario2() {
 	for index, yieldTokenPrice in yieldPriceChanges {
 		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-		log("[TEST] YieldVault balance before yield price \(yieldTokenPrice): \(yieldVaultBalance ?? 0.0)")
+        log("[TEST] YieldVault balance before price change to \(yieldTokenPrice): \(yieldVaultBalance ?? 0.0)")
 
         setVaultSharePrice(
             vaultAddress: morphoVaultAddress,
@@ -380,10 +423,25 @@ fun test_RebalanceYieldVaultScenario2() {
 
 		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
-		log("[TEST] YieldVault balance before yield price \(yieldTokenPrice) rebalance: \(yieldVaultBalance ?? 0.0)")
+		log("[TEST] YieldVault balance after price to \(yieldTokenPrice): \(yieldVaultBalance ?? 0.0)")
 
 		rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: false, beFailed: false)
+		// Log triggered rebalance events for yield vault (AutoBalancer)
+		let yieldVaultRebalanceEventsInLoop = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
+		log("[TEST] YieldVault Rebalance events count at price \(yieldTokenPrice): \(yieldVaultRebalanceEventsInLoop.length)")
+		if yieldVaultRebalanceEventsInLoop.length > 0 {
+			let lastYieldVaultEvent = yieldVaultRebalanceEventsInLoop[yieldVaultRebalanceEventsInLoop.length - 1] as! DeFiActions.Rebalanced
+			log("[TEST] DeFiActions.Rebalanced - amount: \(lastYieldVaultEvent.amount), value: \(lastYieldVaultEvent.value), isSurplus: \(lastYieldVaultEvent.isSurplus), vaultType: \(lastYieldVaultEvent.vaultType), balancerUUID: \(lastYieldVaultEvent.balancerUUID)")
+		}
+
 		rebalancePosition(signer: flowALPAccount, pid: pid, force: false, beFailed: false)
+		// Log triggered rebalance events for position
+		let positionRebalanceEventsInLoop = Test.eventsOfType(Type<FlowALPv0.Rebalanced>())
+		log("[TEST] Position Rebalance events count at price \(yieldTokenPrice): \(positionRebalanceEventsInLoop.length)")
+		if positionRebalanceEventsInLoop.length > 0 {
+			let lastPositionEvent = positionRebalanceEventsInLoop[positionRebalanceEventsInLoop.length - 1] as! FlowALPv0.Rebalanced
+			log("[TEST] FlowALPv0.Rebalanced - pid: \(lastPositionEvent.pid), atHealth: \(lastPositionEvent.atHealth), amount: \(lastPositionEvent.amount), fromUnder: \(lastPositionEvent.fromUnder)")
+		}
 
         // FUSDEV -> MOET for the yield balance check (we want to sell FUSDEV)
         setPoolToPrice(
@@ -400,6 +458,47 @@ fun test_RebalanceYieldVaultScenario2() {
 		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
 		log("[TEST] YieldVault balance after yield price \(yieldTokenPrice) rebalance: \(yieldVaultBalance ?? 0.0)")
+
+		// === COMPREHENSIVE STATE LOGGING ===
+		// Query all key values from contracts after rebalance
+		let positionCollateral = getFlowCollateralFromPosition(pid: pid)
+		let positionDebt = getMOETDebtFromPosition(pid: pid)
+		let positionHealth = getPositionHealth(pid: pid, beFailed: false)
+		let yieldTokenUnits = getAutoBalancerBalance(id: yieldVaultIDs![0]) ?? 0.0
+		let baseline = getAutoBalancerBaseline(id: yieldVaultIDs![0]) ?? 0.0
+		let yieldVaultValue = getAutoBalancerCurrentValue(id: yieldVaultIDs![0]) ?? 0.0
+
+		log("\n=== STATE AFTER REBALANCE at P=\(yieldTokenPrice) ===")
+		log("| Position Collateral (C): \(positionCollateral)")
+		log("| Position Debt (D):       \(positionDebt)")
+		log("| Position Health (H):     \(positionHealth)")
+		log("| Yield Token Units (U):   \(yieldTokenUnits)")
+		log("| Baseline (B):            \(baseline)")
+		log("| Yield Value (U×P):       \(yieldVaultValue)")
+		log("| YieldVault Balance:      \(yieldVaultBalance ?? 0.0)")
+		log("===========================================\n")
+
+		// Assert expected state values (C, D, U, H)
+		let expected = expectedState[index]
+		let tolerance = 0.00000001
+		Test.assert(
+			positionCollateral >= expected[0] - tolerance && positionCollateral <= expected[0] + tolerance,
+			message: "P=\(yieldTokenPrice): Expected C=\(expected[0]), got \(positionCollateral)"
+		)
+		Test.assert(
+			positionDebt >= expected[1] - tolerance && positionDebt <= expected[1] + tolerance,
+			message: "P=\(yieldTokenPrice): Expected D=\(expected[1]), got \(positionDebt)"
+		)
+		Test.assert(
+			yieldTokenUnits >= expected[2] - tolerance && yieldTokenUnits <= expected[2] + tolerance,
+			message: "P=\(yieldTokenPrice): Expected U=\(expected[2]), got \(yieldTokenUnits)"
+		)
+		// Health factor has more decimal places, use larger tolerance
+		let healthTolerance = 0.0001
+		Test.assert(
+			positionHealth >= UFix128(expected[3]) - UFix128(healthTolerance) && positionHealth <= UFix128(expected[3]) + UFix128(healthTolerance),
+			message: "P=\(yieldTokenPrice): Expected H=\(expected[3]), got \(positionHealth)"
+		)
 
 		// Perform comprehensive diagnostic precision trace
 		performDiagnosticPrecisionTrace(
