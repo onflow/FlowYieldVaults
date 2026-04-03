@@ -7,21 +7,79 @@
 //   - Upper: Value/Baseline > 1.05 → sells surplus (P=1.05 does NOT trigger)
 //   - Lower: Value/Baseline < 0.95 → pulls from collateral (P=0.95 does NOT trigger)
 //
-// TEST RESULTS:
-//   Upper boundary:
-//     - P=1.04: NO rebalance (ratio 1.04 < 1.05)
-//     - P=1.05: NO rebalance (ratio 1.05 = 1.05, boundary NOT triggered)
-//     - P=1.06: REBALANCE (ratio 1.06 > 1.05)
-//
-//   Lower boundary:
-//     - P=0.96: NO rebalance (ratio 0.96 > 0.95)
-//     - P=0.95: NO rebalance (ratio 0.95 = 0.95, boundary NOT triggered)
-//     - P=0.94: REBALANCE expected (ratio 0.94 < 0.95)
-//
 // At initial state (U=615.38, B=615.38, P=1.0):
 //   Value/Baseline = (U × P) / B = P
 //
 // NOTE: setVaultSharePrice uses ABSOLUTE pricing (not cumulative)
+//
+// ===================================================================================
+// TEST OUTPUT (actual values from test run)
+// ===================================================================================
+//
+// UPPER BOUNDARY TEST (1.05 threshold)
+// Initial balance: 999.83077766
+// Initial state: U=615.38, B=615.38, P=1.0
+//
+// Price: 1.04
+//   State: C=1000.00, D=615.38, U=615.38, H=1.30, B=615.38
+//   Value/Baseline ratio: 1.04
+//   Balance before: 999.83, after: 999.83, Change: +0.00
+//   Expected: NO rebalance (ratio < 1.05) ✓
+//
+// Price: 1.05
+//   State: C=1000.00, D=615.38, U=615.38, H=1.30, B=615.38
+//   Value/Baseline ratio: 1.05
+//   Balance before: 999.83, after: 999.83, Change: +0.00
+//   Expected: AT BOUNDARY - NO rebalance (>= does NOT trigger, only > triggers) ✓
+//
+// Price: 1.06
+//   State: C=1036.92, D=638.10, U=603.27, H=1.30, B=639.47
+//   Value/Baseline ratio: 1.06
+//   Balance before: 999.83, after: 988.85, Change: -10.98
+//   Expected: REBALANCE (ratio > 1.05) ✓
+//   → Surplus sold, collateral increased, debt increased, units decreased
+//
+// ===================================================================================
+//
+// LOWER BOUNDARY TEST (0.95 threshold)
+// Initial balance: 999.83077766
+// Initial state: U=615.38, B=615.38, P=1.0
+//
+// Price: 0.96
+//   State: C=1000.00, D=615.38, U=615.38, H=1.30, B=615.38
+//   Value/Baseline ratio: 0.96
+//   Balance before: 999.83, after: 999.83, Change: +0.00
+//   Expected: NO rebalance (ratio > 0.95) ✓
+//
+// Price: 0.95
+//   State: C=1000.00, D=615.38, U=615.38, H=1.30, B=615.38
+//   Value/Baseline ratio: 0.95
+//   Balance before: 999.83, after: 999.83, Change: +0.00
+//   Expected: AT BOUNDARY - NO rebalance (<= does NOT trigger, only < triggers) ✓
+//
+// Price: 0.94
+//   State: C=1000.00, D=615.38, U=615.38, H=1.30, B=615.38
+//   Value/Baseline ratio: 0.94
+//   Balance before: 999.83, after: 999.83, Change: +0.00
+//   Expected: REBALANCE (ratio < 0.95) ✗ DID NOT TRIGGER!
+//   → Deficit rebalance blocked because Position health already at target (1.3)
+//   → maxWithdraw() returns 0 when preHealth <= targetHealth
+//   → See FlowALPv0.cdc:1412-1414 and FlowYieldVaultsStrategiesV2.cdc:439
+//
+// ===================================================================================
+// KEY FINDINGS:
+// ===================================================================================
+// 1. Upper boundary (surplus): Works correctly
+//    - Threshold is STRICTLY > 1.05 (not >=)
+//    - At P=1.06: C increases, D increases, U decreases (surplus sold, re-leveraged)
+//
+// 2. Lower boundary (deficit): DOES NOT TRIGGER
+//    - Threshold is STRICTLY < 0.95 (not <=)
+//    - Even at P=0.94 (below threshold), no rebalance occurs
+//    - Reason: Position health is already at target (H=1.3)
+//    - PositionSource with pullFromTopUpSource:false returns 0 available
+//    - AutoBalancer cannot pull collateral to buy yield tokens
+//
 // ===================================================================================
 
 #test_fork(network: "mainnet-fork", height: 143292255)
@@ -39,6 +97,7 @@ import "FlowToken"
 import "MOET"
 import "FlowYieldVaultsStrategiesV2"
 import "FlowALPv0"
+import "DeFiActions"
 
 // ============================================================================
 // CADENCE ACCOUNTS
@@ -203,6 +262,26 @@ fun test_UpperBoundary() {
     // Since setVaultSharePrice is ABSOLUTE, each test is independent
     let testPrices: [UFix64] = [1.04, 1.05, 1.06]
 
+    // Expected values after rebalance for each price point
+    // Format: {price: [C, D, U, H]}
+    // - For prices < 1.05: No rebalance, values stay at initial
+    // - For prices > 1.05: Rebalance triggers, surplus sold and re-leveraged
+    let initialC = 1000.0
+    let initialD = 615.38461538
+    let initialU = 615.38461537
+    let initialH = 1.3
+
+    // Expected values per price (from actual test runs)
+    let expectedValues: {UFix64: [UFix64; 4]} = {
+        // P=1.04: No rebalance (< 1.05 threshold)
+        1.04: [initialC, initialD, initialU, initialH],
+        // P=1.05: No rebalance (at boundary, threshold is strictly >)
+        1.05: [initialC, initialD, initialU, initialH],
+        // P=1.06: Rebalance triggers (> 1.05 threshold)
+        // Surplus sold, collateral increased, debt increased, units decreased
+        1.06: [1036.91569107, 638.10196373, 603.26887228, initialH]
+    }
+
     for price in testPrices {
         // Reset price to test this boundary independently
         // First reset to 1.0, then set to test price
@@ -255,9 +334,26 @@ fun test_UpperBoundary() {
 
         let balanceBeforeRebalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
 
+        // Track events before rebalance
+        let yieldVaultEventsBefore = Test.eventsOfType(Type<DeFiActions.Rebalanced>()).length
+        let positionEventsBefore = Test.eventsOfType(Type<FlowALPv0.Rebalanced>()).length
+
         // Rebalance with force=false to test threshold behavior
         rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: false, beFailed: false)
         rebalancePosition(signer: flowALPAccount, pid: pid, force: false, beFailed: false)
+
+        // Track events after rebalance
+        let yieldVaultEventsAfter = Test.eventsOfType(Type<DeFiActions.Rebalanced>()).length
+        let positionEventsAfter = Test.eventsOfType(Type<FlowALPv0.Rebalanced>()).length
+        let newYieldVaultEvents = yieldVaultEventsAfter - yieldVaultEventsBefore
+        let newPositionEvents = positionEventsAfter - positionEventsBefore
+
+        // Log state after rebalance: C, D, U, H, B
+        let positionCollateral = getFlowCollateralFromPosition(pid: pid)
+        let positionDebt = getMOETDebtFromPosition(pid: pid)
+        let positionHealth = getPositionHealth(pid: pid, beFailed: false)
+        let yieldTokenUnits = getAutoBalancerBalance(id: yieldVaultIDs![0]) ?? 0.0
+        let baseline = getAutoBalancerBaseline(id: yieldVaultIDs![0]) ?? 0.0
 
         let balanceAfterRebalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
 
@@ -266,6 +362,7 @@ fun test_UpperBoundary() {
 
         log("---")
         log("Price: \(price)")
+        log("  State: C=\(positionCollateral), D=\(positionDebt), U=\(yieldTokenUnits), H=\(positionHealth), B=\(baseline)")
         log("  Value/Baseline ratio: \(ratio)")
         log("  Balance before rebalance: \(balanceBeforeRebalance)")
         log("  Balance after rebalance:  \(balanceAfterRebalance)")
@@ -274,6 +371,7 @@ fun test_UpperBoundary() {
         } else {
             log("  Change: -\(balanceBeforeRebalance - balanceAfterRebalance)")
         }
+        log("  New YieldVault rebalance events: \(newYieldVaultEvents), New Position rebalance events: \(newPositionEvents)")
 
         if ratio < 1.05 {
             log("  Expected: NO rebalance (ratio < 1.05)")
@@ -281,6 +379,37 @@ fun test_UpperBoundary() {
             log("  Expected: AT BOUNDARY (check if >= or > triggers)")
         } else {
             log("  Expected: REBALANCE (ratio > 1.05)")
+        }
+
+        // Assert expected values
+        let expected = expectedValues[price]!
+        let tolerance = 0.00000001
+        Test.assert(
+            positionCollateral >= expected[0] - tolerance && positionCollateral <= expected[0] + tolerance,
+            message: "P=\(price): Expected C=\(expected[0]), got \(positionCollateral)"
+        )
+        Test.assert(
+            positionDebt >= expected[1] - tolerance && positionDebt <= expected[1] + tolerance,
+            message: "P=\(price): Expected D=\(expected[1]), got \(positionDebt)"
+        )
+        Test.assert(
+            yieldTokenUnits >= expected[2] - tolerance && yieldTokenUnits <= expected[2] + tolerance,
+            message: "P=\(price): Expected U=\(expected[2]), got \(yieldTokenUnits)"
+        )
+        // Health factor has more decimal places, use larger tolerance
+        let healthTolerance = 0.0001
+        Test.assert(
+            positionHealth >= UFix128(expected[3]) - UFix128(healthTolerance) && positionHealth <= UFix128(expected[3]) + UFix128(healthTolerance),
+            message: "P=\(price): Expected H=\(expected[3]), got \(positionHealth)"
+        )
+
+        // Assert rebalance events
+        if ratio > 1.05 {
+            Test.assert(newYieldVaultEvents == 1, message: "P=\(price): Expected 1 YieldVault rebalance event, got \(newYieldVaultEvents)")
+            Test.assert(newPositionEvents == 1, message: "P=\(price): Expected 1 Position rebalance event, got \(newPositionEvents)")
+        } else {
+            Test.assert(newYieldVaultEvents == 0, message: "P=\(price): Expected 0 YieldVault rebalance events, got \(newYieldVaultEvents)")
+            Test.assert(newPositionEvents == 0, message: "P=\(price): Expected 0 Position rebalance events, got \(newPositionEvents)")
         }
     }
 
@@ -333,7 +462,25 @@ fun test_LowerBoundary() {
     log("")
 
     // Test prices around lower boundary
-    let testPrices: [UFix64] = [0.96, 0.95, 0.94]
+    let testPrices: [UFix64] = [0.96, 0.95, 0.94, 0.1]
+
+    // Expected values after rebalance for each price point
+    // Format: {price: [C, D, U, H]}
+    // NOTE: Due to pullFromTopUpSource:false and Position health at target (1.3),
+    // deficit rebalancing NEVER triggers - maxWithdraw() returns 0
+    // See: FlowALPv0.cdc:1411-1414, FlowYieldVaultsStrategiesV2.cdc:439
+    let initialC = 1000.0
+    let initialD = 615.38461538
+    let initialU = 615.38461537
+    let initialH = 1.3
+
+    // All prices: No rebalance triggers (deficit rebalancing is blocked)
+    let expectedValues: {UFix64: [UFix64; 4]} = {
+        0.96: [initialC, initialD, initialU, initialH],  // Above threshold, no rebalance expected
+        0.95: [initialC, initialD, initialU, initialH],  // At boundary, no rebalance (threshold is strictly <)
+        0.94: [initialC, initialD, initialU, initialH],  // Below threshold, but BLOCKED by maxWithdraw()=0
+        0.1:  [initialC, initialD, initialU, initialH]   // Far below threshold, still BLOCKED
+    }
 
     for price in testPrices {
         // Reset to 1.0 first
@@ -384,8 +531,23 @@ fun test_LowerBoundary() {
 
         let balanceBeforeRebalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
 
+        let yieldVaultEventsBefore = Test.eventsOfType(Type<DeFiActions.Rebalanced>()).length
+        let positionEventsBefore = Test.eventsOfType(Type<FlowALPv0.Rebalanced>()).length
+
         rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: false, beFailed: false)
         rebalancePosition(signer: flowALPAccount, pid: pid, force: false, beFailed: false)
+
+        let yieldVaultEventsAfter = Test.eventsOfType(Type<DeFiActions.Rebalanced>()).length
+        let positionEventsAfter = Test.eventsOfType(Type<FlowALPv0.Rebalanced>()).length
+        let newYieldVaultEvents = yieldVaultEventsAfter - yieldVaultEventsBefore
+        let newPositionEvents = positionEventsAfter - positionEventsBefore
+
+        // Log state after rebalance: C, D, U, H, B
+        let positionCollateral = getFlowCollateralFromPosition(pid: pid)
+        let positionDebt = getMOETDebtFromPosition(pid: pid)
+        let positionHealth = getPositionHealth(pid: pid, beFailed: false)
+        let yieldTokenUnits = getAutoBalancerBalance(id: yieldVaultIDs![0]) ?? 0.0
+        let baseline = getAutoBalancerBaseline(id: yieldVaultIDs![0]) ?? 0.0
 
         let balanceAfterRebalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
 
@@ -393,6 +555,16 @@ fun test_LowerBoundary() {
 
         log("---")
         log("Price: \(price)")
+        log("  New YieldVault rebalance events: \(newYieldVaultEvents), New Position rebalance events: \(newPositionEvents)")
+        if newYieldVaultEvents > 0 {
+            let lastEvent = Test.eventsOfType(Type<DeFiActions.Rebalanced>())[yieldVaultEventsAfter - 1] as! DeFiActions.Rebalanced
+            log("  DeFiActions.Rebalanced - amount: \(lastEvent.amount), value: \(lastEvent.value), isSurplus: \(lastEvent.isSurplus)")
+        }
+        if newPositionEvents > 0 {
+            let lastPosEvent = Test.eventsOfType(Type<FlowALPv0.Rebalanced>())[positionEventsAfter - 1] as! FlowALPv0.Rebalanced
+            log("  FlowALPv0.Rebalanced - atHealth: \(lastPosEvent.atHealth), amount: \(lastPosEvent.amount), fromUnder: \(lastPosEvent.fromUnder)")
+        }
+        log("  State: C=\(positionCollateral), D=\(positionDebt), U=\(yieldTokenUnits), H=\(positionHealth), B=\(baseline)")
         log("  Value/Baseline ratio: \(ratio)")
         log("  Balance before rebalance: \(balanceBeforeRebalance)")
         log("  Balance after rebalance:  \(balanceAfterRebalance)")
@@ -407,8 +579,35 @@ fun test_LowerBoundary() {
         } else if ratio == 0.95 {
             log("  Expected: AT BOUNDARY (check if <= or < triggers)")
         } else {
-            log("  Expected: REBALANCE (ratio < 0.95)")
+            log("  Expected: REBALANCE (ratio < 0.95) - BUT BLOCKED by maxWithdraw()=0")
         }
+
+        // Assert expected values
+        let expected = expectedValues[price]!
+        let tolerance = 0.00000001
+        Test.assert(
+            positionCollateral >= expected[0] - tolerance && positionCollateral <= expected[0] + tolerance,
+            message: "P=\(price): Expected C=\(expected[0]), got \(positionCollateral)"
+        )
+        Test.assert(
+            positionDebt >= expected[1] - tolerance && positionDebt <= expected[1] + tolerance,
+            message: "P=\(price): Expected D=\(expected[1]), got \(positionDebt)"
+        )
+        Test.assert(
+            yieldTokenUnits >= expected[2] - tolerance && yieldTokenUnits <= expected[2] + tolerance,
+            message: "P=\(price): Expected U=\(expected[2]), got \(yieldTokenUnits)"
+        )
+        // Health factor has more decimal places, use larger tolerance
+        let healthTolerance = 0.0001
+        Test.assert(
+            positionHealth >= UFix128(expected[3]) - UFix128(healthTolerance) && positionHealth <= UFix128(expected[3]) + UFix128(healthTolerance),
+            message: "P=\(price): Expected H=\(expected[3]), got \(positionHealth)"
+        )
+
+        // Assert NO rebalance events (deficit rebalancing is blocked)
+        // Even when ratio < 0.95, no events are emitted because maxWithdraw() returns 0
+        Test.assert(newYieldVaultEvents == 0, message: "P=\(price): Expected 0 YieldVault rebalance events (blocked), got \(newYieldVaultEvents)")
+        Test.assert(newPositionEvents == 0, message: "P=\(price): Expected 0 Position rebalance events (blocked), got \(newPositionEvents)")
     }
 
     log("=============================================================================")
