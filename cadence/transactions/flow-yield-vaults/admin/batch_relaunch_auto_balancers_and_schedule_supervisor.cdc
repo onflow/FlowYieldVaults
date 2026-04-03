@@ -62,6 +62,7 @@ transaction(
 
         var seen: {UInt64: Bool} = {}
         for id in ids {
+            // A batch run should tolerate duplicates instead of making the caller sanitize the list first.
             if seen[id] == true {
                 log("Skipping duplicate AutoBalancer id \(id)")
                 continue
@@ -71,6 +72,7 @@ transaction(
             let storagePath = FlowYieldVaultsAutoBalancersV1.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
             let autoBalancer = signer.storage
                 .borrow<auth(DeFiActions.Identify, AutoBalancers.Configure, AutoBalancers.Schedule, FlowTransactionScheduler.Cancel) &AutoBalancers.AutoBalancer>(from: storagePath)
+            // Missing IDs are logged and skipped so the rest of the batch can still be repaired.
             if autoBalancer == nil {
                 log("Skipping missing AutoBalancer id \(id) at path \(storagePath)")
                 continue
@@ -84,7 +86,11 @@ transaction(
         var fundingVault = signer.storage
             .copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: fundingVaultStoragePath)
 
-        if fundingVault == nil {
+        // Admin accounts on older deployments may not have the fee-source capability saved yet, or may
+        // hold a stale one. Rebuild it from /storage/flowTokenVault so the batch transaction is self-healing.
+        if fundingVault == nil || !fundingVault!.check() {
+            let _ = signer.storage
+                .load<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>>(from: fundingVaultStoragePath)
             let issuedFundingVault = signer.capabilities.storage
                 .issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(/storage/flowTokenVault)
             signer.storage.save(issuedFundingVault, to: fundingVaultStoragePath)
@@ -109,6 +115,8 @@ transaction(
             )
         var oldSupervisor: @FlowYieldVaultsSchedulerV1.Supervisor? <- nil
 
+        // If the saved capability is stale, remove the broken capability state and rebuild the resource
+        // via ensureSupervisorConfigured() below.
         if storedSupervisorCap != nil && !storedSupervisorCap!.check() {
             let _ = signer.storage
                 .load<Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>>(
@@ -153,6 +161,8 @@ transaction(
                 var cancelledCount = 0
                 for txnID in autoBalancer.getScheduledTransactionIDs() {
                     let txn = autoBalancer.borrowScheduledTransaction(id: txnID)
+                    // Only live Scheduled entries are canceled. Stuck vaults keep their historical records and
+                    // simply receive a new seeded schedule.
                     if txn?.status() == FlowTransactionScheduler.Status.Scheduled {
                         if let refund <- autoBalancer.cancelScheduledTransaction(id: txnID) as @{FungibleToken.Vault}? {
                             self.refundReceiver.deposit(from: <-refund)
@@ -187,6 +197,7 @@ transaction(
 
             autoBalancer.setRecurringConfig(config)
 
+            // A single AutoBalancer that still cannot be scheduled should not abort the whole repair batch.
             if let err = autoBalancer.scheduleNextRebalance(whileExecuting: nil) {
                 log("Failed to schedule next rebalance for AutoBalancer \(id): \(err)")
                 index = index + 1
@@ -196,6 +207,7 @@ transaction(
             index = index + 1
         }
 
+        // Always replace the supervisor run so the batch leaves a single authoritative recurring schedule behind.
         Burner.burn(<-self.supervisor.cancelScheduledTransaction(refundReceiver: nil))
 
         self.supervisor.scheduleNextRecurringExecution(

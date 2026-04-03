@@ -26,6 +26,8 @@ fun setup() {
     log("Setting up batch relaunch + supervisor integration test...")
 
     deployContracts()
+    // Intentionally fund the account without creating /storage/strategiesFeeSource.
+    // The batch relaunch transaction is expected to self-heal that capability.
     let fundingFlowYieldVaultsRes = mintFlow(to: flowYieldVaultsAccount, amount: 1000.0)
     Test.expect(fundingFlowYieldVaultsRes, Test.beSucceeded())
 
@@ -159,6 +161,8 @@ fun waitUntilAllStuck(_ ids: [UInt64], maxRounds: Int): Bool {
             return true
         }
 
+        // Each mock auto-balancer is configured for a 10 minute cadence on creation, so advance slightly
+        // past that boundary to let failed reschedule attempts surface as stuck state.
         Test.moveTime(by: 60.0 * 10.0 + 10.0)
         Test.commitBlock()
         round = round + 1
@@ -242,6 +246,7 @@ fun testBatchRelaunchHandlesMixedPopulationAndRunningSupervisor() {
     Test.expect(grantBetaRes, Test.beSucceeded())
 
     let stuckIDs = createYieldVaults(user: user, count: 3, amount: 25.0)
+    // Drain the scheduler fee balance so the first population loses its ability to keep self-scheduling.
     drainFlowToResidual(0.001)
 
     Test.assert(waitUntilAllStuck(stuckIDs, maxRounds: 8), message: "Expected initial vaults to become stuck")
@@ -253,6 +258,7 @@ fun testBatchRelaunchHandlesMixedPopulationAndRunningSupervisor() {
     let restockFlowYieldVaultsRes = mintFlow(to: flowYieldVaultsAccount, amount: 500.0)
     Test.expect(restockFlowYieldVaultsRes, Test.beSucceeded())
 
+    // Create a second healthy population after restoring FLOW so the batch contains both active and stuck IDs.
     let activeIDs = createYieldVaults(user: user, count: 7, amount: 25.0)
     for id in activeIDs {
         Test.assertEqual(false, isStuckYieldVault(id))
@@ -260,6 +266,7 @@ fun testBatchRelaunchHandlesMixedPopulationAndRunningSupervisor() {
     }
 
     let supervisorRescheduledBefore = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.SupervisorRescheduled>()).length
+    // Warm up a live supervisor run before invoking the batch transaction so we cover the "already running" case.
     scheduleSupervisor(recurringInterval: 300.0, priorityRaw: 1, executionEffort: 2000, scanForStuck: false)
     Test.moveTime(by: 300.0 + 10.0)
     Test.commitBlock()
@@ -276,6 +283,7 @@ fun testBatchRelaunchHandlesMixedPopulationAndRunningSupervisor() {
     let activeProbe = activeIDs[0]
     let activeProbeRebalancedBefore = countRebalancedEventsFor(activeProbe)
 
+    // Include both a duplicate and a missing ID to verify that the batch skips them without reverting.
     let idsForBatch = stuckIDs.concat(activeIDs).concat([activeProbe, 999_999])
     let batchRes = batchRelaunch(
         ids: idsForBatch,
@@ -297,6 +305,7 @@ fun testBatchRelaunchHandlesMixedPopulationAndRunningSupervisor() {
     }
     Test.assertEqual(0, getPendingCount())
 
+    // Force a real threshold breach so the post-relaunch execution produces a Rebalanced event rather than a no-op.
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 5.0)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 4.0)
 
@@ -344,6 +353,7 @@ fun testBatchRelaunchRecreatesSupervisorWhenDestroyed() {
 
     let supervisorRescheduledBefore = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.SupervisorRescheduled>()).length
 
+    // The batch transaction should both recover the vault schedules and bootstrap a fresh supervisor run.
     let batchRes = batchRelaunch(
         ids: stuckIDs,
         interval: 1800,
