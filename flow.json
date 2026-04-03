@@ -1261,21 +1261,8 @@
 		},
 		"mainnet-fork": {
 			"mainnet-fork-admin": [
-<<<<<<< HEAD
-=======
-				{
-					"name": "MockOracle",
-					"args": [
-						{
-							"value": "A.6b00ff876c299c61.MOET.Vault",
-							"type": "String"
-						}
-					]
-				},
-				"MockSwapper",
 				"UInt64LinkedList",
 				"AutoBalancers",
->>>>>>> origin/v0
 				"FlowYieldVaultsSchedulerRegistry",
 				"FlowYieldVaultsSchedulerRegistryV1",
 				"FlowYieldVaultsAutoBalancers",
