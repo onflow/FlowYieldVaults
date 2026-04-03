@@ -63,6 +63,7 @@ transaction(
         var seen: {UInt64: Bool} = {}
         for id in ids {
             if seen[id] == true {
+                log("Skipping duplicate AutoBalancer id \(id)")
                 continue
             }
             seen[id] = true
@@ -70,9 +71,12 @@ transaction(
             let storagePath = FlowYieldVaultsAutoBalancersV1.deriveAutoBalancerPath(id: id, storage: true) as! StoragePath
             let autoBalancer = signer.storage
                 .borrow<auth(DeFiActions.Identify, AutoBalancers.Configure, AutoBalancers.Schedule, FlowTransactionScheduler.Cancel) &AutoBalancers.AutoBalancer>(from: storagePath)
-                ?? panic("Could not borrow AutoBalancer id \(id) at path \(storagePath)")
+            if autoBalancer == nil {
+                log("Skipping missing AutoBalancer id \(id) at path \(storagePath)")
+                continue
+            }
 
-            self.autoBalancers.append(autoBalancer)
+            self.autoBalancers.append(autoBalancer!)
             self.autoBalancerIDs.append(id)
         }
 
@@ -135,13 +139,18 @@ transaction(
             let isStuck = FlowYieldVaultsAutoBalancersV1.isStuckYieldVault(id: id)
 
             if !isStuck {
+                var cancelledCount = 0
                 for txnID in autoBalancer.getScheduledTransactionIDs() {
                     let txn = autoBalancer.borrowScheduledTransaction(id: txnID)
                     if txn?.status() == FlowTransactionScheduler.Status.Scheduled {
                         if let refund <- autoBalancer.cancelScheduledTransaction(id: txnID) as @{FungibleToken.Vault}? {
                             self.refundReceiver.deposit(from: <-refund)
                         }
+                        cancelledCount = cancelledCount + 1
                     }
+                }
+                if cancelledCount > 0 {
+                    log("Cancelled \(cancelledCount) scheduled transaction(s) for AutoBalancer \(id)")
                 }
             }
 
@@ -168,7 +177,9 @@ transaction(
             autoBalancer.setRecurringConfig(config)
 
             if let err = autoBalancer.scheduleNextRebalance(whileExecuting: nil) {
-                panic("Failed to schedule next rebalance for AutoBalancer \(id): \(err)")
+                log("Failed to schedule next rebalance for AutoBalancer \(id): \(err)")
+                index = index + 1
+                continue
             }
 
             index = index + 1
