@@ -1,3 +1,5 @@
+// Simulation spreadsheet: https://docs.google.com/spreadsheets/d/11DCzwZjz5K-78aKEWxt9NI-ut5LtkSyOT0TnRPUG7qY/edit?pli=1&gid=539924856#gid=539924856
+
 #test_fork(network: "mainnet-fork", height: 143292255)
 
 import Test
@@ -59,7 +61,7 @@ access(all) let wflowAddress = "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
 // Token balanceOf mapping slots (for EVM.store to manipulate balances)
 access(all) let moetBalanceSlot = 0 as UInt256
 access(all) let pyusd0BalanceSlot = 1 as UInt256
-access(all) let fusdevBalanceSlot = 12 as UInt256 
+access(all) let fusdevBalanceSlot = 12 as UInt256
 access(all) let wflowBalanceSlot = 3 as UInt256
 
 // Morpho vault storage slots
@@ -84,7 +86,7 @@ fun setup() {
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
     )
-    
+
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: pyusd0Address,
@@ -95,7 +97,7 @@ fun setup() {
         tokenBBalanceSlot: wflowBalanceSlot,
         signer: coaOwnerAccount
     )
-    
+
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: moetAddress,
@@ -106,7 +108,7 @@ fun setup() {
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
     )
-    
+
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: moetAddress,
@@ -119,7 +121,7 @@ fun setup() {
     )
 
     // BandOracle is only used for FLOW price for FlowALP collateral
-    let symbolPrices: {String: UFix64}   = { 
+    let symbolPrices: {String: UFix64}   = {
         "FLOW": 1.0,
         "USD": 1.0
     }
@@ -134,28 +136,73 @@ fun setup() {
 }
 
 access(all) var testSnapshot: UInt64 = 0
+// Verify that the YieldVault correctly rebalances yield token holdings when FLOW price changes
 access(all)
 fun test_ForkedRebalanceYieldVaultScenario1() {
 	let fundingAmount = 1000.0
 
 	let user = Test.createAccount()
 
-	let flowPrices = [0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0, 5.0]
-	
-	// Expected values from Google sheet calculations
+	// ===================================================================================
+	// SCENARIO 1: FLOW price changes, Position rebalances to maintain Health = 1.3
+	// ===================================================================================
+	//
+	// Initial: Collateral=1000 FLOW, Debt=$615.38, YIELD=615.38, Health=1.3
+	// Health = (1000 × FLOW_Price × 0.8) / 615.38
+	//
+	// Thresholds: minHealth=1.1, targetHealth=1.3, maxHealth=1.5
+	//   minHealth (1.1) at FLOW price = 0.84615
+	//   maxHealth (1.5) at FLOW price = 1.15385
+	//
+	// With force=false:
+	//   Health < 1.1  → rebalance → YIELD = 615.38 × FLOW_Price
+	//   Health ∈ [1.1, 1.5] → NO rebalance → YIELD stays at 615.38
+	//   Health > 1.5  → rebalance → YIELD = 615.38 × FLOW_Price
+	//
+	// ---------------------------------------------------------------------------------
+	// FLOW Price | Health | Rebalance? | Expected YIELD
+	// ---------------------------------------------------------------------------------
+	// 0.50       | 0.65   | YES        | 307.69  (615.38 × 0.5)
+	// 0.84       | 1.09   | YES        | 516.92  (615.38 × 0.84)
+	// 0.84615    | 1.10   | YES        | 520.71  (at minHealth boundary, rebalances)
+	// 0.85       | 1.10   | NO         | 615.38  (in bounds, no change)
+	// 0.90       | 1.17   | NO         | 615.38  (in bounds, no change)
+	// 1.00       | 1.30   | NO         | 615.38  (at target, no change)
+	// 1.10       | 1.43   | NO         | 615.38  (in bounds, no change)
+	// 1.15       | 1.49   | NO         | 615.38  (in bounds, no change)
+	// 1.15385    | 1.50+  | YES        | 710.06  (slightly above maxHealth, rebalances)
+	// 1.16       | 1.51   | YES        | 713.85  (615.38 × 1.16)
+	// 1.20       | 1.56   | YES        | 738.46  (615.38 × 1.2)
+	// 1.50       | 1.95   | YES        | 923.08  (615.38 × 1.5)
+	// 2.00       | 2.60   | YES        | 1230.77 (615.38 × 2.0)
+	// 3.00       | 3.90   | YES        | 1846.15 (615.38 × 3.0)
+	// 5.00       | 6.50   | YES        | 3076.92 (615.38 × 5.0)
+	// ---------------------------------------------------------------------------------
+	// Note: Exact maxHealth (1.5) boundary is at FLOW price = 1.15384615...
+	//       Using 1.15385 is slightly above, so it triggers rebalance.
+	// ===================================================================================
+	let flowPrices = [0.5, 0.84, 0.84615, 0.85, 0.9, 1.0, 1.1, 1.15, 1.15385, 1.16, 1.2, 1.5, 2.0, 3.0, 5.0]
+
 	let expectedYieldTokenValues: {UFix64: UFix64} = {
-		0.5: 307.69230769,
-		0.8: 492.30769231,
-		1.0: 615.38461538,
-		1.2: 738.46153846,
-		1.5: 923.07692308,
-		2.0: 1230.76923077,
-		3.0: 1846.15384615,
-		5.0: 3076.92307692
+		0.5:      307.69230769,   // rebalance: health 0.65 < 1.1
+		0.84:     516.92307692,   // rebalance: health 1.09 < 1.1
+		0.84615:  520.70769231,   // rebalance: health ≈ 1.1 (at minHealth boundary)
+		0.85:     615.38461538,   // NO rebalance: health 1.10 in [1.1, 1.5]
+		0.9:      615.38461538,   // NO rebalance: health 1.17 in [1.1, 1.5]
+		1.0:      615.38461538,   // NO rebalance: health 1.30 in [1.1, 1.5]
+		1.1:      615.38461538,   // NO rebalance: health 1.43 in [1.1, 1.5]
+		1.15:     615.38461538,   // NO rebalance: health 1.49 in [1.1, 1.5]
+		1.15385:  710.06153846,   // rebalance: health 1.50+ > 1.5 (slightly above boundary)
+		1.16:     713.84615385,   // rebalance: health 1.51 > 1.5
+		1.2:      738.46153846,   // rebalance: health 1.56 > 1.5
+		1.5:      923.07692308,   // rebalance: health 1.95 > 1.5
+		2.0:      1230.76923077,  // rebalance: health 2.60 > 1.5
+		3.0:      1846.15384615,  // rebalance: health 3.90 > 1.5
+		5.0:      3076.92307692   // rebalance: health 6.50 > 1.5
 	}
 
-	// Likely 0.0
-	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	// 	confirm user exists.
+	getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
     transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
     grantBeta(flowYieldVaultsAccount, user)
 
@@ -191,7 +238,6 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 
 	log("[TEST] Initial yield vault balance: \(yieldVaultBalance ?? 0.0)")
 
-	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: flowALPAccount, pid: pid, force: true, beFailed: false)
 
 	testSnapshot = getCurrentBlockHeight()
@@ -209,7 +255,7 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
             "FLOW": flowPrice,
             "USD": 1.0
         })
-        
+
         // Update WFLOW/PYUSD0 pool to match new Flow price
         // 1 WFLOW = flowPrice PYUSD0
         // Recollat traverses PYUSD0→WFLOW (reverse on this pool)
@@ -245,21 +291,20 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 		// Get yield token balance before rebalance
 		let yieldTokensBefore = getAutoBalancerBalance(id: yieldVaultIDs![0]) ?? 0.0
 		let currentValueBefore = getAutoBalancerCurrentValue(id: yieldVaultIDs![0]) ?? 0.0
-		
-		rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: false, beFailed: false)
+
 		rebalancePosition(signer: flowALPAccount, pid: pid, force: false, beFailed: false)
 
 		yieldVaultBalance = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])
 
 		log("[TEST] YieldVault balance after flow before \(flowPrice): \(yieldVaultBalance ?? 0.0)")
-		
+
 		// Get yield token balance after rebalance
 		let yieldTokensAfter = getAutoBalancerBalance(id: yieldVaultIDs![0]) ?? 0.0
 		let currentValueAfter = getAutoBalancerCurrentValue(id: yieldVaultIDs![0]) ?? 0.0
-		
+
 		// Get expected yield tokens from Google sheet calculations
 		let expectedYieldTokens = expectedYieldTokenValues[flowPrice] ?? 0.0
-		
+
 		log("\n=== SCENARIO 1 DETAILS for Flow Price \(flowPrice) ===")
 		log("YieldVault Balance:          \(yieldVaultBalance ?? 0.0)")
 		log("Yield Tokens Before:   \(yieldTokensBefore)")
@@ -270,7 +315,7 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 		log("Precision Difference:  \(precisionSign)\(precisionDiff)")
 		let percentDiff = expectedYieldTokens > 0.0 ? (precisionDiff / expectedYieldTokens) * 100.0 : 0.0
 		log("Percent Difference:    \(precisionSign)\(percentDiff)%")
-        
+
         Test.assert(
             equalAmounts(a: yieldTokensAfter, b: expectedYieldTokens, tolerance: 0.01),
             message: "Expected yield tokens for flow price \(flowPrice) to be \(expectedYieldTokens) but got \(yieldTokensAfter)"
