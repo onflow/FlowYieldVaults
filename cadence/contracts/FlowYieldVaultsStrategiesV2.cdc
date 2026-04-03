@@ -1861,7 +1861,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         return AutoBalancers.AutoBalancerRecurringConfig(
             interval: 60 * 10,  // Rebalance every 10 minutes
             priority: FlowTransactionScheduler.Priority.Medium,
-            executionEffort: 800,
+            executionEffort: 1200,
             forceRebalance: false,
             txnFunder: txnFunder
         )
