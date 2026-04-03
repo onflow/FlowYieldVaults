@@ -1,3 +1,5 @@
+// Simulation spreadsheet: https://docs.google.com/spreadsheets/d/11DCzwZjz5K-78aKEWxt9NI-ut5LtkSyOT0TnRPUG7qY/edit?pli=1&gid=539924856#gid=539924856
+
 #test_fork(network: "mainnet-fork", height: 143292255)
 
 import Test
@@ -160,8 +162,6 @@ fun logPositionDetails(label: String, pid: UInt64) {
 
 access(all)
 fun test_RebalanceYieldVaultScenario2() {
-	// Test.reset(to: snapshot)
-
 	let fundingAmount = 1000.0
 
 	let user = Test.createAccount()
@@ -377,7 +377,6 @@ fun test_RebalanceYieldVaultScenario2() {
 
 	log("[TEST] Initial yield vault balance: \(yieldVaultBalance ?? 0.0)")
 
-	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: flowALPAccount, pid: pid, force: true, beFailed: false)
 
 	for index, yieldTokenPrice in yieldPriceChanges {

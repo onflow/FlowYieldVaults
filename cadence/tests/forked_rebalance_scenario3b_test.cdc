@@ -1,3 +1,5 @@
+// Simulation spreadsheet: https://docs.google.com/spreadsheets/d/11DCzwZjz5K-78aKEWxt9NI-ut5LtkSyOT0TnRPUG7qY/edit?pli=1&gid=539924856#gid=539924856
+
 #test_fork(network: "mainnet-fork", height: 143292255)
 
 import Test
@@ -231,7 +233,6 @@ fun test_RebalanceYieldVaultScenario3B() {
         signer: coaOwnerAccount
     )
 
-	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: flowALPAccount, pid: pid, force: true, beFailed: false)
 
 	let yieldTokensAfterFlowPriceIncrease = getAutoBalancerBalance(id: yieldVaultIDs![0])!
@@ -383,7 +384,7 @@ fun test_RebalanceYieldVaultScenario3B() {
 
 	// Skip closeYieldVault for now due to getYieldVaultBalance precision issues
     // closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
-    
+
     log("\n=== TEST COMPLETE ===")
 }
 

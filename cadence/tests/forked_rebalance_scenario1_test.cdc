@@ -1,3 +1,5 @@
+// Simulation spreadsheet: https://docs.google.com/spreadsheets/d/11DCzwZjz5K-78aKEWxt9NI-ut5LtkSyOT0TnRPUG7qY/edit?pli=1&gid=539924856#gid=539924856
+
 #test_fork(network: "mainnet-fork", height: 143292255)
 
 import Test
@@ -134,6 +136,7 @@ fun setup() {
 }
 
 access(all) var testSnapshot: UInt64 = 0
+// Verify that the YieldVault correctly rebalances yield token holdings when FLOW price changes
 access(all)
 fun test_ForkedRebalanceYieldVaultScenario1() {
 	let fundingAmount = 1000.0
@@ -198,8 +201,8 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 		5.0:      3076.92307692   // rebalance: health 6.50 > 1.5
 	}
 
-	// Likely 0.0
-	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	// 	confirm user exists.
+	getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
     transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
     grantBeta(flowYieldVaultsAccount, user)
 
@@ -235,7 +238,6 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 
 	log("[TEST] Initial yield vault balance: \(yieldVaultBalance ?? 0.0)")
 
-	rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
 	rebalancePosition(signer: flowALPAccount, pid: pid, force: true, beFailed: false)
 
 	testSnapshot = getCurrentBlockHeight()

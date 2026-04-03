@@ -1,3 +1,5 @@
+// Simulation spreadsheet: https://docs.google.com/spreadsheets/d/11DCzwZjz5K-78aKEWxt9NI-ut5LtkSyOT0TnRPUG7qY/edit?pli=1&gid=539924856#gid=539924856
+
 #test_fork(network: "mainnet-fork", height: 143292255)
 
 import Test
@@ -249,7 +251,6 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
         signer: coaOwnerAccount
     )
 
-    rebalanceYieldVault(signer: flowYieldVaultsAccount, id: yieldVaultIDs![0], force: true, beFailed: false)
     rebalancePosition(signer: flowALPAccount, pid: pid, force: true, beFailed: false)
 
     let yieldTokensAfterFlowPriceDecrease = getAutoBalancerBalance(id: yieldVaultIDs![0])!
