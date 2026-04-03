@@ -284,7 +284,15 @@ fun testBatchRelaunchHandlesMixedPopulationAndRunningSupervisor() {
     let activeProbeRebalancedBefore = countRebalancedEventsFor(activeProbe)
 
     // Include both a duplicate and a missing ID to verify that the batch skips them without reverting.
-    let idsForBatch = stuckIDs.concat(activeIDs).concat([activeProbe, 999_999])
+    let idsForBatch: [UInt64] = []
+    for id in stuckIDs {
+        idsForBatch.append(id)
+    }
+    for id in activeIDs {
+        idsForBatch.append(id)
+    }
+    idsForBatch.append(activeProbe)
+    idsForBatch.append(999_999)
     let batchRes = batchRelaunch(
         ids: idsForBatch,
         interval: 1800,
@@ -298,7 +306,13 @@ fun testBatchRelaunchHandlesMixedPopulationAndRunningSupervisor() {
     )
     Test.expect(batchRes, Test.beSucceeded())
 
-    let allValidIDs = stuckIDs.concat(activeIDs)
+    let allValidIDs: [UInt64] = []
+    for id in stuckIDs {
+        allValidIDs.append(id)
+    }
+    for id in activeIDs {
+        allValidIDs.append(id)
+    }
     for id in allValidIDs {
         Test.assertEqual(false, isStuckYieldVault(id))
         Test.assertEqual(true, hasActiveSchedule(id))
