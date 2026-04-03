@@ -1,4 +1,4 @@
-import "FlowYieldVaultsAutoBalancers"
+import "FlowYieldVaultsAutoBalancersV1"
 
 /// Returns true if the yield vault/AutoBalancer has at least one active (Scheduled) transaction.
 /// Used to verify that healthy yield vaults maintain their scheduling chain.
@@ -7,6 +7,6 @@ import "FlowYieldVaultsAutoBalancers"
 /// @return Bool: true if there's at least one Scheduled transaction, false otherwise
 ///
 access(all) fun main(yieldVaultID: UInt64): Bool {
-    return FlowYieldVaultsAutoBalancers.hasActiveSchedule(id: yieldVaultID)
+    return FlowYieldVaultsAutoBalancersV1.hasActiveSchedule(id: yieldVaultID)
 }
 

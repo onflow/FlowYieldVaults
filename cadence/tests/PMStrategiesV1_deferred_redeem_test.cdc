@@ -1,4 +1,4 @@
-#test_fork(network: "mainnet", height: nil)
+#test_fork(network: "mainnet", height: nil) // latest mainnet block, needs oracle price, which goes stale if not on latest
 
 import Test
 
@@ -129,14 +129,6 @@ access(all) fun setup() {
     )
     Test.expect(err, Test.beNil())
 
-    log("Deploying FlowYieldVaultsAutoBalancers...")
-    err = Test.deployContract(
-        name: "FlowYieldVaultsAutoBalancers",
-        path: "../../cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
     log("Deploying PMStrategiesV1...")
     err = Test.deployContract(
         name: "PMStrategiesV1",
@@ -247,7 +239,7 @@ access(all) fun testRequestRedeem() {
 
     // Capture AutoBalancer share balance before redeem for end-to-end recovery verification
     abBalanceBeforeRedeem = (_executeScript(
-        "../scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc",
+        "../scripts/flow-yield-vaults/get_pm_auto_balancer_balance_by_id.cdc",
         [yieldVaultID]
     ).returnValue! as! UFix64?)!
     log("AutoBalancer share balance before requestRedeem: \(abBalanceBeforeRedeem)")
@@ -545,7 +537,7 @@ access(all) fun testEVMRedeemRevertTriggersRecovery() {
     Test.assert(infoBefore.returnValue != nil, message: "Expected pending redeem before moveTime")
 
     let abBefore = (_executeScript(
-        "../scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc",
+        "../scripts/flow-yield-vaults/get_pm_auto_balancer_balance_by_id.cdc",
         [yieldVaultID]
     ).returnValue! as! UFix64?)!
     let userFlowBefore = getAccount(userAccount.address).balance
@@ -573,7 +565,7 @@ access(all) fun testEVMRedeemRevertTriggersRecovery() {
 
     // Shares recovered to AutoBalancer
     let abAfter = (_executeScript(
-        "../scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc",
+        "../scripts/flow-yield-vaults/get_pm_auto_balancer_balance_by_id.cdc",
         [yieldVaultID]
     ).returnValue! as! UFix64?)!
     Test.assert(abAfter > abBefore, message: "Expected AutoBalancer increase from recovered shares")
@@ -607,7 +599,7 @@ access(all) fun testRequestRedeemAfterRecovery() {
     // balance and nil-amount redeem (skips convertToShares EVM call).
 
     let abBalance = (_executeScript(
-        "../scripts/flow-yield-vaults/get_auto_balancer_balance_by_id.cdc",
+        "../scripts/flow-yield-vaults/get_pm_auto_balancer_balance_by_id.cdc",
         [yieldVaultID]
     ).returnValue! as! UFix64?)!
     log("AutoBalancer share balance after recovery: \(abBalance)")

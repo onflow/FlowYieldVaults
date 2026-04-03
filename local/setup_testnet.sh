@@ -119,34 +119,34 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
 
 ## PYUSD0 Vault
 # WFLOW univ3 path and fees
-# path: FUSDEV - MOET - WFLOW
+# path: FUSDEV - PYUSD0 - WFLOW
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
 	'A.7e60df042a9c0868.FlowToken.Vault' \
 	"0x61b44D19486EE492449E83C1201581C754e9e1E1" \
-	'["0x61b44D19486EE492449E83C1201581C754e9e1E1", "0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9", "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"]' \
+	'["0x61b44D19486EE492449E83C1201581C754e9e1E1", "0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f", "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"]' \
 	'[100, 3000]' \
 	--network testnet \
 	--signer testnet-admin
 
 # WETH univ3 path and fees
-# path: FUSDEV - MOET - WETH
+# path: FUSDEV - PYUSD0 - WETH
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
 	'A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault' \
 	"0x61b44D19486EE492449E83C1201581C754e9e1E1" \
-	'["0x61b44D19486EE492449E83C1201581C754e9e1E1","0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9", "0x059A77239daFa770977DD9f1E98632C3E4559848"]' \
+	'["0x61b44D19486EE492449E83C1201581C754e9e1E1","0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f", "0x059A77239daFa770977DD9f1E98632C3E4559848"]' \
 	'[100,3000]' \
 	--network testnet \
 	--signer testnet-admin
 
 # WBTC univ3 path and fees
-# path: FUSDEV - MOET - WBTC
+# path: FUSDEV - PYUSD0 - WBTC
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
 	'A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault' \
 	"0x61b44D19486EE492449E83C1201581C754e9e1E1" \
-	'["0x61b44D19486EE492449E83C1201581C754e9e1E1","0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9","0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6"]' \
+	'["0x61b44D19486EE492449E83C1201581C754e9e1E1","0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f","0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6"]' \
 	'[100,3000]' \
 	--network testnet \
 	--signer testnet-admin
@@ -163,18 +163,6 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_str
 # 	--network testnet \
 # 	--signer testnet-admin
 
-# configure PYUSD0 as MOET-preswap collateral for FUSDEVStrategy (MorphoERC4626StrategyComposer)
-# path: PYUSD0 → MOET (1-hop, fee 100 = 0.01%)
-# testnet PYUSD0 EVM: 0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f
-# testnet MOET EVM: 0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9
-# flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_moet_preswap_config.cdc \
-# 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.MorphoERC4626StrategyComposer' \
-# 	'A.dfc20aee650fcbdf.EVMVMBridgedToken_d7d43ab7b365f0d0789ae83f4385fa710ffdc98f.Vault' \
-# 	'["0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f","0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9"]' \
-# 	'[100]' \
-# 	--network testnet \
-# 	--signer testnet-admin
-
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.MorphoERC4626StrategyComposer' \
@@ -187,7 +175,6 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
 # UniswapV3 addresses (testnet): factory=0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39
 # EVM tokens (testnet):
 #   WFLOW:  0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e
-#   MOET:   0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9  (bridged; used as intermediate)
 #   WBTC:   0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6
 #   WETH:   0x059A77239daFa770977DD9f1E98632C3E4559848
 #   PYUSD0: 0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f
@@ -196,28 +183,28 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
 #
 # yieldToUnderlying path is the same for all collaterals: syWFLOWv → WFLOW (fee 100, 0.01%)
 # debtToCollateral paths differ per collateral: WFLOW → <collateral>
-# testnet uses MOET as the intermediate hop (mirrors testnet FUSDEVStrategy pool structure)
+# testnet uses PYUSD0 as the intermediate hop (mirrors testnet FUSDEVStrategy pool structure)
 
-# WBTC collateral — syWFLOWv → WFLOW (fee 100), WFLOW → MOET → WBTC (fees 3000/3000)
+# WBTC collateral — syWFLOWv → WFLOW (fee 100), WFLOW → PYUSD0 → WBTC (fees 3000/3000)
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.syWFLOWvStrategy' \
 	'A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault' \
 	'0x<TODO_TESTNET_SYWFLOWV_ADDRESS>' \
 	'["0x<TODO_TESTNET_SYWFLOWV_ADDRESS>","0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"]' \
 	'[100]' \
-	'["0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e","0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9","0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6"]' \
+	'["0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e","0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f","0x208d09d2a6Dd176e3e95b3F0DE172A7471C5B2d6"]' \
 	'[3000,3000]' \
 	--network testnet \
 	--signer testnet-admin
 
-# WETH collateral — syWFLOWv → WFLOW (fee 100), WFLOW → MOET → WETH (fees 3000/3000)
+# WETH collateral — syWFLOWv → WFLOW (fee 100), WFLOW → PYUSD0 → WETH (fees 3000/3000)
 flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.syWFLOWvStrategy' \
 	'A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault' \
 	'0x<TODO_TESTNET_SYWFLOWV_ADDRESS>' \
 	'["0x<TODO_TESTNET_SYWFLOWV_ADDRESS>","0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"]' \
 	'[100]' \
-	'["0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e","0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9","0x059A77239daFa770977DD9f1E98632C3E4559848"]' \
+	'["0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e","0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f","0x059A77239daFa770977DD9f1E98632C3E4559848"]' \
 	'[3000,3000]' \
 	--network testnet \
 	--signer testnet-admin
@@ -232,18 +219,6 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mor
 	'[100]' \
 	'["0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e","0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f"]' \
 	'[500]' \
-	--network testnet \
-	--signer testnet-admin
-
-# configure PYUSD0 as MOET-preswap collateral for syWFLOWvStrategy (MoreERC4626StrategyComposer)
-# path: PYUSD0 → MOET (1-hop, fee 100 = 0.01%)
-# testnet PYUSD0 EVM: 0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f
-# testnet MOET EVM: 0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_moet_preswap_config.cdc \
-	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.MoreERC4626StrategyComposer' \
-	'A.dfc20aee650fcbdf.EVMVMBridgedToken_d7d43ab7b365f0d0789ae83f4385fa710ffdc98f.Vault' \
-	'["0xd7d43ab7b365f0d0789ae83f4385fa710ffdc98f","0xf622664Ba813e63947Cfa6c2E95E5c18F617E6C9"]' \
-	'[100]' \
 	--network testnet \
 	--signer testnet-admin
 
@@ -300,7 +275,7 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/tra
 #   --network testnet
 #
 #
-# WBTC (BTCf)
+# WBTC
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
 #   A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy \
 #   A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault \

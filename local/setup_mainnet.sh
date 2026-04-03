@@ -133,6 +133,41 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governan
 #	--network mainnet --signer mainnet-flow-alp-deployer
 # create pool
 
+######## Stability Fee Rate ########
+# Set stability fee rate to 0 for internal testing
+flow transactions send \
+	./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_stability_fee_rate.cdc \
+	"A.1654653399040a61.FlowToken.Vault" \
+	"0.0" \
+	--signer mainnet-flow-alp-deployer \
+	--network mainnet
+
+# PYUSD0
+flow transactions send \
+	./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_stability_fee_rate.cdc \
+	"A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault" \
+	"0.0" \
+	--signer mainnet-flow-alp-deployer \
+	--network mainnet
+
+# WBTC (cbBTC)
+flow transactions send \
+	./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_stability_fee_rate.cdc \
+	"A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault" \
+	"0.0" \
+	--signer mainnet-flow-alp-deployer \
+	--network mainnet
+
+# WETH
+flow transactions send \
+	./lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_stability_fee_rate.cdc \
+	"A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault" \
+	"0.0" \
+	--signer mainnet-flow-alp-deployer \
+	--network mainnet
+
+#########
+
 # add liquidity to pool
 
 # configure FlowYieldVaults
@@ -198,15 +233,6 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_mor
     '[100]' \
     '["0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e","0x99aF3EeA856556646C98c8B9b2548Fe815240750"]' \
     '[3000]' \
-    --network mainnet \
-    --signer mainnet-admin
-
-# MOET pre-swap: PYUSD0→MOET via UniV3 fee 100 (FlowALP only accepts MOET as stablecoin collateral)
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_moet_preswap_config.cdc \
-    'A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.MoreERC4626StrategyComposer' \
-    'A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault' \
-    '["0x99aF3EeA856556646C98c8B9b2548Fe815240750","0x213979bb8a9a86966999b3aa797c1fcf3b967ae2"]' \
-    '[100]' \
     --network mainnet \
     --signer mainnet-admin
 
@@ -306,7 +332,7 @@ flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-ma
 #   --network mainnet \
 #   --signer <TEST_USER>
 #
-# WBTC (BTCf)
+# WBTC
 # flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
 #   A.b1d63873c3cc9f79.FlowYieldVaultsStrategiesV2.FUSDEVStrategy \
 #   A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault \
@@ -390,4 +416,5 @@ flow transactions send ./lib/FlowALP/cadence/tests/transactions/flow-alp/pool-ma
 #   --compute-limit 9999 \
 #   --network mainnet \
 #   --signer <TEST_USER>
+#
 #

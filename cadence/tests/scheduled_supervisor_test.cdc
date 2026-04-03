@@ -10,7 +10,8 @@ import "MockStrategies"
 import "FlowYieldVaultsSchedulerV1"
 import "FlowTransactionScheduler"
 import "DeFiActions"
-import "FlowYieldVaultsSchedulerRegistry"
+import "AutoBalancers"
+import "FlowYieldVaultsSchedulerRegistryV1"
 
 access(all) let protocolAccount = Test.getAccount(0x0000000000000008)
 access(all) let flowYieldVaultsAccount = Test.getAccount(0x0000000000000009)
@@ -133,9 +134,9 @@ fun testAutoRegisterAndSupervisor() {
     let schedulerExecEvents = Test.eventsOfType(Type<FlowTransactionScheduler.Executed>())
     Test.assert(schedulerExecEvents.length > 0, message: "Should have FlowTransactionScheduler.Executed event")
 
-    let rebalancedEvents = Test.eventsOfType(Type<DeFiActions.Rebalanced>())
+    let rebalancedEvents = Test.eventsOfType(Type<AutoBalancers.Rebalanced>())
     log("Scheduler.Executed events: ".concat(schedulerExecEvents.length.toString()))
-    log("DeFiActions.Rebalanced events: ".concat(rebalancedEvents.length.toString()))
+    log("AutoBalancers.Rebalanced events: ".concat(rebalancedEvents.length.toString()))
 
     log("PASS: Auto-Register + Native Scheduling")
 }
@@ -279,9 +280,11 @@ fun testMultiYieldVaultIndependentExecution() {
 ///
 access(all)
 fun testPaginationStress() {
-    Test.reset(to: snapshot)
+    if snapshot != getCurrentBlockHeight() {
+        Test.reset(to: snapshot)
+    }
     // Calculate number of yield vaults: 3 * MAX_BATCH_SIZE + partial batch
-    // MAX_BATCH_SIZE is 5 in FlowYieldVaultsSchedulerRegistry
+    // MAX_BATCH_SIZE is 5 in FlowYieldVaultsSchedulerRegistryV1
     let maxBatchSize = 5
     let fullBatches = 3
     let partialBatch = 3  // Less than MAX_BATCH_SIZE
@@ -333,7 +336,8 @@ fun testPaginationStress() {
     // Test paginated access - request each page up to MAX_BATCH_SIZE
     var page = 0
     while page <= fullBatches {
-        let pageRes = executeScript("../scripts/flow-yield-vaults/get_pending_yield_vaults_paginated.cdc", [page, maxBatchSize])
+        let pageRes = executeScript("../scripts/flow-yield-vaults/get_pending_yield_vaults_paginated.cdc", [page, UInt(maxBatchSize)])
+        Test.expect(pageRes, Test.beSucceeded())
         let pageData = pageRes.returnValue! as! [UInt64]
         log("Page ".concat(page.toString()).concat(" of pending queue: ").concat(pageData.length.toString()).concat(" yield vaults"))
         page = page + 1
@@ -410,6 +414,9 @@ fun testPaginationStress() {
 ///
 access(all)
 fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
+    // Start from the post-setup snapshot so global event history and stuck state from other
+    // tests cannot make this "healthy/no-op Supervisor" assertion pass accidentally.
+    Test.reset(to: snapshot)
     log("\n Testing Supervisor with healthy yield vaults (nothing to recover)...")
 
     let user = Test.createAccount()
@@ -436,7 +443,7 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
     Test.expect(regIDsRes, Test.beSucceeded())
     let regIDs = regIDsRes.returnValue! as! [UInt64]
     Test.assert(regIDs.contains(yieldVaultID), message: "YieldVault should be in registry")
-    log("YieldVault is registered in FlowYieldVaultsSchedulerRegistry")
+    log("YieldVault is registered in FlowYieldVaultsSchedulerRegistryV1")
 
     // 3. Wait for some native executions
     log("Step 3: Waiting for native execution...")
@@ -453,6 +460,12 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
     let pendingCount = pendingCountRes.returnValue! as! Int
     log("Pending queue size: ".concat(pendingCount.toString()))
     Test.assertEqual(0, pendingCount)
+
+    // Capture event baselines after verifying this test is in a clean healthy state.
+    // The assertions below check that this Supervisor run emits no *new* recovery or
+    // stuck-detection events, instead of tolerating unrelated events from prior tests.
+    let recoveredEventsBefore = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>()).length
+    let stuckDetectedEventsBefore = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.StuckYieldVaultDetected>()).length
 
     // Supervisor is automatically configured when FlowYieldVaultsSchedulerV1 is deployed (in init)
     Test.commitBlock()
@@ -474,11 +487,20 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
 
     // 7. Verify Supervisor ran but found nothing to recover (healthy yield vault)
     let recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
+    let stuckDetectedEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.StuckYieldVaultDetected>())
     log("YieldVaultRecovered events: ".concat(recoveredEvents.length.toString()))
-
-    // Healthy yield vaults don't need recovery
-    // Note: recoveredEvents might be > 0 if there were stuck yield vaults from previous tests
-    // The key verification is that our yield vault continues to execute
+    log("StuckYieldVaultDetected events: ".concat(stuckDetectedEvents.length.toString()))
+    // A healthy vault should not cause the Supervisor to enqueue recovery work or emit
+    // recovery events. These checks make the test prove "Supervisor was a no-op" rather
+    // than only proving the vault kept executing afterward.
+    Test.assert(
+        recoveredEvents.length == recoveredEventsBefore,
+        message: "Supervisor should not emit recovery events for a healthy yield vault. Before: \(recoveredEventsBefore.toString()), After: \(recoveredEvents.length.toString())"
+    )
+    Test.assert(
+        stuckDetectedEvents.length == stuckDetectedEventsBefore,
+        message: "Supervisor should not detect stuck yield vaults in a clean healthy test. Before: \(stuckDetectedEventsBefore.toString()), After: \(stuckDetectedEvents.length.toString())"
+    )
 
     // 8. Verify yield vault continues executing
     log("Step 7: Verifying yield vault continues executing...")
@@ -913,3 +935,132 @@ fun testInsufficientFundsAndRecovery() {
     log("- All ".concat(activeScheduleCount.toString()).concat(" yield vaults have active schedules"))
     log("========================================")
 }
+
+// TODO: uncomment or delete this test after merging strategies
+
+/// Supervisor batch recovery: 200 stuck vaults, no capacity-probe loop.
+///
+/// Flow: create 200 yield vaults, run 2 scheduling rounds, drain FLOW so executions fail,
+/// wait for vaults to be marked stuck, refund FLOW, schedule the supervisor, then advance
+/// time for ceil(200/MAX_BATCH_SIZE)+10 supervisor ticks. Asserts all 200 vaults are
+/// recovered (YieldVaultRecovered events), none still stuck, and all have active schedules.
+/// The +10 extra ticks are a buffer so every vault is processed despite scheduler timing.
+// access(all)
+// fun testSupervisorHandlesManyStuckVaults() {
+//     let n = 200
+//     let maxBatchSize = FlowYieldVaultsSchedulerRegistryV1.MAX_BATCH_SIZE
+//
+//     if snapshot != getCurrentBlockHeight() {
+//         Test.reset(to: snapshot)
+//     }
+//
+//     // 1. Setup: user, FLOW, and grant
+//     let user = Test.createAccount()
+//     mintFlow(to: user, amount: 100000.0)
+//     grantBeta(flowYieldVaultsAccount, user)
+//     mintFlow(to: flowYieldVaultsAccount, amount: 10000.0)
+//
+//     // 2. Create n yield vaults in batch (Test.executeTransactions)
+//     var i = 0
+//     let tx = Test.Transaction(
+//         code: Test.readFile("../transactions/flow-yield-vaults/create_yield_vault.cdc"),
+//         authorizers: [user.address],
+//         signers: [user],
+//         arguments: [strategyIdentifier, flowTokenIdentifier, 5.0]
+//     )
+//     let txs: [Test.Transaction] = []
+//     while i < n {
+//         txs.append(tx)
+//         i = i + 1
+//     }
+//     let results = Test.executeTransactions(txs)
+//     for result in results {
+//         Test.expect(result, Test.beSucceeded())
+//     }
+//     log("testSupervisorHandlesManyStuckVaults: created \(n.toString()) yield vaults")
+//
+//     let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
+//     Test.assert(yieldVaultIDs.length == n, message: "expected \(n.toString()) vaults, got \(yieldVaultIDs.length.toString())")
+//
+//     // 3. Two scheduling rounds so vaults run once
+//     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.5)
+//     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.2)
+//     Test.moveTime(by: 60.0 * 10.0 + 10.0)
+//     Test.commitBlock()
+//     Test.moveTime(by: 60.0 * 10.0 + 10.0)
+//     Test.commitBlock()
+//
+//     // 4. Drain FLOW so subsequent executions fail and vaults become stuck
+//     let balanceBeforeDrain = (executeScript(
+//         "../scripts/flow-yield-vaults/get_flow_balance.cdc",
+//         [flowYieldVaultsAccount.address]
+//     ).returnValue! as! UFix64)
+//     if balanceBeforeDrain > 0.01 {
+//         let drainRes = _executeTransaction(
+//             "../transactions/flow-yield-vaults/drain_flow.cdc",
+//             [balanceBeforeDrain - 0.001],
+//             flowYieldVaultsAccount
+//         )
+//         Test.expect(drainRes, Test.beSucceeded())
+//     }
+//     log("testSupervisorHandlesManyStuckVaults: drained FLOW, waiting for vaults to be marked stuck")
+//
+//     // 5. Wait rounds until vaults are marked stuck
+//     var waitRound = 0
+//     while waitRound < 6 {
+//         Test.moveTime(by: 60.0 * 10.0 + 10.0)
+//         Test.commitBlock()
+//         waitRound = waitRound + 1
+//     }
+//
+//     // 6. Refund FLOW and schedule supervisor
+//     mintFlow(to: flowYieldVaultsAccount, amount: 500.0)
+//     Test.commitBlock()
+//     Test.moveTime(by: 1.0)
+//     Test.commitBlock()
+//
+//     let interval = 60.0 * 10.0
+//     let schedSupRes = _executeTransaction(
+//         "../transactions/flow-yield-vaults/admin/schedule_supervisor.cdc",
+//         [interval, UInt8(1), UInt64(5000), true],
+//         flowYieldVaultsAccount
+//     )
+//     Test.expect(schedSupRes, Test.beSucceeded())
+//
+//     // 7. Advance time for supervisor ticks (ceil(n/MAX_BATCH_SIZE)+10); each tick processes a batch
+//     let supervisorRunsNeeded = (UInt(n) + UInt(maxBatchSize) - 1) / UInt(maxBatchSize)
+//     var run = 0 as UInt
+//     while run < supervisorRunsNeeded + 10 {
+//         Test.moveTime(by: 60.0 * 10.0 + 10.0)
+//         Test.commitBlock()
+//         run = run + 1
+//     }
+//     log("testSupervisorHandlesManyStuckVaults: ran \((supervisorRunsNeeded + 10).toString()) supervisor ticks")
+//
+//     let recoveredEvents = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>())
+//     Test.assert(recoveredEvents.length >= n, message: "expected at least \(n.toString()) recovered, got \(recoveredEvents.length.toString())")
+//     log("testSupervisorHandlesManyStuckVaults: recovered \(recoveredEvents.length.toString()) vaults")
+//
+//     // 8. Health check: none stuck, all have active schedules
+//     var stillStuck = 0
+//     var activeCount = 0
+//     for yieldVaultID in yieldVaultIDs {
+//         let isStuckRes = executeScript(
+//             "../scripts/flow-yield-vaults/is_stuck_yield_vault.cdc",
+//             [yieldVaultID]
+//         )
+//         if isStuckRes.returnValue != nil && (isStuckRes.returnValue! as! Bool) {
+//             stillStuck = stillStuck + 1
+//         }
+//         let hasActiveRes = executeScript(
+//             "../scripts/flow-yield-vaults/has_active_schedule.cdc",
+//             [yieldVaultID]
+//         )
+//         if hasActiveRes.returnValue != nil && (hasActiveRes.returnValue! as! Bool) {
+//             activeCount = activeCount + 1
+//         }
+//     }
+//     Test.assert(stillStuck == 0, message: "expected 0 stuck, got \(stillStuck.toString())")
+//     Test.assert(activeCount == n, message: "expected \(n.toString()) active, got \(activeCount.toString())")
+//     log("testSupervisorHandlesManyStuckVaults: all \(n.toString()) vaults healthy, active schedules: \(activeCount.toString())")
+// }

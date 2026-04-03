@@ -5,6 +5,7 @@ import "EVM"
 // DeFiActions
 import "DeFiActionsUtils"
 import "DeFiActions"
+import "AutoBalancers"
 import "SwapConnectors"
 import "FungibleTokenConnectors"
 // amm integration
@@ -16,11 +17,9 @@ import "ERC4626Utils"
 import "FlowALPv0"
 // FlowYieldVaults platform
 import "FlowYieldVaults"
-import "FlowYieldVaultsAutoBalancers"
+import "FlowYieldVaultsAutoBalancersV1"
 // scheduler
 import "FlowTransactionScheduler"
-// tokens
-import "MOET"
 // vm bridge
 import "FlowEVMBridgeConfig"
 // live oracles
@@ -46,25 +45,27 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     /// Partitioned config map. Each key is a partition name; each value is a typed nested map keyed by
     /// strategy UniqueIdentifier ID (UInt64). Current partitions:
     ///   "closedPositions"            → {UInt64: Bool}
-    ///   "syWFLOWvDebtTokenTypes"     → {UInt64: Type}
     ///   "moreERC4626Configs"         → {Type: {Type: {Type: MoreERC4626CollateralConfig}}}
-    ///   "moetPreswapConfigs"         → {Type: {Type: MoetPreswapConfig}}
-    ///   "originalCollateralTypes"    → {UInt64: Type}
     access(contract) let config: {String: AnyStruct}
 
     /// Canonical StoragePath where the StrategyComposerIssuer should be stored
     access(all) let IssuerStoragePath: StoragePath
 
-    /// A Source that converts yield tokens to debt tokens by pulling ALL available yield
-    /// tokens from the wrapped source, rather than using quoteIn to limit the pull amount.
-    ///
-    /// This avoids ERC4626 rounding issues where quoteIn might underestimate required shares,
-    /// causing the swap to return less than the requested debt amount. By pulling everything
-    /// and swapping everything, the output is as large as the yield position allows.
-    ///
-    /// The caller is responsible for ensuring the yield tokens (after swapping) will cover the
-    /// required debt — e.g. by pre-depositing supplemental MOET to reduce the position's debt
-    /// before calling closePosition (see FUSDEVStrategy.closePosition step 6).
+    /// Emitted when a non-empty vault is destroyed because the swapper quote returned zero output,
+    /// indicating the balance is too small to route (dust). Includes the quote as evidence of why
+    /// the burn decision was made, to aid debugging of stale or misconfigured swapper paths.
+    access(all) event DustBurned(
+        tokenType: String,
+        balance: UFix64,
+        quoteInType: String,
+        quoteOutType: String,
+        quoteInAmount: UFix64,
+        quoteOutAmount: UFix64,
+        swapperType: String
+    )
+
+    /// Deprecated — replaced by SwapConnectors.SwapSource. Kept as a no-op to preserve
+    /// contract upgrade compatibility (Cadence structs cannot be removed once deployed).
     access(all) struct BufferedSwapSource : DeFiActions.Source {
         access(self) let swapper: {DeFiActions.Swapper}
         access(self) let source: {DeFiActions.Source}
@@ -75,52 +76,20 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             source: {DeFiActions.Source},
             uniqueID: DeFiActions.UniqueIdentifier?
         ) {
-            pre {
-                source.getSourceType() == swapper.inType():
-                    "source type != swapper inType"
-            }
             self.swapper = swapper
             self.source = source
             self.uniqueID = uniqueID
         }
 
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
-            return DeFiActions.ComponentInfo(
-                type: self.getType(),
-                id: self.id(),
-                innerComponents: [
-                    self.swapper.getComponentInfo(),
-                    self.source.getComponentInfo()
-                ]
-            )
+            return DeFiActions.ComponentInfo(type: self.getType(), id: self.id(), innerComponents: [])
         }
         access(contract) view fun copyID(): DeFiActions.UniqueIdentifier? { return self.uniqueID }
         access(contract) fun setID(_ id: DeFiActions.UniqueIdentifier?) { self.uniqueID = id }
         access(all) view fun getSourceType(): Type { return self.swapper.outType() }
-        access(all) fun minimumAvailable(): UFix64 {
-            let avail = self.source.minimumAvailable()
-            if avail == 0.0 { return 0.0 }
-            return self.swapper.quoteOut(forProvided: avail, reverse: false).outAmount
-        }
-        /// Pulls ALL available yield tokens from the source and swaps them to the debt token.
-        /// Ignores quoteIn — avoids ERC4626 rounding underestimates that would leave us short.
+        access(all) fun minimumAvailable(): UFix64 { return 0.0 }
         access(FungibleToken.Withdraw) fun withdrawAvailable(maxAmount: UFix64): @{FungibleToken.Vault} {
-            if maxAmount == 0.0 {
-                return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
-            }
-            let availableIn = self.source.minimumAvailable()
-            if availableIn == 0.0 {
-                return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
-            }
-            // Pull ALL available yield tokens (not quoteIn-limited)
-            let sourceLiquidity <- self.source.withdrawAvailable(maxAmount: availableIn)
-            if sourceLiquidity.balance == 0.0 {
-                Burner.burn(<-sourceLiquidity)
-                return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
-            }
-            let swapped <- self.swapper.swap(quote: nil, inVault: <-sourceLiquidity)
-            assert(swapped.balance > 0.0, message: "BufferedSwapSource: swap returned zero despite available input")
-            return <- swapped
+            return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
         }
     }
 
@@ -149,18 +118,10 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
     }
 
-    /// Configuration for pre-swapping a stablecoin collateral to MOET before depositing into
-    /// FlowALP. Required when the collateral type is not directly supported by FlowALP (e.g.
-    /// PYUSD0 must be swapped to MOET since FlowALP only supports MOET as its stablecoin).
-    ///
-    /// The path is collateral → MOET (e.g. [PYUSD0_addr, MOET_addr] for a 1-hop swap, or
-    /// [PYUSD0_addr, WFLOW_addr, MOET_addr] for a 2-hop swap). The reverse (MOET→collateral)
-    /// is derived automatically by reversing both arrays.
+    /// @deprecated — no longer used. Retained for Cadence upgrade compatibility (structs cannot
+    /// be removed once deployed on-chain).
     access(all) struct MoetPreswapConfig {
-        /// Full UniV3 swap path: collateral EVM address → ... → MOET EVM address.
-        /// First element is the collateral, last element must be MOET.
         access(all) let collateralToMoetAddressPath: [EVM.EVMAddress]
-        /// UniV3 fee tiers for each hop (length must equal addressPath.length - 1).
         access(all) let collateralToMoetFeePath: [UInt32]
 
         init(
@@ -224,9 +185,10 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     }
 
     /// This strategy uses FUSDEV vault (Morpho ERC4626).
-    /// Deposits collateral into a single FlowALP position, borrowing MOET as debt.
-    /// MOET is swapped to PYUSD0 and deposited into the Morpho FUSDEV ERC4626 vault.
-    /// Each strategy instance holds exactly one collateral type and one debt type (MOET).
+    /// Deposits collateral into a single FlowALP position, borrowing PYUSD0 as debt.
+    /// PYUSD0 is deposited directly into the Morpho FUSDEV ERC4626 vault (no AMM swap needed
+    /// since PYUSD0 is the vault's underlying asset).
+    /// Each strategy instance holds exactly one collateral type and one debt type (PYUSD0).
     /// PYUSD0 (the FUSDEV vault's underlying asset) cannot be used as collateral.
     access(all) resource FUSDEVStrategy : FlowYieldVaults.Strategy, DeFiActions.IdentifiableResource {
         /// An optional identifier allowing protocols to identify stacked connector operations by defining a protocol-
@@ -279,8 +241,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         /// This method:
         /// 1. Calculates debt amount from position
         /// 2. Creates external yield token source from AutoBalancer
-        /// 3. Swaps yield tokens → MOET via stored swapper
-        /// 4. Closes position with prepared MOET vault
+        /// 3. Swaps yield tokens → PYUSD0 via stored swapper
+        /// 4. Closes position with prepared PYUSD0 vault
         ///
         /// This approach eliminates circular dependencies by preparing all funds externally
         /// before calling the position's close method.
@@ -334,10 +296,10 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
 
             // Step 4: Create external yield token source from AutoBalancer
-            let yieldTokenSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
+            let yieldTokenSource = FlowYieldVaultsAutoBalancersV1.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
-            // Step 5: Reconstruct yield→MOET swapper from stored CollateralConfig.
+            // Step 5: Reconstruct yield→PYUSD0 swapper from stored CollateralConfig.
             let closeCollateralConfig = self._getStoredCollateralConfig(
                 strategyType: Type<@FUSDEVStrategy>(),
                 collateralType: collateralType
@@ -345,69 +307,67 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             let closeTokens = FlowYieldVaultsStrategiesV2._resolveTokenBundle(
                 yieldTokenEVMAddress: closeCollateralConfig.yieldTokenEVMAddress
             )
-            let yieldToMoetSwapper = self._buildYieldToDebtSwapper(
+            let yieldToPyusd0Swapper = self._buildYieldToDebtSwapper(
                 tokens: closeTokens,
                 uniqueID: self.uniqueID!
             )
 
             // Step 6: Pre-supplement from collateral if yield is insufficient to cover the full debt.
             //
-            // The FUSDEV close path has a structural ~0.02% round-trip fee loss:
-            //   Open:  MOET → PYUSD0 (UniV3 0.01%) → FUSDEV (ERC4626, free)
-            //   Close: FUSDEV → PYUSD0 (ERC4626, free) → MOET (UniV3 0.01%)
-            // In production, accrued yield more than covers this; with no accrued yield (e.g. in
-            // tests, immediate open+close), the yield tokens convert back to slightly less MOET
-            // than was borrowed. We handle this by pre-pulling a tiny amount of collateral from
-            // self.source, swapping it to MOET, and depositing it into the position to reduce the
-            // outstanding debt — BEFORE calling position.closePosition.
+            // The FUSDEV close path has a negligible round-trip fee:
+            //   Open:  PYUSD0 → FUSDEV (ERC4626 deposit, free)
+            //   Close: FUSDEV → PYUSD0 (ERC4626 redeem, free)
+            // In production, accrued yield more than covers any rounding; with no accrued yield
+            // (e.g. in tests, immediate open+close), the yield tokens may convert back to slightly
+            // less PYUSD0 than was borrowed. We handle this by pre-pulling a tiny amount of
+            // collateral from self.source, swapping it to PYUSD0, and depositing it into the
+            // position to reduce the outstanding debt — BEFORE calling position.closePosition.
             //
             // This MUST be done before closePosition because the position is locked during close:
             // any attempt to pull from self.source inside a repaymentSource.withdrawAvailable call
             // would trigger "Reentrancy: position X is locked".
             let yieldAvail = yieldTokenSource.minimumAvailable()
-            let expectedMOET = yieldAvail > 0.0
-                ? yieldToMoetSwapper.quoteOut(forProvided: yieldAvail, reverse: false).outAmount
+            let expectedPyusd0 = yieldAvail > 0.0
+                ? yieldToPyusd0Swapper.quoteOut(forProvided: yieldAvail, reverse: false).outAmount
                 : 0.0
-            if expectedMOET < totalDebtAmount {
-                let collateralToMoetSwapper = self._buildCollateralToDebtSwapper(
+            if expectedPyusd0 < totalDebtAmount {
+                let collateralToPyusd0Swapper = self._buildCollateralToDebtSwapper(
                     collateralConfig: closeCollateralConfig,
                     tokens: closeTokens,
                     collateralType: collateralType,
                     uniqueID: self.uniqueID!
                 )
-                let shortfall = totalDebtAmount - expectedMOET
-                // Add 1% buffer to account for swap slippage/rounding in the collateral→MOET leg
-                let buffered = shortfall + shortfall / 100.0
-                let quote = collateralToMoetSwapper.quoteIn(forDesired: buffered, reverse: false)
-                if quote.inAmount > 0.0 {
-                    let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
-                    assert(extraCollateral.balance > 0.0,
-                        message: "Pre-supplement: no collateral available to cover shortfall of \(shortfall) MOET")
-                    let extraMOET <- collateralToMoetSwapper.swap(quote: quote, inVault: <-extraCollateral)
-                    assert(extraMOET.balance > 0.0,
-                        message: "Pre-supplement: collateral→MOET swap produced zero output")
-                    self.position.deposit(from: <-extraMOET)
-                }
+                let shortfall = totalDebtAmount - expectedPyusd0
+                let quote = collateralToPyusd0Swapper.quoteIn(forDesired: shortfall, reverse: false)
+                assert(quote.inAmount > 0.0,
+                    message: "Pre-supplement: collateral→PYUSD0 quote returned zero input for non-zero shortfall — swapper misconfigured")
+                let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
+                assert(extraCollateral.balance > 0.0,
+                    message: "Pre-supplement: no collateral available to cover shortfall of \(shortfall) PYUSD0")
+                let extraPyusd0 <- collateralToPyusd0Swapper.swap(quote: quote, inVault: <-extraCollateral)
+                assert(extraPyusd0.balance >= shortfall,
+                    message: "Pre-supplement: collateral→PYUSD0 swap produced less than shortfall: got \(extraPyusd0.balance), need \(shortfall)")
+                self.position.deposit(from: <-extraPyusd0)
             }
 
-            // Step 7: Create a BufferedSwapSource that converts ALL yield tokens → MOET.
-            // Pulling all (not quoteIn-limited) avoids ERC4626 rounding underestimates.
-            // After the pre-supplement above, the remaining debt is covered by the yield tokens.
-            let moetSource = FlowYieldVaultsStrategiesV2.BufferedSwapSource(
-                swapper: yieldToMoetSwapper,
+            // Step 7: Create a SwapSource that converts yield tokens → PYUSD0 for debt repayment.
+            // Step 6's pre-supplement ensures remaining debt ≤ yield value, so SwapSource will
+            // use quoteIn(remainingDebt) and pull only the shares needed — not the full balance.
+            let debtSource = SwapConnectors.SwapSource(
+                swapper: yieldToPyusd0Swapper,
                 source: yieldTokenSource,
                 uniqueID: self.copyID()
             )
 
-            // Step 8: Close position - pool pulls up to the (now pre-reduced) debt from moetSource
-            let resultVaults <- self.position.closePosition(repaymentSources: [moetSource])
+            // Step 8: Close position - pool pulls up to the (now pre-reduced) debt from debtSource
+            let resultVaults <- self.position.closePosition(repaymentSources: [debtSource])
 
             // With one collateral type and one debt type, the pool returns at most two vaults:
-            // the collateral vault and optionally a MOET overpayment dust vault.
+            // the collateral vault and optionally a PYUSD0 overpayment dust vault.
             // closePosition returns vaults in dict-iteration order (hash-based), so we cannot
             // assume the collateral vault is first. Find it by type and convert any non-collateral
-            // vaults (MOET overpayment dust) back to collateral via reconstructed swapper.
-            // Reconstruct MOET→YIELD→collateral from CollateralConfig.
+            // vaults (PYUSD0 overpayment dust) back to collateral via reconstructed swapper.
+            // Reconstruct PYUSD0→collateral path from CollateralConfig.
             let debtToCollateralSwapper = self._buildDebtToCollateralSwapper(
                 collateralConfig: closeCollateralConfig,
                 tokens: closeTokens,
@@ -420,27 +380,86 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 let v <- resultVaults.removeFirst()
                 if v.getType() == collateralType {
                     collateralVault.deposit(from: <-v)
-                } else if v.balance > 0.0 {
+                } else if v.balance == 0.0 {
+                    // destroy empty vault
+                    Burner.burn(<-v)
+                } else {
                     // Quote first — if dust is too small to route, destroy it
                     let quote = debtToCollateralSwapper.quoteOut(forProvided: v.balance, reverse: false)
                     if quote.outAmount > 0.0 {
                         let swapped <- debtToCollateralSwapper.swap(quote: quote, inVault: <-v)
                         collateralVault.deposit(from: <-swapped)
                     } else {
+                        emit DustBurned(
+                            tokenType: v.getType().identifier,
+                            balance: v.balance,
+                            quoteInType: quote.inType.identifier,
+                            quoteOutType: quote.outType.identifier,
+                            quoteInAmount: quote.inAmount,
+                            quoteOutAmount: quote.outAmount,
+                            swapperType: debtToCollateralSwapper.getType().identifier
+                        )
                         Burner.burn(<-v)
                     }
-                } else {
-                    Burner.burn(<-v)
                 }
             }
 
             destroy resultVaults
+
+            // Step 9: Drain any remaining FUSDEV shares from the AutoBalancer — excess yield
+            // not consumed during debt repayment — and convert them directly to collateral.
+            // The SwapSource inside closePosition only pulled what was needed to repay the debt;
+            // any surplus shares are still held by the AutoBalancer and are recovered here.
+            //
+            // Use a MultiSwapper so the best available route is chosen:
+            //   - Direct: FUSDEV → collateral via the stored yieldToCollateral AMM path (works
+            //     even for 2-element paths where a direct yield↔collateral pool exists)
+            //   - 2-hop:  FUSDEV → PYUSD0 → collateral (via yieldToPyusd0 + debtToCollateral)
+            let excessShares <- yieldTokenSource.withdrawAvailable(maxAmount: UFix64.max)
+            if excessShares.balance > 0.0 {
+                let yieldToCollateralDirect = FlowYieldVaultsStrategiesV2._buildUniV3Swapper(
+                    tokenPath: closeCollateralConfig.yieldToCollateralUniV3AddressPath,
+                    feePath: closeCollateralConfig.yieldToCollateralUniV3FeePath,
+                    inVault: closeTokens.yieldTokenType,
+                    outVault: collateralType,
+                    uniqueID: self.uniqueID!
+                )
+                let yieldToCollateralViaDebt = SwapConnectors.SequentialSwapper(
+                    swappers: [yieldToPyusd0Swapper, debtToCollateralSwapper],
+                    uniqueID: self.copyID()
+                )
+                let sharesToCollateral = SwapConnectors.MultiSwapper(
+                    inVault: closeTokens.yieldTokenType,
+                    outVault: collateralType,
+                    swappers: [yieldToCollateralDirect, yieldToCollateralViaDebt],
+                    uniqueID: self.copyID()
+                )
+                let quote = sharesToCollateral.quoteOut(forProvided: excessShares.balance, reverse: false)
+                if quote.outAmount > 0.0 {
+                    let extraCollateral <- sharesToCollateral.swap(quote: quote, inVault: <-excessShares)
+                    collateralVault.deposit(from: <-extraCollateral)
+                } else {
+                    emit DustBurned(
+                        tokenType: excessShares.getType().identifier,
+                        balance: excessShares.balance,
+                        quoteInType: quote.inType.identifier,
+                        quoteOutType: quote.outType.identifier,
+                        quoteInAmount: quote.inAmount,
+                        quoteOutAmount: quote.outAmount,
+                        swapperType: sharesToCollateral.getType().identifier
+                    )
+                    Burner.burn(<-excessShares)
+                }
+            } else {
+                Burner.burn(<-excessShares)
+            }
+
             self._markPositionClosed()
             return <- collateralVault
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer
         access(contract) fun burnCallback() {
-            FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
+            FlowYieldVaultsAutoBalancersV1._cleanupAutoBalancer(id: self.id()!)
             self._cleanupPositionClosed()
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
@@ -475,18 +494,21 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             return issuer!.getCollateralConfig(strategyType: strategyType, collateralType: collateralType)
         }
 
-        /// Builds a YIELD→MOET MultiSwapper (AMM direct + ERC4626 redeem path).
+        /// Builds a YIELD→PYUSD0 MultiSwapper (AMM direct + ERC4626 redeem path).
+        /// PYUSD0 is the underlying asset of the FUSDEV vault and is also the debt token.
         access(self) fun _buildYieldToDebtSwapper(
             tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
             uniqueID: DeFiActions.UniqueIdentifier
         ): SwapConnectors.MultiSwapper {
+            // Direct FUSDEV→PYUSD0 via AMM (fee 100)
             let yieldToDebtAMM = FlowYieldVaultsStrategiesV2._buildUniV3Swapper(
-                tokenPath: [tokens.yieldTokenEVMAddress, tokens.moetTokenEVMAddress],
+                tokenPath: [tokens.yieldTokenEVMAddress, tokens.underlying4626AssetEVMAddress],
                 feePath: [100],
                 inVault: tokens.yieldTokenType,
-                outVault: tokens.moetTokenType,
+                outVault: tokens.underlying4626AssetType,
                 uniqueID: uniqueID
             )
+            // FUSDEV→PYUSD0 via Morpho ERC4626 redeem (no additional swap needed)
             let yieldToUnderlying = MorphoERC4626SwapConnectors.Swapper(
                 vaultEVMAddress: tokens.yieldTokenEVMAddress,
                 coa: FlowYieldVaultsStrategiesV2._getCOACapability(),
@@ -494,29 +516,18 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 uniqueID: uniqueID,
                 isReversed: true
             )
-            let underlyingToDebt = FlowYieldVaultsStrategiesV2._buildUniV3Swapper(
-                tokenPath: [tokens.underlying4626AssetEVMAddress, tokens.moetTokenEVMAddress],
-                feePath: [100],
-                inVault: tokens.underlying4626AssetType,
-                outVault: tokens.moetTokenType,
-                uniqueID: uniqueID
-            )
-            let seq = SwapConnectors.SequentialSwapper(
-                swappers: [yieldToUnderlying, underlyingToDebt],
-                uniqueID: uniqueID
-            )
             return SwapConnectors.MultiSwapper(
                 inVault: tokens.yieldTokenType,
-                outVault: tokens.moetTokenType,
-                swappers: [yieldToDebtAMM, seq],
+                outVault: tokens.underlying4626AssetType,
+                swappers: [yieldToDebtAMM, yieldToUnderlying],
                 uniqueID: uniqueID
             )
         }
 
-        /// Builds a collateral→MOET UniV3 swapper from CollateralConfig.
+        /// Builds a collateral→PYUSD0 UniV3 swapper from CollateralConfig.
         /// Derives the path by reversing yieldToCollateralUniV3AddressPath[1..] (skipping the
-        /// yield token) and appending MOET, preserving all intermediate hops.
-        /// e.g. [FUSDEV, PYUSD0, WETH, WBTC] → [WBTC, WETH, PYUSD0, MOET]
+        /// yield token); PYUSD0 is the underlying asset and the debt token, so no further hop needed.
+        /// e.g. [FUSDEV, PYUSD0, WETH, WBTC] → [WBTC, WETH, PYUSD0]
         access(self) fun _buildCollateralToDebtSwapper(
             collateralConfig: FlowYieldVaultsStrategiesV2.CollateralConfig,
             tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
@@ -525,53 +536,63 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         ): UniswapV3SwapConnectors.Swapper {
             let yieldToCollPath = collateralConfig.yieldToCollateralUniV3AddressPath
             let yieldToCollFees = collateralConfig.yieldToCollateralUniV3FeePath
-            assert(yieldToCollPath.length >= 2, message: "yieldToCollateral path must have at least 2 elements")
-            // Build reversed path: iterate yieldToCollPath from last down to index 1 (skip yield token at 0),
-            // then append MOET. e.g. [FUSDEV, PYUSD0, WETH, WBTC] → [WBTC, WETH, PYUSD0] + MOET
+            // Requires at least 3 elements: [yield, PYUSD0 (debt/underlying), collateral, ...].
+            // PYUSD0 must be at index 1 — it is the debt token and the derivation logic below
+            // assumes it as the starting point of the collateral→debt path. A direct yield↔collateral
+            // pool (2-element path) would omit PYUSD0 entirely and is structurally incompatible.
+            assert(yieldToCollPath.length >= 3, message: "yieldToCollateral path must have at least 3 elements [yield, PYUSD0, collateral] — a direct yield↔collateral pool is incompatible with FUSDEVStrategy debt routing")
+            // Build reversed path: iterate yieldToCollPath from last down to index 1 (skip yield token at 0).
+            // e.g. [FUSDEV, PYUSD0, WETH, WBTC] → [WBTC, WETH, PYUSD0]
             var collToDebtPath: [EVM.EVMAddress] = []
             var collToDebtFees: [UInt32] = []
             for i in InclusiveRange(yieldToCollPath.length - 1, 1, step: -1) {
                 collToDebtPath.append(yieldToCollPath[i])
             }
-            collToDebtPath.append(tokens.moetTokenEVMAddress)
-            // Build reversed fees: iterate from last down to index 1 (skip yield→underlying fee at 0),
-            // then append PYUSD0→MOET fee (100). e.g. [100, 3000, 3000] → [3000, 3000] + 100
+            // Build reversed fees: iterate from last down to index 1 (skip yield→underlying fee at 0).
+            // e.g. [100, 3000, 3000] → [3000, 3000]
             for i in InclusiveRange(yieldToCollFees.length - 1, 1, step: -1) {
                 collToDebtFees.append(yieldToCollFees[i])
             }
-            collToDebtFees.append(UInt32(100))
             return FlowYieldVaultsStrategiesV2._buildUniV3Swapper(
                 tokenPath: collToDebtPath,
                 feePath: collToDebtFees,
                 inVault: collateralType,
-                outVault: tokens.moetTokenType,
+                outVault: tokens.underlying4626AssetType,
                 uniqueID: uniqueID
             )
         }
 
-        /// Builds a MOET→collateral SequentialSwapper for dust handling: MOET→YIELD→collateral.
+        /// Builds a PYUSD0→collateral UniV3 swapper for overpayment dust handling.
+        /// Uses the yieldToCollateral path[1..] (skipping the yield token at index 0),
+        /// going directly from PYUSD0 (the debt/underlying token) to collateral.
+        /// e.g. [FUSDEV, PYUSD0, WETH] fees [100, 3000] → [PYUSD0, WETH] fees [3000]
         access(self) fun _buildDebtToCollateralSwapper(
             collateralConfig: FlowYieldVaultsStrategiesV2.CollateralConfig,
             tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
             collateralType: Type,
             uniqueID: DeFiActions.UniqueIdentifier
-        ): SwapConnectors.SequentialSwapper {
-            let debtToYieldAMM = FlowYieldVaultsStrategiesV2._buildUniV3Swapper(
-                tokenPath: [tokens.moetTokenEVMAddress, tokens.yieldTokenEVMAddress],
-                feePath: [100],
-                inVault: tokens.moetTokenType,
-                outVault: tokens.yieldTokenType,
-                uniqueID: uniqueID
-            )
-            let yieldToCollateral = FlowYieldVaultsStrategiesV2._buildUniV3Swapper(
-                tokenPath: collateralConfig.yieldToCollateralUniV3AddressPath,
-                feePath: collateralConfig.yieldToCollateralUniV3FeePath,
-                inVault: tokens.yieldTokenType,
+        ): UniswapV3SwapConnectors.Swapper {
+            let path = collateralConfig.yieldToCollateralUniV3AddressPath
+            let fees = collateralConfig.yieldToCollateralUniV3FeePath
+            // Requires at least 3 elements: [yield, PYUSD0 (debt/underlying), collateral, ...].
+            // PYUSD0 must be at index 1 — it is the debt token and the derivation logic below
+            // assumes it as the starting point of the debt→collateral path. A direct yield↔collateral
+            // pool (2-element path) would omit PYUSD0 entirely and is structurally incompatible.
+            assert(path.length >= 3, message: "yieldToCollateral path must have at least 3 elements [yield, PYUSD0, collateral] — a direct yield↔collateral pool is incompatible with FUSDEVStrategy debt routing")
+            // Skip the yield token at index 0; path[1..] starts at PYUSD0 (the underlying/debt token).
+            var pyusd0ToCollPath: [EVM.EVMAddress] = []
+            var pyusd0ToCollFees: [UInt32] = []
+            for i in InclusiveRange(1, path.length - 1) {
+                pyusd0ToCollPath.append(path[i])
+            }
+            for i in InclusiveRange(1, fees.length - 1) {
+                pyusd0ToCollFees.append(fees[i])
+            }
+            return FlowYieldVaultsStrategiesV2._buildUniV3Swapper(
+                tokenPath: pyusd0ToCollPath,
+                feePath: pyusd0ToCollFees,
+                inVault: tokens.underlying4626AssetType,
                 outVault: collateralType,
-                uniqueID: uniqueID
-            )
-            return SwapConnectors.SequentialSwapper(
-                swappers: [debtToYieldAMM, yieldToCollateral],
                 uniqueID: uniqueID
             )
         }
@@ -613,6 +634,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         access(self) let position: @FlowALPv0.Position
         access(self) var sink: {DeFiActions.Sink}
         access(self) var source: {DeFiActions.Source}
+        /// Tracks whether the underlying FlowALP position has been closed.
+        /// NOTE: FUSDEVStrategy stores this flag in the contract-level "closedPositions" config
+        /// partition (via _isPositionClosed / _markPositionClosed) because FUSDEVStrategy was
+        /// already deployed on-chain when that tracking was introduced, and Cadence does not allow
+        /// adding fields to existing deployed resources. syWFLOWvStrategy was added after that
+        /// point and can therefore carry the flag as a plain resource field.
         access(self) var positionClosed: Bool
 
         init(
@@ -631,101 +658,32 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         // access(all) view fun isSupportedCollateralType(_ type: Type): Bool
 
         access(all) view fun getSupportedCollateralTypes(): {Type: Bool} {
-            // If this strategy was initialized with a stablecoin pre-swap (e.g. PYUSD0→MOET),
-            // expose the original (external) collateral type to callers, not the internal MOET type.
-            if let id = self.uniqueID {
-                if let originalType = FlowYieldVaultsStrategiesV2._getOriginalCollateralType(id.id) {
-                    return { originalType: true }
-                }
-            }
             return { self.sink.getSinkType(): true }
         }
         /// Returns the amount available for withdrawal via the inner Source
         access(all) fun availableBalance(ofToken: Type): UFix64 {
             if self.positionClosed { return 0.0 }
-            // If stablecoin pre-swap is in effect, match against the original (external) collateral type.
-            // MOET and the stablecoin collateral (e.g. PYUSD0) have approximately equal value (1:1).
-            var effectiveSourceType = self.source.getSourceType()
-            if let id = self.uniqueID {
-                if let originalType = FlowYieldVaultsStrategiesV2._getOriginalCollateralType(id.id) {
-                    effectiveSourceType = originalType
-                }
-            }
-            return ofToken == effectiveSourceType ? self.source.minimumAvailable() : 0.0
+            return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
         /// Deposits up to the inner Sink's capacity from the provided authorized Vault reference.
-        /// Accepts both the internal collateral type and, when a pre-swap is configured, the original
-        /// external collateral type (e.g. PYUSD0) — which is swapped to MOET first.
         /// FLOW cannot be used as collateral — it is the vault's underlying asset (the debt token).
         access(all) fun deposit(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
             pre {
-                from.getType() == self.sink.getSinkType()
-                    || (self.uniqueID != nil && FlowYieldVaultsStrategiesV2._getOriginalCollateralType(self.uniqueID!.id) == from.getType()):
+                from.getType() == self.sink.getSinkType():
                     "syWFLOWvStrategy position only accepts \(self.sink.getSinkType().identifier) as collateral, got \(from.getType().identifier)"
-            }
-            // Reject the debt token (FLOW) as collateral — looked up from contract-level config
-            if let id = self.uniqueID {
-                let debtTokenType = FlowYieldVaultsStrategiesV2._getSyWFLOWvDebtTokenType(id.id)
-                assert(
-                    debtTokenType == nil || from.getType() != debtTokenType!,
-                    message: "syWFLOWvStrategy: FLOW cannot be used as collateral — it is the vault's underlying asset"
-                )
-            }
-            // If depositing the original stablecoin collateral (e.g. PYUSD0), pre-swap to MOET
-            if let id = self.uniqueID {
-                if from.getType() != self.sink.getSinkType() {
-                    if let preSwapper = self._buildCollateralToMoetSwapper(uniqueID: id) {
-                        let incoming <- from.withdraw(amount: from.balance)
-                        if incoming.balance > 0.0 {
-                            let quote = preSwapper.quoteOut(forProvided: incoming.balance, reverse: false)
-                            assert(quote.outAmount > 0.0, message: "syWFLOWvStrategy deposit: collateral→MOET quote returned zero — check pool liquidity or path config")
-                            let moetVault <- preSwapper.swap(quote: quote, inVault: <-incoming)
-                            assert(moetVault.balance > 0.0, message: "syWFLOWvStrategy deposit: collateral→MOET swap produced zero output")
-                            self.sink.depositCapacity(from: &moetVault as auth(FungibleToken.Withdraw) &{FungibleToken.Vault})
-                            Burner.burn(<-moetVault)
-                        } else {
-                            Burner.burn(<-incoming)
-                        }
-                        return
-                    }
-                }
             }
             self.sink.depositCapacity(from: from)
         }
         /// Withdraws up to the max amount, returning the withdrawn Vault. If the requested token type is unsupported,
         /// an empty Vault is returned.
-        ///
-        /// For the PYUSD0 pre-swap case: the internal source type is MOET but the external collateral
-        /// type is PYUSD0. We convert MOET→PYUSD0 via the moetToCollateralSwapper.
         access(FungibleToken.Withdraw) fun withdraw(maxAmount: UFix64, ofToken: Type): @{FungibleToken.Vault} {
-            let effectiveSourceType = self.source.getSourceType()
-            if ofToken != effectiveSourceType {
-                // For pre-swap case: ofToken is external collateral (e.g. PYUSD0), source is MOET.
-                if let id = self.uniqueID {
-                    if let originalType = FlowYieldVaultsStrategiesV2._getOriginalCollateralType(id.id) {
-                        if ofToken == originalType {
-                            if let moetToOrigSwapper = self._buildMoetToCollateralSwapper(uniqueID: id) {
-                                // Quote MOET in to get maxAmount PYUSD0 out
-                                let quote = moetToOrigSwapper.quoteIn(forDesired: maxAmount, reverse: false)
-                                if quote.inAmount > 0.0 {
-                                    let moetVault <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
-                                    if moetVault.balance > 0.0 {
-                                        return <- moetToOrigSwapper.swap(quote: nil, inVault: <-moetVault)
-                                    }
-                                    Burner.burn(<-moetVault)
-                                }
-                            }
-                        }
-                    }
-                }
+            if ofToken != self.source.getSourceType() {
                 return <- DeFiActionsUtils.getEmptyVault(ofToken)
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
         }
         /// Closes the underlying FlowALP position by preparing FLOW repayment funds from AutoBalancer
-        /// (via the stored yield→FLOW swapper) and closing with them. When a stablecoin pre-swap is
-        /// configured (e.g. PYUSD0→MOET), the returned MOET collateral is swapped back to the
-        /// original stablecoin before returning.
+        /// (via the stored yield→FLOW swapper) and closing with them.
         access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
             pre {
                 self.isSupportedCollateralType(collateralType):
@@ -733,14 +691,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
             post {
                 result.getType() == collateralType: "Withdraw Vault (\(result.getType().identifier)) is not of a requested collateral type (\(collateralType.identifier))"
-            }
-
-            // Determine the internal collateral type (may be MOET if a pre-swap was applied)
-            var internalCollateralType = collateralType
-            if let id = self.uniqueID {
-                if FlowYieldVaultsStrategiesV2._getOriginalCollateralType(id.id) != nil {
-                    internalCollateralType = self.sink.getSinkType()  // MOET
-                }
             }
 
             // Step 1: Get debt amounts
@@ -770,32 +720,15 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 }
                 var collateralVault <- resultVaults.removeFirst()
                 destroy resultVaults
-                // Convert internal collateral (MOET) → external collateral (e.g. PYUSD0) if needed
-                if internalCollateralType != collateralType {
-                    let id = self.uniqueID!
-                    let moetToOrigSwapper = self._buildMoetToCollateralSwapper(uniqueID: id)
-                        ?? panic("closePosition: no MOET→collateral swapper for \(collateralType.identifier)")
-                    assert(collateralVault.balance > 0.0, message: "closePosition: zero-debt MOET vault has zero balance")
-                    let quote = moetToOrigSwapper.quoteOut(forProvided: collateralVault.balance, reverse: false)
-                    assert(quote.outAmount > 0.0, message: "closePosition: MOET→\(collateralType.identifier) quote returned zero")
-                    let extVault <- moetToOrigSwapper.swap(quote: quote, inVault: <-collateralVault)
-                    self.positionClosed = true
-                    return <- extVault
-                }
                 self.positionClosed = true
                 return <- collateralVault
             }
 
             // Step 3: Reconstruct MoreERC4626CollateralConfig and swappers from contract-level config.
-            // For the stablecoin path (e.g. PYUSD0 → MOET pre-swap), _getOriginalCollateralType
-            // gives the user-facing key for the MoreERC4626CollateralConfig lookup.
-            let closeCollateralKey = self.uniqueID != nil
-                ? FlowYieldVaultsStrategiesV2._getOriginalCollateralType(self.uniqueID!.id) ?? collateralType
-                : collateralType
             let closeConfig = self._getStoredMoreERC4626Config(
                 strategyType: Type<@syWFLOWvStrategy>(),
-                collateralType: closeCollateralKey
-            ) ?? panic("No MoreERC4626CollateralConfig for syWFLOWvStrategy with \(closeCollateralKey.identifier)")
+                collateralType: collateralType
+            ) ?? panic("No MoreERC4626CollateralConfig for syWFLOWvStrategy with \(collateralType.identifier)")
             let closeTokens = FlowYieldVaultsStrategiesV2._resolveTokenBundle(
                 yieldTokenEVMAddress: closeConfig.yieldTokenEVMAddress
             )
@@ -807,19 +740,19 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             let flowToCollateral = self._buildFlowToCollateralSwapper(
                 closeConfig: closeConfig,
                 closeTokens: closeTokens,
-                internalCollateralType: internalCollateralType,
+                collateralType: collateralType,
                 uniqueID: self.uniqueID!
             )
 
             // Step 4: Create external syWFLOWv source from AutoBalancer
-            let yieldTokenSource = FlowYieldVaultsAutoBalancers.createExternalSource(id: self.id()!)
+            let yieldTokenSource = FlowYieldVaultsAutoBalancersV1.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
-            // Step 5: Create a BufferedSwapSource that converts ALL syWFLOWv → FLOW for debt repayment.
-            // Pulls all available tokens (not quoteIn-limited) to avoid ERC4626 rounding underestimates
-            // that would leave us short of the required FLOW debt. Any FLOW overpayment is returned as
-            // dust and converted back to collateral below.
-            let flowSource = BufferedSwapSource(
+            // Step 5: Create a SwapSource that converts syWFLOWv → FLOW for debt repayment.
+            // SwapSource uses quoteIn when yield value >= debt (pulling only the needed shares),
+            // or quoteOut when yield is insufficient (pulling everything as a best-effort).
+            // Any FLOW overpayment is returned as dust and converted back to collateral below.
+            let flowSource = SwapConnectors.SwapSource(
                 swapper: syWFLOWvToFlow,
                 source: yieldTokenSource,
                 uniqueID: self.copyID()
@@ -842,18 +775,16 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             let expectedFlow = flowSource.minimumAvailable()
             if expectedFlow < totalDebtAmount {
                 let shortfall = totalDebtAmount - expectedFlow
-                // Add 1% buffer to account for swap slippage/rounding in the collateral→FLOW leg
-                let buffered = shortfall + shortfall / 100.0
-                let quote = flowToCollateral.quoteIn(forDesired: buffered, reverse: true)
-                if quote.inAmount > 0.0 {
-                    let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
-                    assert(extraCollateral.balance > 0.0,
-                        message: "Pre-supplement: no collateral available to cover shortfall of \(shortfall) FLOW")
-                    let extraFlow <- flowToCollateral.swapBack(quote: quote, residual: <-extraCollateral)
-                    assert(extraFlow.balance > 0.0,
-                        message: "Pre-supplement: collateral→FLOW swap produced zero output")
-                    self.position.deposit(from: <-extraFlow)
-                }
+                let quote = flowToCollateral.quoteIn(forDesired: shortfall, reverse: true)
+                assert(quote.inAmount > 0.0,
+                    message: "Pre-supplement: collateral→FLOW quote returned zero input for non-zero shortfall — swapper misconfigured")
+                let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
+                assert(extraCollateral.balance > 0.0,
+                    message: "Pre-supplement: no collateral available to cover shortfall of \(shortfall) FLOW")
+                let extraFlow <- flowToCollateral.swapBack(quote: quote, residual: <-extraCollateral)
+                assert(extraFlow.balance >= shortfall,
+                    message: "Pre-supplement: collateral→FLOW swap produced less than shortfall: got \(extraFlow.balance), need \(shortfall)")
+                self.position.deposit(from: <-extraFlow)
             }
 
             // Step 7: Close position — pool pulls the (now pre-reduced) FLOW debt from flowSource
@@ -862,38 +793,65 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             // closePosition returns vaults in dict-iteration order (hash-based), so we cannot
             // assume the collateral vault is first. Iterate all vaults: collect collateral by type
             // and convert any non-collateral vaults (FLOW overpayment dust) back to collateral.
-            var collateralVault <- DeFiActionsUtils.getEmptyVault(internalCollateralType)
+            var collateralVault <- DeFiActionsUtils.getEmptyVault(collateralType)
             while resultVaults.length > 0 {
                 let v <- resultVaults.removeFirst()
-                if v.getType() == internalCollateralType {
+                if v.getType() == collateralType {
                     collateralVault.deposit(from: <-v)
-                } else if v.balance > 0.0 {
+                } else if v.balance == 0.0 {
+                    // destroy empty vault
+                    Burner.burn(<-v)
+                } else {
                     // FLOW overpayment dust — convert back to collateral if routable
                     let quote = flowToCollateral.quoteOut(forProvided: v.balance, reverse: false)
                     if quote.outAmount > 0.0 {
                         let swapped <- flowToCollateral.swap(quote: quote, inVault: <-v)
                         collateralVault.deposit(from: <-swapped)
                     } else {
+                        emit DustBurned(
+                            tokenType: v.getType().identifier,
+                            balance: v.balance,
+                            quoteInType: quote.inType.identifier,
+                            quoteOutType: quote.outType.identifier,
+                            quoteInAmount: quote.inAmount,
+                            quoteOutAmount: quote.outAmount,
+                            swapperType: flowToCollateral.getType().identifier
+                        )
                         Burner.burn(<-v)
                     }
-                } else {
-                    Burner.burn(<-v)
                 }
             }
 
             destroy resultVaults
 
-            // Convert internal collateral (MOET) → external collateral (e.g. PYUSD0) if needed
-            if internalCollateralType != collateralType {
-                let id = self.uniqueID!
-                let moetToOrigSwapper = self._buildMoetToCollateralSwapper(uniqueID: id)
-                    ?? panic("closePosition: no MOET→collateral swapper for \(collateralType.identifier)")
-                assert(collateralVault.balance > 0.0, message: "closePosition: MOET vault has zero balance after close")
-                let quote = moetToOrigSwapper.quoteOut(forProvided: collateralVault.balance, reverse: false)
-                assert(quote.outAmount > 0.0, message: "closePosition: MOET→\(collateralType.identifier) quote returned zero")
-                let extVault <- moetToOrigSwapper.swap(quote: quote, inVault: <-collateralVault)
-                self.positionClosed = true
-                return <- extVault
+            // Step 8: Drain any remaining syWFLOWv shares from the AutoBalancer — excess yield
+            // not consumed during debt repayment — and convert them directly to collateral.
+            // The SwapSource inside closePosition only pulled what was needed to repay the debt;
+            // any surplus shares are still held by the AutoBalancer and are recovered here.
+            let excessShares <- yieldTokenSource.withdrawAvailable(maxAmount: UFix64.max)
+            if excessShares.balance > 0.0 {
+                let sharesToCollateral = SwapConnectors.SequentialSwapper(
+                    swappers: [syWFLOWvToFlow, flowToCollateral],
+                    uniqueID: self.copyID()
+                )
+                let quote = sharesToCollateral.quoteOut(forProvided: excessShares.balance, reverse: false)
+                if quote.outAmount > 0.0 {
+                    let extraCollateral <- sharesToCollateral.swap(quote: quote, inVault: <-excessShares)
+                    collateralVault.deposit(from: <-extraCollateral)
+                } else {
+                    emit DustBurned(
+                        tokenType: excessShares.getType().identifier,
+                        balance: excessShares.balance,
+                        quoteInType: quote.inType.identifier,
+                        quoteOutType: quote.outType.identifier,
+                        quoteInAmount: quote.inAmount,
+                        quoteOutAmount: quote.outAmount,
+                        swapperType: sharesToCollateral.getType().identifier
+                    )
+                    Burner.burn(<-excessShares)
+                }
+            } else {
+                Burner.burn(<-excessShares)
             }
 
             self.positionClosed = true
@@ -901,12 +859,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
         /// Executed when a Strategy is burned, cleaning up the Strategy's stored AutoBalancer and contract-level config entries
         access(contract) fun burnCallback() {
-            FlowYieldVaultsAutoBalancers._cleanupAutoBalancer(id: self.id()!)
-            FlowYieldVaultsStrategiesV2._removeSyWFLOWvDebtTokenType(self.uniqueID?.id)
-            // Clean up stablecoin pre-swap config entries (no-op if not set)
-            if let id = self.uniqueID {
-                FlowYieldVaultsStrategiesV2._removeOriginalCollateralType(id.id)
-            }
+            FlowYieldVaultsAutoBalancersV1._cleanupAutoBalancer(id: self.id()!)
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
             return DeFiActions.ComponentInfo(
@@ -955,100 +908,25 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             )
         }
 
-        /// Builds a collateral→MOET UniV3 swapper from MoetPreswapConfig for the deposit pre-swap.
-        /// Returns nil if no preswap is configured for this position (non-stablecoin collateral).
-        access(self) fun _buildCollateralToMoetSwapper(
-            uniqueID: DeFiActions.UniqueIdentifier
-        ): UniswapV3SwapConnectors.Swapper? {
-            if let origType = FlowYieldVaultsStrategiesV2._getOriginalCollateralType(uniqueID.id) {
-                if let preswapCfg = FlowYieldVaultsStrategiesV2._getMoetPreswapConfig(
-                    composer: Type<@MoreERC4626StrategyComposer>(),
-                    collateral: origType
-                ) {
-                    let moetType = FlowYieldVaultsStrategiesV2._getPoolDefaultToken()
-                    return FlowYieldVaultsStrategiesV2._buildUniV3Swapper(
-                        tokenPath: preswapCfg.collateralToMoetAddressPath,
-                        feePath: preswapCfg.collateralToMoetFeePath,
-                        inVault: origType,
-                        outVault: moetType,
-                        uniqueID: uniqueID
-                    )
-                }
-            }
-            return nil
-        }
-
-        /// Builds a MOET→originalCollateral UniV3 swapper from MoetPreswapConfig (reversed path).
-        /// Returns nil if no preswap is configured for this position (non-stablecoin collateral).
-        access(self) fun _buildMoetToCollateralSwapper(
-            uniqueID: DeFiActions.UniqueIdentifier
-        ): UniswapV3SwapConnectors.Swapper? {
-            if let origType = FlowYieldVaultsStrategiesV2._getOriginalCollateralType(uniqueID.id) {
-                if let preswapCfg = FlowYieldVaultsStrategiesV2._getMoetPreswapConfig(
-                    composer: Type<@MoreERC4626StrategyComposer>(),
-                    collateral: origType
-                ) {
-                    let moetType = FlowYieldVaultsStrategiesV2._getPoolDefaultToken()
-                    return FlowYieldVaultsStrategiesV2._buildUniV3Swapper(
-                        tokenPath: preswapCfg.collateralToMoetAddressPath.reverse(),
-                        feePath: preswapCfg.collateralToMoetFeePath.reverse(),
-                        inVault: moetType,
-                        outVault: origType,
-                        uniqueID: uniqueID
-                    )
-                }
-            }
-            return nil
-        }
-
-        /// Builds a FLOW→internalCollateral UniV3 swapper from MoreERC4626CollateralConfig.
-        /// Handles both the standard path (FLOW→WBTC/WETH) and the stablecoin path (FLOW→PYUSD0→MOET).
+        /// Builds a FLOW→collateral UniV3 swapper from MoreERC4626CollateralConfig.
         access(self) fun _buildFlowToCollateralSwapper(
             closeConfig: FlowYieldVaultsStrategiesV2.MoreERC4626CollateralConfig,
             closeTokens: FlowYieldVaultsStrategiesV2.TokenBundle,
-            internalCollateralType: Type,
+            collateralType: Type,
             uniqueID: DeFiActions.UniqueIdentifier
         ): UniswapV3SwapConnectors.Swapper {
-            // Stablecoin path (e.g. PYUSD0→MOET pre-swap): extend the FLOW→PYUSD0 path with a PYUSD0→MOET hop.
-            if let origType = FlowYieldVaultsStrategiesV2._getOriginalCollateralType(uniqueID.id) {
-                if let preswapCfg = FlowYieldVaultsStrategiesV2._getMoetPreswapConfig(
-                    composer: Type<@MoreERC4626StrategyComposer>(),
-                    collateral: origType
-                ) {
-                    // Extend the FLOW→collateral path with collateralToMoet[1..] (skip collateral address,
-                    // already the last element of debtToCollateral) and all collateralToMoet fees.
-                    // e.g. debtToCollateral=[WFLOW,PYUSD0], collateralToMoet=[PYUSD0,MOET]
-                    //   → [WFLOW, PYUSD0, MOET], fees=[..., 100]
-                    var path = closeConfig.debtToCollateralUniV3AddressPath
-                    for i in InclusiveRange(1, preswapCfg.collateralToMoetAddressPath.length - 1) {
-                        path.append(preswapCfg.collateralToMoetAddressPath[i])
-                    }
-                    var fees = closeConfig.debtToCollateralUniV3FeePath
-                    for fee in preswapCfg.collateralToMoetFeePath {
-                        fees.append(fee)
-                    }
-                    return FlowYieldVaultsStrategiesV2._buildUniV3Swapper(
-                        tokenPath: path,
-                        feePath: fees,
-                        inVault: closeTokens.underlying4626AssetType,  // FLOW
-                        outVault: internalCollateralType,               // MOET
-                        uniqueID: uniqueID
-                    )
-                }
-            }
-            // Standard path (WBTC/WETH): FLOW → collateral directly.
             return FlowYieldVaultsStrategiesV2._buildUniV3Swapper(
                 tokenPath: closeConfig.debtToCollateralUniV3AddressPath,
                 feePath: closeConfig.debtToCollateralUniV3FeePath,
                 inVault: closeTokens.underlying4626AssetType,  // FLOW
-                outVault: internalCollateralType,
+                outVault: collateralType,
                 uniqueID: uniqueID
             )
         }
     }
 
     access(all) struct TokenBundle {
-        /// The MOET token type (the pool's borrowable token)
+        /// @deprecated — retained for Cadence upgrade compatibility; populated with placeholder values and not read.
         access(all) let moetTokenType: Type
         access(all) let moetTokenEVMAddress: EVM.EVMAddress
 
@@ -1075,6 +953,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         }
     }
 
+    // @deprecated
     /// Returned bundle for stored AutoBalancer interactions (reference + caps)
     access(all) struct AutoBalancerIO {
         access(all) let autoBalancer:
@@ -1086,6 +965,26 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
         init(
             autoBalancer: auth(DeFiActions.Auto, DeFiActions.Set, DeFiActions.Get, DeFiActions.Schedule, FungibleToken.Withdraw) &DeFiActions.AutoBalancer,
+            sink: {DeFiActions.Sink},
+            source: {DeFiActions.Source}
+        ) {
+            self.sink = sink
+            self.source = source
+            self.autoBalancer = autoBalancer
+        }
+    }
+
+    /// Returned bundle for stored AutoBalancer interactions (reference + caps)
+    access(all) struct AutoBalancerIO_v2 {
+        access(all) let autoBalancer:
+            auth(AutoBalancers.Auto, AutoBalancers.Set, AutoBalancers.Get, AutoBalancers.Schedule, FungibleToken.Withdraw)
+            &AutoBalancers.AutoBalancer
+
+        access(all) let sink: {DeFiActions.Sink}
+        access(all) let source: {DeFiActions.Source}
+
+        init(
+            autoBalancer: auth(AutoBalancers.Auto, AutoBalancers.Set, AutoBalancers.Get, AutoBalancers.Schedule, FungibleToken.Withdraw) &AutoBalancers.AutoBalancer,
             sink: {DeFiActions.Sink},
             source: {DeFiActions.Source}
         ) {
@@ -1109,13 +1008,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         return poolRef.getDefaultToken()
     }
 
-    /// Resolves the full token bundle for a strategy given the ERC4626 yield vault address.
-    /// The MOET token is always the pool's default token.
+    /// Resolves the token bundle for a strategy given the ERC4626 yield vault address.
+    /// moetTokenType/moetTokenEVMAddress are retained in TokenBundle for Cadence upgrade
+    /// compatibility (struct fields cannot be removed once deployed) but are no longer used —
+    /// the yield token address is passed as a placeholder to avoid unnecessary EVM lookups.
     access(self) fun _resolveTokenBundle(yieldTokenEVMAddress: EVM.EVMAddress): FlowYieldVaultsStrategiesV2.TokenBundle {
-        let moetTokenType = FlowYieldVaultsStrategiesV2._getPoolDefaultToken()
-        let moetTokenEVMAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: moetTokenType)
-            ?? panic("Token Vault type \(moetTokenType.identifier) has not yet been registered with the VMbridge")
-
         let yieldTokenType = FlowEVMBridgeConfig.getTypeAssociated(with: yieldTokenEVMAddress)
             ?? panic("Could not retrieve the VM Bridge associated Type for the yield token address \(yieldTokenEVMAddress.toString())")
 
@@ -1125,8 +1022,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             ?? panic("Could not retrieve the VM Bridge associated Type for the ERC4626 underlying asset \(underlying4626AssetEVMAddress.toString())")
 
         return FlowYieldVaultsStrategiesV2.TokenBundle(
-            moetTokenType: moetTokenType,
-            moetTokenEVMAddress: moetTokenEVMAddress,
+            moetTokenType: yieldTokenType,           // unused placeholder
+            moetTokenEVMAddress: yieldTokenEVMAddress, // unused placeholder
             yieldTokenType: yieldTokenType,
             yieldTokenEVMAddress: yieldTokenEVMAddress,
             underlying4626AssetType: underlying4626AssetType,
@@ -1149,11 +1046,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     access(self) fun _initAutoBalancerAndIO(
         oracle: {DeFiActions.PriceOracle},
         yieldTokenType: Type,
-        recurringConfig: DeFiActions.AutoBalancerRecurringConfig?,
+        recurringConfig: AutoBalancers.AutoBalancerRecurringConfig?,
         uniqueID: DeFiActions.UniqueIdentifier
-    ): FlowYieldVaultsStrategiesV2.AutoBalancerIO {
+    ): FlowYieldVaultsStrategiesV2.AutoBalancerIO_v2 {
         let autoBalancerRef =
-            FlowYieldVaultsAutoBalancers._initNewAutoBalancer(
+            FlowYieldVaultsAutoBalancersV1._initNewAutoBalancer(
                 oracle: oracle,
                 vaultType: yieldTokenType,
                 lowerThreshold: 0.95,
@@ -1169,7 +1066,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         let source = autoBalancerRef.createBalancerSource()
             ?? panic("Could not retrieve Source from AutoBalancer with id \(uniqueID.id)")
 
-        return FlowYieldVaultsStrategiesV2.AutoBalancerIO(
+        return FlowYieldVaultsStrategiesV2.AutoBalancerIO_v2(
             autoBalancer: autoBalancerRef,
             sink: sink,
             source: source
@@ -1285,10 +1182,16 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             switch type {
 
             // -----------------------------------------------------------------------
-            // FUSDEVStrategy: borrows MOET from the FlowALP position, swaps to FUSDEV
+            // FUSDEVStrategy: borrows PYUSD0 from the FlowALP position, deposits into FUSDEV
             // -----------------------------------------------------------------------
             case Type<@FUSDEVStrategy>():
-                // Swappers: MOET <-> YIELD
+                // Reject PYUSD0 as collateral — it is the vault's underlying / debt token
+                assert(
+                    collateralType != tokens.underlying4626AssetType,
+                    message: "FUSDEVStrategy: PYUSD0 cannot be used as collateral — it is the vault's underlying asset"
+                )
+
+                // Swappers: PYUSD0 (underlying/debt) <-> YIELD (FUSDEV)
                 let debtToYieldSwapper = self._createDebtToYieldSwapper(tokens: tokens, uniqueID: uniqueID)
                 let yieldToDebtSwapper = self._createYieldToDebtSwapper(tokens: tokens, uniqueID: uniqueID)
 
@@ -1407,25 +1310,16 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
             uniqueID: DeFiActions.UniqueIdentifier
         ): SwapConnectors.MultiSwapper {
-            // Direct MOET -> YIELD via AMM
+            // Direct PYUSD0 → FUSDEV via AMM (fee 100)
             let debtToYieldAMM = self._createUniV3Swapper(
-                tokenPath: [tokens.moetTokenEVMAddress, tokens.yieldTokenEVMAddress],
+                tokenPath: [tokens.underlying4626AssetEVMAddress, tokens.yieldTokenEVMAddress],
                 feePath: [100],
-                inVault: tokens.moetTokenType,
+                inVault: tokens.underlying4626AssetType,
                 outVault: tokens.yieldTokenType,
                 uniqueID: uniqueID
             )
 
-            // MOET -> UNDERLYING via AMM
-            let debtToUnderlying = self._createUniV3Swapper(
-                tokenPath: [tokens.moetTokenEVMAddress, tokens.underlying4626AssetEVMAddress],
-                feePath: [100],
-                inVault: tokens.moetTokenType,
-                outVault: tokens.underlying4626AssetType,
-                uniqueID: uniqueID
-            )
-
-            // UNDERLYING -> YIELD via Morpho ERC4626 vault deposit
+            // PYUSD0 → FUSDEV via Morpho ERC4626 vault deposit (no AMM swap needed)
             let underlyingTo4626 = MorphoERC4626SwapConnectors.Swapper(
                 vaultEVMAddress: tokens.yieldTokenEVMAddress,
                 coa: FlowYieldVaultsStrategiesV2._getCOACapability(),
@@ -1434,15 +1328,10 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 isReversed: false
             )
 
-            let seq = SwapConnectors.SequentialSwapper(
-                swappers: [debtToUnderlying, underlyingTo4626],
-                uniqueID: uniqueID
-            )
-
             return SwapConnectors.MultiSwapper(
-                inVault: tokens.moetTokenType,
+                inVault: tokens.underlying4626AssetType,
                 outVault: tokens.yieldTokenType,
-                swappers: [debtToYieldAMM, seq],
+                swappers: [debtToYieldAMM, underlyingTo4626],
                 uniqueID: uniqueID
             )
         }
@@ -1451,16 +1340,16 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             tokens: FlowYieldVaultsStrategiesV2.TokenBundle,
             uniqueID: DeFiActions.UniqueIdentifier
         ): SwapConnectors.MultiSwapper {
-            // Direct YIELD -> MOET via AMM
+            // Direct FUSDEV → PYUSD0 via AMM (fee 100)
             let yieldToDebtAMM = self._createUniV3Swapper(
-                tokenPath: [tokens.yieldTokenEVMAddress, tokens.moetTokenEVMAddress],
+                tokenPath: [tokens.yieldTokenEVMAddress, tokens.underlying4626AssetEVMAddress],
                 feePath: [100],
                 inVault: tokens.yieldTokenType,
-                outVault: tokens.moetTokenType,
+                outVault: tokens.underlying4626AssetType,
                 uniqueID: uniqueID
             )
 
-            // YIELD -> UNDERLYING redeem via MorphoERC4626 vault
+            // FUSDEV → PYUSD0 via Morpho ERC4626 redeem (no additional AMM swap needed)
             let yieldToUnderlying = MorphoERC4626SwapConnectors.Swapper(
                 vaultEVMAddress: tokens.yieldTokenEVMAddress,
                 coa: FlowYieldVaultsStrategiesV2._getCOACapability(),
@@ -1468,24 +1357,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 uniqueID: uniqueID,
                 isReversed: true
             )
-            // UNDERLYING -> MOET via AMM
-            let underlyingToDebt = self._createUniV3Swapper(
-                tokenPath: [tokens.underlying4626AssetEVMAddress, tokens.moetTokenEVMAddress],
-                feePath: [100],
-                inVault: tokens.underlying4626AssetType,
-                outVault: tokens.moetTokenType,
-                uniqueID: uniqueID
-            )
-
-            let seq = SwapConnectors.SequentialSwapper(
-                swappers: [yieldToUnderlying, underlyingToDebt],
-                uniqueID: uniqueID
-            )
 
             return SwapConnectors.MultiSwapper(
                 inVault: tokens.yieldTokenType,
-                outVault: tokens.moetTokenType,
-                swappers: [yieldToDebtAMM, seq],
+                outVault: tokens.underlying4626AssetType,
+                swappers: [yieldToDebtAMM, yieldToUnderlying],
                 uniqueID: uniqueID
             )
         }
@@ -1553,13 +1429,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             )
         }
 
-        /// Creates a Collateral → Debt (MOET) swapper using UniswapV3.
-        /// Path: collateral → underlying (PYUSD0) → MOET
+        /// Creates a Collateral → Debt (PYUSD0) swapper using UniswapV3.
+        /// Path: collateral → underlying (PYUSD0)
         ///
-        /// The fee for collateral→underlying is the last fee in yieldToCollateral (reversed),
-        /// and the fee for underlying→MOET is fixed at 100 (0.01%, matching yieldToDebtSwapper).
-        /// Stored and used by FUSDEVStrategy.closePosition to pre-reduce position debt from
-        /// collateral when yield tokens alone cannot cover the full outstanding MOET debt.
+        /// The fee for collateral→underlying is the last fee in yieldToCollateral (reversed).
+        /// Used by FUSDEVStrategy.closePosition to pre-reduce position debt from
+        /// collateral when yield tokens alone cannot cover the full outstanding PYUSD0 debt.
         ///
         access(self) fun _createCollateralToDebtSwapper(
             collateralConfig: FlowYieldVaultsStrategiesV2.CollateralConfig,
@@ -1571,21 +1446,19 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             let yieldToCollFees = collateralConfig.yieldToCollateralUniV3FeePath
 
             // collateral EVM address = last element of yieldToCollateral path
-            // underlying (PYUSD0) EVM address = second element of yieldToCollateral path
+            // underlying (PYUSD0) EVM address = second element of yieldToCollateral path (index 1)
             assert(yieldToCollPath.length >= 2, message: "yieldToCollateral path must have at least 2 elements")
             let collateralEVMAddress = yieldToCollPath[yieldToCollPath.length - 1]
             let underlyingEVMAddress = tokens.underlying4626AssetEVMAddress
 
-            // fee[0] = collateral→underlying = last fee in yieldToCollateral (reversed)
-            // fee[1] = underlying→MOET = 100 (0.01%, matching _createYieldToDebtSwapper)
+            // fee = collateral→PYUSD0 = last fee in yieldToCollateral (reversed)
             let collateralToUnderlyingFee = yieldToCollFees[yieldToCollFees.length - 1]
-            let underlyingToDebtFee: UInt32 = 100
 
             return self._createUniV3Swapper(
-                tokenPath: [collateralEVMAddress, underlyingEVMAddress, tokens.moetTokenEVMAddress],
-                feePath: [collateralToUnderlyingFee, underlyingToDebtFee],
+                tokenPath: [collateralEVMAddress, underlyingEVMAddress],
+                feePath: [collateralToUnderlyingFee],
                 inVault: collateralType,
-                outVault: tokens.moetTokenType,
+                outVault: tokens.underlying4626AssetType,
                 uniqueID: uniqueID
             )
         }
@@ -1676,7 +1549,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     uniqueID: uniqueID
                 )
 
-                // For syWFLOWvStrategy the debt token IS the underlying asset (FLOW), not MOET.
+                // For syWFLOWvStrategy the debt token IS the underlying asset (FLOW).
                 let flowDebtTokenType = tokens.underlying4626AssetType
 
                 // FLOW → syWFLOWv: standard ERC4626 deposit (More vault, not Morpho — no AMM needed)
@@ -1713,68 +1586,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     uniqueID: uniqueID
                 )
 
-                // --- Stablecoin pre-swap path (e.g. PYUSD0 → MOET) ---
-                if let preswapCfg = FlowYieldVaultsStrategiesV2._getMoetPreswapConfig(
-                    composer: Type<@MoreERC4626StrategyComposer>(),
-                    collateral: collateralType
-                ) {
-                    let preSwapper = UniswapV3SwapConnectors.Swapper(
-                        factoryAddress: FlowYieldVaultsStrategiesV2.univ3FactoryEVMAddress,
-                        routerAddress: FlowYieldVaultsStrategiesV2.univ3RouterEVMAddress,
-                        quoterAddress: FlowYieldVaultsStrategiesV2.univ3QuoterEVMAddress,
-                        tokenPath: preswapCfg.collateralToMoetAddressPath,
-                        feePath: preswapCfg.collateralToMoetFeePath,
-                        inVault: collateralType,
-                        outVault: tokens.moetTokenType,
-                        coaCapability: FlowYieldVaultsStrategiesV2._getCOACapability(),
-                        uniqueID: uniqueID
-                    )
-                    let preSwapQuote = preSwapper.quoteOut(forProvided: withFunds.balance, reverse: false)
-                    assert(preSwapQuote.outAmount > 0.0, message: "Pre-swap: collateral→MOET quote returned zero — check pool liquidity or path config")
-                    let moetFunds <- preSwapper.swap(quote: preSwapQuote, inVault: <-withFunds)
-                    assert(moetFunds.balance > 0.0, message: "Pre-swap: collateral→MOET swap produced zero MOET output")
-
-                    // Open FlowALP position with MOET as collateral
-                    let positionPreswap <- FlowYieldVaultsStrategiesV2._openCreditPosition(
-                        funds: <-moetFunds,
-                        issuanceSink: abaSwapSinkFlow,
-                        repaymentSource: abaSwapSourceFlow
-                    )
-
-                    // AutoBalancer debt management: same as WBTC/WETH (manages FLOW borrow/repay)
-                    let positionDebtSinkPre = positionPreswap.createSinkWithOptions(
-                        type: flowDebtTokenType,
-                        pushToDrawDownSink: false
-                    )
-                    let positionDebtSwapSinkPre = SwapConnectors.SwapSink(
-                        swapper: syWFLOWvToFlow,
-                        sink: positionDebtSinkPre,
-                        uniqueID: uniqueID
-                    )
-                    let positionDebtSourcePre = positionPreswap.createSourceWithOptions(
-                        type: flowDebtTokenType,
-                        pullFromTopUpSource: false
-                    )
-                    let positionDebtSwapSourcePre = SwapConnectors.SwapSource(
-                        swapper: flowToSyWFLOWv,
-                        source: positionDebtSourcePre,
-                        uniqueID: uniqueID
-                    )
-                    balancerIO.autoBalancer.setSink(positionDebtSwapSinkPre, updateSinkID: true)
-                    balancerIO.autoBalancer.setSource(positionDebtSwapSourcePre, updateSourceID: true)
-
-                    FlowYieldVaultsStrategiesV2._setSyWFLOWvDebtTokenType(uniqueID.id, flowDebtTokenType)
-                    FlowYieldVaultsStrategiesV2._setOriginalCollateralType(uniqueID.id, collateralType)
-
-                    return <-create syWFLOWvStrategy(
-                        id: uniqueID,
-                        collateralType: tokens.moetTokenType,
-                        position: <-positionPreswap
-                    )
-                }
-
-                // --- Standard path (WBTC, WETH — directly supported by FlowALP) ---
-
                 // Open FlowALP position with collateral; drawDownSink accepts FLOW
                 let positionFlow <- FlowYieldVaultsStrategiesV2._openCreditPosition(
                     funds: <-withFunds,
@@ -1807,9 +1618,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 balancerIO.autoBalancer.setSink(positionDebtSwapSink, updateSinkID: true)
                 balancerIO.autoBalancer.setSource(positionDebtSwapSource, updateSourceID: true)
 
-                // Store debtTokenType in contract-level config (resource field removed for upgrade compat)
-                FlowYieldVaultsStrategiesV2._setSyWFLOWvDebtTokenType(uniqueID.id, flowDebtTokenType)
-
                 return <-create syWFLOWvStrategy(
                     id: uniqueID,
                     collateralType: collateralType,
@@ -1824,60 +1632,8 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
     access(all) entitlement Configure
 
-    access(self)
-    fun makeCollateralConfig(
-        yieldTokenEVMAddress: EVM.EVMAddress,
-        yieldToCollateralAddressPath: [EVM.EVMAddress],
-        yieldToCollateralFeePath: [UInt32]
-    ): CollateralConfig {
-        pre {
-            yieldToCollateralAddressPath.length > 1:
-                "Invalid Uniswap V3 swap path length"
-            yieldToCollateralFeePath.length == yieldToCollateralAddressPath.length - 1:
-                "Uniswap V3 fee path length must be path length - 1"
-            yieldToCollateralAddressPath[0].equals(yieldTokenEVMAddress):
-                "UniswapV3 swap path must start with yield token"
-        }
 
-        return CollateralConfig(
-            yieldTokenEVMAddress:  yieldTokenEVMAddress,
-            yieldToCollateralUniV3AddressPath: yieldToCollateralAddressPath,
-            yieldToCollateralUniV3FeePath: yieldToCollateralFeePath
-        )
-    }
-
-    access(self)
-    fun makeMoreERC4626CollateralConfig(
-        yieldTokenEVMAddress: EVM.EVMAddress,
-        yieldToUnderlyingAddressPath: [EVM.EVMAddress],
-        yieldToUnderlyingFeePath: [UInt32],
-        debtToCollateralAddressPath: [EVM.EVMAddress],
-        debtToCollateralFeePath: [UInt32]
-    ): MoreERC4626CollateralConfig {
-        pre {
-            yieldToUnderlyingAddressPath.length > 1:
-                "Invalid Uniswap V3 swap path length"
-            yieldToUnderlyingFeePath.length == yieldToUnderlyingAddressPath.length - 1:
-                "Uniswap V3 fee path length must be path length - 1"
-            yieldToUnderlyingAddressPath[0].equals(yieldTokenEVMAddress):
-                "UniswapV3 swap path must start with yield token"
-            debtToCollateralAddressPath.length > 1:
-                "Invalid debt-to-collateral Uniswap V3 path length"
-            debtToCollateralFeePath.length == debtToCollateralAddressPath.length - 1:
-                "Debt-to-collateral Uniswap V3 fee path length must be path length - 1"
-            debtToCollateralAddressPath[0].equals(yieldToUnderlyingAddressPath[yieldToUnderlyingAddressPath.length - 1]):
-                "debtToCollateral UniV3 path must start with the underlying asset (end of yieldToUnderlying path)"
-        }
-        return MoreERC4626CollateralConfig(
-            yieldTokenEVMAddress: yieldTokenEVMAddress,
-            yieldToUnderlyingUniV3AddressPath: yieldToUnderlyingAddressPath,
-            yieldToUnderlyingUniV3FeePath: yieldToUnderlyingFeePath,
-            debtToCollateralUniV3AddressPath: debtToCollateralAddressPath,
-            debtToCollateralUniV3FeePath: debtToCollateralFeePath
-        )
-    }
-
-    /// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
+/// This resource enables the issuance of StrategyComposers, thus safeguarding the issuance of Strategies which
     /// may utilize resource consumption (i.e. account storage). Since Strategy creation consumes account storage
     /// via configured AutoBalancers
     access(all) resource StrategyComposerIssuer : FlowYieldVaults.StrategyComposerIssuer {
@@ -2018,10 +1774,10 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     "Collateral type \(collateralVaultType.identifier) is not a FungibleToken.Vault"
             }
 
-            let base = FlowYieldVaultsStrategiesV2.makeCollateralConfig(
+            let base = CollateralConfig(
                 yieldTokenEVMAddress: yieldTokenEVMAddress,
-                yieldToCollateralAddressPath: yieldToCollateralAddressPath,
-                yieldToCollateralFeePath: yieldToCollateralFeePath
+                yieldToCollateralUniV3AddressPath: yieldToCollateralAddressPath,
+                yieldToCollateralUniV3FeePath: yieldToCollateralFeePath
             )
             self.upsertMorphoConfig(config: { strategyType: { collateralVaultType: base } })
         }
@@ -2042,47 +1798,14 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     "Collateral type \(collateralVaultType.identifier) is not a FungibleToken.Vault"
             }
 
-            let cfg = FlowYieldVaultsStrategiesV2.makeMoreERC4626CollateralConfig(
+            let cfg = MoreERC4626CollateralConfig(
                 yieldTokenEVMAddress: yieldTokenEVMAddress,
-                yieldToUnderlyingAddressPath: yieldToUnderlyingAddressPath,
-                yieldToUnderlyingFeePath: yieldToUnderlyingFeePath,
-                debtToCollateralAddressPath: debtToCollateralAddressPath,
-                debtToCollateralFeePath: debtToCollateralFeePath
+                yieldToUnderlyingUniV3AddressPath: yieldToUnderlyingAddressPath,
+                yieldToUnderlyingUniV3FeePath: yieldToUnderlyingFeePath,
+                debtToCollateralUniV3AddressPath: debtToCollateralAddressPath,
+                debtToCollateralUniV3FeePath: debtToCollateralFeePath
             )
             self.upsertMoreERC4626Config(config: { strategyType: { collateralVaultType: cfg } })
-        }
-
-        /// Configures a stablecoin collateral type to use MOET pre-swap before depositing into
-        /// FlowALP. Required for stablecoins like PYUSD0 that FlowALP does not support directly
-        /// as collateral (it only accepts MOET as its stablecoin).
-        ///
-        /// collateralToMoetAddressPath: full UniV3 path from collateral EVM address → MOET EVM address
-        /// collateralToMoetFeePath:     UniV3 fee tiers for each hop (length = path length - 1)
-        access(Configure) fun upsertMoetPreswapConfig(
-            composer: Type,
-            collateralVaultType: Type,
-            collateralToMoetAddressPath: [EVM.EVMAddress],
-            collateralToMoetFeePath: [UInt32]
-        ) {
-            pre {
-                composer == Type<@MorphoERC4626StrategyComposer>()
-                    || composer == Type<@MoreERC4626StrategyComposer>():
-                    "composer must be MorphoERC4626StrategyComposer or MoreERC4626StrategyComposer"
-                collateralVaultType.isSubtype(of: Type<@{FungibleToken.Vault}>()):
-                    "collateralVaultType must be a FungibleToken.Vault"
-                collateralToMoetAddressPath.length > 1:
-                    "Path must have at least 2 elements"
-                collateralToMoetFeePath.length == collateralToMoetAddressPath.length - 1:
-                    "Fee path length must equal address path length - 1"
-            }
-            FlowYieldVaultsStrategiesV2._setMoetPreswapConfig(
-                composer: composer,
-                collateral: collateralVaultType,
-                cfg: FlowYieldVaultsStrategiesV2.MoetPreswapConfig(
-                    collateralToMoetAddressPath: collateralToMoetAddressPath,
-                    collateralToMoetFeePath: collateralToMoetFeePath
-                )
-            )
         }
 
         access(Configure) fun purgeConfig() {
@@ -2092,7 +1815,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 }
             }
             FlowYieldVaultsStrategiesV2._purgeMoreERC4626Configs()
-            FlowYieldVaultsStrategiesV2.config["moetPreswapConfigs"] = {} as {Type: {Type: FlowYieldVaultsStrategiesV2.MoetPreswapConfig}}
         }
     }
 
@@ -2100,9 +1822,14 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     /// TODO: this is temporary until we have a better way to pass user's COAs to inner connectors
     access(self)
     fun _getCOACapability(): Capability<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount> {
-        let coaCap = self.account.capabilities.storage.issue<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
-        assert(coaCap.check(), message: "Could not issue COA capability")
-        return coaCap
+        let capPath = /storage/strategiesCOACap
+        if self.account.storage.type(at: capPath) == nil {
+            let coaCap = self.account.capabilities.storage.issue<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount>(/storage/evm)
+            assert(coaCap.check(), message: "Could not issue COA capability")
+            self.account.storage.save(coaCap, to: capPath)
+        }
+        return self.account.storage.copy<Capability<auth(EVM.Call, EVM.Bridge, EVM.Owner) &EVM.CadenceOwnedAccount>>(from: capPath)
+            ?? panic("Could not load COA capability from storage")
     }
 
     /// Returns a FungibleTokenConnectors.VaultSinkAndSource used to subsidize cross VM token movement in contract-
@@ -2127,11 +1854,11 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
     /// Creates an AutoBalancerRecurringConfig for scheduled rebalancing.
     /// The txnFunder uses the contract's FlowToken vault to pay for scheduling fees.
     access(self)
-    fun _createRecurringConfig(withID: DeFiActions.UniqueIdentifier?): DeFiActions.AutoBalancerRecurringConfig {
+    fun _createRecurringConfig(withID: DeFiActions.UniqueIdentifier?): AutoBalancers.AutoBalancerRecurringConfig {
         // Create txnFunder that can provide/accept FLOW for scheduling fees
         let txnFunder = self._createTxnFunder(withID: withID)
 
-        return DeFiActions.AutoBalancerRecurringConfig(
+        return AutoBalancers.AutoBalancerRecurringConfig(
             interval: 60 * 10,  // Rebalance every 10 minutes
             priority: FlowTransactionScheduler.Priority.Medium,
             executionEffort: 800,
@@ -2177,29 +1904,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             coaCapability: FlowYieldVaultsStrategiesV2._getCOACapability(),
             uniqueID: uniqueID
         )
-    }
-
-    // --- "syWFLOWvDebtTokenTypes" partition ---
-    // Stores the debt token Type per syWFLOWvStrategy uniqueID.
-    // Kept in the contract-level config map so no new field is added to the deployed syWFLOWvStrategy resource.
-
-    access(contract) view fun _getSyWFLOWvDebtTokenType(_ id: UInt64): Type? {
-        let partition = FlowYieldVaultsStrategiesV2.config["syWFLOWvDebtTokenTypes"] as! {UInt64: Type}? ?? {}
-        return partition[id]
-    }
-
-    access(contract) fun _setSyWFLOWvDebtTokenType(_ id: UInt64, _ t: Type) {
-        var partition = FlowYieldVaultsStrategiesV2.config["syWFLOWvDebtTokenTypes"] as! {UInt64: Type}? ?? {}
-        partition[id] = t
-        FlowYieldVaultsStrategiesV2.config["syWFLOWvDebtTokenTypes"] = partition
-    }
-
-    access(contract) fun _removeSyWFLOWvDebtTokenType(_ id: UInt64?) {
-        if let unwrappedID = id {
-            var partition = FlowYieldVaultsStrategiesV2.config["syWFLOWvDebtTokenTypes"] as! {UInt64: Type}? ?? {}
-            partition.remove(key: unwrappedID)
-            FlowYieldVaultsStrategiesV2.config["syWFLOWvDebtTokenTypes"] = partition
-        }
     }
 
     // --- "moreERC4626Configs" partition ---
@@ -2249,54 +1953,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         FlowYieldVaultsStrategiesV2.config["moreERC4626Configs"] = {} as {Type: {Type: {Type: MoreERC4626CollateralConfig}}}
     }
 
-    // --- "originalCollateralTypes" partition ---
-    // Stores the original (external) collateral type per strategy uniqueID when a MOET pre-swap
-    // is in effect. E.g. PYUSD0 when the position internally holds MOET.
-
-    access(contract) view fun _getOriginalCollateralType(_ id: UInt64): Type? {
-        let partition = FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] as! {UInt64: Type}? ?? {}
-        return partition[id]
-    }
-
-    access(contract) fun _setOriginalCollateralType(_ id: UInt64, _ t: Type) {
-        var partition = FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] as! {UInt64: Type}? ?? {}
-        partition[id] = t
-        FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] = partition
-    }
-
-    access(contract) fun _removeOriginalCollateralType(_ id: UInt64) {
-        var partition = FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] as! {UInt64: Type}? ?? {}
-        partition.remove(key: id)
-        FlowYieldVaultsStrategiesV2.config["originalCollateralTypes"] = partition
-    }
-
-    // --- "moetPreswapConfigs" partition ---
-    // Static admin config: keyed by composerType → collateralType → MoetPreswapConfig.
-    // Checked during createStrategy to determine whether a collateral needs MOET pre-swap.
-
-    access(contract) view fun _getMoetPreswapConfig(
-        composer: Type,
-        collateral: Type
-    ): MoetPreswapConfig? {
-        let partition = FlowYieldVaultsStrategiesV2.config["moetPreswapConfigs"]
-            as! {Type: {Type: MoetPreswapConfig}}? ?? {}
-        let p = partition[composer] ?? {}
-        return p[collateral]
-    }
-
-    access(contract) fun _setMoetPreswapConfig(
-        composer: Type,
-        collateral: Type,
-        cfg: MoetPreswapConfig
-    ) {
-        var partition = FlowYieldVaultsStrategiesV2.config["moetPreswapConfigs"]
-            as! {Type: {Type: MoetPreswapConfig}}? ?? {}
-        var p = partition[composer] ?? {}
-        p[collateral] = cfg
-        partition[composer] = p
-        FlowYieldVaultsStrategiesV2.config["moetPreswapConfigs"] = partition
-    }
-
     init(
         univ3FactoryEVMAddress: String,
         univ3RouterEVMAddress: String,
@@ -2307,11 +1963,6 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         self.univ3QuoterEVMAddress = EVM.addressFromString(univ3QuoterEVMAddress)
         self.IssuerStoragePath = StoragePath(identifier: "FlowYieldVaultsStrategyV2ComposerIssuer_\(self.account.address)")!
         self.config = {}
-
-        let moetType = Type<@MOET.Vault>()
-        if FlowEVMBridgeConfig.getEVMAddressAssociated(with: Type<@MOET.Vault>()) == nil {
-            panic("Could not find EVM address for \(moetType.identifier) - ensure the asset is onboarded to the VM Bridge")
-        }
 
         let issuer <- create StrategyComposerIssuer(
             configs: {

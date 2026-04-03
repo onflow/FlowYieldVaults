@@ -164,8 +164,30 @@
 				"testnet-fork": "d2580caf2ef07c2f"
 			}
 		},
+		"AutoBalancers": {
+			"source": "cadence/contracts/AutoBalancers.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
+				"mainnet-fork": "b1d63873c3cc9f79",
+				"testing": "0000000000000009",
+				"testnet": "d2580caf2ef07c2f",
+				"testnet-fork": "d2580caf2ef07c2f"
+			}
+		},
 		"FlowYieldVaultsAutoBalancers": {
 			"source": "cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
+				"mainnet-fork": "b1d63873c3cc9f79",
+				"testing": "0000000000000009",
+				"testnet": "d2580caf2ef07c2f",
+				"testnet-fork": "d2580caf2ef07c2f"
+			}
+		},
+		"FlowYieldVaultsAutoBalancersV1": {
+			"source": "cadence/contracts/FlowYieldVaultsAutoBalancersV1.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -186,8 +208,29 @@
 				"testnet-fork": "d2580caf2ef07c2f"
 			}
 		},
+		"UInt64LinkedList": {
+			"source": "cadence/contracts/UInt64LinkedList.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
+				"mainnet-fork": "b1d63873c3cc9f79",
+				"testing": "0000000000000009",
+				"testnet": "d2580caf2ef07c2f"
+			}
+		},
 		"FlowYieldVaultsSchedulerRegistry": {
 			"source": "cadence/contracts/FlowYieldVaultsSchedulerRegistry.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
+				"mainnet-fork": "b1d63873c3cc9f79",
+				"testing": "0000000000000009",
+				"testnet": "d2580caf2ef07c2f",
+				"testnet-fork": "d2580caf2ef07c2f"
+			}
+		},
+		"FlowYieldVaultsSchedulerRegistryV1": {
+			"source": "cadence/contracts/FlowYieldVaultsSchedulerRegistryV1.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -1106,8 +1149,12 @@
 				"ERC4626PriceOracles",
 				"ERC4626SinkConnectors",
 				"ERC4626SwapConnectors",
+				"UInt64LinkedList",
+				"AutoBalancers",
 				"FlowYieldVaultsSchedulerRegistry",
+				"FlowYieldVaultsSchedulerRegistryV1",
 				"FlowYieldVaultsAutoBalancers",
+				"FlowYieldVaultsAutoBalancersV1",
 				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
@@ -1167,8 +1214,12 @@
 		},
 		"mainnet": {
 			"mainnet-admin": [
+				"UInt64LinkedList",
+				"AutoBalancers",
 				"FlowYieldVaultsSchedulerRegistry",
+				"FlowYieldVaultsSchedulerRegistryV1",
 				"FlowYieldVaultsAutoBalancers",
+				"FlowYieldVaultsAutoBalancersV1",
 				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
@@ -1210,8 +1261,25 @@
 		},
 		"mainnet-fork": {
 			"mainnet-fork-admin": [
+<<<<<<< HEAD
+=======
+				{
+					"name": "MockOracle",
+					"args": [
+						{
+							"value": "A.6b00ff876c299c61.MOET.Vault",
+							"type": "String"
+						}
+					]
+				},
+				"MockSwapper",
+				"UInt64LinkedList",
+				"AutoBalancers",
+>>>>>>> origin/v0
 				"FlowYieldVaultsSchedulerRegistry",
+				"FlowYieldVaultsSchedulerRegistryV1",
 				"FlowYieldVaultsAutoBalancers",
+				"FlowYieldVaultsAutoBalancersV1",
 				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
@@ -1273,8 +1341,12 @@
 					]
 				},
 				"MockSwapper",
+				"UInt64LinkedList",
+				"AutoBalancers",
 				"FlowYieldVaultsSchedulerRegistry",
+				"FlowYieldVaultsSchedulerRegistryV1",
 				"FlowYieldVaultsAutoBalancers",
+				"FlowYieldVaultsAutoBalancersV1",
 				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
@@ -1335,8 +1407,11 @@
 					]
 				},
 				"MockSwapper",
+				"AutoBalancers",
 				"FlowYieldVaultsSchedulerRegistry",
+				"FlowYieldVaultsSchedulerRegistryV1",
 				"FlowYieldVaultsAutoBalancers",
+				"FlowYieldVaultsAutoBalancersV1",
 				"FlowYieldVaultsSchedulerV1",
 				"FlowYieldVaultsClosedBeta",
 				"FlowYieldVaults",
