@@ -179,15 +179,15 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
     log("=========================================================\n")
 
     Test.assert(
-        equalAmounts(a: yieldTokensBefore, b: expectedYieldTokenValues[0], tolerance: 0.3),
+        equalAmounts(a: yieldTokensBefore, b: expectedYieldTokenValues[0], tolerance: 0.1),
         message: "Expected yield tokens to be \(expectedYieldTokenValues[0]) but got \(yieldTokensBefore)"
     )
     Test.assert(
-        equalAmounts(a: flowCollateralValueBefore, b: expectedFlowCollateralValues[0], tolerance: 0.3),
+        equalAmounts(a: flowCollateralValueBefore, b: expectedFlowCollateralValues[0], tolerance: 0.1),
         message: "Expected flow collateral value to be \(expectedFlowCollateralValues[0]) but got \(flowCollateralValueBefore)"
     )
     Test.assert(
-        equalAmounts(a: debtBefore, b: expectedDebtValues[0], tolerance: 0.3),
+        equalAmounts(a: debtBefore, b: expectedDebtValues[0], tolerance: 0.1),
         message: "Expected MOET debt to be \(expectedDebtValues[0]) but got \(debtBefore)"
     )
 
@@ -241,15 +241,15 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
     log("=========================================================\n")
 
     Test.assert(
-        equalAmounts(a: yieldTokensAfterFlowPriceIncrease, b: expectedYieldTokenValues[1], tolerance: 0.3),
+        equalAmounts(a: yieldTokensAfterFlowPriceIncrease, b: expectedYieldTokenValues[1], tolerance: 0.1),
         message: "Expected yield tokens after flow price increase to be \(expectedYieldTokenValues[1]) but got \(yieldTokensAfterFlowPriceIncrease)"
     )
     Test.assert(
-        equalAmounts(a: flowCollateralValueAfterFlowIncrease, b: expectedFlowCollateralValues[1], tolerance: 0.3),
+        equalAmounts(a: flowCollateralValueAfterFlowIncrease, b: expectedFlowCollateralValues[1], tolerance: 0.1),
         message: "Expected flow collateral value after flow price increase to be \(expectedFlowCollateralValues[1]) but got \(flowCollateralValueAfterFlowIncrease)"
     )
     Test.assert(
-        equalAmounts(a: debtAfterFlowIncrease, b: expectedDebtValues[1], tolerance: 0.3),
+        equalAmounts(a: debtAfterFlowIncrease, b: expectedDebtValues[1], tolerance: 0.1),
         message: "Expected MOET debt after flow price increase to be \(expectedDebtValues[1]) but got \(debtAfterFlowIncrease)"
     )
 
@@ -321,16 +321,20 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
     log("Difference:         \(debtSign2)\(debtDiff2)")
     log("=========================================================\n")
 
+    // Wider tolerance for yield-price step: Morpho redeem at 2.0x share price + FUSDEV→PYUSD0→WFLOW
+    // multi-hop swap compounds ERC4626 integer rounding (~0.08 on YT, ~0.25 on collateral value)
     Test.assert(
-        equalAmounts(a: yieldTokensAfterYieldPriceIncrease, b: expectedYieldTokenValues[2], tolerance: 0.3),
+        equalAmounts(a: yieldTokensAfterYieldPriceIncrease, b: expectedYieldTokenValues[2], tolerance: 0.1),
         message: "Expected yield tokens after yield price increase to be \(expectedYieldTokenValues[2]) but got \(yieldTokensAfterYieldPriceIncrease)"
     )
     Test.assert(
+        // Wider tolerance: surplus FUSDEV→PYUSD0→WFLOW multi-hop swap at 2.0x yield price
+        // compounds Cadence↔EVM rounding (~0.25 on collateral, ~0.15 on debt)
         equalAmounts(a: flowCollateralValueAfterYieldIncrease, b: expectedFlowCollateralValues[2], tolerance: 0.3),
         message: "Expected flow collateral value after yield price increase to be \(expectedFlowCollateralValues[2]) but got \(flowCollateralValueAfterYieldIncrease)"
     )
     Test.assert(
-        equalAmounts(a: debtAfterYieldIncrease, b: expectedDebtValues[2], tolerance: 0.3),
+        equalAmounts(a: debtAfterYieldIncrease, b: expectedDebtValues[2], tolerance: 0.2),
         message: "Expected MOET debt after yield price increase to be \(expectedDebtValues[2]) but got \(debtAfterYieldIncrease)"
     )
 

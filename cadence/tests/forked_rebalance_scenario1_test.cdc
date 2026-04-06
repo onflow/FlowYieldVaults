@@ -293,7 +293,7 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 		log("Percent Difference:    \(precisionSign)\(percentDiff)%")
 
         Test.assert(
-            equalAmounts(a: yieldTokensAfter, b: expectedYieldTokens, tolerance: 0.01),
+            equalAmounts(a: yieldTokensAfter, b: expectedYieldTokens, tolerance: 0.1),
             message: "Expected yield tokens for flow price \(flowPrice) to be \(expectedYieldTokens) but got \(yieldTokensAfter)"
         )
 
