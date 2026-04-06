@@ -198,16 +198,6 @@ run_txn "Configure syWFLOWvStrategy + PYUSD0 collateral" \
     '[3000]' \
     --compute-limit 9999
 
-# PYUSD0 → MOET pre-swap config (FlowALP only accepts MOET as stablecoin collateral)
-# PYUSD0/MOET fee 100 pool exists on Flow EVM mainnet
-run_txn "Configure MOET pre-swap for PYUSD0 (PYUSD0 → MOET fee 100)" \
-    ./cadence/transactions/flow-yield-vaults/admin/upsert_moet_preswap_config.cdc \
-    "$COMPOSER_ID" \
-    "$PYUSD0_VAULT_TYPE" \
-    '["0x99aF3EeA856556646C98c8B9b2548Fe815240750","0x213979bb8a9a86966999b3aa797c1fcf3b967ae2"]' \
-    '[100]' \
-    --compute-limit 9999
-
 run_txn "Register syWFLOWvStrategy in FlowYieldVaults factory" \
     ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
     "$STRATEGY_ID" \

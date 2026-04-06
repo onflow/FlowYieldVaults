@@ -24,7 +24,6 @@ ADMIN_COA_EVM_ADDR="0x000000000000000000000002bd91ec0b3c1284fe"
 WFLOW_EVM="0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
 WETH_EVM="0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590"
 PYUSD0_EVM="0x99aF3EeA856556646C98c8B9b2548Fe815240750"
-MOET_EVM="0x213979bb8a9a86966999b3aa797c1fcf3b967ae2"
 SYWFLOWV_EVM="0xCBf9a7753F9D2d0e8141ebB36d99f87AcEf98597"
 
 WETH_VAULT_TYPE="A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault"
@@ -70,10 +69,10 @@ flow project deploy --network "$NETWORK" --host "$FLOW_HOST" --update
 # ---------------------------------------------------------------------------
 
 echo ""
-echo ">>> Extending FlowALP oracle staleThreshold to 24h (fork sig bypass)"
+echo ">>> Extending FlowALP oracle staleThreshold to 1 year (fork sig bypass)"
 result=$(flow transactions send \
     ./cadence/transactions/flow-yield-vaults/admin/update_flowalp_oracle_threshold.cdc \
-    86400 \
+    31536000 \
     --network "$NETWORK" --host "$FLOW_HOST" \
     --signer "$FLOWALP_POOL_OWNER" --compute-limit 9999 2>&1 || true)
 echo "$result"
@@ -81,7 +80,7 @@ if ! echo "$result" | grep -q "SEALED" || echo "$result" | grep -q "Transaction 
     echo "❌ FlowALP oracle staleThreshold update failed"
     exit 1
 fi
-echo "✓ Oracle staleThreshold set to 86400s"
+echo "✓ Oracle staleThreshold set to 31536000s (1 year)"
 
 # ---------------------------------------------------------------------------
 # Step 3: Configure syWFLOWvStrategy
@@ -110,14 +109,6 @@ run_txn "Configure syWFLOWvStrategy + PYUSD0 collateral" \
     '[100]' \
     '["0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e","0x99aF3EeA856556646C98c8B9b2548Fe815240750"]' \
     '[3000]' \
-    --compute-limit 9999
-
-run_txn "Configure MOET pre-swap for PYUSD0 (PYUSD0 → MOET fee 100)" \
-    ./cadence/transactions/flow-yield-vaults/admin/upsert_moet_preswap_config.cdc \
-    "$COMPOSER_ID" \
-    "$PYUSD0_VAULT_TYPE" \
-    '["0x99aF3EeA856556646C98c8B9b2548Fe815240750","0x213979bb8a9a86966999b3aa797c1fcf3b967ae2"]' \
-    '[100]' \
     --compute-limit 9999
 
 run_txn "Register syWFLOWvStrategy in FlowYieldVaults factory" \
