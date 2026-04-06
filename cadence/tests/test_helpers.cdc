@@ -415,14 +415,7 @@ access(self) fun _deploy(config: DeploymentConfig) {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "BandOracleConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/band-oracle/BandOracleConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
+    
     err = Test.deployContract(
         name: "ERC4626PriceOracles",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
