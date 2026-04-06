@@ -73,8 +73,9 @@ fun safeReset() {
 access(all)
 fun setup() {
 	deployContractsForFork()
-    // Fund FlowALP account and seed PYUSD0 reserves (debt is now PYUSD0 from pool reserves, not minted MOET)
+    // Refresh oracle prices before seeding — position creation reads the oracle
     transferFlow(signer: whaleFlowAccount, recipient: flowALPAccount.address, amount: 100.0)
+    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: { "FLOW": 1.0, "USD": 1.0, "PYUSD": 1.0 })
     seedPoolWithPYUSD0(poolSigner: flowALPAccount, amount: 70_000.0)
     snapshot = getCurrentBlockHeight()
 }
