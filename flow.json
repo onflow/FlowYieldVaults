@@ -175,6 +175,20 @@
 				"testnet-fork": "d2580caf2ef07c2f"
 			}
 		},
+		"FlowYieldVaultsAutoBalancersV1": {
+			"source": "cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
+			"aliases": {
+				"mainnet": "b1d63873c3cc9f79",
+				"mainnet-fork": "b1d63873c3cc9f79"
+			}
+		},
+		"AutoBalancers": {
+			"source": "cadence/contracts/FlowYieldVaultsAutoBalancers.cdc",
+			"aliases": {
+				"mainnet": "b1d63873c3cc9f79",
+				"mainnet-fork": "b1d63873c3cc9f79"
+			}
+		},
 		"FlowYieldVaultsClosedBeta": {
 			"source": "cadence/contracts/FlowYieldVaultsClosedBeta.cdc",
 			"aliases": {
