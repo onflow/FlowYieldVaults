@@ -3,7 +3,7 @@ FROM debian:stable-slim
 ENV APP_HOME=/app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl ca-certificates bash git \
+    curl ca-certificates bash git jq \
  && rm -rf /var/lib/apt/lists/*
 
 # Install flow CLI pinned to v2.16.0 (matches e2e workflow)

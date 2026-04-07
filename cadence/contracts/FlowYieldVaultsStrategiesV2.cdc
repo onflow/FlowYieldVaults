@@ -338,7 +338,14 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     uniqueID: self.uniqueID!
                 )
                 let shortfall = totalDebtAmount - expectedPyusd0
-                let quote = collateralToPyusd0Swapper.quoteIn(forDesired: shortfall, reverse: false)
+                // Round the desired swap output up to the next PYUSD0 minimum unit (0.000001).
+                // PYUSD0 is a 6-decimal ERC-20; amounts below 0.000001 cannot be represented.
+                // Without this, the swap may produce one unit less than the raw UFix64 shortfall
+                // and the assertion below would fail for dust positions.
+                let pyusd0Unit: UFix64 = 0.000001
+                let shortfallRem = shortfall % pyusd0Unit
+                let shortfallCeil = shortfallRem == 0.0 ? shortfall : shortfall - shortfallRem + pyusd0Unit
+                let quote = collateralToPyusd0Swapper.quoteIn(forDesired: shortfallCeil, reverse: false)
                 assert(quote.inAmount > 0.0,
                     message: "Pre-supplement: collateral→PYUSD0 quote returned zero input for non-zero shortfall — swapper misconfigured")
                 let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
