@@ -704,8 +704,19 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
         }
-        /// Closes the underlying FlowALP position by preparing FLOW repayment funds from AutoBalancer
-        /// (via the stored yield→FLOW swapper) and closing with them.
+        /// Closes the underlying FlowALP position by pre-repaying all debt and recovering collateral.
+        ///
+        /// This method:
+        /// 1. Reads outstanding FLOW debt from the FlowALP position
+        /// 2. Computes total debt amount
+        /// 3. Early-exits with empty sources when debt is zero
+        /// 4. Reconstructs swappers from stored CollateralConfig
+        /// 5. Creates an external yield-token source from the AutoBalancer
+        /// 6. Pre-repays the full debt: redeems syWFLOWv shares → FLOW (supplementing from
+        ///    collateral if needed) and deposits into the position before closePosition is called
+        /// 7. Closes the FlowALP position (no repayment sources needed — debt already zero)
+        /// 8. Recovers collateral from result vaults; converts any FLOW overpayment to collateral
+        /// 9. Drains remaining syWFLOWv shares (surplus yield) from the AutoBalancer → collateral
         access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
             pre {
                 self.isSupportedCollateralType(collateralType):
@@ -766,55 +777,70 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 uniqueID: self.uniqueID!
             )
 
-            // Step 4: Create external syWFLOWv source from AutoBalancer
+            // Step 5: Create external syWFLOWv source from AutoBalancer
             let yieldTokenSource = FlowYieldVaultsAutoBalancersV1.createExternalSource(id: self.id()!)
                 ?? panic("Could not create external source from AutoBalancer")
 
-            // Step 5: Create a SwapSource that converts syWFLOWv → FLOW for debt repayment.
-            // SwapSource uses quoteIn when yield value >= debt (pulling only the needed shares),
-            // or quoteOut when yield is insufficient (pulling everything as a best-effort).
-            // Any FLOW overpayment is returned as dust and converted back to collateral below.
-            let flowSource = SwapConnectors.SwapSource(
-                swapper: syWFLOWvToFlow,
-                source: yieldTokenSource,
-                uniqueID: self.copyID()
-            )
+            // Step 6: Pre-repay the full FLOW debt BEFORE calling closePosition.
+            //
+            // Mirrors the FUSDEVStrategy approach: explicitly zero out the debt by depositing
+            // >= totalDebtAmount FLOW into the position before closePosition is called. This avoids
+            // relying on a SwapSource inside closePosition, which can produce a slightly different
+            // amount than requested due to AMM rounding (UniV3 exactInput vs exactOutput).
+            //
+            // FlowALP's recordDeposit handles overpayment gracefully: if deposited > debt, the
+            // excess becomes a tiny FLOW Credit that closePosition returns as an extra vault.
+            //
+            // Strategy:
+            //   (a) Redeem syWFLOWv shares → FLOW via the stored AMM swapper (covers the debt).
+            //   (b) If yield alone can't cover totalDebtAmount, supplement the remainder from collateral.
+            //   (c) Deposit all FLOW into the position — debt is now 0; closePosition needs no sources.
+            //
+            // Step 9 drains any remaining syWFLOWv shares (surplus yield not consumed here) separately.
+            let yieldAvail = yieldTokenSource.minimumAvailable()
 
-            // Step 6: Pre-supplement from collateral if yield tokens are insufficient to cover the FLOW debt.
-            //
-            // The syWFLOWv close path has a structural round-trip fee loss:
-            //   Open:  FLOW → syWFLOWv (ERC4626 deposit, free)
-            //   Close: syWFLOWv → FLOW (UniV3 AMM swap, ~0.3% fee)
-            // In production, accrued yield more than covers this; with no accrued yield (e.g. in
-            // tests, immediate open+close), the yield tokens convert back to slightly less FLOW
-            // than was borrowed. We handle this by pre-pulling a tiny amount of collateral from
-            // self.source, swapping it to FLOW via flowToCollateral in reverse, and depositing it
-            // into the position to reduce the outstanding debt — BEFORE calling position.closePosition.
-            //
-            // This MUST be done before closePosition because the position is locked during close:
-            // any attempt to pull from self.source inside a repaymentSource.withdrawAvailable call
-            // would trigger "Reentrancy: position X is locked".
-            let expectedFlow = flowSource.minimumAvailable()
-            if expectedFlow < totalDebtAmount {
-                let shortfall = totalDebtAmount - expectedFlow
-                let quote = flowToCollateral.quoteIn(forDesired: shortfall, reverse: true)
-                assert(quote.inAmount > 0.0,
-                    message: "Pre-supplement: collateral→FLOW quote returned zero input for non-zero shortfall — swapper misconfigured")
-                let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
-                assert(extraCollateral.balance > 0.0,
-                    message: "Pre-supplement: no collateral available to cover shortfall of \(shortfall) FLOW")
-                let extraFlow <- flowToCollateral.swapBack(quote: quote, residual: <-extraCollateral)
-                assert(extraFlow.balance >= shortfall,
-                    message: "Pre-supplement: collateral→FLOW swap produced less than shortfall: got \(extraFlow.balance), need \(shortfall)")
-                self.position.deposit(from: <-extraFlow)
+            // Step 6a: Redeem syWFLOWv shares to cover as much of totalDebtAmount as possible.
+            var flowForDebt <- DeFiActionsUtils.getEmptyVault(syWFLOWvToFlow.outType())
+            if yieldAvail > 0.0 {
+                let yieldToDebtQuote = syWFLOWvToFlow.quoteIn(forDesired: totalDebtAmount, reverse: false)
+                if yieldToDebtQuote.inAmount > 0.0 {
+                    let yieldFunds <- yieldTokenSource.withdrawAvailable(maxAmount: yieldToDebtQuote.inAmount)
+                    if yieldFunds.balance > 0.0 {
+                        let swapQuote = syWFLOWvToFlow.quoteOut(forProvided: yieldFunds.balance, reverse: false)
+                        let fromYield <- syWFLOWvToFlow.swap(quote: swapQuote, inVault: <-yieldFunds)
+                        flowForDebt.deposit(from: <-fromYield)
+                    } else {
+                        Burner.burn(<-yieldFunds)
+                    }
+                }
             }
 
-            // Step 7: Close position — pool pulls the (now pre-reduced) FLOW debt from flowSource
-            let resultVaults <- self.position.closePosition(repaymentSources: [flowSource])
+            // Step 6b: Supplement from collateral if syWFLOWv yield didn't fully cover totalDebtAmount.
+            if flowForDebt.balance < totalDebtAmount {
+                let remaining = totalDebtAmount - flowForDebt.balance
+                let collateralQuote = flowToCollateral.quoteIn(forDesired: remaining, reverse: true)
+                assert(collateralQuote.inAmount > 0.0,
+                    message: "syWFLOWvStrategy closePosition: collateral→FLOW quote returned zero — swapper misconfigured")
+                let extraCollateral <- self.source.withdrawAvailable(maxAmount: collateralQuote.inAmount)
+                assert(extraCollateral.balance > 0.0,
+                    message: "syWFLOWvStrategy closePosition: no collateral available to cover debt of \(totalDebtAmount) FLOW")
+                let extraFlow <- flowToCollateral.swapBack(quote: collateralQuote, residual: <-extraCollateral)
+                flowForDebt.deposit(from: <-extraFlow)
+            }
 
-            // closePosition returns vaults in dict-iteration order (hash-based), so we cannot
-            // assume the collateral vault is first. Iterate all vaults: collect collateral by type
-            // and convert any non-collateral vaults (FLOW overpayment dust) back to collateral.
+            assert(flowForDebt.balance >= totalDebtAmount,
+                message: "syWFLOWvStrategy closePosition: pre-repayment insufficient: have \(flowForDebt.balance), need \(totalDebtAmount)")
+
+            // Step 6c: Deposit into position — zeroes the debt (FlowALP records any excess FLOW
+            // as a Credit, which closePosition returns and Step 8 routes back to collateral).
+            self.position.deposit(from: <-flowForDebt)
+
+            // Step 7: Close position — debt is fully pre-repaid; no repayment sources needed.
+            let resultVaults <- self.position.closePosition(repaymentSources: [])
+
+            // Step 8: Recover collateral from result vaults; convert any FLOW overpayment back to
+            // collateral. closePosition returns vaults in dict-iteration order (hash-based), so we
+            // cannot assume the collateral vault is first.
             var collateralVault <- DeFiActionsUtils.getEmptyVault(collateralType)
             while resultVaults.length > 0 {
                 let v <- resultVaults.removeFirst()
@@ -846,10 +872,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
             destroy resultVaults
 
-            // Step 8: Drain any remaining syWFLOWv shares from the AutoBalancer — excess yield
-            // not consumed during debt repayment — and convert them directly to collateral.
-            // The SwapSource inside closePosition only pulled what was needed to repay the debt;
-            // any surplus shares are still held by the AutoBalancer and are recovered here.
+            // Step 9: Drain any remaining syWFLOWv shares from the AutoBalancer — surplus yield
+            // not consumed by Step 6a (which only withdrew enough shares to cover totalDebtAmount) —
+            // and convert them directly to collateral.
             let excessShares <- yieldTokenSource.withdrawAvailable(maxAmount: UFix64.max)
             if excessShares.balance > 0.0 {
                 let sharesToCollateral = SwapConnectors.SequentialSwapper(
