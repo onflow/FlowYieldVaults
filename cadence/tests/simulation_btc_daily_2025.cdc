@@ -1,4 +1,4 @@
-#test_fork(network: "mainnet-fork", height: 143292255)
+#test_fork(network: "mainnet-fork", height: 147316310)
 
 import Test
 import BlockchainHelpers
@@ -9,7 +9,6 @@ import "btc_daily_2025_helpers.cdc"
 
 import "FlowYieldVaults"
 import "FlowToken"
-import "MOET"
 import "FlowYieldVaultsStrategiesV2"
 import "FlowALPv0"
 import "DeFiActions"
@@ -33,8 +32,6 @@ access(all) let WBTC_TYPE = CompositeType(WBTC_TOKEN_ID)!
 
 access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategiesV2.FUSDEVStrategy>().identifier
 access(all) var wbtcTokenIdentifier = WBTC_TOKEN_ID
-access(all) let MOET_TYPE = Type<@MOET.Vault>()
-access(all) var moetTokenIdentifier = MOET_TYPE.identifier
 
 // ============================================================================
 // PROTOCOL ADDRESSES
@@ -48,14 +45,12 @@ access(all) let factoryAddress = "0xca6d7Bb03334bBf135902e1d919a5feccb461632"
 
 access(all) let morphoVaultAddress = "0xd069d989e2F44B70c65347d1853C0c67e10a9F8D"
 access(all) let pyusd0Address = "0x99aF3EeA856556646C98c8B9b2548Fe815240750"
-access(all) let moetAddress = "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2"
 access(all) let wbtcAddress = "0x717dae2baf7656be9a9b01dee31d571a9d4c9579"
 
 // ============================================================================
 // STORAGE SLOT CONSTANTS
 // ============================================================================
 
-access(all) let moetBalanceSlot = 0 as UInt256
 access(all) let pyusd0BalanceSlot = 1 as UInt256
 access(all) let fusdevBalanceSlot = 12 as UInt256
 access(all) let wbtcBalanceSlot = 5 as UInt256
@@ -128,31 +123,10 @@ fun setup() {
         signer: coaOwnerAccount
     )
 
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
-        tokenBAddress: morphoVaultAddress,
-        fee: 100,
-        priceTokenBPerTokenA: 1.0,
-        tokenABalanceSlot: moetBalanceSlot,
-        tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
-    )
-
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
-        tokenBAddress: pyusd0Address,
-        fee: 100,
-        priceTokenBPerTokenA: 1.0,
-        tokenABalanceSlot: moetBalanceSlot,
-        tokenBBalanceSlot: pyusd0BalanceSlot,
-        signer: coaOwnerAccount
-    )
-
     let reserveAmount = 100_000_00.0
     transferFlow(signer: whaleFlowAccount, recipient: flowALPAccount.address, amount: reserveAmount)
-    mintMoet(signer: flowALPAccount, to: flowALPAccount.address, amount: reserveAmount, beFailed: false)
+    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: { "BTC": 60000.0, "USD": 1.0, "PYUSD": 1.0 })
+    seedPoolWithPYUSD0(poolSigner: flowALPAccount, amount: 70_000.0)
 
     transferFlow(signer: whaleFlowAccount, recipient: flowYieldVaultsAccount.address, amount: reserveAmount)
     transferFlow(signer: whaleFlowAccount, recipient: coaOwnerAccount.address, amount: reserveAmount)
@@ -182,13 +156,18 @@ access(all) fun ytPriceAtDay(_ day: Int): UFix64 {
 
 /// Update all prices for a given simulation day.
 access(all) fun applyPriceTick(btcPrice: UFix64, ytPrice: UFix64, user: Test.TestAccount) {
+    // Refresh ALL oracle symbols each tick — not just BTC. The mainnet BandOracleConnectors
+    // has a 1-hour staleThreshold, and the sim advances 1 day per tick. Any symbol not
+    // refreshed here will go stale and cause positionHealth() to revert.
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: {
         "BTC": btcPrice,
-        "USD": 1.0
+        "USD": 1.0,
+        "PYUSD": 1.0,
+        "FLOW": 1.0
     })
 
     let btcPool = btc_daily_2025_pools["pyusd_btc"]!
-    let ytPool = btc_daily_2025_pools["moet_fusdev"]!
+    let ytPool = btc_daily_2025_pools["pyusd0_fusdev"]!
 
     setPoolToPriceWithTVL(
         factoryAddress: factoryAddress,
@@ -206,11 +185,11 @@ access(all) fun applyPriceTick(btcPrice: UFix64, ytPrice: UFix64, user: Test.Tes
 
     setPoolToPriceWithTVL(
         factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
+        tokenAAddress: pyusd0Address,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
         priceTokenBPerTokenA: UFix128(ytPrice),
-        tokenABalanceSlot: moetBalanceSlot,
+        tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
         tvl: ytPool.size,
         concentration: ytPool.concentration,
@@ -285,7 +264,7 @@ fun test_BtcDaily2025_DailyRebalancing() {
 
     log("\n=== BTC DAILY 2025 SIMULATION ===")
     log("Agents: \(numAgents)")
-    log("Funding per agent: \(fundingPerAgent) BTC (~\(fundingPerAgent * initialPrice) MOET)")
+    log("Funding per agent: \(fundingPerAgent) BTC (~\(fundingPerAgent * initialPrice) PYUSD0)")
     log("Duration: \(btc_daily_2025_durationDays) days")
     log("Price points: \(prices.length)")
     log("Initial BTC price: $\(prices[0])")
@@ -337,7 +316,7 @@ fun test_BtcDaily2025_DailyRebalancing() {
                 let btcCollateral = getBTCCollateralFromPosition(pid: pids[a])
                 let btcCollateralValue = btcCollateral * absolutePrice
                 let effectiveCollateral = btcCollateralValue * collateralFactor
-                let debt = getMOETDebtFromPosition(pid: pids[a])
+                let debt = getPYUSD0DebtFromPosition(pid: pids[a])
                 if debt > 0.0 {
                     preRebalanceHF = effectiveCollateral / debt
                 }
@@ -383,7 +362,7 @@ fun test_BtcDaily2025_DailyRebalancing() {
             let btcCollateral = getBTCCollateralFromPosition(pid: pids[a])
             let btcCollateralValue = btcCollateral * absolutePrice
             let effectiveCollateral = btcCollateralValue * collateralFactor
-            let debt = getMOETDebtFromPosition(pid: pids[a])
+            let debt = getPYUSD0DebtFromPosition(pid: pids[a])
 
             if debt > 0.0 {
                 let postRebalanceHF = effectiveCollateral / debt
@@ -421,25 +400,25 @@ fun test_BtcDaily2025_DailyRebalancing() {
 
     // Final state
     let finalBTCCollateral = getBTCCollateralFromPosition(pid: pids[0])
-    let finalDebt = getMOETDebtFromPosition(pid: pids[0])
+    let finalDebt = getPYUSD0DebtFromPosition(pid: pids[0])
     let finalYieldTokens = getAutoBalancerBalance(id: vaultIds[0])!
     let finalYtPrice = ytPriceAtDay(prices.length - 1)
     // Compute effective HF to match contract's rebalancing logic
     let finalEffectiveHF = (finalBTCCollateral * previousBTCPrice * collateralFactor) / finalDebt
 
-    // P&L: net equity = collateral_value + yt_value - debt (all in stablecoin/MOET terms)
-    let collateralValueMOET = finalBTCCollateral * previousBTCPrice
-    let ytValueMOET = finalYieldTokens * finalYtPrice
-    let netEquityMOET = collateralValueMOET + ytValueMOET - finalDebt
-    let initialDepositMOET = fundingPerAgent * initialPrice
+    // P&L: net equity = collateral_value + yt_value - debt (all in PYUSD0 terms)
+    let collateralValue = finalBTCCollateral * previousBTCPrice
+    let ytValue = finalYieldTokens * finalYtPrice
+    let netEquity = collateralValue + ytValue - finalDebt
+    let initialDeposit = fundingPerAgent * initialPrice
 
     // UFix64 is unsigned, so track sign separately to avoid underflow
-    let moetProfit = netEquityMOET >= initialDepositMOET
-    let pnlMOETAbs = moetProfit ? (netEquityMOET - initialDepositMOET) : (initialDepositMOET - netEquityMOET)
-    let pnlPctMOETAbs = pnlMOETAbs / initialDepositMOET
-    let pnlMOETSign = moetProfit ? "+" : "-"
+    let profit = netEquity >= initialDeposit
+    let pnlAbs = profit ? (netEquity - initialDeposit) : (initialDeposit - netEquity)
+    let pnlPctAbs = pnlAbs / initialDeposit
+    let pnlSign = profit ? "+" : "-"
 
-    let netEquityBTC = netEquityMOET / previousBTCPrice
+    let netEquityBTC = netEquity / previousBTCPrice
     let btcProfit = netEquityBTC >= fundingPerAgent
     let pnlBTCAbs = btcProfit ? (netEquityBTC - fundingPerAgent) : (fundingPerAgent - netEquityBTC)
     let pnlPctBTCAbs = pnlBTCAbs / fundingPerAgent
@@ -468,14 +447,14 @@ fun test_BtcDaily2025_DailyRebalancing() {
     log("--- Position (effective HF with collateralFactor=\(collateralFactor)) ---")
     log("Lowest HF observed:  \(lowestHF)")
     log("Final HF (agent 0):  \(finalEffectiveHF)")
-    log("Final collateral:    \(finalBTCCollateral) BTC (value: \(collateralValueMOET) MOET)")
-    log("Final debt:          \(finalDebt) MOET")
-    log("Final yield tokens:  \(finalYieldTokens) (value: \(ytValueMOET) MOET @ yt=\(finalYtPrice))")
+    log("Final collateral:    \(finalBTCCollateral) BTC (value: \(collateralValue) PYUSD0)")
+    log("Final debt:          \(finalDebt) PYUSD0")
+    log("Final yield tokens:  \(finalYieldTokens) (value: \(ytValue) PYUSD0 @ yt=\(finalYtPrice))")
     log("")
     log("--- P&L ---")
-    log("Initial deposit:     \(fundingPerAgent) BTC (~\(fundingPerAgent * initialPrice) MOET)")
-    log("Net equity (MOET):   \(netEquityMOET) (P&L: \(pnlMOETSign)\(pnlMOETAbs), \(pnlMOETSign)\(pnlPctMOETAbs))")
-    log("Net equity (BTC):   \(netEquityBTC) (P&L: \(pnlBTCSign)\(pnlBTCAbs), \(pnlBTCSign)\(pnlPctBTCAbs))")
+    log("Initial deposit:     \(fundingPerAgent) BTC (~\(fundingPerAgent * initialPrice) PYUSD0)")
+    log("Net equity (PYUSD0): \(netEquity) (P&L: \(pnlSign)\(pnlAbs), \(pnlSign)\(pnlPctAbs))")
+    log("Net equity (BTC):    \(netEquityBTC) (P&L: \(pnlBTCSign)\(pnlBTCAbs), \(pnlBTCSign)\(pnlPctBTCAbs))")
     log("===========================\n")
 
     Test.assertEqual(btc_daily_2025_expectedLiquidationCount, liquidationCount)

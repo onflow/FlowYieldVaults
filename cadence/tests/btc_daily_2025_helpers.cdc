@@ -807,12 +807,7 @@ access(all) let btc_daily_2025_agents: [SimAgent] = [
 ]
 
 access(all) let btc_daily_2025_pools: {String: SimPool} = {
-    "moet_yt": SimPool(
-        size: 500000.00000000,
-        concentration: 0.95000000,
-        feeTier: 0.00050000
-    ),
-    "moet_btc": SimPool(
+    "pyusd0_btc": SimPool(
         size: 5000000.00000000,
         concentration: 0.80000000,
         feeTier: 0.00300000
@@ -822,7 +817,7 @@ access(all) let btc_daily_2025_pools: {String: SimPool} = {
         concentration: 0.80000000,
         feeTier: 0.00300000
     ),
-    "moet_fusdev": SimPool(
+    "pyusd0_fusdev": SimPool(
         size: 500000.00000000,
         concentration: 0.95000000,
         feeTier: 0.00010000

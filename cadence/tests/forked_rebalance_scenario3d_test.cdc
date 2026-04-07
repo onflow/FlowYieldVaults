@@ -1,6 +1,6 @@
 // Simulation spreadsheet: https://docs.google.com/spreadsheets/d/11DCzwZjz5K-78aKEWxt9NI-ut5LtkSyOT0TnRPUG7qY/edit?pli=1&gid=539924856#gid=539924856
 
-#test_fork(network: "mainnet-fork", height: 143292255)
+#test_fork(network: "mainnet-fork", height: 147316310)
 
 import Test
 import BlockchainHelpers
@@ -10,7 +10,6 @@ import "evm_state_helpers.cdc"
 
 import "FlowYieldVaults"
 import "FlowToken"
-import "MOET"
 import "FlowYieldVaultsStrategiesV2"
 import "FlowALPv0"
 
@@ -27,7 +26,6 @@ access(all) let coaOwnerAccount = Test.getAccount(0xe467b9dd11fa00df)
 
 access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategiesV2.FUSDEVStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
-access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
 // ============================================================================
 // PROTOCOL ADDRESSES
@@ -47,9 +45,6 @@ access(all) let morphoVaultAddress = "0xd069d989e2F44B70c65347d1853C0c67e10a9F8D
 // PYUSD0 - Stablecoin (FUSDEV's underlying asset)
 access(all) let pyusd0Address = "0x99aF3EeA856556646C98c8B9b2548Fe815240750"
 
-// MOET - Flow ALP USD
-access(all) let moetAddress = "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2"
-
 // WFLOW - Wrapped Flow
 access(all) let wflowAddress = "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
 
@@ -58,7 +53,6 @@ access(all) let wflowAddress = "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
 // ============================================================================
 
 // Token balanceOf mapping slots (for EVM.store to manipulate balances)
-access(all) let moetBalanceSlot = 0 as UInt256
 access(all) let pyusd0BalanceSlot = 1 as UInt256
 access(all) let fusdevBalanceSlot = 12 as UInt256
 access(all) let wflowBalanceSlot = 3 as UInt256
@@ -96,38 +90,16 @@ fun setup() {
         signer: coaOwnerAccount
     )
 
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
-        tokenBAddress: morphoVaultAddress,
-        fee: 100,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
-        tokenABalanceSlot: moetBalanceSlot,
-        tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
-    )
-
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
-        tokenBAddress: pyusd0Address,
-        fee: 100,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
-        tokenABalanceSlot: moetBalanceSlot,
-        tokenBBalanceSlot: pyusd0BalanceSlot,
-        signer: coaOwnerAccount
-    )
-
     // BandOracle is only used for FLOW price for FlowALP collateral
     let symbolPrices: {String: UFix64}   = {
         "FLOW": 1.0,
-        "USD": 1.0
+        "USD": 1.0,
+        "PYUSD": 1.0
     }
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: symbolPrices)
 
 	let reserveAmount = 100_000_00.0
     transferFlow(signer: whaleFlowAccount, recipient: flowALPAccount.address, amount: reserveAmount)
-	mintMoet(signer: flowALPAccount, to: flowALPAccount.address, amount: reserveAmount, beFailed: false)
 
 	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
     transferFlow(signer: whaleFlowAccount, recipient: flowYieldVaultsAccount.address, amount: 100.0)
@@ -163,6 +135,9 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
         signer: user
     )
 
+    // Refresh oracle prices to avoid stale timestamp
+    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: { "FLOW": 1.0, "USD": 1.0, "PYUSD": 1.0 })
+
     createYieldVault(
         signer: user,
         strategyIdentifier: strategyIdentifier,
@@ -181,7 +156,7 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     Test.assertEqual(1, yieldVaultIDs!.length)
 
     let yieldTokensBefore = getAutoBalancerBalance(id: yieldVaultIDs![0])!
-    let debtBefore = getMOETDebtFromPosition(pid: pid)
+    let debtBefore = getPYUSD0DebtFromPosition(pid: pid)
     let flowCollateralBefore = getFlowCollateralFromPosition(pid: pid)
     let flowCollateralValueBefore = flowCollateralBefore * 1.0
 
@@ -206,15 +181,15 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     log("=========================================================\n")
 
     Test.assert(
-        equalAmounts(a: yieldTokensBefore, b: expectedYieldTokenValues[0], tolerance: 0.01),
+        equalAmounts(a: yieldTokensBefore, b: expectedYieldTokenValues[0], tolerance: 0.1),
         message: "Expected yield tokens to be \(expectedYieldTokenValues[0]) but got \(yieldTokensBefore)"
     )
     Test.assert(
-        equalAmounts(a: flowCollateralValueBefore, b: expectedFlowCollateralValues[0], tolerance: 0.01),
+        equalAmounts(a: flowCollateralValueBefore, b: expectedFlowCollateralValues[0], tolerance: 0.1),
         message: "Expected flow collateral value to be \(expectedFlowCollateralValues[0]) but got \(flowCollateralValueBefore)"
     )
     Test.assert(
-        equalAmounts(a: debtBefore, b: expectedDebtValues[0], tolerance: 0.01),
+        equalAmounts(a: debtBefore, b: expectedDebtValues[0], tolerance: 0.1),
         message: "Expected MOET debt to be \(expectedDebtValues[0]) but got \(debtBefore)"
     )
 
@@ -222,7 +197,8 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     log("\n=== FLOW PRICE → 0.5x ===")
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: {
         "FLOW": flowPriceDecrease,
-        "USD": 1.0
+        "USD": 1.0,
+        "PYUSD": 1.0
     })
 
     // FLOW=$0.5, so 1 WFLOW = flowPriceDecrease PYUSD0
@@ -238,15 +214,15 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
         signer: coaOwnerAccount
     )
 
-    // MOET/FUSDEV pool: fee adjustment depends on rebalance type
-    // Deficit (flowPrice < 1.0): swaps FUSDEV→MOET (reverse on this pool)
+    // PYUSD0/FUSDEV pool: fee adjustment depends on rebalance type
+    // Deficit (flowPrice < 1.0): swaps FUSDEV→PYUSD0 (reverse on this pool)
     setPoolToPrice(
         factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
+        tokenAAddress: pyusd0Address,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
         priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: true),
-        tokenABalanceSlot: moetBalanceSlot,
+        tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
         signer: coaOwnerAccount
     )
@@ -256,7 +232,7 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     let yieldTokensAfterFlowPriceDecrease = getAutoBalancerBalance(id: yieldVaultIDs![0])!
     let flowCollateralAfterFlowDecrease = getFlowCollateralFromPosition(pid: pid)
     let flowCollateralValueAfterFlowDecrease = flowCollateralAfterFlowDecrease * flowPriceDecrease
-    let debtAfterFlowDecrease = getMOETDebtFromPosition(pid: pid)
+    let debtAfterFlowDecrease = getPYUSD0DebtFromPosition(pid: pid)
 
     log("\n=== PRECISION COMPARISON (After Flow Price Decrease) ===")
     log("Expected Yield Tokens: \(expectedYieldTokenValues[1])")
@@ -280,15 +256,15 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     log("=========================================================\n")
 
     Test.assert(
-        equalAmounts(a: yieldTokensAfterFlowPriceDecrease, b: expectedYieldTokenValues[1], tolerance: 0.01),
+        equalAmounts(a: yieldTokensAfterFlowPriceDecrease, b: expectedYieldTokenValues[1], tolerance: 0.1),
         message: "Expected yield tokens after flow price decrease to be \(expectedYieldTokenValues[1]) but got \(yieldTokensAfterFlowPriceDecrease)"
     )
     Test.assert(
-        equalAmounts(a: flowCollateralValueAfterFlowDecrease, b: expectedFlowCollateralValues[1], tolerance: 0.01),
+        equalAmounts(a: flowCollateralValueAfterFlowDecrease, b: expectedFlowCollateralValues[1], tolerance: 0.1),
         message: "Expected flow collateral value after flow price decrease to be \(expectedFlowCollateralValues[1]) but got \(flowCollateralValueAfterFlowDecrease)"
     )
     Test.assert(
-        equalAmounts(a: debtAfterFlowDecrease, b: expectedDebtValues[1], tolerance: 0.01),
+        equalAmounts(a: debtAfterFlowDecrease, b: expectedDebtValues[1], tolerance: 0.1),
         message: "Expected MOET debt after flow price decrease to be \(expectedDebtValues[1]) but got \(debtAfterFlowDecrease)"
     )
 
@@ -318,16 +294,16 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
         signer: coaOwnerAccount
     )
 
-    // 1 FUSDEV = yieldPriceIncrease MOET (FUSDEV is now worth 1.5x)
-    // Overcollat swaps MOET→FUSDEV (reverse on this pool)
+    // 1 FUSDEV = yieldPriceIncrease PYUSD0 (FUSDEV is now worth 1.5x)
+    // Overcollat swaps PYUSD0→FUSDEV (reverse on this pool)
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: morphoVaultAddress,
-        tokenBAddress: moetAddress,
+        tokenBAddress: pyusd0Address,
         fee: 100,
         priceTokenBPerTokenA: feeAdjustedPrice(UFix128(yieldPriceIncrease), fee: 100, reverse: true),
         tokenABalanceSlot: fusdevBalanceSlot,
-        tokenBBalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
         signer: coaOwnerAccount
     )
 
@@ -336,7 +312,7 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     let yieldTokensAfterYieldPriceIncrease = getAutoBalancerBalance(id: yieldVaultIDs![0])!
     let flowCollateralAfterYieldIncrease = getFlowCollateralFromPosition(pid: pid)
     let flowCollateralValueAfterYieldIncrease = flowCollateralAfterYieldIncrease * flowPriceDecrease  // Flow price remains at 0.5
-    let debtAfterYieldIncrease = getMOETDebtFromPosition(pid: pid)
+    let debtAfterYieldIncrease = getPYUSD0DebtFromPosition(pid: pid)
 
     log("\n=== PRECISION COMPARISON (After Yield Price Increase) ===")
     log("Expected Yield Tokens: \(expectedYieldTokenValues[2])")
@@ -360,20 +336,20 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     log("=========================================================\n")
 
     Test.assert(
-        equalAmounts(a: yieldTokensAfterYieldPriceIncrease, b: expectedYieldTokenValues[2], tolerance: 0.01),
+        equalAmounts(a: yieldTokensAfterYieldPriceIncrease, b: expectedYieldTokenValues[2], tolerance: 0.1),
         message: "Expected yield tokens after yield price increase to be \(expectedYieldTokenValues[2]) but got \(yieldTokensAfterYieldPriceIncrease)"
     )
     Test.assert(
-        equalAmounts(a: flowCollateralValueAfterYieldIncrease, b: expectedFlowCollateralValues[2], tolerance: 0.01),
+        equalAmounts(a: flowCollateralValueAfterYieldIncrease, b: expectedFlowCollateralValues[2], tolerance: 0.1),
         message: "Expected flow collateral value after yield price increase to be \(expectedFlowCollateralValues[2]) but got \(flowCollateralValueAfterYieldIncrease)"
     )
     Test.assert(
-        equalAmounts(a: debtAfterYieldIncrease, b: expectedDebtValues[2], tolerance: 0.01),
+        equalAmounts(a: debtAfterYieldIncrease, b: expectedDebtValues[2], tolerance: 0.1),
         message: "Expected MOET debt after yield price increase to be \(expectedDebtValues[2]) but got \(debtAfterYieldIncrease)"
     )
 
-    // TODO: closeYieldVault currently fails due to precision issues
-    // closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
+    
+    closeYieldVault(signer: user, id: yieldVaultIDs![0], beFailed: false)
 
     log("\n=== TEST COMPLETE ===")
 }

@@ -160,12 +160,7 @@ def build_fixture(daily: list[dict], scenario: str, start: str, end: str) -> dic
             }
         ],
         "pools": {
-            "moet_yt": {
-                "size": 500000,
-                "concentration": 0.95,
-                "fee_tier": 0.0005,
-            },
-            "moet_btc": {
+            "pyusd0_btc": {
                 "size": 5000000,
                 "concentration": 0.8,
                 "fee_tier": 0.003,
@@ -175,7 +170,7 @@ def build_fixture(daily: list[dict], scenario: str, start: str, end: str) -> dic
                 "concentration": 0.8,
                 "fee_tier": 0.003,
             },
-            "moet_fusdev": {
+            "pyusd0_fusdev": {
                 "size": 500000,
                 "concentration": 0.95,
                 "fee_tier": 0.0001,
