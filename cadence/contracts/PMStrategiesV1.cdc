@@ -349,7 +349,7 @@ access(all) contract PMStrategiesV1 {
 
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
             let composed: {Type: Bool} = {}
-            for t in self.config.keys {
+            for t in self.config {
                 composed[t] = true
             }
             return composed
@@ -593,7 +593,7 @@ access(all) contract PMStrategiesV1 {
                 "Unsupported StrategyComposer Type \(composer.identifier)"
             }
             // Validate keys
-            for stratType in config.keys {
+            for stratType in config {
                 assert(stratType.isSubtype(of: Type<@{FlowYieldVaults.Strategy}>()),
                     message: "Invalid config key \(stratType.identifier) - not a FlowYieldVaults.Strategy Type")
                 for collateralType in config[stratType]!.keys {
@@ -605,12 +605,12 @@ access(all) contract PMStrategiesV1 {
             let existingComposerConfig = self.configs[composer] ?? {}
             var mergedComposerConfig: {Type: {Type: {String: AnyStruct}}} = existingComposerConfig
 
-            for stratType in config.keys {
+            for stratType in config {
                 let newPerCollateral = config[stratType]!
                 let existingPerCollateral = mergedComposerConfig[stratType] ?? {}
                 var mergedPerCollateral: {Type: {String: AnyStruct}} = existingPerCollateral
 
-                for collateralType in newPerCollateral.keys {
+                for collateralType in newPerCollateral {
                     mergedPerCollateral[collateralType] = newPerCollateral[collateralType]!
                 }
                 mergedComposerConfig[stratType] = mergedPerCollateral

@@ -322,7 +322,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         /// Returns the Types of Strategies composed by this StrategyComposer
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
             let composed: {Type: Bool} = {}
-            for t in self.config.keys {
+            for t in self.config {
                 composed[t] = true
             }
             return composed
@@ -332,7 +332,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
             let supported: {Type: Bool} = {}
             if let strategyConfig = &self.config[forStrategy] as &{Type: FlowYieldVaultsStrategiesV2.CollateralConfig}? {
-                for collateralType in strategyConfig.keys {
+                for collateralType in strategyConfig {
                     supported[collateralType] = true
                 }
             }
@@ -891,7 +891,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
 
             // Validate keys
-            for stratType in config.keys {
+            for stratType in config {
                 assert(stratType.isSubtype(of: Type<@{FlowYieldVaults.Strategy}>()),
                     message: "Invalid config key \(stratType.identifier) - not a FlowYieldVaults.Strategy Type")
                 for collateralType in config[stratType]!.keys {
@@ -904,12 +904,12 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             let existingComposerConfig = self.configs[composer] ?? {}
             var mergedComposerConfig = existingComposerConfig
 
-            for stratType in config.keys {
+            for stratType in config {
                 let newPerCollateral = config[stratType]!
                 let existingPerCollateral = mergedComposerConfig[stratType] ?? {}
                 var mergedPerCollateral: {Type: FlowYieldVaultsStrategiesV2.CollateralConfig} = existingPerCollateral
 
-                for collateralType in newPerCollateral.keys {
+                for collateralType in newPerCollateral {
                     mergedPerCollateral[collateralType] = newPerCollateral[collateralType]!
                 }
                 mergedComposerConfig[stratType] = mergedPerCollateral

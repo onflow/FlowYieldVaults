@@ -824,7 +824,7 @@ fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}
     Test.moveTime(by: 1.0)
     
     let symbolsRates: {String: UInt64} = {}
-    for symbol in symbolPrices.keys {
+    for symbol in symbolPrices {
         // BandOracle uses 1e9 multiplier for prices
         // e.g., $1.00 = 1_000_000_000, $0.50 = 500_000_000
         // Split into whole + fractional to avoid UFix64 overflow for large prices (e.g. BTC > $184)
