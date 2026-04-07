@@ -1,6 +1,6 @@
-import "FlowYieldVaultsAutoBalancers"
+import "FlowYieldVaultsAutoBalancersV1"
 
 access(all)
 fun main(id: UInt64): UFix64? {
-    return FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: id)?.currentValue() ?? nil
+    return FlowYieldVaultsAutoBalancersV1.borrowAutoBalancer(id: id)?.currentValue() ?? nil
 }

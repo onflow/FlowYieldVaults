@@ -1,5 +1,5 @@
 // Tests that EVM state helpers correctly set Uniswap V3 pool price and ERC4626 vault price
-#test_fork(network: "mainnet-fork", height: 143292255)
+#test_fork(network: "mainnet-fork", height: 147308555)
 
 import Test
 import BlockchainHelpers

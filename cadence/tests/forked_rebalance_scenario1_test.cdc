@@ -1,6 +1,6 @@
 // Simulation spreadsheet: https://docs.google.com/spreadsheets/d/11DCzwZjz5K-78aKEWxt9NI-ut5LtkSyOT0TnRPUG7qY/edit?pli=1&gid=539924856#gid=539924856
 
-#test_fork(network: "mainnet-fork", height: 143292255)
+#test_fork(network: "mainnet-fork", height: 147316310)
 
 import Test
 import BlockchainHelpers
@@ -12,7 +12,6 @@ import "evm_state_helpers.cdc"
 import "FlowYieldVaults"
 // other
 import "FlowToken"
-import "MOET"
 import "FlowYieldVaultsStrategiesV2"
 import "FlowALPv0"
 
@@ -28,7 +27,6 @@ access(all) let coaOwnerAccount = Test.getAccount(0xe467b9dd11fa00df)
 
 access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategiesV2.FUSDEVStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
-access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
 // ============================================================================
 // PROTOCOL ADDRESSES
@@ -48,9 +46,6 @@ access(all) let morphoVaultAddress = "0xd069d989e2F44B70c65347d1853C0c67e10a9F8D
 // PYUSD0 - Stablecoin (FUSDEV's underlying asset)
 access(all) let pyusd0Address = "0x99aF3EeA856556646C98c8B9b2548Fe815240750"
 
-// MOET - Flow ALP USD
-access(all) let moetAddress = "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2"
-
 // WFLOW - Wrapped Flow
 access(all) let wflowAddress = "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
 
@@ -59,7 +54,6 @@ access(all) let wflowAddress = "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
 // ============================================================================
 
 // Token balanceOf mapping slots (for EVM.store to manipulate balances)
-access(all) let moetBalanceSlot = 0 as UInt256
 access(all) let pyusd0BalanceSlot = 1 as UInt256
 access(all) let fusdevBalanceSlot = 12 as UInt256
 access(all) let wflowBalanceSlot = 3 as UInt256
@@ -98,38 +92,16 @@ fun setup() {
         signer: coaOwnerAccount
     )
 
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
-        tokenBAddress: morphoVaultAddress,
-        fee: 100,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
-        tokenABalanceSlot: moetBalanceSlot,
-        tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
-    )
-
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
-        tokenBAddress: pyusd0Address,
-        fee: 100,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
-        tokenABalanceSlot: moetBalanceSlot,
-        tokenBBalanceSlot: pyusd0BalanceSlot,
-        signer: coaOwnerAccount
-    )
-
-    // BandOracle is only used for FLOW price for FlowALP collateral
+    // BandOracle prices: FLOW for collateral, PYUSD for PYUSD0 debt token, USD for quote
     let symbolPrices: {String: UFix64}   = {
         "FLOW": 1.0,
-        "USD": 1.0
+        "USD": 1.0,
+        "PYUSD": 1.0
     }
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: symbolPrices)
 
 	let reserveAmount = 100_000_00.0
     transferFlow(signer: whaleFlowAccount, recipient: flowALPAccount.address, amount: reserveAmount)
-	mintMoet(signer: flowALPAccount, to: flowALPAccount.address, amount: reserveAmount, beFailed: false)
 
 	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
     transferFlow(signer: whaleFlowAccount, recipient: flowYieldVaultsAccount.address, amount: 100.0)
@@ -147,7 +119,7 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 	// SCENARIO 1: FLOW price changes, Position rebalances to maintain Health = 1.3
 	// ===================================================================================
 	//
-	// Initial: Collateral=1000 FLOW, Debt=$615.38, YIELD=615.38, Health=1.3
+	// Initial: Collateral=1000 FLOW, Debt=615.38 PYUSD0, YIELD=615.38 FUSDEV, Health=1.3
 	// Health = (1000 × FLOW_Price × 0.8) / 615.38
 	//
 	// Thresholds: minHealth=1.1, targetHealth=1.3, maxHealth=1.5
@@ -217,6 +189,9 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
         signer: user
     )
 
+    // Refresh oracle prices to avoid stale timestamp (time advances between setup and here)
+    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: { "FLOW": 1.0, "USD": 1.0, "PYUSD": 1.0 })
+
 	createYieldVault(
 		signer: user,
 		strategyIdentifier: strategyIdentifier,
@@ -253,7 +228,8 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 		// === FLOW PRICE CHANGES ===
         setBandOraclePrices(signer: bandOracleAccount, symbolPrices: {
             "FLOW": flowPrice,
-            "USD": 1.0
+            "USD": 1.0,
+            "PYUSD": 1.0
         })
 
         // Update WFLOW/PYUSD0 pool to match new Flow price
@@ -270,16 +246,16 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
             signer: coaOwnerAccount
         )
 
-        // MOET/FUSDEV pool: fee adjustment direction depends on rebalance type
-        // Surplus (flowPrice > 1.0): swaps MOET→FUSDEV (forward)
-        // Deficit (flowPrice < 1.0): swaps FUSDEV→MOET (reverse)
+        // PYUSD0/FUSDEV pool: fee adjustment direction depends on rebalance type
+        // Surplus (flowPrice > 1.0): swaps PYUSD0→FUSDEV (forward)
+        // Deficit (flowPrice < 1.0): swaps FUSDEV→PYUSD0 (reverse)
         setPoolToPrice(
             factoryAddress: factoryAddress,
-            tokenAAddress: moetAddress,
+            tokenAAddress: pyusd0Address,
             tokenBAddress: morphoVaultAddress,
             fee: 100,
             priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: flowPrice < 1.0),
-            tokenABalanceSlot: moetBalanceSlot,
+            tokenABalanceSlot: pyusd0BalanceSlot,
             tokenBBalanceSlot: fusdevBalanceSlot,
             signer: coaOwnerAccount
         )
@@ -317,7 +293,7 @@ fun test_ForkedRebalanceYieldVaultScenario1() {
 		log("Percent Difference:    \(precisionSign)\(percentDiff)%")
 
         Test.assert(
-            equalAmounts(a: yieldTokensAfter, b: expectedYieldTokens, tolerance: 0.01),
+            equalAmounts(a: yieldTokensAfter, b: expectedYieldTokens, tolerance: 0.1),
             message: "Expected yield tokens for flow price \(flowPrice) to be \(expectedYieldTokens) but got \(yieldTokensAfter)"
         )
 

@@ -1,4 +1,4 @@
-#test_fork(network: "mainnet-fork", height: 143292255)
+#test_fork(network: "mainnet-fork", height: 147316310)
 
 import Test
 import BlockchainHelpers
@@ -7,7 +7,6 @@ import "test_helpers.cdc"
 import "evm_state_helpers.cdc"
 
 import "FlowToken"
-import "MOET"
 import "YieldToken"
 import "FlowYieldVaultsStrategiesV2"
 import "FlowALPv0"
@@ -24,7 +23,6 @@ access(all) let coaOwnerAccount = Test.getAccount(0xe467b9dd11fa00df)
 
 access(all) var strategyIdentifier = Type<@FlowYieldVaultsStrategiesV2.FUSDEVStrategy>().identifier
 access(all) var flowTokenIdentifier = Type<@FlowToken.Vault>().identifier
-access(all) var moetTokenIdentifier = Type<@MOET.Vault>().identifier
 
 // ============================================================================
 // PROTOCOL ADDRESSES
@@ -44,9 +42,6 @@ access(all) let morphoVaultAddress = "0xd069d989e2F44B70c65347d1853C0c67e10a9F8D
 // PYUSD0 - Stablecoin (FUSDEV's underlying asset)
 access(all) let pyusd0Address = "0x99aF3EeA856556646C98c8B9b2548Fe815240750"
 
-// MOET - Flow ALP USD
-access(all) let moetAddress = "0x213979bB8A9A86966999b3AA797C1fcf3B967ae2"
-
 // WFLOW - Wrapped Flow
 access(all) let wflowAddress = "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
 
@@ -55,7 +50,6 @@ access(all) let wflowAddress = "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
 // ============================================================================
 
 // Token balanceOf mapping slots (for EVM.store to manipulate balances)
-access(all) let moetBalanceSlot = 0 as UInt256
 access(all) let pyusd0BalanceSlot = 1 as UInt256
 access(all) let fusdevBalanceSlot = 12 as UInt256
 access(all) let wflowBalanceSlot = 3 as UInt256
@@ -79,6 +73,10 @@ fun safeReset() {
 access(all)
 fun setup() {
 	deployContractsForFork()
+    // Refresh oracle prices before seeding — position creation reads the oracle
+    transferFlow(signer: whaleFlowAccount, recipient: flowALPAccount.address, amount: 100.0)
+    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: { "FLOW": 1.0, "USD": 1.0, "PYUSD": 1.0 })
+    seedPoolWithPYUSD0(poolSigner: flowALPAccount, amount: 70_000.0)
     snapshot = getCurrentBlockHeight()
 }
 
@@ -111,38 +109,16 @@ fun setupEnv(flowPrice: UFix128, yieldPrice: UFix128) {
         signer: coaOwnerAccount
     )
 
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
-        tokenBAddress: morphoVaultAddress,
-        fee: 100,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0/yieldPrice, fee: 100, reverse: false),
-        tokenABalanceSlot: moetBalanceSlot,
-        tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
-    )
-
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
-        tokenBAddress: pyusd0Address,
-        fee: 100,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: false),
-        tokenABalanceSlot: moetBalanceSlot,
-        tokenBBalanceSlot: pyusd0BalanceSlot,
-        signer: coaOwnerAccount
-    )
-
-    // BandOracle is used for FLOW and USD (MOET) prices
-    let symbolPrices = { 
+    // BandOracle is used for FLOW and USD prices
+    let symbolPrices = {
         "FLOW": UFix64(flowPrice),  // Start at 0.03
-        "USD": 1.0    // MOET is pegged to USD, always 1.0
+        "USD": 1.0,
+        "PYUSD": 1.0
     }
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: symbolPrices)
 
     let reserveAmount = 100_000_00.0
     transferFlow(signer: whaleFlowAccount, recipient: flowALPAccount.address, amount: reserveAmount)
-    mintMoet(signer: flowALPAccount, to: flowALPAccount.address, amount: reserveAmount, beFailed: false)
 
     // Fund FlowYieldVaults account for scheduling fees
     transferFlow(signer: whaleFlowAccount, recipient: flowYieldVaultsAccount.address, amount: 100.0)
@@ -167,12 +143,15 @@ fun test_RebalanceLowCollateralHighYieldPrices() {
 	setupEnv(flowPrice: 0.03, yieldPrice: 1000.0)
 
 	let fundingAmount = 1_000_000.0
-	let flowPriceDecrease = 0.02    // FLOW: $0.03 → $0.02
+	let flowPriceDecrease = 0.02// FLOW: $0.03 → $0.02
 	let yieldPriceIncrease = 1500.0 // YT:   $1000.0 → $1500.0
 
 	let user = Test.createAccount()
 	transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
 	grantBeta(flowYieldVaultsAccount, user)
+
+    // Refresh oracle prices to avoid stale timestamp (keep FLOW at the setupEnv price of $0.03)
+    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: { "FLOW": 0.03, "USD": 1.0, "PYUSD": 1.0 })
 
 	createYieldVault(
 		signer: user,
@@ -193,7 +172,8 @@ fun test_RebalanceLowCollateralHighYieldPrices() {
 	// --- Phase 1: FLOW price drops from $0.03 to $0.02 ---
 	setBandOraclePrices(signer: bandOracleAccount, symbolPrices: {
         "FLOW": flowPriceDecrease,
-        "USD": 1.0
+        "USD": 1.0,
+        "PYUSD": 1.0
     })
 
     // Update WFLOW/PYUSD0 pool to reflect new FLOW price
@@ -208,27 +188,15 @@ fun test_RebalanceLowCollateralHighYieldPrices() {
         signer: coaOwnerAccount
     )
 
-    // Position rebalance sells FUSDEV -> MOET to repay debt (reverse direction)
+    // Position rebalance sells FUSDEV -> PYUSD0 to repay debt (reverse direction)
     setPoolToPrice(
         factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
+        tokenAAddress: pyusd0Address,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
         priceTokenBPerTokenA: feeAdjustedPrice(1.0/1000.0, fee: 100, reverse: true),
-        tokenABalanceSlot: moetBalanceSlot,
+        tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
-    )
-
-    // Possible path: FUSDEV -> PYUSD0 (Morpho redeem) -> PYUSD0 -> MOET (reverse on this pool)
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
-        tokenBAddress: pyusd0Address,
-        fee: 100,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: true),
-        tokenABalanceSlot: moetBalanceSlot,
-        tokenBBalanceSlot: pyusd0BalanceSlot,
         signer: coaOwnerAccount
     )
 
@@ -285,15 +253,15 @@ fun test_RebalanceLowCollateralHighYieldPrices() {
         signer: coaOwnerAccount
     )
 
-    // Position rebalance borrows MOET -> FUSDEV (reverse on this pool: tokenB -> tokenA)
+    // Position rebalance borrows PYUSD0 -> FUSDEV (reverse on this pool: tokenB -> tokenA)
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: morphoVaultAddress,
-        tokenBAddress: moetAddress,
+        tokenBAddress: pyusd0Address,
         fee: 100,
         priceTokenBPerTokenA: feeAdjustedPrice(UFix128(yieldPriceIncrease), fee: 100, reverse: true),
         tokenABalanceSlot: fusdevBalanceSlot,
-        tokenBBalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
         signer: coaOwnerAccount
     )
 
@@ -348,6 +316,9 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
 	grantBeta(flowYieldVaultsAccount, user)
 
+    // Refresh oracle prices to avoid stale timestamp (keep FLOW at the setupEnv price of $1000)
+    setBandOraclePrices(signer: bandOracleAccount, symbolPrices: { "FLOW": 1000.0, "USD": 1.0, "PYUSD": 1.0 })
+
 	createYieldVault(
 		signer: user,
 		strategyIdentifier: strategyIdentifier,
@@ -377,7 +348,8 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	// --- Phase 1: FLOW price drops from $1000 to $800 (20% drop) ---
     setBandOraclePrices(signer: bandOracleAccount, symbolPrices: {
         "FLOW": flowPriceDecrease,
-        "USD": 1.0
+        "USD": 1.0,
+        "PYUSD": 1.0
     })
 
     // Update WFLOW/PYUSD0 pool to reflect new FLOW price
@@ -392,27 +364,15 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
         signer: coaOwnerAccount
     )
 
-    // Position rebalance sells FUSDEV -> MOET to repay debt (reverse direction)
+    // Position rebalance sells FUSDEV -> PYUSD0 to repay debt (reverse direction)
     setPoolToPrice(
         factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
+        tokenAAddress: pyusd0Address,
         tokenBAddress: morphoVaultAddress,
         fee: 100,
         priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: true),
-        tokenABalanceSlot: moetBalanceSlot,
+        tokenABalanceSlot: pyusd0BalanceSlot,
         tokenBBalanceSlot: fusdevBalanceSlot,
-        signer: coaOwnerAccount
-    )
-
-    // Possible path: FUSDEV -> PYUSD0 (Morpho redeem) -> PYUSD0 -> MOET (reverse on this pool)
-    setPoolToPrice(
-        factoryAddress: factoryAddress,
-        tokenAAddress: moetAddress,
-        tokenBAddress: pyusd0Address,
-        fee: 100,
-        priceTokenBPerTokenA: feeAdjustedPrice(1.0, fee: 100, reverse: true),
-        tokenABalanceSlot: moetBalanceSlot,
-        tokenBBalanceSlot: pyusd0BalanceSlot,
         signer: coaOwnerAccount
     )
 
@@ -490,15 +450,15 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
         signer: coaOwnerAccount
     )
 
-    // Surplus swaps MOET→FUSDEV (reverse on this pool)
+    // Surplus swaps PYUSD0→FUSDEV (reverse on this pool)
     setPoolToPrice(
         factoryAddress: factoryAddress,
         tokenAAddress: morphoVaultAddress,
-        tokenBAddress: moetAddress,
+        tokenBAddress: pyusd0Address,
         fee: 100,
         priceTokenBPerTokenA: feeAdjustedPrice(UFix128(yieldPriceIncrease), fee: 100, reverse: true),
         tokenABalanceSlot: fusdevBalanceSlot,
-        tokenBBalanceSlot: moetBalanceSlot,
+        tokenBBalanceSlot: pyusd0BalanceSlot,
         signer: coaOwnerAccount
     )
 
