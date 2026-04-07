@@ -236,16 +236,19 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             }
             return <- self.source.withdrawAvailable(maxAmount: maxAmount)
         }
-        /// Closes the underlying FlowALP position by preparing repayment funds and closing with them.
+        /// Closes the underlying FlowALP position by pre-repaying all debt and recovering collateral.
         ///
         /// This method:
-        /// 1. Calculates debt amount from position
-        /// 2. Creates external yield token source from AutoBalancer
-        /// 3. Swaps yield tokens → PYUSD0 via stored swapper
-        /// 4. Closes position with prepared PYUSD0 vault
-        ///
-        /// This approach eliminates circular dependencies by preparing all funds externally
-        /// before calling the position's close method.
+        /// 1. Reads outstanding PYUSD0 debt from the FlowALP position
+        /// 2. Computes total debt amount
+        /// 3. Early-exits with empty sources when debt is zero
+        /// 4. Creates an external yield-token source from the AutoBalancer
+        /// 5. Reconstructs the yield→PYUSD0 swapper from stored CollateralConfig
+        /// 6. Pre-repays the full debt: redeems FUSDEV shares → PYUSD0 (supplementing from
+        ///    collateral if needed) and deposits into the position before closePosition is called
+        /// 7. Closes the FlowALP position (no repayment sources needed — debt already zero)
+        /// 8. Recovers collateral from result vaults; swaps any PYUSD0 overpayment dust to collateral
+        /// 9. Drains remaining FUSDEV shares (surplus yield) from the AutoBalancer → collateral
         ///
         access(FungibleToken.Withdraw) fun closePosition(collateralType: Type): @{FungibleToken.Vault} {
             pre {
@@ -322,14 +325,14 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             // Fix: explicitly zero out the PYUSD0 debt by depositing ceil(totalDebtAmount) PYUSD0
             // into the position BEFORE calling closePosition. FlowALP's recordDeposit handles
             // overpayment gracefully: if deposited > debt, the excess becomes a tiny Credit
-            // (≤ 0.00000006 PYUSD0) that closePosition returns as an extra vault.
+            // (< 0.000001 PYUSD0) that closePosition returns as an extra vault.
             //
             // Strategy:
             //   (a) Redeem FUSDEV shares to produce totalDebtCeil PYUSD0 (normally covers the debt).
             //   (b) If yield alone can't cover totalDebtCeil, supplement the remainder from collateral.
             //   (c) Deposit all PYUSD0 into the position — debt is now 0; closePosition needs no sources.
             //
-            // Step 9 drains any remaining FUSDEV shares (surplus yield not used for debt) separately.
+            // Step 9 drains any remaining FUSDEV shares (surplus yield not consumed here) separately.
             let pyusd0Unit: UFix64 = 0.000001
             let totalDebtRem = totalDebtAmount % pyusd0Unit
             let totalDebtCeil = totalDebtRem == 0.0
@@ -376,19 +379,18 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             assert(pyusd0ForDebt.balance >= totalDebtCeil,
                 message: "FUSDEVStrategy closePosition: pre-repayment insufficient: have \(pyusd0ForDebt.balance), need \(totalDebtCeil)")
 
-            // Step 6c: Deposit into position — zeroes the debt (FlowALP records any excess ≤ 0.00000006
+            // Step 6c: Deposit into position — zeroes the debt (FlowALP records any excess < 0.000001
             // PYUSD0 as a Credit, which closePosition returns and Step 9 handles as dust).
             self.position.deposit(from: <-pyusd0ForDebt)
 
             // Step 7: Close position — debt is fully pre-repaid; no repayment sources needed.
             let resultVaults <- self.position.closePosition(repaymentSources: [])
 
-            // With one collateral type and one debt type, the pool returns at most two vaults:
-            // the collateral vault and optionally a PYUSD0 overpayment dust vault.
-            // closePosition returns vaults in dict-iteration order (hash-based), so we cannot
-            // assume the collateral vault is first. Find it by type and convert any non-collateral
-            // vaults (PYUSD0 overpayment dust) back to collateral via reconstructed swapper.
-            // Reconstruct PYUSD0→collateral path from CollateralConfig.
+            // Step 8: Recover collateral from result vaults; swap any PYUSD0 overpayment dust back
+            // to collateral. closePosition returns vaults in dict-iteration order (hash-based), so
+            // we cannot assume the collateral vault is first. Reconstruct PYUSD0→collateral swapper
+            // from CollateralConfig to handle the dust vault (< 0.000001 PYUSD0 from the ceil
+            // overpayment in Step 6c).
             let debtToCollateralSwapper = self._buildDebtToCollateralSwapper(
                 collateralConfig: closeCollateralConfig,
                 tokens: closeTokens,
