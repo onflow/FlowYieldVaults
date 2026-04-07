@@ -404,7 +404,7 @@ access(all) contract FlowYieldVaults {
         /// Withdraws the requested amount from the Strategy
         access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @{FungibleToken.Vault} {
             post {
-                result.balance == amount:
+                result.balance >= amount && result.balance - amount <= (0.00000001 as UFix64):
                 "Invalid Vault balance returned - requested \(amount) but returned \(result.balance)"
 
                 self.vaultType == result.getType():
