@@ -161,7 +161,7 @@ setup_oracle_threshold() {
     echo ">>> Extending FlowALP oracle staleThreshold to ${threshold}s (fork sig bypass)"
     local result
     result=$(flow transactions send \
-        ./cadence/transactions/flow-yield-vaults/admin/update_flowalp_oracle_threshold.cdc \
+        ./cadence/tests/transactions/update_flowalp_oracle_threshold.cdc \
         "$threshold" \
         --network "$NETWORK" $(_host_args) \
         --signer "$FLOWALP_POOL_OWNER" --compute-limit 9999 2>&1 || true)
@@ -217,7 +217,7 @@ setup_grant_beta_access() {
     echo ""
     echo "=== Grant beta access ==="
     run_txn "Grant beta access to admin (self)" \
-        ./cadence/transactions/flow-yield-vaults/admin/grant_beta_to_self.cdc
+        ./cadence/tests/transactions/grant_beta_to_self.cdc
 }
 
 setup_fund_admin_coa() {
