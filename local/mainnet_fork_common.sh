@@ -5,19 +5,15 @@
 NETWORK="mainnet-fork"
 SIGNER="mainnet-fork-admin"
 FLOWALP_POOL_OWNER="mainnet-fork-flowalp"
-WETH_DONOR="mainnet-fork-weth-donor"
-PYUSD0_DONOR="mainnet-fork-pyusd0-donor"
 
 ADMIN_CADENCE_ADDR="0xb1d63873c3cc9f79"
 ADMIN_COA_EVM_ADDR="0x000000000000000000000002bd91ec0b3c1284fe"
 
 WFLOW_EVM="0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
-WETH_EVM="0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590"
 PYUSD0_EVM="0x99aF3EeA856556646C98c8B9b2548Fe815240750"
 SYWFLOWV_EVM="0xCBf9a7753F9D2d0e8141ebB36d99f87AcEf98597"
 FUSDEV_EVM="0xd069d989e2F44B70c65347d1853C0c67e10a9F8D"
 
-WETH_VAULT_TYPE="A.1e4aa0b87d10b141.EVMVMBridgedToken_2f6f07cdcf3588944bf4c42ac74ff24bf56e7590.Vault"
 PYUSD0_VAULT_TYPE="A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault"
 FLOW_VAULT_TYPE="A.1654653399040a61.FlowToken.Vault"
 
@@ -106,44 +102,12 @@ run_txn_as() {
     _check_sealed "$desc" "$result"
 }
 
-run_multisig_txn() {
-    local desc="$1"
-    local signer1="$2"
-    local signer2="$3"
-    shift 3
-    echo ""
-    echo ">>> $desc"
-    local result
-    result=$(flow transactions send "$@" \
-        --network "$NETWORK" $(_host_args) \
-        --proposer "$signer1" --payer "$signer1" \
-        --authorizer "$signer1" --authorizer "$signer2" \
-        2>&1 || true)
-    echo "$result"
-    _check_sealed "$desc" "$result"
-}
-
 run_script() {
     local desc="$1"
     shift
     echo ""
     echo ">>> [script] $desc"
     flow scripts execute "$@" --network "$NETWORK" $(_host_args) 2>&1
-}
-
-add_fork_account() {
-    local name="$1"
-    local address="$2"
-    jq --arg name "$name" --arg addr "$address" \
-        '.accounts[$name] = {address: $addr, key: {type: "file", location: "local/emulator-account.pkey"}}' \
-        flow.json > flow.json.tmp && mv flow.json.tmp flow.json
-    echo "✓ Registered fork account: $name ($address)"
-}
-
-remove_fork_accounts() {
-    jq "del(.accounts[\"$PYUSD0_DONOR\"])" \
-        flow.json > flow.json.tmp && mv flow.json.tmp flow.json
-    echo "✓ Removed donor accounts from flow.json"
 }
 
 # ---------------------------------------------------------------------------
@@ -176,14 +140,6 @@ setup_oracle_threshold() {
 setup_configure_strategies() {
     echo ""
     echo "=== Configure strategies ==="
-
-    run_txn "Configure syWFLOWvStrategy + WETH collateral" \
-        ./cadence/transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc \
-        "$STRATEGY_ID" "$WETH_VAULT_TYPE" "$SYWFLOWV_EVM" \
-        '["0xCBf9a7753F9D2d0e8141ebB36d99f87AcEf98597","0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"]' \
-        '[100]' \
-        '["0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e","0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590"]' \
-        '[3000]' --compute-limit 9999
 
     run_txn "Configure syWFLOWvStrategy + PYUSD0 collateral" \
         ./cadence/transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc \

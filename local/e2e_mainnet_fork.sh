@@ -27,9 +27,26 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./mainnet_fork_common.sh
 source "$SCRIPT_DIR/mainnet_fork_common.sh"
 
+PYUSD0_DONOR="mainnet-fork-pyusd0-donor"
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+add_fork_account() {
+    local name="$1"
+    local address="$2"
+    jq --arg name "$name" --arg addr "$address" \
+        '.accounts[$name] = {address: $addr, key: {type: "file", location: "local/emulator-account.pkey"}}' \
+        flow.json > flow.json.tmp && mv flow.json.tmp flow.json
+    echo "✓ Registered fork account: $name ($address)"
+}
+
+remove_fork_accounts() {
+    jq "del(.accounts[\"$PYUSD0_DONOR\"])" \
+        flow.json > flow.json.tmp && mv flow.json.tmp flow.json
+    echo "✓ Removed donor accounts from flow.json"
+}
 
 get_latest_vault_id() {
     local result
