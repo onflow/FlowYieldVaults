@@ -312,55 +312,76 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 uniqueID: self.uniqueID!
             )
 
-            // Step 6: Pre-supplement from collateral if yield is insufficient to cover the full debt.
+            // Step 6: Pre-repay the full PYUSD0 debt BEFORE calling closePosition.
             //
-            // The FUSDEV close path has a negligible round-trip fee:
-            //   Open:  PYUSD0 → FUSDEV (ERC4626 deposit, free)
-            //   Close: FUSDEV → PYUSD0 (ERC4626 redeem, free)
-            // In production, accrued yield more than covers any rounding; with no accrued yield
-            // (e.g. in tests, immediate open+close), the yield tokens may convert back to slightly
-            // less PYUSD0 than was borrowed. We handle this by pre-pulling a tiny amount of
-            // collateral from self.source, swapping it to PYUSD0, and depositing it into the
-            // position to reduce the outstanding debt — BEFORE calling position.closePosition.
+            // FlowALP stores debt as UFix64 (8-decimal), but PYUSD0 is a 6-decimal ERC-20.
+            // Any repayment via SwapSource is floor-truncated to 6 decimals, so it can never
+            // exactly satisfy a debt with sub-6-decimal precision — causing an assertion failure
+            // in FlowALPv0._repayDebtsFromSources ("needed X.XXXXXXXX, got X.XXXXXX00").
             //
-            // This MUST be done before closePosition because the position is locked during close:
-            // any attempt to pull from self.source inside a repaymentSource.withdrawAvailable call
-            // would trigger "Reentrancy: position X is locked".
+            // Fix: explicitly zero out the PYUSD0 debt by depositing ceil(totalDebtAmount) PYUSD0
+            // into the position BEFORE calling closePosition. FlowALP's recordDeposit handles
+            // overpayment gracefully: if deposited > debt, the excess becomes a tiny Credit
+            // (≤ 0.00000006 PYUSD0) that closePosition returns as an extra vault.
+            //
+            // Strategy:
+            //   (a) Redeem FUSDEV shares to produce totalDebtCeil PYUSD0 (normally covers the debt).
+            //   (b) If yield alone can't cover totalDebtCeil, supplement the remainder from collateral.
+            //   (c) Deposit all PYUSD0 into the position — debt is now 0; closePosition needs no sources.
+            //
+            // Step 9 drains any remaining FUSDEV shares (surplus yield not used for debt) separately.
+            let pyusd0Unit: UFix64 = 0.000001
+            let totalDebtRem = totalDebtAmount % pyusd0Unit
+            let totalDebtCeil = totalDebtRem == 0.0
+                ? totalDebtAmount
+                : totalDebtAmount - totalDebtRem + pyusd0Unit
+
             let yieldAvail = yieldTokenSource.minimumAvailable()
-            let expectedPyusd0 = yieldAvail > 0.0
-                ? yieldToPyusd0Swapper.quoteOut(forProvided: yieldAvail, reverse: false).outAmount
-                : 0.0
-            if expectedPyusd0 < totalDebtAmount {
+
+            // Step 6a: Redeem FUSDEV shares to cover as much of totalDebtCeil as possible.
+            var pyusd0ForDebt <- DeFiActionsUtils.getEmptyVault(yieldToPyusd0Swapper.outType())
+            if yieldAvail > 0.0 {
+                let yieldToDebtQuote = yieldToPyusd0Swapper.quoteIn(forDesired: totalDebtCeil, reverse: false)
+                if yieldToDebtQuote.inAmount > 0.0 {
+                    let yieldFunds <- yieldTokenSource.withdrawAvailable(maxAmount: yieldToDebtQuote.inAmount)
+                    if yieldFunds.balance > 0.0 {
+                        let swapQuote = yieldToPyusd0Swapper.quoteOut(forProvided: yieldFunds.balance, reverse: false)
+                        let fromYield <- yieldToPyusd0Swapper.swap(quote: swapQuote, inVault: <-yieldFunds)
+                        pyusd0ForDebt.deposit(from: <-fromYield)
+                    } else {
+                        Burner.burn(<-yieldFunds)
+                    }
+                }
+            }
+
+            // Step 6b: Supplement from collateral if FUSDEV yield didn't fully cover totalDebtCeil.
+            if pyusd0ForDebt.balance < totalDebtCeil {
                 let collateralToPyusd0Swapper = self._buildCollateralToDebtSwapper(
                     collateralConfig: closeCollateralConfig,
                     tokens: closeTokens,
                     collateralType: collateralType,
                     uniqueID: self.uniqueID!
                 )
-                let shortfall = totalDebtAmount - expectedPyusd0
-                let quote = collateralToPyusd0Swapper.quoteIn(forDesired: shortfall, reverse: false)
-                assert(quote.inAmount > 0.0,
-                    message: "Pre-supplement: collateral→PYUSD0 quote returned zero input for non-zero shortfall — swapper misconfigured")
-                let extraCollateral <- self.source.withdrawAvailable(maxAmount: quote.inAmount)
+                let remaining = totalDebtCeil - pyusd0ForDebt.balance
+                let collateralQuote = collateralToPyusd0Swapper.quoteIn(forDesired: remaining, reverse: false)
+                assert(collateralQuote.inAmount > 0.0,
+                    message: "FUSDEVStrategy closePosition: collateral→PYUSD0 quote returned zero — swapper misconfigured")
+                let extraCollateral <- self.source.withdrawAvailable(maxAmount: collateralQuote.inAmount)
                 assert(extraCollateral.balance > 0.0,
-                    message: "Pre-supplement: no collateral available to cover shortfall of \(shortfall) PYUSD0")
-                let extraPyusd0 <- collateralToPyusd0Swapper.swap(quote: quote, inVault: <-extraCollateral)
-                assert(extraPyusd0.balance >= shortfall,
-                    message: "Pre-supplement: collateral→PYUSD0 swap produced less than shortfall: got \(extraPyusd0.balance), need \(shortfall)")
-                self.position.deposit(from: <-extraPyusd0)
+                    message: "FUSDEVStrategy closePosition: no collateral available to cover debt of \(totalDebtCeil) PYUSD0")
+                let extraPyusd0 <- collateralToPyusd0Swapper.swap(quote: collateralQuote, inVault: <-extraCollateral)
+                pyusd0ForDebt.deposit(from: <-extraPyusd0)
             }
 
-            // Step 7: Create a SwapSource that converts yield tokens → PYUSD0 for debt repayment.
-            // Step 6's pre-supplement ensures remaining debt ≤ yield value, so SwapSource will
-            // use quoteIn(remainingDebt) and pull only the shares needed — not the full balance.
-            let debtSource = SwapConnectors.SwapSource(
-                swapper: yieldToPyusd0Swapper,
-                source: yieldTokenSource,
-                uniqueID: self.copyID()
-            )
+            assert(pyusd0ForDebt.balance >= totalDebtCeil,
+                message: "FUSDEVStrategy closePosition: pre-repayment insufficient: have \(pyusd0ForDebt.balance), need \(totalDebtCeil)")
 
-            // Step 8: Close position - pool pulls up to the (now pre-reduced) debt from debtSource
-            let resultVaults <- self.position.closePosition(repaymentSources: [debtSource])
+            // Step 6c: Deposit into position — zeroes the debt (FlowALP records any excess ≤ 0.00000006
+            // PYUSD0 as a Credit, which closePosition returns and Step 9 handles as dust).
+            self.position.deposit(from: <-pyusd0ForDebt)
+
+            // Step 7: Close position — debt is fully pre-repaid; no repayment sources needed.
+            let resultVaults <- self.position.closePosition(repaymentSources: [])
 
             // With one collateral type and one debt type, the pool returns at most two vaults:
             // the collateral vault and optionally a PYUSD0 overpayment dust vault.
@@ -406,10 +427,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
 
             destroy resultVaults
 
-            // Step 9: Drain any remaining FUSDEV shares from the AutoBalancer — excess yield
-            // not consumed during debt repayment — and convert them directly to collateral.
-            // The SwapSource inside closePosition only pulled what was needed to repay the debt;
-            // any surplus shares are still held by the AutoBalancer and are recovered here.
+            // Step 9: Drain any remaining FUSDEV shares from the AutoBalancer — surplus yield
+            // not consumed by Step 6a (which only withdrew enough shares to cover totalDebtCeil) —
+            // and convert them directly to collateral.
             //
             // Use a MultiSwapper so the best available route is chosen:
             //   - Direct: FUSDEV → collateral via the stored yieldToCollateral AMM path (works
