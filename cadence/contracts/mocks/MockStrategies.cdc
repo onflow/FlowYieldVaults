@@ -139,7 +139,7 @@ access(all) contract MockStrategies {
             var debtCaps: [Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>] = []
             var debtPaths: [StoragePath] = []
 
-            for debtType in debtsByType.keys {
+            for debtType in debtsByType {
                 let debtAmount = debtsByType[debtType]!
                 let swapper = MockSwapper.Swapper(inVault: ytType, outVault: debtType, uniqueID: self.copyID()!)
                 let ytAvailable = ytSource.minimumAvailable()
@@ -420,7 +420,7 @@ access(all) contract MockStrategies {
                 self.getSupportedComposers()[composer] == true:
                 "Unsupported StrategyComposer Type \(composer.identifier)"
             }
-            for stratType in config.keys {
+            for stratType in config {
                 assert(stratType.isSubtype(of: Type<@{FlowYieldVaults.Strategy}>()),
                     message: "Invalid config key \(stratType.identifier) - not a FlowYieldVaults.Strategy Type")
                 for collateralType in config[stratType]!.keys {
