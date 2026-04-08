@@ -1,0 +1,26 @@
+FROM debian:stable-slim
+
+ENV APP_HOME=/app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates bash git jq \
+ && rm -rf /var/lib/apt/lists/*
+
+# Install flow CLI pinned to v2.16.0 (matches e2e workflow)
+RUN curl -fsSL "https://raw.githubusercontent.com/onflow/flow-cli/v2.16.0/install.sh" | bash \
+ && mv /root/.local/bin/flow /usr/local/bin/flow \
+ && flow version
+
+WORKDIR ${APP_HOME}
+COPY . ${APP_HOME}
+RUN chmod +x ${APP_HOME}/local/*.sh
+
+# Pre-install Cadence dependencies at build time (source resolution only;
+# mainnet fork state is fetched at container startup, not here)
+RUN flow deps install --skip-alias --skip-deployments
+
+EXPOSE 3569 8888
+
+# Runtime: start emulator forked from mainnet.
+# The fork state is fetched from access.mainnet.nodes.onflow.org at startup.
+ENTRYPOINT ["flow", "emulator", "--fork", "mainnet", "--persist=false"]
