@@ -1,12 +1,10 @@
-name: 'Build and Push Flow Emulator Image'
+name: 'Build and Push Mainnet Fork Emulator Image'
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - v0
+      - nialexsan/mainnet-fork-test
 
   # Manual trigger, with a flag to decide if we also push
   workflow_dispatch:
@@ -17,57 +15,40 @@ on:
         default: false
 
 env:
-  DOCKER_IMAGE_URL: us-west1-docker.pkg.dev/dl-flow-devex-staging/backend/flow-emulator:${{ github.sha }}
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/flow-emulator-fork
 
 jobs:
   build:
-    name: Build Flow Emulator Image
+    name: Build Mainnet Fork Emulator Image
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-      id-token: write
-
-    outputs:
-      image-url: ${{ env.DOCKER_IMAGE_URL }}
+      packages: write
 
     steps:
-      - name: 'Checkout'
-        uses: 'actions/checkout@v4'
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           submodules: recursive
           token: ${{ secrets.GH_PAT }}
 
-      - name: 'Build Flow Emulator image'
-        run: |
-          docker build -t "${{ env.DOCKER_IMAGE_URL }}" .
-
-  push:
-    name: Push Flow Emulator Image
-    runs-on: ubuntu-latest
-    needs: build
-
-    # Only run when manually dispatched *and* push=true
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.push == true }}
-
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - id: 'auth'
-        name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v2'
+      - name: Log in to GHCR
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.push == true)
+        uses: docker/login-action@v3
         with:
-          workload_identity_provider: '${{ vars.BUILDER_WORKLOAD_IDENTITY_PROVIDER }}'
-          service_account: '${{ vars.BUILDER_SERVICE_ACCOUNT }}'
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 'Set up gcloud'
-        uses: 'google-github-actions/setup-gcloud@v1'
+      - name: Build and push flow-emulator-fork
+        uses: docker/build-push-action@v5
         with:
-          project_id: ${{ vars.GAR_PROJECT_ID }}
-
-      - name: 'Push Flow Emulator image'
-        run: |
-          gcloud auth configure-docker ${{ vars.GAR_REGION }}-docker.pkg.dev
-          docker push "${{ needs.build.outputs.image-url }}"
+          context: .
+          file: Dockerfile.mainnet-fork
+          push: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.push == true) }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:latest
+          cache-to: type=inline
