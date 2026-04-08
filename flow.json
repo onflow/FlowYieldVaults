@@ -1092,6 +1092,13 @@
 				"type": "file",
 				"location": "local/emulator-account.pkey"
 			}
+		},
+		"mainnet-fork-pyusd0-donor": {
+			"address": "24263c125b7770e0",
+			"key": {
+				"type": "file",
+				"location": "local/emulator-account.pkey"
+			}
 		}
 	},
 	"deployments": {

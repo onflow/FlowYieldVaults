@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - v0
-      - nialexsan/mainnet-fork-test
 
   # Manual trigger, with a flag to decide if we also push
   workflow_dispatch:
@@ -18,9 +17,35 @@ env:
   IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/flow-emulator-fork
 
 jobs:
+  test:
+    name: E2E Mainnet Fork Tests
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Install Flow CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/v2.16.0/install.sh | bash
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+
+      - name: Install flow dependencies
+        run: flow deps install
+
+      - name: Run e2e mainnet fork tests
+        run: ./local/e2e_mainnet_fork.sh
+
   build:
     name: Build Mainnet Fork Emulator Image
     runs-on: ubuntu-latest
+    needs: test
 
     permissions:
       contents: read

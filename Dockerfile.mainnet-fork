@@ -23,5 +23,4 @@ EXPOSE 3569 8888
 
 # Runtime: start emulator forked from mainnet.
 # The fork state is fetched from access.mainnet.nodes.onflow.org at startup.
-#ENTRYPOINT ["flow", "emulator", "--fork", "mainnet", "--fork-height", "147329485", "--persist=false"]
 ENTRYPOINT ["flow", "emulator", "--fork", "mainnet", "--persist=false"]
