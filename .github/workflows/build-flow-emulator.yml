@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - v0
+      - nialexsan/mainnet-fork-test
 
   # Manual trigger, with a flag to decide if we also push
   workflow_dispatch:
