@@ -207,7 +207,7 @@ fun main(address: Address): CompleteUserSummary {
             var collateralType = "Unknown"
             let supportedTypes: [String] = []
 
-            for vaultType in supportedVaultTypes.keys {
+            for vaultType in supportedVaultTypes {
                 if supportedVaultTypes[vaultType]! {
                     supportedTypes.append(vaultType.identifier)
                     if collateralType == "Unknown" {

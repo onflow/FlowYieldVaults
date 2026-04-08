@@ -5,11 +5,12 @@ import "UInt64LinkedList"
 
 /// FlowYieldVaultsSchedulerRegistry
 ///
-/// Stores registry of YieldVault IDs and their handler capabilities for scheduling.
+/// Stores the global registry of live YieldVault IDs and their scheduling capabilities.
 /// This contract maintains:
-/// - A registry of all yield vault IDs that participate in scheduled rebalancing
+/// - A registry of all live yield vault IDs known to the scheduler infrastructure
 /// - Handler capabilities (AutoBalancer capabilities) for each yield vault
 /// - A pending queue for yield vaults that need initial seeding or re-seeding
+/// - A recurring-only stuck-scan ordering used by the Supervisor
 /// - The global Supervisor capability for recovery operations
 ///
 access(all) contract FlowYieldVaultsSchedulerRegistry {
@@ -48,7 +49,8 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
 
     /* --- STATE --- */
 
-    /// Registry of all yield vault IDs that participate in scheduling
+    /// Registry of all live yield vault IDs known to the scheduler infrastructure.
+    /// This is broader than the recurring-only stuck-scan ordering.
     access(self) var yieldVaultRegistry: {UInt64: Bool}
 
     /// Handler capabilities (AutoBalancer) for each yield vault - keyed by yield vault ID
@@ -75,10 +77,12 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     /* --- ACCOUNT-LEVEL FUNCTIONS --- */
 
     /// Register a YieldVault and store its handler and schedule capabilities (idempotent)
+    /// `participatesInStuckScan` should be true only for vaults that currently have recurring config.
     access(account) fun register(
         yieldVaultID: UInt64,
         handlerCap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>,
-        scheduleCap: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>
+        scheduleCap: Capability<auth(DeFiActions.Schedule) &DeFiActions.AutoBalancer>,
+        participatesInStuckScan: Bool
     ) {
         pre {
             handlerCap.check(): "Invalid handler capability provided for yieldVaultID \(yieldVaultID)"
@@ -87,24 +91,28 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         self.yieldVaultRegistry[yieldVaultID] = true
         self.handlerCaps[yieldVaultID] = handlerCap
         self.scheduleCaps[yieldVaultID] = scheduleCap
-        // New vaults go to the head; they haven't executed yet but are freshly registered.
+
+        // The registry tracks all live yield vaults, but only recurring vaults
+        // participate in the Supervisor's stuck-scan ordering.
         // If already in the list (idempotent re-register), remove first to avoid duplicates.
         let list = self._list()
         if list.contains(id: yieldVaultID) {
             let _ = list.remove(id: yieldVaultID)
         }
-        list.insertAtHead(id: yieldVaultID)
+        if participatesInStuckScan {
+            list.insertAtHead(id: yieldVaultID)
+        }
         emit YieldVaultRegistered(yieldVaultID: yieldVaultID)
     }
 
-    /// Called on every execution. Moves yieldVaultID to the head (most recently executed)
-    /// so the Supervisor scans from the tail (least recently executed) for stuck detection — O(1).
-    /// If the list entry is unexpectedly missing, reinsert it to restore the ordering structure.
+    /// Called on every execution. Moves scan-participating yieldVaultID to the head
+    /// (most recently executed) so the Supervisor scans recurring participants from the tail
+    /// (least recently executed) for stuck detection — O(1).
     access(account) fun reportExecution(yieldVaultID: UInt64) {
-        if !(self.yieldVaultRegistry[yieldVaultID] ?? false) {
+        let list = self._list()
+        if !(self.yieldVaultRegistry[yieldVaultID] ?? false) || !list.contains(id: yieldVaultID) {
             return
         }
-        let list = self._list()
         let _ = list.remove(id: yieldVaultID)
         list.insertAtHead(id: yieldVaultID)
     }
@@ -211,13 +219,43 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
         return self.pendingQueue.length
     }
 
-    /// Returns up to `limit` vault IDs starting from the tail (least recently executed).
-    /// Supervisor should only scan these for stuck detection instead of all registered vaults.
-    /// @param limit: Maximum number of IDs to return (caller typically passes MAX_BATCH_SIZE)
-    access(all) fun getStuckScanCandidates(limit: UInt): [UInt64] {
-        return self.account.storage
-            .borrow<&UInt64LinkedList.List>(from: self.executionListStoragePath)!
-            .tailWalk(limit: limit)
+    /// Inspects up to `limit` tail entries from the recurring stuck-scan ordering, lazily prunes
+    /// stale non-recurring entries, and returns the recurring participants encountered.
+    /// Repeated calls keep making forward progress without unbounded work.
+    /// NOTE: re-enabling recurring scheduling for a previously pruned vault is not handled here.
+    /// TODO: add an explicit rejoin path for recurring off -> on in a follow-up PR.
+    /// This is intentionally account-restricted because it mutates registry state as it prunes.
+    /// @param limit: Maximum number of tail entries to inspect in this call
+    access(account) fun pruneAndGetStuckScanCandidates(limit: UInt): [UInt64] {
+        let list = self._list()
+        var result: [UInt64] = []
+        var inspected: UInt = 0
+        var current = list.tail
+        while inspected < limit {
+            if let id = current {
+                inspected = inspected + 1
+                let previous = list.nodes[id]?.prev
+                let scheduleCap = self.scheduleCaps[id]
+                let isRecurringParticipant =
+                    scheduleCap != nil
+                    && scheduleCap!.check()
+                    && scheduleCap!.borrow()?.getRecurringConfig() != nil
+
+                if isRecurringParticipant {
+                    result.append(id)
+                } else {
+                    // Current behavior: removing recurring config prunes the vault from the
+                    // stuck-scan ordering. Re-enabling recurring later still needs an explicit
+                    // rejoin path and is intentionally left to a follow-up PR.
+                    self.dequeuePending(yieldVaultID: id)
+                    let _ = list.remove(id: id)
+                }
+                current = previous
+            } else {
+                break
+            }
+        }
+        return result
     }
 
     /// Get global Supervisor capability, if set
