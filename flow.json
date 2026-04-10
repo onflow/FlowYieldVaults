@@ -288,7 +288,25 @@
 			"source": "./lib/FlowALP/cadence/contracts/mocks/MockDexSwapper.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
+				"mainnet-fork": "b1d63873c3cc9f79",
 				"testing": "0000000000000007"
+			}
+		},
+		"MockFlowTransactionScheduler": {
+			"source": "./cadence/contracts/mocks/FlowTransactionScheduler.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "e467b9dd11fa00df",
+				"testnet": "8c5303eaa26202d6"
+			}
+		},
+		"MockEVM": {
+			"source": "./cadence/contracts/mocks/EVM.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "e467b9dd11fa00df",
+				"testnet": "8c5303eaa26202d6"
 			}
 		},
 		"MockOracle": {

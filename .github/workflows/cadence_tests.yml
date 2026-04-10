@@ -5,10 +5,12 @@ on:
     branches:
       - main
       - v0
+      - feature/*
   pull_request:
     branches:
       - main
       - v0
+      - feature/*
 
 jobs:
   tests:
@@ -29,6 +31,13 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Cache Flow Emulator Fork Data
+        uses: actions/cache@v4
+        with:
+          path: .flow-fork-cache
+          key: ${{ runner.os }}-flow-emulator-fork-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-flow-emulator-fork-
       - name: Install Flow CLI
         run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)"
       - name: Flow CLI Version

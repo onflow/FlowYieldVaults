@@ -9,8 +9,32 @@ import "FlowYieldVaults"
 
 access(all) let serviceAccount = Test.serviceAccount()
 
-/* --- Test execution helpers --- */
+access(all) struct DeploymentConfig {
+    access(all) let uniswapFactoryAddress: String
+    access(all) let uniswapRouterAddress: String
+    access(all) let uniswapQuoterAddress: String
+    access(all) let pyusd0Address: String
+    access(all) let morphoVaultAddress: String
+    access(all) let wflowAddress: String
 
+    init(
+        uniswapFactoryAddress: String,
+        uniswapRouterAddress: String,
+        uniswapQuoterAddress: String,
+        pyusd0Address: String,
+        morphoVaultAddress: String,
+        wflowAddress: String
+    ) {
+        self.uniswapFactoryAddress = uniswapFactoryAddress
+        self.uniswapRouterAddress = uniswapRouterAddress
+        self.uniswapQuoterAddress = uniswapQuoterAddress
+        self.pyusd0Address = pyusd0Address
+        self.morphoVaultAddress = morphoVaultAddress
+        self.wflowAddress = wflowAddress
+    }
+}
+
+/* --- Test execution helpers --- */
 access(all)
 fun _executeScript(_ path: String, _ args: [AnyStruct]): Test.ScriptResult {
     return Test.executeScript(Test.readFile(path), args)
@@ -145,11 +169,84 @@ fun tempUpsertBridgeTemplateChunks(_ serviceAccount: Test.TestAccount) {
 
 // Common test setup function that deploys all required contracts
 access(all) fun deployContracts() {
-
+    let config = DeploymentConfig(
+        uniswapFactoryAddress: "0x986Cb42b0557159431d48fE0A40073296414d410",
+        uniswapRouterAddress: "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
+        uniswapQuoterAddress: "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C",
+        pyusd0Address: "0xaCCF0c4EeD4438Ad31Cd340548f4211a465B6528",
+        morphoVaultAddress: "0x0000000000000000000000000000000000000000",
+        wflowAddress: "0x0000000000000000000000000000000000000000"
+    )
+    
     // TODO: remove this step once the VM bridge templates are updated for test env
     // see https://github.com/onflow/flow-go/issues/8184
     tempUpsertBridgeTemplateChunks(serviceAccount)
 
+    _deploy(config: config, isFork: false)
+
+    var err = Test.deployContract(
+        name: "MockStrategies",
+        path: "../contracts/mocks/MockStrategies.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "MockStrategy",
+        path: "../contracts/mocks/MockStrategy.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    
+    // Emulator-specific setup (already exists on mainnet fork)
+    let wflowAddress = getEVMAddressAssociated(withType: Type<@FlowToken.Vault>().identifier)
+        ?? panic("Failed to get WFLOW address via VM Bridge association with FlowToken.Vault")
+    setupBetaAccess()
+    setupPunchswap(deployer: serviceAccount, wflowAddress: wflowAddress)
+}
+
+access(all) fun deployContractsForFork() {
+    let config = DeploymentConfig(
+        uniswapFactoryAddress: "0xca6d7Bb03334bBf135902e1d919a5feccb461632",
+        uniswapRouterAddress: "0xeEDC6Ff75e1b10B903D9013c358e446a73d35341",
+        uniswapQuoterAddress: "0x370A8DF17742867a44e56223EC20D82092242C85",
+        pyusd0Address: "0x99aF3EeA856556646C98c8B9b2548Fe815240750",
+        morphoVaultAddress: "0xd069d989e2F44B70c65347d1853C0c67e10a9F8D",
+        wflowAddress: "0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e"
+    )
+
+    // Deploy EVM mock
+    var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
+
+    // Redeploy FlowTransactionScheduler mock (replaces forked mainnet contract with reset-capable version)
+    err = Test.deployContract(name: "FlowTransactionScheduler", path: "../contracts/mocks/FlowTransactionScheduler.cdc", arguments: [])
+
+    _deploy(config: config, isFork: true)
+
+    // Deploy StrategiesV2 on fork (replaces mainnet's stale copy so the updated
+    // FlowYieldVaults.Strategy interface conformance check passes)
+    var forkErr = Test.deployContract(
+        name: "FlowYieldVaultsStrategiesV2",
+        path: "../contracts/FlowYieldVaultsStrategiesV2.cdc",
+        arguments: [
+            config.uniswapFactoryAddress,
+            config.uniswapRouterAddress,
+            config.uniswapQuoterAddress
+        ]
+    )
+    Test.expect(forkErr, Test.beNil())
+
+    // Deploy local BandOracleConnectors (stale check commented out) to override
+    // mainnet's version which reverts on stale oracle data
+    forkErr = Test.deployContract(
+        name: "BandOracleConnectors",
+        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/band-oracle/BandOracleConnectors.cdc",
+        arguments: []
+    )
+    Test.expect(forkErr, Test.beNil())
+}
+
+access(self) fun _deploy(config: DeploymentConfig, isFork: Bool) {
     // DeFiActions contracts
     var err = Test.deployContract(
         name: "DeFiActionsUtils",
@@ -162,12 +259,20 @@ access(all) fun deployContracts() {
         path: "../../lib/FlowALP/cadence/lib/FlowALPMath.cdc",
         arguments: []
     )
-    err = Test.deployContract(
-        name: "DeFiActions",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
-        arguments: []
-    )
     Test.expect(err, Test.beNil())
+
+    // TODO: Skip DeFiActions on fork — FlowALP v0 pins FlowActions to main (not v0),
+    // which has _executionCallback field not yet on mainnet. Fix by updating FlowALP's
+    // FlowActions submodule pin to v0, then remove this guard.
+    if !isFork {
+        err = Test.deployContract(
+            name: "DeFiActions",
+            path: "../../lib/FlowALP/FlowActions/cadence/contracts/interfaces/DeFiActions.cdc",
+            arguments: []
+        )
+        Test.expect(err, Test.beNil())
+    }
+    
     err = Test.deployContract(
         name: "SwapConnectors",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
@@ -280,6 +385,7 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+
     err = Test.deployContract(
         name: "FlowYieldVaults",
         path: "../contracts/FlowYieldVaults.cdc",
@@ -332,7 +438,7 @@ access(all) fun deployContracts() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-
+    
     err = Test.deployContract(
         name: "ERC4626PriceOracles",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/ERC4626PriceOracles.cdc",
@@ -354,36 +460,18 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
 
-    let onboarder = Test.createAccount()
-    transferFlow(signer: serviceAccount, recipient: onboarder.address, amount: 100.0)
-    let onboardMoet = _executeTransaction(
-        "../../lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type.cdc",
-        [Type<@MOET.Vault>()],
-        onboarder
-    )
-    Test.expect(onboardMoet, Test.beSucceeded())
+    let moetAddress = getEVMAddressAssociated(withType: Type<@MOET.Vault>().identifier)
+    if moetAddress == nil {
+        let onboarder = Test.createAccount()
+        transferFlow(signer: serviceAccount, recipient: onboarder.address, amount: 100.0)
+        let onboardMoet = _executeTransaction(
+            "../../lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_type.cdc",
+            [Type<@MOET.Vault>()],
+            onboarder
+        )
+        Test.expect(onboardMoet, Test.beSucceeded())
+    }
 
-    err = Test.deployContract(
-        name: "MockStrategies",
-        path: "../contracts/mocks/MockStrategies.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "FlowYieldVaultsStrategiesV2",
-        path: "../contracts/FlowYieldVaultsStrategiesV2.cdc",
-        arguments: [
-            "0x986Cb42b0557159431d48fE0A40073296414d410",
-            "0x92657b195e22b69E4779BBD09Fa3CD46F0CF8e39",
-            "0x8dd92c8d0C3b304255fF9D98ae59c3385F88360C"
-        ]
-    )
-
-    Test.expect(err, Test.beNil())
-
-    // Deploy Morpho contracts (latest local code) to the forked environment
-    log("Deploying Morpho contracts...")
     err = Test.deployContract(
         name: "ERC4626Utils",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/utils/ERC4626Utils.cdc",
@@ -398,46 +486,28 @@ access(all) fun deployContracts() {
     )
     Test.expect(err, Test.beNil())
 
-    err = Test.deployContract(
-        name: "MorphoERC4626SinkConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SinkConnectors.cdc",
-        arguments: []
+    /*err = Test.deployContract(
+        name: "FlowYieldVaultsStrategiesV2",
+        path: "../contracts/FlowYieldVaultsStrategiesV2.cdc",
+        arguments: [
+            config.uniswapFactoryAddress,
+            config.uniswapRouterAddress,
+            config.uniswapQuoterAddress
+        ]
     )
-    Test.expect(err, Test.beNil())
-
-    err = Test.deployContract(
-        name: "MorphoERC4626SwapConnectors",
-        path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/morpho/MorphoERC4626SwapConnectors.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
+    Test.expect(err, Test.beNil())*/
 
     // FLOW looping strategy
-    err = Test.deployContract(
+    /*err = Test.deployContract(
         name: "PMStrategiesV1",
         path: "../contracts/PMStrategiesV1.cdc",
         arguments: [
-            "0x0000000000000000000000000000000000000000",
-            "0x0000000000000000000000000000000000000000",
-            "0x0000000000000000000000000000000000000000"
+            config.uniswapRouterAddress,
+            config.uniswapQuoterAddress,
+            config.pyusd0Address
         ]
     )
-
-    Test.expect(err, Test.beNil())
-
-    // Mocked Strategy
-    err = Test.deployContract(
-        name: "MockStrategy",
-        path: "../contracts/mocks/MockStrategy.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    let wflowAddress = getEVMAddressAssociated(withType: Type<@FlowToken.Vault>().identifier)
-        ?? panic("Failed to get WFLOW address via VM Bridge association with FlowToken.Vault")
-
-    setupBetaAccess()
-    setupPunchswap(deployer: serviceAccount, wflowAddress: wflowAddress)
+    Test.expect(err, Test.beNil())*/
 }
 
 access(all)
@@ -507,6 +577,30 @@ fun getAutoBalancerCurrentValue(id: UInt64): UFix64? {
 }
 
 access(all)
+fun getAutoBalancerValueOfDeposits(id: UInt64): UFix64? {
+    let res = _executeScript("../scripts/flow-yield-vaults/get_auto_balancer_value_of_deposits_by_id.cdc", [id])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! UFix64?
+}
+
+access(all)
+fun getAutoBalancerBaseline(id: UInt64): UFix64? {
+    let res = _executeScript("../scripts/flow-yield-vaults/get_auto_balancer_baseline_by_id.cdc", [id])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! UFix64?
+}
+
+/// Returns [currentValue, valueOfDeposits] for the AutoBalancer in a single script call.
+/// This is more efficient than calling getAutoBalancerCurrentValue and getAutoBalancerValueOfDeposits separately.
+access(all)
+fun getAutoBalancerMetrics(id: UInt64): [UFix64]? {
+    let res = _executeScript("../scripts/flow-yield-vaults/get_auto_balancer_metrics_by_id.cdc", [id])
+    Test.expect(res, Test.beSucceeded())
+    return res.returnValue as! [UFix64]?
+}
+
+
+access(all)
 fun getPositionDetails(pid: UInt64, beFailed: Bool): FlowALPv0.PositionDetails {
     let res = _executeScript("../../lib/FlowALP/cadence/scripts/flow-alp/position_details.cdc",
         [pid]
@@ -553,6 +647,38 @@ fun positionAvailableBalance(
     return res.returnValue as! UFix64
 }
 
+access(all)
+fun setDepositLimitFraction(signer: Test.TestAccount, tokenTypeIdentifier: String, fraction: UFix64) {
+    let setRes = _executeTransaction(
+        "../../lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_deposit_limit_fraction.cdc",
+        [tokenTypeIdentifier, fraction],
+        signer
+    )
+    Test.expect(setRes, Test.beSucceeded())
+}
+
+access(all)
+fun resetTransactionScheduler() {
+    let result = _executeTransaction(
+        "transactions/reset_scheduler.cdc",
+        [],
+        serviceAccount
+    )
+    Test.expect(result, Test.beSucceeded())
+}
+
+/// Set position health thresholds (minHealth, targetHealth, maxHealth) on an existing position.
+/// This borrows the Pool from the flowALP account and directly modifies the InternalPosition.
+access(all)
+fun setPositionHealth(signer: Test.TestAccount, pid: UInt64, minHealth: UFix64, targetHealth: UFix64, maxHealth: UFix64) {
+    let result = _executeTransaction(
+        "transactions/set_position_health.cdc",
+        [pid, minHealth, targetHealth, maxHealth],
+        signer
+    )
+    Test.expect(result, Test.beSucceeded())
+}
+
 /* --- Transaction Helpers --- */
 
 access(all)
@@ -562,6 +688,9 @@ fun createAndStorePool(signer: Test.TestAccount, defaultTokenIdentifier: String,
         [defaultTokenIdentifier],
         signer
     )
+    if createRes.error != nil {
+        log("createAndStorePool error: ".concat(createRes.error!.message))
+    }
     Test.expect(createRes, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
@@ -581,16 +710,6 @@ fun addSupportedTokenFixedRateInterestCurve(
         signer
     )
     Test.expect(additionRes, Test.beSucceeded())
-}
-
-access(all)
-fun setDepositLimitFraction(signer: Test.TestAccount, tokenTypeIdentifier: String, fraction: UFix64) {
-    let setRes = _executeTransaction(
-        "../../lib/FlowALP/cadence/transactions/flow-alp/pool-governance/set_deposit_limit_fraction.cdc",
-        [tokenTypeIdentifier, fraction],
-        signer
-    )
-    Test.expect(setRes, Test.beSucceeded())
 }
 
 access(all)
@@ -717,6 +836,33 @@ fun equalAmounts(a: UFix64, b: UFix64, tolerance: UFix64): Bool {
         return a - b <= tolerance
     }
     return b - a <= tolerance
+}
+
+/// Sets multiple BandOracle prices at once
+///
+access(all)
+fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}) {
+    // Move time by 1 second to ensure that the resolve time is in the future
+    // This prevents race conditions between consecutive calls to setBandOraclePrices
+    Test.moveTime(by: 1.0)
+    
+    let symbolsRates: {String: UInt64} = {}
+    for symbol in symbolPrices.keys {
+        // BandOracle uses 1e9 multiplier for prices
+        // e.g., $1.00 = 1_000_000_000, $0.50 = 500_000_000
+        // Split into whole + fractional to avoid UFix64 overflow for large prices (e.g. BTC > $184)
+        let price = symbolPrices[symbol]!
+        let whole = UInt64(price)
+        let frac = price - UFix64(whole)
+        symbolsRates[symbol] = whole * 1_000_000_000 + UInt64(frac * 1_000_000_000.0)
+    }
+    
+    let setRes = _executeTransaction(
+        "../../lib/FlowALP/FlowActions/cadence/tests/transactions/band-oracle/update_data.cdc",
+        [ symbolsRates ],
+        signer
+    )
+    Test.expect(setRes, Test.beSucceeded())
 }
 
 access(all)
@@ -848,6 +994,126 @@ fun transferFlow(signer: Test.TestAccount, recipient: Address, amount: UFix64) {
         signer
     )
     Test.expect(transferResult, Test.beSucceeded())
+}
+
+access(all)
+fun setupGenericVault(signer: Test.TestAccount, vaultIdentifier: String) {
+    let setupResult = _executeTransaction(
+        "../../lib/flow-evm-bridge/cadence/transactions/example-assets/setup/setup_generic_vault.cdc",
+        [vaultIdentifier],
+        signer
+    )
+    Test.expect(setupResult, Test.beSucceeded())
+}
+
+access(all)
+fun transferBTC(signer: Test.TestAccount, recipient: Test.TestAccount, amount: UFix64) {
+    setupGenericVault(
+        signer: recipient,
+        vaultIdentifier: "A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault"
+    )
+    let transferResult = _executeTransaction(
+        "transactions/transfer_wbtc.cdc",
+        [recipient.address, amount],
+        signer
+    )
+    Test.expect(transferResult, Test.beSucceeded())
+}
+
+access(all)
+fun setERC20Balance(
+    signer: Test.TestAccount,
+    tokenAddress: String,
+    holderAddress: String,
+    balanceSlot: UInt256,
+    amount: UInt256
+) {
+    let res = _executeTransaction(
+        "transactions/set_erc20_balance.cdc",
+        [tokenAddress, holderAddress, balanceSlot, amount],
+        signer
+    )
+    Test.expect(res, Test.beSucceeded())
+}
+
+access(all)
+fun mintBTC(signer: Test.TestAccount, amount: UFix64) {
+    let wbtcAddress = "0x717dae2baf7656be9a9b01dee31d571a9d4c9579"
+    let wbtcTokenId = "A.1e4aa0b87d10b141.EVMVMBridgedToken_717dae2baf7656be9a9b01dee31d571a9d4c9579.Vault"
+    let wbtcBalanceSlot: UInt256 = 5
+
+    // Ensure signer has a COA (needs some FLOW for gas)
+    if getCOA(signer.address) == nil {
+        createCOA(signer, fundingAmount: 1.0)
+    }
+    let coaAddress = getCOA(signer.address)!
+
+    // Set wBTC ERC20 balance for the signer's COA on EVM
+    // wBTC has 8 decimals, so multiply amount by 1e8
+    // Split to avoid UFix64 overflow for large amounts
+    let whole = UInt256(amount)
+    let frac = amount - UFix64(UInt64(amount))
+    let amountSmallestUnit = whole * 100_000_000 + UInt256(frac * 100_000_000.0)
+    setERC20Balance(
+        signer: signer,
+        tokenAddress: wbtcAddress,
+        holderAddress: coaAddress,
+        balanceSlot: wbtcBalanceSlot,
+        amount: amountSmallestUnit
+    )
+
+    // Bridge wBTC from EVM to Cadence
+    let bridgeRes = _executeTransaction(
+        "../../lib/flow-evm-bridge/cadence/transactions/bridge/tokens/bridge_tokens_from_evm.cdc",
+        [wbtcTokenId, amountSmallestUnit],
+        signer
+    )
+    Test.expect(bridgeRes, Test.beSucceeded())
+}
+
+/// Mints PYUSD0 (6-decimal EVM token) to the signer by setting ERC20 balance and bridging from EVM.
+access(all)
+fun mintPYUSD0(signer: Test.TestAccount, amount: UFix64) {
+    let pyusd0Address = "0x99aF3EeA856556646C98c8B9b2548Fe815240750"
+    let pyusd0TokenId = "A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault"
+    let pyusd0BalanceSlot: UInt256 = 1
+
+    if getCOA(signer.address) == nil {
+        createCOA(signer, fundingAmount: 1.0)
+    }
+    let coaAddress = getCOA(signer.address)!
+
+    // PYUSD0 has 6 decimals
+    let whole = UInt256(amount)
+    let frac = amount - UFix64(UInt64(amount))
+    let amountSmallestUnit = whole * 1_000_000 + UInt256(frac * 1_000_000.0)
+    setERC20Balance(
+        signer: signer,
+        tokenAddress: pyusd0Address,
+        holderAddress: coaAddress,
+        balanceSlot: pyusd0BalanceSlot,
+        amount: amountSmallestUnit
+    )
+
+    let bridgeRes = _executeTransaction(
+        "../../lib/flow-evm-bridge/cadence/transactions/bridge/tokens/bridge_tokens_from_evm.cdc",
+        [pyusd0TokenId, amountSmallestUnit],
+        signer
+    )
+    Test.expect(bridgeRes, Test.beSucceeded())
+}
+
+/// Seeds the FlowALP pool reserves with PYUSD0 by minting and depositing via a temporary position.
+access(all)
+fun seedPoolWithPYUSD0(poolSigner: Test.TestAccount, amount: UFix64) {
+    mintPYUSD0(signer: poolSigner, amount: amount)
+    let pyusd0VaultPath = StoragePath(identifier: "EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750Vault")!
+    let res = _executeTransaction(
+        "transactions/seed_pool_reserves.cdc",
+        [amount, pyusd0VaultPath],
+        poolSigner
+    )
+    Test.expect(res, Test.beSucceeded())
 }
 
 access(all)
@@ -1030,13 +1296,21 @@ access(all) fun getFlowCollateralFromPosition(pid: UInt64): UFix64 {
 
 // Helper function to get MOET debt from position
 access(all) fun getMOETDebtFromPosition(pid: UInt64): UFix64 {
+    return getDebtFromPosition(pid: pid, type: Type<@MOET.Vault>())
+}
+
+// Helper function to get PYUSD0 debt from position
+access(all) fun getPYUSD0DebtFromPosition(pid: UInt64): UFix64 {
+    let pyusd0VaultType = CompositeType("A.1e4aa0b87d10b141.EVMVMBridgedToken_99af3eea856556646c98c8b9b2548fe815240750.Vault")!
+    return getDebtFromPosition(pid: pid, type: pyusd0VaultType)
+}
+
+// Helper function to get debt of a specific token type from a position
+access(all) fun getDebtFromPosition(pid: UInt64, type: Type): UFix64 {
     let positionDetails = getPositionDetails(pid: pid, beFailed: false)
     for balance in positionDetails.balances {
-        if balance.vaultType == Type<@MOET.Vault>() {
-            // Debit means it's borrowed (debt)
-            if balance.direction == FlowALPv0.BalanceDirection.Debit {
-                return balance.balance
-            }
+        if balance.vaultType == type && balance.direction == FlowALPv0.BalanceDirection.Debit {
+            return balance.balance
         }
     }
     return 0.0
