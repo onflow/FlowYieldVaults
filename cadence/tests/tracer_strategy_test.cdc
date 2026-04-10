@@ -236,7 +236,7 @@ fun test_RebalanceYieldVaultSucceeds() {
     let yieldVaultID = yieldVaultIDs![0]
 
     let autoBalancerValueBefore = getAutoBalancerCurrentValue(id: yieldVaultID)!
-    let yieldVaultBalanceBeforePriceIncrease = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultID)
+    let _yieldVaultBalanceBeforePriceIncrease = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultID)
 
     setMockOraclePrice(signer: flowYieldVaultsAccount,
         forTokenIdentifier: yieldTokenIdentifier,
@@ -244,7 +244,7 @@ fun test_RebalanceYieldVaultSucceeds() {
     )
 
     let autoBalancerValueAfter = getAutoBalancerCurrentValue(id: yieldVaultID)!
-    let yieldVaultBalanceAfterPriceIncrease = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultID)
+    let _yieldVaultBalanceAfterPriceIncrease = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultID)
 
     // Rebalance YieldVault: AutoBalancer detects surplus (YT value increased from $61.54 to $73.85)
     // and pushes excess value to Position via rebalanceSink (positionSwapSink: YT -> FLOW swap -> Position)
@@ -373,7 +373,7 @@ fun test_RebalanceYieldVaultSucceedsAfterCollateralPriceIncrease() {
     let user = Test.createAccount()
 
     // Likely 0.0
-    let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+    let _flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
     mintFlow(to: user, amount: fundingAmount)
     grantBeta(flowYieldVaultsAccount, user)
 

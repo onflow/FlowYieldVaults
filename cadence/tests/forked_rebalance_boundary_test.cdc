@@ -307,7 +307,7 @@ fun test_UpperBoundary() {
             signer: coaOwnerAccount
         )
 
-        let balanceBefore = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
+        let _balanceBefore = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
 
         // Now set to test price
         setVaultSharePrice(
@@ -505,7 +505,7 @@ fun test_LowerBoundary() {
             signer: coaOwnerAccount
         )
 
-        let balanceBefore = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
+        let _balanceBefore = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
 
         // Set to test price
         setVaultSharePrice(

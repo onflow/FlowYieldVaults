@@ -536,7 +536,7 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	log("  FLOW collateral: \(collateralBeforeClose) FLOW")
 	log("  MOET debt:       \(debtBeforeClose) MOET")
 
-	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	let _flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 
 	// Close the yield vault
 	// log("\n[Scenario5] Closing yield vault...")

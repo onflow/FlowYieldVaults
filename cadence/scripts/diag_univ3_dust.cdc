@@ -63,15 +63,11 @@ access(all) fun main(
     // 4) Read token decimals
     let decA = FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: tokenA)
     let decB = FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: tokenB)
-    let aIsToken0 = token0.toString() == tokenA.toString()
-    let dec0: UInt8 = aIsToken0 ? decA : decB
-    let dec1: UInt8 = aIsToken0 ? decB : decA
 
     // 5) Compute price ratio from sqrtPriceX96
     //    price = (sqrtPriceX96 / 2^96)^2
     //    price of token0 in token1 units: token1_amount / token0_amount
     //    We need to account for decimal differences
-    let Q96: UInt256 = UInt256(1) << 96
 
     // --- Worst-case dust computation ---
     // The worst-case input overshoot is quantum - 1 wei

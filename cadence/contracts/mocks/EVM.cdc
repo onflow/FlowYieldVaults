@@ -803,7 +803,6 @@ contract EVM {
         }
 
         // verify evm address matching
-        var addr = coaRef!.address()
         for index, item in coaRef!.address().bytes {
             if item != evmAddress[index] {
                 return ValidationResult(

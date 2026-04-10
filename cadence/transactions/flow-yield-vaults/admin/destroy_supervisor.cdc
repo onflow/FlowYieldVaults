@@ -11,7 +11,7 @@ transaction {
     let supervisor: @FlowYieldVaultsSchedulerV1.Supervisor?
 
     prepare(signer: auth(LoadValue, StorageCapabilities) &Account) {
-        let supervisorCap = signer.storage
+        let _supervisorCap = signer.storage
             .load<Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>>(
                 from: /storage/FlowYieldVaultsSupervisorCapability
             )

@@ -148,7 +148,7 @@ fun test_ForkedRebalanceYieldVaultScenario3D() {
     let user = Test.createAccount()
 
     // Likely 0.0
-    let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+    let _flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
     transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
     grantBeta(flowYieldVaultsAccount, user)
 

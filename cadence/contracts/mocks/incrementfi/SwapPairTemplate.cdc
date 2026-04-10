@@ -28,7 +28,7 @@ access(all) contract SwapPair: FungibleToken {
     access(all) var price0CumulativeLastScaled: UInt256
     access(all) var price1CumulativeLastScaled: UInt256
 
-    /// Transaction lock 
+    /// Transaction lock
     access(self) var lock: Bool
 
     /// √(reserve0 * reserve1) for volatile pool, or √√[(r0^3 * r1 + r0 * r1^3) / 2] for stable pool, as of immediately after the most recent liquidity event
@@ -92,7 +92,7 @@ access(all) contract SwapPair: FungibleToken {
         /// SwapPair doesn't support MetadataViews api as this is not just a normal FT, and there could be multiple types of lpTokens
         /// for different SwapPairs, so it is stored in LpTokenCollection instead (not directly associated with a StoragePath).
         access(all) view fun getViews(): [Type] { return [] }
-        access(all) fun resolveView(_ view: Type): AnyStruct? { return nil }
+        access(all) fun resolveView(_ _view: Type): AnyStruct? { return nil }
 
         /// withdraw
         ///
@@ -166,8 +166,8 @@ access(all) contract SwapPair: FungibleToken {
     ///
     /// SwapPair doesn't support MetadataViews api as this is not just a normal FT, and there could be multiple types of lpTokens
     /// for different SwapPairs, so it is stored in LpTokenCollection instead (not directly associated with a StoragePath).
-    access(all) view fun getContractViews(resourceType: Type?): [Type] { return [] }
-    access(all) fun resolveContractView(resourceType: Type?, viewType: Type): AnyStruct? { return nil }
+    access(all) view fun getContractViews(resourceType _: Type?): [Type] { return [] }
+    access(all) fun resolveContractView(resourceType _resourceType: Type?, viewType _viewType: Type): AnyStruct? { return nil }
 
     /// createEmptyVault
     //
@@ -176,7 +176,7 @@ access(all) contract SwapPair: FungibleToken {
     /// and store the returned Vault in their storage in order to allow their
     /// account to be able to receive deposits of this token type.
     ///
-    access(all) fun createEmptyVault(vaultType: Type): @SwapPair.Vault {
+    access(all) fun createEmptyVault(vaultType _: Type): @SwapPair.Vault {
         return <-create Vault(balance: 0.0)
     }
 
@@ -191,7 +191,7 @@ access(all) contract SwapPair: FungibleToken {
         self.totalSupply = self.totalSupply + amount
         emit TokensMinted(amount: amount)
         return <- create Vault(balance: amount)
-    } 
+    }
 
     /// Burn lpTokens
     access(self) fun burnLpToken(from: @SwapPair.Vault) {
@@ -210,7 +210,7 @@ access(all) contract SwapPair: FungibleToken {
                 msg: "SwapPair: added zero liquidity",
                 err: SwapError.ErrorCode.ADD_ZERO_LIQUIDITY
             )
-            (tokenAVault.isInstance(self.token0VaultType) && tokenBVault.isInstance(self.token1VaultType)) || 
+            (tokenAVault.isInstance(self.token0VaultType) && tokenBVault.isInstance(self.token1VaultType)) ||
             (tokenBVault.isInstance(self.token0VaultType) && tokenAVault.isInstance(self.token1VaultType)):
             SwapError.ErrorEncode(
                 msg: "SwapPair: added incompatible liquidity pair vaults",
@@ -533,7 +533,7 @@ self.lock = false
             self.price1CumulativeLastScaled = SwapConfig.overflowAddUInt256(
                 self.price1CumulativeLastScaled,
                 SwapConfig.UFix64ToScaledUInt256(price1) * timeElapsedScaled / SwapConfig.scaleFactor
-            )   
+            )
         }
         self.blockTimestampLast = blockTimestamp
     }

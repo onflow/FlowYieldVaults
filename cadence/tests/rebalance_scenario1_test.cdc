@@ -102,7 +102,7 @@ fun test_RebalanceYieldVaultScenario1() {
 	}
 
 	// Likely 0.0
-	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	let _flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	mintFlow(to: user, amount: fundingAmount)
     grantBeta(flowYieldVaultsAccount, user)
 

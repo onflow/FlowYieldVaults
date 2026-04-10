@@ -117,7 +117,7 @@ access(all) contract FlowYieldVaultsClosedBeta {
 
     // TEST-ONLY: Always invalid, regardless of address or reference.
     // Used to ensure beta-gated entrypoints actually call `validateBeta`.
-    access(all) view fun validateBeta(_ addr: Address?, _ betaRef: auth(Beta) &BetaBadge): Bool {
+    access(all) view fun validateBeta(_ _addr: Address?, _ _betaRef: auth(Beta) &BetaBadge): Bool {
         return false
     }
 

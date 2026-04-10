@@ -162,7 +162,7 @@ fun tempUpsertBridgeTemplateChunks(_ serviceAccount: Test.TestAccount) {
     )
     Test.expect(bridgedNFTChunkResult, Test.beSucceeded())
     // Commit bridged Token code
-    let bridgedTokenChunkResult = _executeTransaction(
+    let _bridgedTokenChunkResult = _executeTransaction(
         "../../lib/flow-evm-bridge/cadence/transactions/bridge/admin/templates/upsert_contract_code_chunks.cdc",
         ["bridgedToken", bridgedTokenCodeChunks],
         serviceAccount
@@ -489,7 +489,7 @@ access(self) fun _deploy(config: DeploymentConfig) {
 
 access(all)
 fun setupFlowALP(signer: Test.TestAccount) {
-    let res = _executeTransaction("../../lib/FlowALP/cadence/transactions/flow-alp/create_and_store_pool.cdc",
+    let _res = _executeTransaction("../../lib/FlowALP/cadence/transactions/flow-alp/create_and_store_pool.cdc",
         [],
         signer
     )
@@ -1123,7 +1123,7 @@ access(all) let uniV2RouterBytecode = "60c06040523480156200001157600080fd5b50604
 access(all)
 fun setupUniswapV2(_ signer: Test.TestAccount, feeToSetter: String, wflowAddress: String): String {
     // deserialize the feeToSetter & WFLOW addresses
-    let feeToSetterAddr = EVM.addressFromString(feeToSetter)
+    let _feeToSetterAddr = EVM.addressFromString(feeToSetter)
     let wflowAddr = EVM.addressFromString(wflowAddress)
     // deploy uniV2Factory, concatenating feeToSetter as constructor arg
     let factoryArgsBytecode = EVM.encodeABI([feeToSetter])
