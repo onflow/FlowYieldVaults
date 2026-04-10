@@ -37,7 +37,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-flow-emulator-fork-
       - name: Install Flow CLI
-        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v2.15.3
+        run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" -- v2.16.0
       - name: Update PATH and show Flow version
         run: |
           echo "/root/.local/bin" >> $GITHUB_PATH
