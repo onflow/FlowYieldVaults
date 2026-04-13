@@ -1,0 +1,45 @@
+{
+  "scenario": "simulation_ht_vs_aave",
+  "duration_minutes": 60,
+  "btc_prices": [
+    100000.00, 99551.11, 99104.23, 98659.37, 98216.49,
+    97775.61, 97336.70, 96899.77, 96464.80, 96031.78,
+    95600.70, 95171.56, 94744.34, 94319.04, 93895.65,
+    93474.17, 93054.57, 92636.86, 92221.02, 91807.05,
+    91394.93, 90984.67, 90576.25, 90169.66, 89764.90,
+    89361.95, 88960.82, 88561.48, 88163.94, 87768.18,
+    87374.20, 86981.98, 86591.53, 86202.83, 85815.87,
+    85430.65, 85047.16, 84665.39, 84285.34, 83906.99,
+    83530.34, 83155.38, 82782.10, 82410.50, 82040.57,
+    81672.30, 81305.68, 80940.71, 80577.37, 80215.67,
+    79855.59, 79497.12, 79140.27, 78785.02, 78431.36,
+    78079.29, 77728.80, 77379.88, 77032.53, 76686.74,
+    76342.50
+  ],
+  "agents": [
+    {"count": 5, "initial_hf": 1.15, "rebalancing_hf": 1.05, "target_hf": 1.08, "debt_per_agent": 133333, "total_system_debt": 666665}
+  ],
+  "pools": {
+    "pyusd0_yt": {
+      "size": 500000,
+      "concentration": 0.95,
+      "fee_tier": 0.0005
+    },
+    "pyusd0_flow": {
+      "size": 500000,
+      "concentration": 0.80,
+      "fee_tier": 0.003
+    }
+  },
+  "constants": {
+    "btc_collateral_factor": 0.75,
+    "btc_liquidation_threshold": 0.80,
+    "yield_apr": 0.10,
+    "direct_mint_yt": true
+  },
+  "expected": {
+    "liquidation_count": 0,
+    "all_agents_survive": true
+  },
+  "notes": "BTC $100K to $76,342.50 (-23.66%) exponential decline over 60 minutes. Source: comprehensive_ht_vs_aave_analysis.py"
+}

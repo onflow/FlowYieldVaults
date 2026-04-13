@@ -1,3 +1,6 @@
+// This contract extends the original contract by adding a reset method,
+// which is useful in tests for clearing any pre-existing scheduled transactions.
+// https://github.com/onflow/flow-core-contracts/blob/master/contracts/FlowTransactionScheduler.cdc
 import "FungibleToken"
 import "FlowToken"
 import "FlowFees"
