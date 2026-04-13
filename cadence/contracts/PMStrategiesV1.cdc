@@ -603,12 +603,12 @@ access(all) contract PMStrategiesV1 {
             }
             // Merge instead of overwrite
             let existingComposerConfig = self.configs[composer] ?? {}
-            var mergedComposerConfig: {Type: {Type: {String: AnyStruct}}} = existingComposerConfig
+            var mergedComposerConfig = existingComposerConfig
 
             for stratType in config {
                 let newPerCollateral = config[stratType]!
                 let existingPerCollateral = mergedComposerConfig[stratType] ?? {}
-                var mergedPerCollateral: {Type: {String: AnyStruct}} = existingPerCollateral
+                var mergedPerCollateral = existingPerCollateral
 
                 for collateralType in newPerCollateral {
                     mergedPerCollateral[collateralType] = newPerCollateral[collateralType]!

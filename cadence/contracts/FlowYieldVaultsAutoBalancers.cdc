@@ -114,7 +114,7 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         }
 
         let currentTimestamp = getCurrentBlock().timestamp
-        let optimisticExecutionGracePeriod: UFix64 = 15.0
+        let optimisticExecutionGracePeriod = 15.0
         let txnIDs = autoBalancer!.getScheduledTransactionIDs()
         for txnID in txnIDs {
             if let scheduledTxn = autoBalancer!.borrowScheduledTransaction(id: txnID) {
@@ -270,9 +270,8 @@ access(all) contract FlowYieldVaultsAutoBalancers {
         // This schedules the first rebalance; subsequent ones are scheduled automatically
         // by the AutoBalancer after each execution (via recurringConfig)
         if recurringConfig != nil {
-            let scheduleError = autoBalancerRef.scheduleNextRebalance(whileExecuting: nil)
-            if scheduleError != nil {
-                panic("Failed to schedule first rebalance for AutoBalancer \(uniqueID.id): ".concat(scheduleError!))
+            if let scheduleError = autoBalancerRef.scheduleNextRebalance(whileExecuting: nil) {
+                panic("Failed to schedule first rebalance for AutoBalancer \(uniqueID.id): \(scheduleError)")
             }
         }
 

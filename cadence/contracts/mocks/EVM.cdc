@@ -736,7 +736,7 @@ contract EVM {
         let seenAccountKeyIndices: {Int: Int} = {}
         for signatureIndex, signature in signatures{
             // index of the key on the account
-            let accountKeyIndex = Int(keyIndices[signatureIndex]!)
+            let accountKeyIndex = Int(keyIndices[signatureIndex])
             // index of the key in the key list
             var keyListIndex = 0
 
