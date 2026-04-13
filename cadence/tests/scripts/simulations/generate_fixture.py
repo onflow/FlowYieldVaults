@@ -147,7 +147,7 @@ def build_fixture(daily: list[dict], scenario: str, start: str, end: str) -> dic
     return {
         "scenario": scenario,
         "duration_days": len(daily),
-        "btc_prices": [d["price"] for d in daily],
+        "prices": [d["price"] for d in daily],
         "dates": [d["date"] for d in daily],
         "agents": [
             {
@@ -177,8 +177,8 @@ def build_fixture(daily: list[dict], scenario: str, start: str, end: str) -> dic
             },
         },
         "constants": {
-            "btc_collateral_factor": 0.8,
-            "btc_liquidation_threshold": 0.85,
+            "collateral_factor": 0.8,
+            "liquidation_threshold": 0.85,
             "yield_apr": 0.1,
             "direct_mint_yt": True,
         },
@@ -218,20 +218,18 @@ def cmd_fetch(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 
-def generate_cdc(data: dict) -> str:
-    scenario = data["scenario"]
-    is_daily = "duration_days" in data
+def _get_prices(data: dict) -> list:
+    """Get price array from fixture, supporting both 'prices' and legacy 'btc_prices' keys."""
+    return data.get("prices") or data["btc_prices"]
 
-    lines: list[str] = []
-    lines.append("import Test")
-    lines.append("")
-    lines.append(f"// AUTO-GENERATED from {scenario}.json — do not edit manually")
-    lines.append(
-        "// Run: python3 generate_fixture.py generate <input.json> <output.cdc>"
-    )
-    lines.append("")
 
-    # --- Inline struct definitions ---
+def _get_constants(data: dict) -> dict:
+    """Get constants dict from fixture."""
+    return data["constants"]
+
+
+def _emit_structs(lines: list[str]) -> None:
+    """Emit the shared struct definitions."""
     lines.append("access(all) struct SimAgent {")
     lines.append("    access(all) let count: Int")
     lines.append("    access(all) let initialHF: UFix64")
@@ -291,10 +289,59 @@ def generate_cdc(data: dict) -> str:
     lines.append("}")
     lines.append("")
 
+
+def _emit_agents(lines: list[str], prefix: str, agents: list[dict]) -> None:
+    """Emit a single agent array."""
+    lines.append(f"access(all) let {prefix}_agents: [SimAgent] = [")
+    for i, agent in enumerate(agents):
+        comma = "," if i < len(agents) - 1 else ""
+        debt = agent["debt_per_agent"] if isinstance(agent["debt_per_agent"], (int, float)) else 0
+        total_debt = agent.get("total_system_debt", 0)
+        lines.append("    SimAgent(")
+        lines.append(f"        count: {agent['count']},")
+        lines.append(f"        initialHF: {to_ufix64(agent['initial_hf'])},")
+        lines.append(f"        rebalancingHF: {to_ufix64(agent['rebalancing_hf'])},")
+        lines.append(f"        targetHF: {to_ufix64(agent['target_hf'])},")
+        lines.append(f"        debtPerAgent: {to_ufix64(float(debt))},")
+        lines.append(f"        totalSystemDebt: {to_ufix64(float(total_debt))}")
+        lines.append(f"    ){comma}")
+    lines.append("]")
+    lines.append("")
+
+
+def _emit_expected(lines: list[str], prefix: str, expected: dict) -> None:
+    """Emit expected outcome variables."""
+    lines.append(
+        f"access(all) let {prefix}_expectedLiquidationCount: Int = {expected['liquidation_count']}"
+    )
+    lines.append(
+        f"access(all) let {prefix}_expectedAllAgentsSurvive: Bool = {'true' if expected['all_agents_survive'] else 'false'}"
+    )
+    lines.append("")
+
+
+def generate_cdc(data: dict) -> str:
+    scenario = data["scenario"]
+    is_daily = "duration_days" in data
+    has_sub_scenarios = "scenarios" in data
+    prices = _get_prices(data)
+    constants = _get_constants(data)
+
+    lines: list[str] = []
+    lines.append("import Test")
+    lines.append("")
+    lines.append(f"// AUTO-GENERATED from {scenario}.json — do not edit manually")
+    lines.append(
+        "// Run: python3 generate_fixture.py generate <input.json> <output.cdc>"
+    )
+    lines.append("")
+
+    _emit_structs(lines)
+
     # --- Price array ---
     lines.append(f"access(all) let {scenario}_prices: [UFix64] = [")
-    for i, price in enumerate(data["btc_prices"]):
-        comma = "," if i < len(data["btc_prices"]) - 1 else ""
+    for i, price in enumerate(prices):
+        comma = "," if i < len(prices) - 1 else ""
         lines.append(f"    {to_ufix64(price)}{comma}")
     lines.append("]")
     lines.append("")
@@ -308,25 +355,13 @@ def generate_cdc(data: dict) -> str:
         lines.append("]")
         lines.append("")
 
-    # --- Agent array ---
-    lines.append(f"access(all) let {scenario}_agents: [SimAgent] = [")
-    for i, agent in enumerate(data["agents"]):
-        comma = "," if i < len(data["agents"]) - 1 else ""
-        debt = (
-            agent["debt_per_agent"]
-            if isinstance(agent["debt_per_agent"], (int, float))
-            else 0
-        )
-        total_debt = agent.get("total_system_debt", 0)
-        lines.append("    SimAgent(")
-        lines.append(f"        count: {agent['count']},")
-        lines.append(f"        initialHF: {to_ufix64(agent['initial_hf'])},")
-        lines.append(f"        rebalancingHF: {to_ufix64(agent['rebalancing_hf'])},")
-        lines.append(f"        targetHF: {to_ufix64(agent['target_hf'])},")
-        lines.append(f"        debtPerAgent: {to_ufix64(float(debt))},")
-        lines.append(f"        totalSystemDebt: {to_ufix64(float(total_debt))}")
-        lines.append(f"    ){comma}")
-    lines.append("]")
+    # --- Constants ---
+    lines.append(f"access(all) let {scenario}_constants: SimConstants = SimConstants(")
+    lines.append(f"    btcCollateralFactor: {to_ufix64(constants['btc_collateral_factor'])},")
+    lines.append(f"    btcLiquidationThreshold: {to_ufix64(constants['btc_liquidation_threshold'])},")
+    lines.append(f"    yieldAPR: {to_ufix64(constants['yield_apr'])},")
+    lines.append(f"    directMintYT: {'true' if constants['direct_mint_yt'] else 'false'}")
+    lines.append(")")
     lines.append("")
 
     # --- Pool dict ---
@@ -342,39 +377,22 @@ def generate_cdc(data: dict) -> str:
     lines.append("}")
     lines.append("")
 
-    # --- Constants ---
-    c = data["constants"]
-    lines.append(f"access(all) let {scenario}_constants: SimConstants = SimConstants(")
-    lines.append(f"    btcCollateralFactor: {to_ufix64(c['btc_collateral_factor'])},")
-    lines.append(
-        f"    btcLiquidationThreshold: {to_ufix64(c['btc_liquidation_threshold'])},"
-    )
-    lines.append(f"    yieldAPR: {to_ufix64(c['yield_apr'])},")
-    lines.append(f"    directMintYT: {'true' if c['direct_mint_yt'] else 'false'}")
-    lines.append(")")
-    lines.append("")
-
-    # --- Expected outcomes ---
-    e = data["expected"]
-    lines.append(
-        f"access(all) let {scenario}_expectedLiquidationCount: Int = {e['liquidation_count']}"
-    )
-    lines.append(
-        f"access(all) let {scenario}_expectedAllAgentsSurvive: Bool = {'true' if e['all_agents_survive'] else 'false'}"
-    )
-    lines.append("")
-
-    # --- Duration & notes ---
+    # --- Duration ---
     if is_daily:
-        lines.append(
-            f"access(all) let {scenario}_durationDays: Int = {data['duration_days']}"
-        )
-    else:
-        lines.append(
-            f"access(all) let {scenario}_durationMinutes: Int = {data['duration_minutes']}"
-        )
-    lines.append(f'access(all) let {scenario}_notes: String = "{data["notes"]}"')
+        lines.append(f"access(all) let {scenario}_durationDays: Int = {data['duration_days']}")
+    elif "duration_minutes" in data:
+        lines.append(f"access(all) let {scenario}_durationMinutes: Int = {data['duration_minutes']}")
     lines.append("")
+
+    # --- Agents & expected outcomes ---
+    if has_sub_scenarios:
+        for sub in data["scenarios"]:
+            sub_prefix = f"{scenario}_{sub['name']}"
+            _emit_agents(lines, sub_prefix, sub["agents"])
+            _emit_expected(lines, sub_prefix, sub["expected"])
+    else:
+        _emit_agents(lines, scenario, data["agents"])
+        _emit_expected(lines, scenario, data["expected"])
 
     return "\n".join(lines)
 
@@ -390,8 +408,8 @@ def cmd_generate(args: argparse.Namespace) -> None:
         f.write(cdc)
 
     scenario = data["scenario"]
-    n_prices = len(data["btc_prices"])
-    print(f"Generated {args.output} ({n_prices} prices, scenario: {scenario})")
+    prices = _get_prices(data)
+    print(f"Generated {args.output} ({len(prices)} prices, scenario: {scenario})")
 
 
 # ---------------------------------------------------------------------------
