@@ -30,7 +30,7 @@ transaction(amount: UFix64, vaultStoragePath: StoragePath, pushToDrawDownSink: B
             // issue un-entitled Capability
             let vaultCap = signer.capabilities.storage.issue<&MOET.Vault>(MOET.VaultStoragePath)
             // publish receiver Capability, unpublishing any that may exist to prevent collision
-            signer.capabilities.unpublish(MOET.VaultPublicPath)
+            let _unpublishedMoet = signer.capabilities.unpublish(MOET.VaultPublicPath)
             signer.capabilities.publish(vaultCap, at: MOET.VaultPublicPath)
         }
         // assign a Vault Capability to be used in the VaultSink

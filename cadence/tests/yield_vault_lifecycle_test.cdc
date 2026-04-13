@@ -39,7 +39,7 @@ fun setup() {
     // mint tokens & set liquidity in mock swapper contract
     let reserveAmount = 100_000_00.0
     setupYieldVault(protocolAccount, beFailed: false)
-    mintFlow(to: protocolAccount, amount: reserveAmount)
+    let _mintedFlowReserve = mintFlow(to: protocolAccount, amount: reserveAmount)
     mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
@@ -75,11 +75,11 @@ fun setup() {
         issuerStoragePath: MockStrategies.IssuerStoragePath,
         beFailed: false
     )
-    
+
     // Scheduler contracts are deployed as part of deployContracts()
 
     // Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
-    mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
+    let _mintedFlowFees = mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
 
     snapshot = getCurrentBlockHeight()
 }
@@ -91,8 +91,8 @@ fun testLifecycle() {
     let withdrawAmount = 10.0
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: initialFunding + depositAmount + 10.0) // extra for fees/buffer
-    grantBeta(flowYieldVaultsAccount, user)
+    let _mintedFlowUser = mintFlow(to: user, amount: initialFunding + depositAmount + 10.0) // extra for fees/buffer
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
     // 1. Create YieldVault
     createYieldVault(

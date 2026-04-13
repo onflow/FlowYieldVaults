@@ -53,7 +53,7 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
             let cap = signer.capabilities.storage.issue<&FlowYieldVaults.YieldVaultManager>(FlowYieldVaults.YieldVaultManagerStoragePath)
             signer.capabilities.publish(cap, at: FlowYieldVaults.YieldVaultManagerPublicPath)
             // issue an authorized capability for later access via Capability controller if needed (e.g. via HybridCustody)
-            signer.capabilities.storage.issue<&FlowYieldVaults.YieldVaultManager>(
+            let _managerCap = signer.capabilities.storage.issue<&FlowYieldVaults.YieldVaultManager>(
                     FlowYieldVaults.YieldVaultManagerStoragePath
                 )
         }
@@ -62,6 +62,6 @@ transaction(strategyIdentifier: String, vaultIdentifier: String, amount: UFix64)
     }
 
     execute {
-        self.manager.createYieldVault(betaRef: self.betaRef, strategyType: self.strategy, withVault: <-self.depositVault)
+        let _yieldVaultID = self.manager.createYieldVault(betaRef: self.betaRef, strategyType: self.strategy, withVault: <-self.depositVault)
     }
 }

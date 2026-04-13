@@ -147,8 +147,8 @@ fun test_RebalanceYieldVaultScenario3B() {
 	// Likely 0.0
 	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 	log("[TEST] flow balance before \(flowBalanceBefore)")
-	transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
-    grantBeta(flowYieldVaultsAccount, user)
+	let _transferFlowResult = transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
     // Set vault to baseline 1:1 price
     setVaultSharePrice(

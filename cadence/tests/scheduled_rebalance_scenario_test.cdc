@@ -46,7 +46,7 @@ fun setup() {
     deployContracts()
     
     // Fund FlowYieldVaults account for scheduling fees
-    mintFlow(to: flowYieldVaultsAccount, amount: 2000.0)
+    let _mintedFlowToVaultsAccount = mintFlow(to: flowYieldVaultsAccount, amount: 2000.0)
 
     // Set initial token prices (both at 1.0)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
@@ -56,7 +56,7 @@ fun setup() {
     let reserveAmount = 100_000_00.0
     setupMoetVault(protocolAccount, beFailed: false)
     setupYieldVault(protocolAccount, beFailed: false)
-    mintFlow(to: protocolAccount, amount: reserveAmount)
+    let _mintedFlowToProtocol = mintFlow(to: protocolAccount, amount: reserveAmount)
     mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
@@ -113,9 +113,9 @@ fun testRegistryReceivesYieldVaultRegistrationAtInit() {
     log("========================================")
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 1000.0)
-    grantBeta(flowYieldVaultsAccount, user)
-    
+    let _mintedFlowToUser = mintFlow(to: user, amount: 1000.0)
+    let _grantedBetaToUser = grantBeta(flowYieldVaultsAccount, user)
+
     // Create a YieldVault - this triggers AutoBalancer initialization
     log("Creating YieldVault...")
     let createYieldVaultRes = executeTransaction(
@@ -158,9 +158,9 @@ fun testSingleAutoBalancerThreeExecutions() {
     log("========================================")
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 1000.0)
-    grantBeta(flowYieldVaultsAccount, user)
-    
+    let _mintedFlowToUser = mintFlow(to: user, amount: 1000.0)
+    let _grantedBetaToUser = grantBeta(flowYieldVaultsAccount, user)
+
     // Create YieldVault
     log("Creating YieldVault...")
     let createYieldVaultRes = executeTransaction(
@@ -253,9 +253,9 @@ fun testThreeYieldVaultsNineExecutions() {
     log("========================================")
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 3000.0)
-    grantBeta(flowYieldVaultsAccount, user)
-    
+    let _mintedFlowToUser = mintFlow(to: user, amount: 3000.0)
+    let _grantedBetaToUser = grantBeta(flowYieldVaultsAccount, user)
+
     // Create 3 yield vaults
     log("Creating 3 yield vaults...")
     var i = 0
@@ -373,9 +373,9 @@ fun testFiveYieldVaultsContinueWithoutSupervisor() {
     log("========================================")
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 5000.0)
-    grantBeta(flowYieldVaultsAccount, user)
-    
+    let _mintedFlowToUser = mintFlow(to: user, amount: 5000.0)
+    let _grantedBetaToUser = grantBeta(flowYieldVaultsAccount, user)
+
     // Create 5 yield vaults
     log("Creating 5 yield vaults...")
     var i = 0
@@ -486,9 +486,9 @@ fun testFailedYieldVaultCannotRecoverWithoutSupervisor() {
     log("========================================")
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 2000.0)
-    grantBeta(flowYieldVaultsAccount, user)
-    
+    let _mintedFlowToUser = mintFlow(to: user, amount: 2000.0)
+    let _grantedBetaToUser = grantBeta(flowYieldVaultsAccount, user)
+
     // Step 1: Create 3 yield vaults
     log("\nStep 1: Creating 3 yield vaults...")
     var i = 0

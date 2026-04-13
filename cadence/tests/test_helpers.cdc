@@ -207,7 +207,7 @@ access(all) fun deployContracts() {
     let wflowAddress = getEVMAddressAssociated(withType: Type<@FlowToken.Vault>().identifier)
         ?? panic("Failed to get WFLOW address via VM Bridge association with FlowToken.Vault")
     setupBetaAccess()
-    setupPunchswap(deployer: serviceAccount, wflowAddress: wflowAddress)
+    let _punchswapAddresses = setupPunchswap(deployer: serviceAccount, wflowAddress: wflowAddress)
 }
 
 access(all) fun deployContractsForFork() {

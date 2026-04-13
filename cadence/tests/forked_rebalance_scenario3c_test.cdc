@@ -148,8 +148,8 @@ fun test_ForkedRebalanceYieldVaultScenario3C() {
 
     // Likely 0.0
     let _flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
-    transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
-    grantBeta(flowYieldVaultsAccount, user)
+    let _transferFlowResult = transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
     // Set vault to baseline 1:1 price
     setVaultSharePrice(

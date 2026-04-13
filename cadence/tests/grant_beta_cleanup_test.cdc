@@ -16,13 +16,13 @@ fun test_ReGrantBetaRevokesPreviousCapability() {
     let user = Test.createAccount()
     transferFlow(signer: serviceAccount, recipient: user.address, amount: 1.0)
 
-    grantBeta(flowYieldVaultsAccount, user)
+    let _grantedBetaFirst = grantBeta(flowYieldVaultsAccount, user)
 
     let backupRes = _executeTransaction("../transactions/test/backup_beta_cap.cdc", [], user)
     Test.expect(backupRes, Test.beSucceeded())
 
     // Re-granting should revoke the previously issued controller (and thus all old capability copies).
-    grantBeta(flowYieldVaultsAccount, user)
+    let _grantedBetaSecond = grantBeta(flowYieldVaultsAccount, user)
 
     // Event assertions: the re-grant should emit BetaRevoked for the *previous* capID, then a fresh BetaGranted.
     let grantedAny = Test.eventsOfType(Type<FlowYieldVaultsClosedBeta.BetaGranted>())

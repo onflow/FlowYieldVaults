@@ -750,7 +750,7 @@ contract EVM {
                         )
                     }
 
-                    keyList.add(
+                    let _keyIndex = keyList.add(
                       key.publicKey,
                       hashAlgorithm: key.hashAlgorithm,
                       // normalization factor. We need to divide by 1000 because the

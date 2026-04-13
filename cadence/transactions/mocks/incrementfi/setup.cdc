@@ -13,15 +13,15 @@ transaction(swapPairTemplateHex: String) {
             signer.storage.save(<-MOET.createEmptyVault(vaultType: Type<@MOET.Vault>()), to: MOET.VaultStoragePath)
         }
         // Issue a public Vault capability and publish it to the vault's default public path
-        signer.capabilities.unpublish(YieldToken.ReceiverPublicPath)
-        signer.capabilities.unpublish(MOET.ReceiverPublicPath)
+        let _unpublishedYieldToken = signer.capabilities.unpublish(YieldToken.ReceiverPublicPath)
+        let _unpublishedMoet = signer.capabilities.unpublish(MOET.ReceiverPublicPath)
         let moetReceiverCap = signer.capabilities.storage.issue<&{FungibleToken.Vault}>(MOET.VaultStoragePath)
         signer.capabilities.publish(moetReceiverCap, at: MOET.ReceiverPublicPath)
 
         let yieldTokenReceiverCap = signer.capabilities.storage.issue<&{FungibleToken.Vault}>(YieldToken.VaultStoragePath)
         signer.capabilities.publish(yieldTokenReceiverCap, at: YieldToken.ReceiverPublicPath)
 
-        signer.contracts.add(
+        let _deployedSwapPair = signer.contracts.add(
             name: "SwapPair",
             code: swapPairTemplateHex.decodeHex(),
             token0Vault: MOET.createEmptyVault(vaultType: Type<@MOET.Vault>()),

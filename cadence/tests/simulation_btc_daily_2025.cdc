@@ -251,7 +251,7 @@ fun test_BtcDaily2025_DailyRebalancing() {
         let user = Test.createAccount()
         transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: 10.0)
         mintBTC(signer: user, amount: fundingPerAgent)
-        grantBeta(flowYieldVaultsAccount, user)
+        let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
         setVaultSharePrice(
             vaultAddress: morphoVaultAddress,
