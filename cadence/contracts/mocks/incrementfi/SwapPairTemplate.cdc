@@ -407,14 +407,14 @@ access(all) fun swap(vaultIn: @{FungibleToken.Vault}, exactAmountOut: UFix64?): 
         }
     }
     /// Check and swap exact output amount if specified in argument
-    if exactAmountOut != nil {
-        assert(amountOut >= exactAmountOut!, message:
+    if let exactAmountOut = exactAmountOut {
+        assert(amountOut >= exactAmountOut, message:
         SwapError.ErrorEncode(
             msg: "SwapPair: INSUFFICIENT_OUTPUT_AMOUNT",
             err: SwapError.ErrorCode.INSUFFICIENT_OUTPUT_AMOUNT
         )
     )
-    amountOut = exactAmountOut!
+    amountOut = exactAmountOut
 }
 
 if (vaultIn.isInstance(self.token0VaultType)) {
@@ -573,12 +573,12 @@ self.lock = false
 }
 
 access(all) view fun _rootK(balance0: UFix64, balance1: UFix64): UFix64 {
-    let e18: UInt256 = SwapConfig.scaleFactor
+    let e18 = SwapConfig.scaleFactor
     let balance0Scaled = SwapConfig.UFix64ToScaledUInt256(balance0)
     let balance1Scaled = SwapConfig.UFix64ToScaledUInt256(balance1)
     if self.isStableSwap() {
-        let _p_scaled: UInt256 = SwapConfig.UFix64ToScaledUInt256(self.getStableCurveP())
-        let _k_scaled: UInt256 = SwapConfig.k_stable_p(balance0Scaled, balance1Scaled, _p_scaled)
+        let _p_scaled = SwapConfig.UFix64ToScaledUInt256(self.getStableCurveP())
+        let _k_scaled = SwapConfig.k_stable_p(balance0Scaled, balance1Scaled, _p_scaled)
         return SwapConfig.ScaledUInt256ToUFix64(SwapConfig.sqrt(SwapConfig.sqrt(_k_scaled / 2)))
     } else {
         return SwapConfig.ScaledUInt256ToUFix64(SwapConfig.sqrt(balance0Scaled * balance1Scaled / e18))

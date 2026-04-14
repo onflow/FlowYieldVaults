@@ -159,7 +159,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             )
 
             // Step 2: Calculate total debt amount
-            var totalDebtAmount: UFix64 = 0.0
+            var totalDebtAmount = 0.0
             for debtAmount in debtsByType.values {
                 totalDebtAmount = totalDebtAmount + debtAmount
             }
@@ -193,7 +193,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                 ?? panic("Could not create external source from AutoBalancer")
 
             // Step 5: Retrieve yield→MOET swapper from contract config
-            let swapperKey = FlowYieldVaultsStrategiesV2.getYieldToMoetSwapperConfigKey(self.uniqueID)!
+            let swapperKey = FlowYieldVaultsStrategiesV2.getYieldToMoetSwapperConfigKey(self.uniqueID)
             let yieldToMoetSwapper = FlowYieldVaultsStrategiesV2.config[swapperKey] as! {DeFiActions.Swapper}?
                 ?? panic("No yield→MOET swapper found for strategy \(self.id()!)")
 
@@ -464,7 +464,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             balancerIO.autoBalancer.setSource(positionSwapSource, updateSourceID: true)
 
             // Store yield→MOET swapper in contract config for later access during closePosition
-            let yieldToMoetSwapperKey = FlowYieldVaultsStrategiesV2.getYieldToMoetSwapperConfigKey(uniqueID)!
+            let yieldToMoetSwapperKey = FlowYieldVaultsStrategiesV2.getYieldToMoetSwapperConfigKey(uniqueID)
             FlowYieldVaultsStrategiesV2.config[yieldToMoetSwapperKey] = yieldToMoetSwapper
 
             // @TODO implement moet to collateral swapper
@@ -907,7 +907,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
             for stratType in config {
                 let newPerCollateral = config[stratType]!
                 let existingPerCollateral = mergedComposerConfig[stratType] ?? {}
-                var mergedPerCollateral: {Type: FlowYieldVaultsStrategiesV2.CollateralConfig} = existingPerCollateral
+                var mergedPerCollateral = existingPerCollateral
 
                 for collateralType in newPerCollateral {
                     mergedPerCollateral[collateralType] = newPerCollateral[collateralType]!

@@ -548,8 +548,8 @@ access(all) contract FlowTransactionScheduler {
 
         access(all) init() {
             self.nextID = 1
-            self.canceledTransactions = [0 as UInt64]
-            
+            self.canceledTransactions = [0]
+
             self.transactions = {}
             self.slotUsedEffort = {}
             self.slotQueue = {}
@@ -707,7 +707,7 @@ access(all) contract FlowTransactionScheduler {
         /// @return Status: The status of the transaction, if the transaction is not found Unknown is returned.
         access(contract) view fun getStatus(id: UInt64): Status? {
             // if the transaction ID is greater than the next ID, it is not scheduled yet and has never existed
-            if id == 0 as UInt64 || id >= self.nextID {
+            if id == 0  || id >= self.nextID {
                 return nil
             }
 
@@ -772,8 +772,8 @@ access(all) contract FlowTransactionScheduler {
                 executionEffort: executionEffort
             )
 
-            if estimate.error != nil {
-                panic(estimate.error!)
+            if let estimationError = estimate.error {
+                panic(estimationError)
             }
 
             assert (
@@ -1299,7 +1299,7 @@ access(all) contract FlowTransactionScheduler {
             self.slotQueue = {}
             self.slotUsedEffort = {}
             self.sortedTimestamps = SortedTimestamps()
-            self.canceledTransactions = [0 as UInt64]
+            self.canceledTransactions = [0]
         }
     }
 

@@ -109,7 +109,7 @@ access(all) contract MockStrategies {
             let debtsByType = self.position.getTotalDebt()
 
             // Step 2: Calculate total debt amount across all debt types
-            var totalDebtAmount: UFix64 = 0.0
+            var totalDebtAmount = 0.0
             for debtAmount in debtsByType.values {
                 totalDebtAmount = totalDebtAmount + debtAmount
             }
@@ -282,7 +282,7 @@ access(all) contract MockStrategies {
 
             // assign token types
 
-            let moetTokenType: Type = Type<@MOET.Vault>()
+            let moetTokenType = Type<@MOET.Vault>()
             let yieldTokenType = Type<@YieldToken.Vault>()
             // assign collateral & flow token types
             let collateralType = withFunds.getType()
