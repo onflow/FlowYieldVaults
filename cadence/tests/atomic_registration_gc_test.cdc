@@ -31,7 +31,7 @@ access(all) fun setup() {
     let reserveAmount = 100_000_00.0
     setupMoetVault(protocolAccount, beFailed: false)
     setupYieldVault(protocolAccount, beFailed: false)
-    mintFlow(to: protocolAccount, amount: reserveAmount)
+    let _mintedFlowReserve = mintFlow(to: protocolAccount, amount: reserveAmount)
     mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
@@ -70,13 +70,13 @@ access(all) fun setup() {
     // Scheduler contracts are deployed as part of deployContracts()
     
     // Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
-    mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
+    let _mintedFlowFees = mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
 }
 
 access(all) fun testAtomicRegistrationAndGC() {
     let user = Test.createAccount()
     let fundingAmount = 100.0
-    mintFlow(to: user, amount: fundingAmount)
+    let _mintedFlowUser = mintFlow(to: user, amount: fundingAmount)
 
     // Grant Beta Access
     let betaRef = grantBeta(flowYieldVaultsAccount, user)

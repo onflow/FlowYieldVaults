@@ -736,7 +736,7 @@ contract EVM {
         let seenAccountKeyIndices: {Int: Int} = {}
         for signatureIndex, signature in signatures{
             // index of the key on the account
-            let accountKeyIndex = Int(keyIndices[signatureIndex]!)
+            let accountKeyIndex = Int(keyIndices[signatureIndex])
             // index of the key in the key list
             var keyListIndex = 0
 
@@ -750,7 +750,7 @@ contract EVM {
                         )
                     }
 
-                    keyList.add(
+                    let _keyIndex = keyList.add(
                       key.publicKey,
                       hashAlgorithm: key.hashAlgorithm,
                       // normalization factor. We need to divide by 1000 because the
@@ -803,7 +803,6 @@ contract EVM {
         }
 
         // verify evm address matching
-        var addr = coaRef!.address()
         for index, item in coaRef!.address().bytes {
             if item != evmAddress[index] {
                 return ValidationResult(

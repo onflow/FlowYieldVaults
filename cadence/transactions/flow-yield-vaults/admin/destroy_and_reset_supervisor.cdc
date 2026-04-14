@@ -24,7 +24,7 @@ transaction(
 
     prepare(signer: auth(BorrowValue, LoadValue, StorageCapabilities) &Account) {
         // remove the stored Capability used for internal recurring execution
-        let supervisorCap = signer.storage
+        let _supervisorCap = signer.storage
             .load<Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>>(
                 from: /storage/FlowYieldVaultsSupervisorCapability
             )

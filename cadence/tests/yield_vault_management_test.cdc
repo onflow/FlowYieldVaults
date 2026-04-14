@@ -33,8 +33,8 @@ fun test_CreateYieldVaultSucceeds() {
     let fundingAmount = 100.0
 
     let user = Test.createAccount()
-    mintFlow(to: user, amount: fundingAmount)
-    grantBeta(flowYieldVaultsAccount, user)
+    let _mintFlowResult = mintFlow(to: user, amount: fundingAmount)
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
     createYieldVault(
         signer: user,
@@ -56,8 +56,8 @@ fun test_CloseYieldVaultSucceeds() {
     let fundingAmount = 100.0
 
     let user = Test.createAccount()
-    mintFlow(to: user, amount: fundingAmount)
-    grantBeta(flowYieldVaultsAccount, user)
+    let _mintedFlowClose = mintFlow(to: user, amount: fundingAmount)
+    let _grantedBetaClose = grantBeta(flowYieldVaultsAccount, user)
 
     createYieldVault(
         signer: user,

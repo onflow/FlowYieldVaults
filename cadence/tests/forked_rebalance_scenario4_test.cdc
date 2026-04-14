@@ -171,8 +171,8 @@ fun test_RebalanceLowCollateralHighYieldPrices() {
 	let yieldPriceIncrease = 1500.0 // YT:   $1000.0 → $1500.0
 
 	let user = Test.createAccount()
-	transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
-	grantBeta(flowYieldVaultsAccount, user)
+	let _transferFlowResult = transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
+	let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
 	createYieldVault(
 		signer: user,
@@ -345,8 +345,8 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	let yieldPriceIncrease = 1.5      // YT: $1.0 → $1.5
 
 	let user = Test.createAccount()
-	transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
-	grantBeta(flowYieldVaultsAccount, user)
+	let _transferFlowResult = transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
+	let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
 	createYieldVault(
 		signer: user,
@@ -536,7 +536,7 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	log("  FLOW collateral: \(collateralBeforeClose) FLOW")
 	log("  MOET debt:       \(debtBeforeClose) MOET")
 
-	let flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
+	let _flowBalanceBefore = getBalance(address: user.address, vaultPublicPath: /public/flowTokenReceiver)!
 
 	// Close the yield vault
 	// log("\n[Scenario5] Closing yield vault...")

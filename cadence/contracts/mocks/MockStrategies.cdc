@@ -109,7 +109,7 @@ access(all) contract MockStrategies {
             let debtsByType = self.position.getTotalDebt()
 
             // Step 2: Calculate total debt amount across all debt types
-            var totalDebtAmount: UFix64 = 0.0
+            var totalDebtAmount = 0.0
             for debtAmount in debtsByType.values {
                 totalDebtAmount = totalDebtAmount + debtAmount
             }
@@ -261,19 +261,19 @@ access(all) contract MockStrategies {
         }
 
         /// Returns the Vault types which can be used to initialize a given Strategy
-        access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
+        access(all) view fun getSupportedInitializationVaults(forStrategy _: Type): {Type: Bool} {
             return { Type<@FlowToken.Vault>(): true }
         }
 
         /// Returns the Vault types which can be deposited to a given Strategy instance if it was initialized with the
         /// provided Vault type
-        access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
+        access(all) view fun getSupportedInstanceVaults(forStrategy _strategy: Type, initializedWith _type: Type): {Type: Bool} {
             return { Type<@FlowToken.Vault>(): true }
         }
 
         /// Composes a Strategy of the given type with the provided funds
         access(all) fun createStrategy(
-            _ type: Type,
+            _ _type: Type,
             uniqueID: DeFiActions.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
         ): @{FlowYieldVaults.Strategy} {
@@ -282,7 +282,7 @@ access(all) contract MockStrategies {
 
             // assign token types
 
-            let moetTokenType: Type = Type<@MOET.Vault>()
+            let moetTokenType = Type<@MOET.Vault>()
             let yieldTokenType = Type<@YieldToken.Vault>()
             // assign collateral & flow token types
             let collateralType = withFunds.getType()
@@ -496,8 +496,6 @@ access(all) contract MockStrategies {
 
     init() {
         self.IssuerStoragePath = StoragePath(identifier: "MockStrategiesComposerIssuer_\(self.account.address)")!
-
-        let initialCollateralType = Type<@FlowToken.Vault>()
 
         let configs: {Type: {Type: {Type: {String: AnyStruct}}}} = {
                 Type<@TracerStrategyComposer>(): {

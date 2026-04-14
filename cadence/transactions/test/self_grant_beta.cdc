@@ -8,21 +8,19 @@ transaction() {
         let handle = signer.storage.borrow<auth(FlowYieldVaultsClosedBeta.Admin) &FlowYieldVaultsClosedBeta.AdminHandle>(
             from: FlowYieldVaultsClosedBeta.AdminHandleStoragePath
         ) ?? panic("Missing AdminHandle at \(FlowYieldVaultsClosedBeta.AdminHandleStoragePath)")
-        
+
         // Grant beta to self
         let cap = handle.grantBeta(addr: signer.address)
-        
+
         // Save the beta capability
         let storagePath = FlowYieldVaultsClosedBeta.UserBetaCapStoragePath
-        
+
         // Remove any existing capability
-        if let existing = signer.storage.load<Capability<auth(FlowYieldVaultsClosedBeta.Beta) &FlowYieldVaultsClosedBeta.BetaBadge>>(from: storagePath) {
-            // Old cap exists, remove it
-        }
-        
+        let _existing = signer.storage.load<Capability<auth(FlowYieldVaultsClosedBeta.Beta) &FlowYieldVaultsClosedBeta.BetaBadge>>(from: storagePath)
+
         // Save the new capability
         signer.storage.save(cap, to: storagePath)
-        
+
         log("✅ Beta granted to self!")
         log("   StoragePath: ".concat(storagePath.toString()))
     }

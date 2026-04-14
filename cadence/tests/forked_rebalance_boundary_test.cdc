@@ -220,8 +220,8 @@ fun test_UpperBoundary() {
     let user = Test.createAccount()
     let fundingAmount = 1000.0
 
-    transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
-    grantBeta(flowYieldVaultsAccount, user)
+    let _transferFlowResult = transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
     // Set vault to baseline 1:1 price
     setVaultSharePrice(
@@ -307,7 +307,7 @@ fun test_UpperBoundary() {
             signer: coaOwnerAccount
         )
 
-        let balanceBefore = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
+        let _balanceBefore = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
 
         // Now set to test price
         setVaultSharePrice(
@@ -425,8 +425,8 @@ fun test_LowerBoundary() {
     let user = Test.createAccount()
     let fundingAmount = 1000.0
 
-    transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
-    grantBeta(flowYieldVaultsAccount, user)
+    let _transferFlowResult = transferFlow(signer: whaleFlowAccount, recipient: user.address, amount: fundingAmount)
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
     setVaultSharePrice(
         vaultAddress: morphoVaultAddress,
@@ -505,7 +505,7 @@ fun test_LowerBoundary() {
             signer: coaOwnerAccount
         )
 
-        let balanceBefore = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
+        let _balanceBefore = getYieldVaultBalance(address: user.address, yieldVaultID: yieldVaultIDs![0])!
 
         // Set to test price
         setVaultSharePrice(

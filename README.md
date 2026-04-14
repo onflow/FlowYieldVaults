@@ -2,6 +2,11 @@
 
 FlowYieldVaults is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via FlowALP's Active Lending Platform. FlowYieldVaults aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
 
+## Install
+
+- `git submodule update --init --recursive`
+- `flow deps install`
+
 ## System Architecture
 
 The FlowYieldVaults platform consists of several interconnected components:

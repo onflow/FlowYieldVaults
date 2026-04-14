@@ -13,7 +13,7 @@ import "FlowYieldVaults"
 access(all) contract MockStrategy {
 
     access(all) let IssuerStoragePath : StoragePath
-    
+
     access(all) struct Sink : DeFiActions.Sink {
         access(contract) var uniqueID: DeFiActions.UniqueIdentifier?
         init(_ id: DeFiActions.UniqueIdentifier?) {
@@ -25,7 +25,7 @@ access(all) contract MockStrategy {
         access(all) fun minimumCapacity(): UFix64 {
             return 0.0
         }
-        access(all) fun depositCapacity(from: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
+        access(all) fun depositCapacity(from _: auth(FungibleToken.Withdraw) &{FungibleToken.Vault}) {
             return
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
@@ -53,7 +53,7 @@ access(all) contract MockStrategy {
         access(all) fun minimumAvailable(): UFix64 {
             return 0.0
         }
-        access(FungibleToken.Withdraw) fun withdrawAvailable(maxAmount: UFix64): @{FungibleToken.Vault} {
+        access(FungibleToken.Withdraw) fun withdrawAvailable(maxAmount _: UFix64): @{FungibleToken.Vault} {
             return <- DeFiActionsUtils.getEmptyVault(self.getSourceType())
         }
         access(all) fun getComponentInfo(): DeFiActions.ComponentInfo {
@@ -143,15 +143,15 @@ access(all) contract MockStrategy {
         access(all) view fun getComposedStrategyTypes(): {Type: Bool} {
             return { Type<@Strategy>(): true }
         }
-        access(all) view fun getSupportedInitializationVaults(forStrategy: Type): {Type: Bool} {
+        access(all) view fun getSupportedInitializationVaults(forStrategy _: Type): {Type: Bool} {
             return { Type<@FlowToken.Vault>(): true }
         }
-        access(all) view fun getSupportedInstanceVaults(forStrategy: Type, initializedWith: Type): {Type: Bool} {
+        access(all) view fun getSupportedInstanceVaults(forStrategy _strategy: Type, initializedWith _type: Type): {Type: Bool} {
             return { Type<@FlowToken.Vault>(): true }
         }
         access(all) fun createStrategy(
-            _ type: Type,
-            uniqueID: DeFiActions.UniqueIdentifier,
+            _ _type: Type,
+            uniqueID _: DeFiActions.UniqueIdentifier,
             withFunds: @{FungibleToken.Vault}
         ): @{FlowYieldVaults.Strategy} {
             let id = DeFiActions.createUniqueIdentifier()
