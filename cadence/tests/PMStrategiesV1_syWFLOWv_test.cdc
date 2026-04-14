@@ -163,7 +163,7 @@ access(all) fun setup() {
     // Grant beta access to user account for testing yield vault operations
     log("Granting beta access to user...")
     result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/admin/grant_beta.cdc",
+        "../transactions/admin/grant_beta.cdc",
         [],
         [adminAccount, userAccount]
     )
@@ -177,7 +177,7 @@ access(all) fun setup() {
 access(all) fun testCreateSyWFLOWvYieldVault() {
     log("Creating syWFLOWvStrategy yield vault with 1.0 FLOW...")
     let result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        "../transactions/create_yield_vault.cdc",
         [syWFLOWvStrategyIdentifier, flowVaultIdentifier, 1.0],
         [userAccount]
     )
@@ -217,7 +217,7 @@ access(all) fun testDepositToSyWFLOWvYieldVault() {
     let depositAmount: UFix64 = 0.5
     log("Depositing 0.5 FLOW to syWFLOWv yield vault...")
     let result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/deposit_to_yield_vault.cdc",
+        "../transactions/deposit_to_yield_vault.cdc",
         [syWFLOWvYieldVaultID, depositAmount],
         [userAccount]
     )
@@ -247,7 +247,7 @@ access(all) fun testWithdrawFromSyWFLOWvYieldVault() {
     let withdrawAmount: UFix64 = 0.3
     log("Withdrawing 0.3 FLOW from syWFLOWv yield vault...")
     let result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/withdraw_from_yield_vault.cdc",
+        "../transactions/withdraw_from_yield_vault.cdc",
         [syWFLOWvYieldVaultID, withdrawAmount],
         [userAccount]
     )
@@ -283,7 +283,7 @@ access(all) fun testCloseSyWFLOWvYieldVault() {
 
     log("Closing syWFLOWv yield vault...")
     let result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/close_yield_vault.cdc",
+        "../transactions/close_yield_vault.cdc",
         [syWFLOWvYieldVaultID],
         [userAccount]
     )

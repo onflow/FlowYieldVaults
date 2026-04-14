@@ -148,7 +148,7 @@ access(all) fun setup() {
     // Grant beta access to user account for testing yield vault operations
     log("Granting beta access to user...")
     var result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/admin/grant_beta.cdc",
+        "../transactions/admin/grant_beta.cdc",
         [],
         [adminAccount, userAccount]
     )
@@ -162,7 +162,7 @@ access(all) fun setup() {
 access(all) fun testCreateFUSDEVYieldVault() {
     log("Creating FUSDEVStrategy yield vault with 1.0 PYUSD0...")
     let result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        "../transactions/create_yield_vault.cdc",
         [fusdEvStrategyIdentifier, pyusd0VaultIdentifier, 1.0],
         [userAccount]
     )
@@ -194,7 +194,7 @@ access(all) fun testCreateFUSDEVYieldVault() {
 access(all) fun testDepositToFUSDEVYieldVault() {
     log("Depositing 0.5 PYUSD0 to FUSDEV yield vault...")
     let result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/deposit_to_yield_vault.cdc",
+        "../transactions/deposit_to_yield_vault.cdc",
         [fusdEvYieldVaultID, 0.5],
         [userAccount]
     )
@@ -213,7 +213,7 @@ access(all) fun testDepositToFUSDEVYieldVault() {
 access(all) fun testWithdrawFromFUSDEVYieldVault() {
     log("Withdrawing 0.3 PYUSD0 from FUSDEV yield vault...")
     let result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/withdraw_from_yield_vault.cdc",
+        "../transactions/withdraw_from_yield_vault.cdc",
         [fusdEvYieldVaultID, 0.3],
         [userAccount]
     )
@@ -232,7 +232,7 @@ access(all) fun testWithdrawFromFUSDEVYieldVault() {
 access(all) fun testCloseFUSDEVYieldVault() {
     log("Closing FUSDEV yield vault...")
     let result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/close_yield_vault.cdc",
+        "../transactions/close_yield_vault.cdc",
         [fusdEvYieldVaultID],
         [userAccount]
     )

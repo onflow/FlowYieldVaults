@@ -152,7 +152,7 @@ access(all) fun setup() {
     // Grant beta access
     log("Granting beta access...")
     result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/admin/grant_beta.cdc",
+        "../transactions/admin/grant_beta.cdc",
         [],
         [adminAccount, userAccount]
     )
@@ -160,7 +160,7 @@ access(all) fun setup() {
 
     log("Initializing PendingRedeemHandler...")
     result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/admin/init_pending_redeem_handler.cdc",
+        "../transactions/admin/init_pending_redeem_handler.cdc",
         [],
         []
     )
@@ -186,7 +186,7 @@ access(all) fun setup() {
 access(all) fun testCreateYieldVaultForDeferredRedeem() {
     log("Creating syWFLOWv yield vault with 2.0 FLOW...")
     let result = _executeTransactionFile(
-        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        "../transactions/create_yield_vault.cdc",
         [syWFLOWvStrategyIdentifier, flowVaultIdentifier, 2.0],
         [userAccount]
     )

@@ -18,7 +18,7 @@ access(all) struct DeploymentConfig {
     access(all) let wflowAddress: String
 
     access(all) let skipBreakingChanges: Bool
-    
+
     init(
         uniswapFactoryAddress: String,
         uniswapRouterAddress: String,
@@ -78,7 +78,7 @@ access(all)
 fun grantBeta(_ admin: Test.TestAccount, _ grantee: Test.TestAccount): Test.TransactionResult {
     let signers = admin.address == grantee.address ? [admin] : [admin, grantee]
     let betaTxn = Test.Transaction(
-        code: Test.readFile("../transactions/flow-yield-vaults/admin/grant_beta.cdc"),
+        code: Test.readFile("../transactions/admin/grant_beta.cdc"),
         authorizers: [admin.address, grantee.address],
         signers: signers,
         arguments: []
@@ -182,27 +182,27 @@ access(all) fun deployContracts() {
         wflowAddress: "0x0000000000000000000000000000000000000000",
         skipBreakingChanges: false
     )
-    
+
     // TODO: remove this step once the VM bridge templates are updated for test env
     // see https://github.com/onflow/flow-go/issues/8184
     tempUpsertBridgeTemplateChunks(serviceAccount)
-    
+
     _deploy(config: config)
-    
+
     var err = Test.deployContract(
         name: "MockStrategies",
-        path: "../contracts/mocks/MockStrategies.cdc",
+        path: "./mocks/MockStrategies.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
 
     err = Test.deployContract(
         name: "MockStrategy",
-        path: "../contracts/mocks/MockStrategy.cdc",
+        path: "./mocks/MockStrategy.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    
+
     // Emulator-specific setup (already exists on mainnet fork)
     let wflowAddress = getEVMAddressAssociated(withType: Type<@FlowToken.Vault>().identifier)
         ?? panic("Failed to get WFLOW address via VM Bridge association with FlowToken.Vault")
@@ -225,10 +225,10 @@ access(all) fun deployContractsForFork() {
     )
 
     // Deploy EVM mock
-    var err = Test.deployContract(name: "EVM", path: "../contracts/mocks/EVM.cdc", arguments: [])
+    var err = Test.deployContract(name: "EVM", path: "./mocks/EVM.cdc", arguments: [])
 
     // Redeploy FlowTransactionScheduler mock (replaces forked mainnet contract with reset-capable version)
-    err = Test.deployContract(name: "FlowTransactionScheduler", path: "../contracts/mocks/FlowTransactionScheduler.cdc", arguments: [])
+    err = Test.deployContract(name: "FlowTransactionScheduler", path: "./mocks/FlowTransactionScheduler.cdc", arguments: [])
 
     _deploy(config: config)
 }
@@ -259,7 +259,7 @@ access(self) fun _deploy(config: DeploymentConfig) {
         )
         Test.expect(err, Test.beNil())
     }
-    
+
     err = Test.deployContract(
         name: "SwapConnectors",
         path: "../../lib/FlowALP/FlowActions/cadence/contracts/connectors/SwapConnectors.cdc",
@@ -292,19 +292,19 @@ access(self) fun _deploy(config: DeploymentConfig) {
     let initialYieldSupply = 0.0
     err = Test.deployContract(
         name: "YieldToken",
-        path: "../contracts/mocks/YieldToken.cdc",
+        path: "./mocks/YieldToken.cdc",
         arguments: [initialYieldSupply]
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "MockOracle",
-        path: "../contracts/mocks/MockOracle.cdc",
+        path: "./mocks/MockOracle.cdc",
         arguments: [Type<@MOET.Vault>().identifier]
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "MockSwapper",
-        path: "../contracts/mocks/MockSwapper.cdc",
+        path: "./mocks/MockSwapper.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -707,7 +707,7 @@ fun setupMoetVault(_ signer: Test.TestAccount, beFailed: Bool) {
 
 access(all)
 fun setupYieldVault(_ signer: Test.TestAccount, beFailed: Bool) {
-    let setupRes = _executeTransaction("../transactions/yield-token/setup_vault.cdc", [], signer)
+    let setupRes = _executeTransaction("transactions/yield-token/setup_vault.cdc", [], signer)
     Test.expect(setupRes, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
@@ -719,13 +719,13 @@ fun mintMoet(signer: Test.TestAccount, to: Address, amount: UFix64, beFailed: Bo
 
 access(all)
 fun mintYield(signer: Test.TestAccount, to: Address, amount: UFix64, beFailed: Bool) {
-    let mintRes = _executeTransaction("../transactions/yield-token/mint_yield.cdc", [to, amount], signer)
+    let mintRes = _executeTransaction("./transactions/yield-token/mint_yield.cdc", [to, amount], signer)
     Test.expect(mintRes, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
 access(all)
 fun addStrategyComposer(signer: Test.TestAccount, strategyIdentifier: String, composerIdentifier: String, issuerStoragePath: StoragePath, beFailed: Bool) {
-    let addRes = _executeTransaction("../transactions/flow-yield-vaults/admin/add_strategy_composer.cdc",
+    let addRes = _executeTransaction("../transactions/admin/add_strategy_composer.cdc",
         [ strategyIdentifier, composerIdentifier, issuerStoragePath ],
         signer
     )
@@ -740,7 +740,7 @@ fun createYieldVault(
     amount: UFix64,
     beFailed: Bool
 ) {
-    let res = _executeTransaction("../transactions/flow-yield-vaults/create_yield_vault.cdc",
+    let res = _executeTransaction("../transactions/create_yield_vault.cdc",
         [ strategyIdentifier, vaultIdentifier, amount ],
         signer
     )
@@ -749,25 +749,25 @@ fun createYieldVault(
 
 access(all)
 fun closeYieldVault(signer: Test.TestAccount, id: UInt64, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/flow-yield-vaults/close_yield_vault.cdc", [id], signer)
+    let res = _executeTransaction("../transactions/close_yield_vault.cdc", [id], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
 access(all)
 fun depositToYieldVault(signer: Test.TestAccount, id: UInt64, amount: UFix64, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/flow-yield-vaults/deposit_to_yield_vault.cdc", [id, amount], signer)
+    let res = _executeTransaction("../transactions/deposit_to_yield_vault.cdc", [id, amount], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
 access(all)
 fun withdrawFromYieldVault(signer: Test.TestAccount, id: UInt64, amount: UFix64, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/flow-yield-vaults/withdraw_from_yield_vault.cdc", [id, amount], signer)
+    let res = _executeTransaction("../transactions/withdraw_from_yield_vault.cdc", [id, amount], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
 access(all)
 fun rebalanceYieldVault(signer: Test.TestAccount, id: UInt64, force: Bool, beFailed: Bool) {
-    let res = _executeTransaction("../transactions/flow-yield-vaults/admin/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
+    let res = _executeTransaction("../transactions/admin/rebalance_auto_balancer_by_id.cdc", [id, force], signer)
     Test.expect(res, beFailed ? Test.beFailed() : Test.beSucceeded())
 }
 
@@ -790,7 +790,7 @@ fun getLastPositionDepositedEvent(_ evts: [AnyStruct]): AnyStruct { // can't ret
 access(all)
 fun setMockOraclePrice(signer: Test.TestAccount, forTokenIdentifier: String, price: UFix64) {
     let setRes = _executeTransaction(
-        "../transactions/mocks/oracle/set_price.cdc",
+        "./transactions/mocks/oracle/set_price.cdc",
         [ forTokenIdentifier, price ],
         signer
     )
@@ -800,7 +800,7 @@ fun setMockOraclePrice(signer: Test.TestAccount, forTokenIdentifier: String, pri
 access(all)
 fun setMockSwapperLiquidityConnector(signer: Test.TestAccount, vaultStoragePath: StoragePath) {
     let setRes = _executeTransaction(
-        "../transactions/mocks/swapper/set_liquidity_connector.cdc",
+        "./transactions/mocks/swapper/set_liquidity_connector.cdc",
         [ vaultStoragePath ],
         signer
     )
@@ -822,7 +822,7 @@ fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}
     // Move time by 1 second to ensure that the resolve time is in the future
     // This prevents race conditions between consecutive calls to setBandOraclePrices
     Test.moveTime(by: 1.0)
-    
+
     let symbolsRates: {String: UInt64} = {}
     for symbol in symbolPrices {
         // BandOracle uses 1e9 multiplier for prices
@@ -833,7 +833,7 @@ fun setBandOraclePrices(signer: Test.TestAccount, symbolPrices: {String: UFix64}
         let frac = price - UFix64(whole)
         symbolsRates[symbol] = whole * 1_000_000_000 + UInt64(frac * 1_000_000_000.0)
     }
-    
+
     let setRes = _executeTransaction(
         "../../lib/FlowALP/FlowActions/cadence/tests/transactions/band-oracle/update_data.cdc",
         [ symbolsRates ],
@@ -966,7 +966,7 @@ access(all) let nftPositionDescriptorBytecodeChunks = [
 access(all)
 fun transferFlow(signer: Test.TestAccount, recipient: Address, amount: UFix64) {
     let transferResult = _executeTransaction(
-        "../transactions/flow-token/transfer_flow.cdc",
+        "./transactions/flow-token/transfer_flow.cdc",
         [recipient, amount],
         signer
     )

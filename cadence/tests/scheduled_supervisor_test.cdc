@@ -101,7 +101,7 @@ fun testAutoRegisterAndSupervisor() {
     // 1. Create YieldVault (Should auto-register and self-schedule via native mechanism)
     log("Step 1: Create YieldVault")
     let createYieldVaultRes = executeTransaction(
-        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        "../transactions/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user
     )
@@ -159,7 +159,7 @@ fun testMultiYieldVaultNativeScheduling() {
     var i = 0
     while i < 3 {
         let res = executeTransaction(
-            "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+            "../transactions/create_yield_vault.cdc",
             [strategyIdentifier, flowTokenIdentifier, 100.0],
             user
         )
@@ -213,7 +213,7 @@ fun testMultiYieldVaultIndependentExecution() {
     var i = 0
     while i < 3 {
         let res = executeTransaction(
-            "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+            "../transactions/create_yield_vault.cdc",
             [strategyIdentifier, flowTokenIdentifier, 100.0],
             user
         )
@@ -304,7 +304,7 @@ fun testPaginationStress() {
     var i = 0
     while i < numYieldVaults {
         let res = executeTransaction(
-            "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+            "../transactions/create_yield_vault.cdc",
             [strategyIdentifier, flowTokenIdentifier, 5.0],
             user
         )
@@ -426,7 +426,7 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
     // 1. Create a healthy yield vault (AutoBalancer schedules itself natively)
     log("Step 1: Creating healthy yield vault...")
     let createRes = executeTransaction(
-        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        "../transactions/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user
     )
@@ -472,7 +472,7 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
     // Schedule Supervisor
     let interval = 60.0 * 10.0
     let schedSupRes = executeTransaction(
-        "../transactions/flow-yield-vaults/admin/schedule_supervisor.cdc",
+        "../transactions/admin/schedule_supervisor.cdc",
         [interval, UInt8(1), UInt64(800), true], // interval, priority, execution effort, scan for stuck
         flowYieldVaultsAccount
     )
@@ -555,7 +555,7 @@ fun testStuckYieldVaultDetectionLogic() {
     // 1. Create a healthy yield vault
     log("Step 1: Creating healthy yield vault...")
     let createRes = executeTransaction(
-        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        "../transactions/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user
     )
@@ -662,7 +662,7 @@ fun testInsufficientFundsAndRecovery() {
     var i = 0
     while i < 5 {
         let res = executeTransaction(
-            "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+            "../transactions/create_yield_vault.cdc",
             [strategyIdentifier, flowTokenIdentifier, 50.0],
             user
         )
@@ -738,7 +738,7 @@ fun testInsufficientFundsAndRecovery() {
     // Drain ALL FLOW (leave minimal amount)
     if balanceBeforeDrain > 0.01 {
         let drainRes = executeTransaction(
-            "../transactions/flow-yield-vaults/drain_flow.cdc",
+            "transactions/drain_flow.cdc",
             [balanceBeforeDrain - 0.001],
             flowYieldVaultsAccount
         )
@@ -831,7 +831,7 @@ fun testInsufficientFundsAndRecovery() {
     log("Scheduling Supervisor at: ".concat(restartTime.toString()))
 
     let schedSupRes = executeTransaction(
-        "../transactions/flow-yield-vaults/admin/schedule_supervisor.cdc",
+        "../transactions/admin/schedule_supervisor.cdc",
         [interval, UInt8(1), UInt64(5000), true],  // interval, priority, execution effort, scan for stuck
         flowYieldVaultsAccount
     )
@@ -991,7 +991,7 @@ fun testSupervisorHandlesManyStuckVaults() {
     // 2. Create n yield vaults in batch (Test.executeTransactions)
     var i = 0
     let tx = Test.Transaction(
-        code: Test.readFile("../transactions/flow-yield-vaults/create_yield_vault.cdc"),
+        code: Test.readFile("../transactions/create_yield_vault.cdc"),
         authorizers: [user.address],
         signers: [user],
         arguments: [strategyIdentifier, flowTokenIdentifier, 5.0]
@@ -1025,7 +1025,7 @@ fun testSupervisorHandlesManyStuckVaults() {
     ).returnValue! as! UFix64)
     if balanceBeforeDrain > 0.01 {
         let drainRes = _executeTransaction(
-            "../transactions/flow-yield-vaults/drain_flow.cdc",
+            "transactions/drain_flow.cdc",
             [balanceBeforeDrain - 0.001],
             flowYieldVaultsAccount
         )
@@ -1049,7 +1049,7 @@ fun testSupervisorHandlesManyStuckVaults() {
 
     let interval = 60.0 * 10.0
     let schedSupRes = _executeTransaction(
-        "../transactions/flow-yield-vaults/admin/schedule_supervisor.cdc",
+        "../transactions/admin/schedule_supervisor.cdc",
         [interval, UInt8(1), UInt64(5000), true],
         flowYieldVaultsAccount
     )

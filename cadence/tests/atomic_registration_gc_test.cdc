@@ -68,7 +68,7 @@ access(all) fun setup() {
     )
 
     // Scheduler contracts are deployed as part of deployContracts()
-    
+
     // Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
     let _mintedFlowFees = mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
 }
@@ -84,7 +84,7 @@ access(all) fun testAtomicRegistrationAndGC() {
 
     // 1. Create YieldVault (Atomic Registration)
     let createYieldVaultRes = executeTransaction(
-        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        "../transactions/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, fundingAmount],
         user
     )
@@ -116,7 +116,7 @@ access(all) fun testAtomicRegistrationAndGC() {
 
     // 2. Close YieldVault (Garbage Collection)
     let closeYieldVaultRes = executeTransaction(
-        "../transactions/flow-yield-vaults/close_yield_vault.cdc",
+        "../transactions/close_yield_vault.cdc",
         [yieldVaultID],
         user
     )

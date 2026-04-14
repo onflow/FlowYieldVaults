@@ -99,7 +99,7 @@ fun cancelSchedulesAndRemoveRecurringConfig(yieldVaultID: UInt64) {
         storage: true
     ) as! StoragePath
     let res = _executeTransaction(
-        "../transactions/flow-yield-vaults/admin/cancel_all_scheduled_transactions_and_remove_recurring_config.cdc",
+        "../transactions/admin/cancel_all_scheduled_transactions_and_remove_recurring_config.cdc",
         [storagePath],
         flowYieldVaultsAccount
     )
@@ -160,7 +160,7 @@ fun testSupervisorScansPastNonRecurringTailEntries() {
     var idx = 0
     while idx < blockerCount {
         let createRes = _executeTransaction(
-            "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+            "../transactions/create_yield_vault.cdc",
             [strategyIdentifier, flowTokenIdentifier, 25.0],
             user
         )
@@ -183,7 +183,7 @@ fun testSupervisorScansPastNonRecurringTailEntries() {
     // Step 3: create one real recurring vault after the blockers. This vault is the one we
     // will intentionally push into a stuck state and expect the Supervisor to recover.
     let targetRes = _executeTransaction(
-        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        "../transactions/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 25.0],
         user
     )
@@ -211,7 +211,7 @@ fun testSupervisorScansPastNonRecurringTailEntries() {
     let residualBalance = 0.00000001
     if balanceBeforeDrain > residualBalance {
         let drainRes = _executeTransaction(
-            "../transactions/flow-yield-vaults/drain_flow.cdc",
+            "transactions/drain_flow.cdc",
             [balanceBeforeDrain - residualBalance],
             flowYieldVaultsAccount
         )
@@ -241,7 +241,7 @@ fun testSupervisorScansPastNonRecurringTailEntries() {
     let detectedEventsBefore = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.StuckYieldVaultDetected>()).length
 
     let scheduleSupervisorRes = _executeTransaction(
-        "../transactions/flow-yield-vaults/admin/schedule_supervisor.cdc",
+        "../transactions/admin/schedule_supervisor.cdc",
         [60.0 * 10.0, UInt8(1), UInt64(800), true],
         flowYieldVaultsAccount
     )

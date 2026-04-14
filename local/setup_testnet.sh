@@ -69,7 +69,7 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/create_positi
 # add liquidity to pool
 
 # configure FlowYieldVaults
-# 
+#
 # wire up liquidity to MockSwapper, mocking AMM liquidity sources
 flow transactions send ./lib/FlowALP/cadence/transactions/moet/setup_vault.cdc --network testnet --signer testnet-admin
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/flowTokenVault --network testnet --signer testnet-admin
@@ -81,7 +81,7 @@ flow transactions send ./lib/FlowALP/FlowActions/cadence/transactions/fungible-t
 flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_4154d5b0e2931a0a1e5b733f19161aa7d2fc4b95Vault --network testnet --signer testnet-admin
 
 # add TracerStrategy as supported Strategy with the ability to initialize when new YieldVaults are created
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
+flow transactions send ./cadence/transactions/admin/add_strategy_composer.cdc \
     'A.d2580caf2ef07c2f.MockStrategies.TracerStrategy' \
     'A.d2580caf2ef07c2f.MockStrategies.TracerStrategyComposer' \
     /storage/FlowYieldVaultsStrategyComposerIssuer_0xd2580caf2ef07c2f \
@@ -91,7 +91,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
 ## PYUSD0 Vault
 # WFLOW univ3 path and fees
 # path: FUSDEV - WFLOW
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc \
+flow transactions send ./cadence/transactions/admin/upsert_strategy_config.cdc \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
 	'A.7e60df042a9c0868.FlowToken.Vault' \
 	"0x61b44D19486EE492449E83C1201581C754e9e1E1" \
@@ -102,7 +102,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_str
 
 # WETH univ3 path and fees
 # path: FUSDEV - MOET - WETH
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc \
+flow transactions send ./cadence/transactions/admin/upsert_strategy_config.cdc \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
 	'A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault' \
 	"0x61b44D19486EE492449E83C1201581C754e9e1E1" \
@@ -113,7 +113,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_str
 
 # WBTC univ3 path and fees
 # path: FUSDEV - MOET - WETH
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc \
+flow transactions send ./cadence/transactions/admin/upsert_strategy_config.cdc \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
 	'A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault' \
 	"0x61b44D19486EE492449E83C1201581C754e9e1E1" \
@@ -122,7 +122,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert_str
 	--network testnet \
 	--signer testnet-admin
 
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
+flow transactions send ./cadence/transactions/admin/add_strategy_composer.cdc \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy' \
 	'A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.MorphoERC4626StrategyComposer' \
 	/storage/FlowYieldVaultsStrategyV2ComposerIssuer_0xd2580caf2ef07c2f \
@@ -130,7 +130,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strate
 	--signer testnet-admin
 
 # PYUSD0 Vault
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert-pm-strategy-config.cdc \
+flow transactions send ./cadence/transactions/admin/upsert-pm-strategy-config.cdc \
 	'A.d2580caf2ef07c2f.PMStrategiesV1.FUSDEVStrategy' \
 	'A.dfc20aee650fcbdf.EVMVMBridgedToken_d7d43ab7b365f0d0789ae83f4385fa710ffdc98f.Vault' \
 	'0x61b44D19486EE492449E83C1201581C754e9e1E1' \
@@ -138,7 +138,7 @@ flow transactions send ./cadence/transactions/flow-yield-vaults/admin/upsert-pm-
 	--network testnet \
 	--signer testnet-admin
 
-flow transactions send ./cadence/transactions/flow-yield-vaults/admin/add_strategy_composer.cdc \
+flow transactions send ./cadence/transactions/admin/add_strategy_composer.cdc \
 	'A.d2580caf2ef07c2f.PMStrategiesV1.FUSDEVStrategy' \
 	'A.d2580caf2ef07c2f.PMStrategiesV1.ERC4626VaultStrategyComposer' \
 	/storage/PMStrategiesV1ComposerIssuer_0xd2580caf2ef07c2f \
@@ -157,15 +157,15 @@ TIDAL_COA=0x$(flow scripts execute ./lib/flow-evm-bridge/cadence/scripts/evm/get
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/transfer_flow_to_cadence_or_evm.cdc $TIDAL_COA 100.0 --network testnet --signer testnet-admin --compute-limit 9999
 
 # sanity test
-# flow transactions send ./cadence/transactions/flow-yield-vaults/admin/grant_beta.cdc \
+# flow transactions send ./cadence/transactions/admin/grant_beta.cdc \
 #   --authorizer testnet-admin,<TEST_USER> \
 #   --proposer <TEST_USER> \
 #   --payer testnet-admin \
-#   --network testnet 
+#   --network testnet
 #
 #
 # Flow
-# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+# flow transactions send ./cadence/transactions/create_yield_vault.cdc \
 #   A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy \
 #   A.7e60df042a9c0868.FlowToken.Vault \
 #   100.0 \
@@ -175,7 +175,7 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/tra
 #
 #
 # WBTC
-# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+# flow transactions send ./cadence/transactions/create_yield_vault.cdc \
 #   A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy \
 #   A.dfc20aee650fcbdf.EVMVMBridgedToken_208d09d2a6dd176e3e95b3f0de172a7471c5b2d6.Vault \
 #   0.00001 \
@@ -184,7 +184,7 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/tra
 #   --signer <TEST_USER>
 #
 # WETH (ETHf)
-# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+# flow transactions send ./cadence/transactions/create_yield_vault.cdc \
 #   A.d2580caf2ef07c2f.FlowYieldVaultsStrategiesV2.FUSDEVStrategy \
 #   A.dfc20aee650fcbdf.EVMVMBridgedToken_059a77239dafa770977dd9f1e98632c3e4559848.Vault \
 #   0.001 \
@@ -193,7 +193,7 @@ flow transactions send ./lib/flow-evm-bridge/cadence/transactions/flow-token/tra
 #   --signer <TEST_USER>
 #
 # PYUSD0
-# flow transactions send ./cadence/transactions/flow-yield-vaults/create_yield_vault.cdc \
+# flow transactions send ./cadence/transactions/create_yield_vault.cdc \
 #   A.d2580caf2ef07c2f.PMStrategiesV1.FUSDEVStrategy \
 #   A.dfc20aee650fcbdf.EVMVMBridgedToken_d7d43ab7b365f0d0789ae83f4385fa710ffdc98f.Vault \
 #   100.0 \

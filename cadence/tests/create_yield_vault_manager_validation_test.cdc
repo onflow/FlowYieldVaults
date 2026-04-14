@@ -15,7 +15,7 @@ fun test_CreateYieldVaultManagerValidatesBetaRef() {
     // This lets us assert that `FlowYieldVaults.createYieldVaultManager` actually calls `validateBeta`.
     let err = Test.deployContract(
         name: "FlowYieldVaultsClosedBeta",
-        path: "../contracts/mocks/FlowYieldVaultsClosedBeta_validate_beta_false.cdc",
+        path: "mocks/FlowYieldVaultsClosedBeta_validate_beta_false.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -25,7 +25,7 @@ fun test_CreateYieldVaultManagerValidatesBetaRef() {
     let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
     let txn = Test.Transaction(
-        code: Test.readFile("../transactions/test/create_yield_vault_manager_with_beta_cap.cdc"),
+        code: Test.readFile("transactions/test/create_yield_vault_manager_with_beta_cap.cdc"),
         authorizers: [user.address],
         signers: [user],
         arguments: []

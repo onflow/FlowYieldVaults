@@ -186,16 +186,6 @@
 				"testnet-fork": "d2580caf2ef07c2f"
 			}
 		},
-		"UInt64LinkedList": {
-			"source": "cadence/contracts/UInt64LinkedList.cdc",
-			"aliases": {
-				"emulator": "045a1763c93006ca",
-				"mainnet": "b1d63873c3cc9f79",
-				"mainnet-fork": "b1d63873c3cc9f79",
-				"testing": "0000000000000009",
-				"testnet": "d2580caf2ef07c2f"
-			}
-		},
 		"FlowYieldVaultsSchedulerRegistry": {
 			"source": "cadence/contracts/FlowYieldVaultsSchedulerRegistry.cdc",
 			"aliases": {
@@ -260,16 +250,16 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"MockFlowTransactionScheduler": {
-			"source": "./cadence/contracts/mocks/FlowTransactionScheduler.cdc",
+		"MockEVM": {
+			"source": "./cadence/tests/mocks/EVM.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "e467b9dd11fa00df",
 				"testnet": "8c5303eaa26202d6"
 			}
 		},
-		"MockEVM": {
-			"source": "./cadence/contracts/mocks/EVM.cdc",
+		"MockFlowTransactionScheduler": {
+			"source": "./cadence/tests/mocks/FlowTransactionScheduler.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "e467b9dd11fa00df",
@@ -277,7 +267,7 @@
 			}
 		},
 		"MockOracle": {
-			"source": "cadence/contracts/mocks/MockOracle.cdc",
+			"source": "cadence/tests/mocks/MockOracle.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -288,7 +278,7 @@
 			}
 		},
 		"MockStrategies": {
-			"source": "cadence/contracts/mocks/MockStrategies.cdc",
+			"source": "cadence/tests/mocks/MockStrategies.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -299,7 +289,7 @@
 			}
 		},
 		"MockStrategy": {
-			"source": "cadence/contracts/mocks/MockStrategy.cdc",
+			"source": "cadence/tests/mocks/MockStrategy.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"testing": "0000000000000009",
@@ -308,7 +298,7 @@
 			}
 		},
 		"MockSwapper": {
-			"source": "cadence/contracts/mocks/MockSwapper.cdc",
+			"source": "cadence/tests/mocks/MockSwapper.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -362,6 +352,16 @@
 				"testnet-fork": "ad228f1c13a97ec1"
 			}
 		},
+		"UInt64LinkedList": {
+			"source": "cadence/contracts/UInt64LinkedList.cdc",
+			"aliases": {
+				"emulator": "045a1763c93006ca",
+				"mainnet": "b1d63873c3cc9f79",
+				"mainnet-fork": "b1d63873c3cc9f79",
+				"testing": "0000000000000009",
+				"testnet": "d2580caf2ef07c2f"
+			}
+		},
 		"UniswapV3SwapConnectors": {
 			"source": "./lib/FlowALP/FlowActions/cadence/contracts/connectors/evm/UniswapV3SwapConnectors.cdc",
 			"aliases": {
@@ -374,7 +374,7 @@
 			}
 		},
 		"YieldToken": {
-			"source": "cadence/contracts/mocks/YieldToken.cdc",
+			"source": "cadence/tests/mocks/YieldToken.cdc",
 			"aliases": {
 				"emulator": "045a1763c93006ca",
 				"mainnet": "b1d63873c3cc9f79",
@@ -1056,20 +1056,19 @@
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
 			}
 		},
-		"testnet-fork-admin": {
-			"address": "d2580caf2ef07c2f",
-			"key": {
-				"type": "file",
-				"location": "local/emulator-account.pkey"
-			}
-
-		},
 		"testnet-flow-alp-deployer": {
 			"address": "426f0458ced60037",
 			"key": {
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
 				"resourceID": "projects/dl-flow-devex-staging/locations/us-central1/keyRings/tidal-keyring/cryptoKeys/tidal_admin_pk/cryptoKeyVersions/1"
+			}
+		},
+		"testnet-fork-admin": {
+			"address": "d2580caf2ef07c2f",
+			"key": {
+				"type": "file",
+				"location": "local/emulator-account.pkey"
 			}
 		}
 	},

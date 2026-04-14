@@ -6,7 +6,7 @@ echo "bridge USDC to Cadence"
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc $USDC_ADDR --compute-limit 9999 --signer emulator-flow-yield-vaults
 
 echo "set USDC token price"
-flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc "A.f8d6e0586b0a20c7.EVMVMBridgedToken_${USDC_ADDR_LOWER}.Vault" 1.0 --signer emulator-flow-yield-vaults
+flow transactions send ./cadence/tests/transactions/mocks/oracle/set_price.cdc "A.f8d6e0586b0a20c7.EVMVMBridgedToken_${USDC_ADDR_LOWER}.Vault" 1.0 --signer emulator-flow-yield-vaults
 
 echo "bridge WBTC to Cadence"
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc $WBTC_ADDR --compute-limit 9999 --signer emulator-flow-yield-vaults
@@ -65,5 +65,5 @@ cast send $POSITION_MANAGER \
   --gas-limit 1200000
 
 flow transactions send ./lib/flow-evm-bridge/cadence/transactions/example-assets/setup/setup_generic_vault.cdc "A.f8d6e0586b0a20c7.EVMVMBridgedToken_${USDC_ADDR_LOWER}.Vault" --signer emulator-flow-yield-vaults
-flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_${USDC_ADDR_LOWER}Vault --signer emulator-flow-yield-vaults
+flow transactions send ./cadence/tests/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/EVMVMBridgedToken_${USDC_ADDR_LOWER}Vault --signer emulator-flow-yield-vaults
 

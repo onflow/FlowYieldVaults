@@ -18,7 +18,7 @@ fun test_ReGrantBetaRevokesPreviousCapability() {
 
     let _grantedBetaFirst = grantBeta(flowYieldVaultsAccount, user)
 
-    let backupRes = _executeTransaction("../transactions/test/backup_beta_cap.cdc", [], user)
+    let backupRes = _executeTransaction("transactions/test/backup_beta_cap.cdc", [], user)
     Test.expect(backupRes, Test.beSucceeded())
 
     // Re-granting should revoke the previously issued controller (and thus all old capability copies).
@@ -48,6 +48,6 @@ fun test_ReGrantBetaRevokesPreviousCapability() {
     Test.assertEqual(userGrants[0].capID, userRevokes[0].capID!)
     Test.assert(userGrants[0].capID != userGrants[1].capID, message: "Expected a fresh capID on re-grant")
 
-    let assertRes = _executeTransaction("../transactions/test/assert_backup_beta_cap_revoked.cdc", [], user)
+    let assertRes = _executeTransaction("transactions/test/assert_backup_beta_cap_revoked.cdc", [], user)
     Test.expect(assertRes, Test.beSucceeded())
 }
