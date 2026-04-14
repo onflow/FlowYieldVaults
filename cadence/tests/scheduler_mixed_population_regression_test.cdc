@@ -47,7 +47,7 @@ fun setup() {
     log("Setting up mixed-population scheduler regression test...")
 
     deployContracts()
-    mintFlow(to: flowYieldVaultsAccount, amount: 1000.0)
+    let _mintedFlowToVaultsAccount = mintFlow(to: flowYieldVaultsAccount, amount: 1000.0)
 
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: flowTokenIdentifier, price: 1.0)
@@ -55,7 +55,7 @@ fun setup() {
     let reserveAmount = 100_000_00.0
     setupMoetVault(protocolAccount, beFailed: false)
     setupYieldVault(protocolAccount, beFailed: false)
-    mintFlow(to: protocolAccount, amount: reserveAmount)
+    let _mintedFlowToProtocol = mintFlow(to: protocolAccount, amount: reserveAmount)
     mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
@@ -151,8 +151,8 @@ fun testSupervisorScansPastNonRecurringTailEntries() {
 
     let blockerCount = FlowYieldVaultsSchedulerRegistry.MAX_BATCH_SIZE + 1
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 2000.0)
-    grantBeta(flowYieldVaultsAccount, user)
+    let _mintedFlowToUser = mintFlow(to: user, amount: 2000.0)
+    let _grantedBetaToUser = grantBeta(flowYieldVaultsAccount, user)
 
     // Step 1: create more than one full scan batch of normal recurring mock vaults.
     // We will convert these into permanently ineligible "blockers" without removing them
@@ -234,7 +234,7 @@ fun testSupervisorScansPastNonRecurringTailEntries() {
     // Step 5: fund the account again and start the Supervisor. A correct implementation
     // should eventually scan past the blockers, detect the real stuck recurring vault, and
     // recover it.
-    mintFlow(to: flowYieldVaultsAccount, amount: 200.0)
+    let _mintedFlowForRecovery = mintFlow(to: flowYieldVaultsAccount, amount: 200.0)
     Test.commitBlock()
 
     let recoveredEventsBefore = Test.eventsOfType(Type<FlowYieldVaultsSchedulerV1.YieldVaultRecovered>()).length

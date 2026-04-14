@@ -849,7 +849,7 @@ access(all) contract PMStrategiesV1 {
         }
 
         access(contract) fun removePendingRedeem(id: UInt64) {
-            self.pendingRedeems.remove(key: id)
+            let _removedRedeem = self.pendingRedeems.remove(key: id)
         }
 
         access(contract) view fun getPendingRedeem(id: UInt64): PendingRedeemInfo? {
@@ -897,7 +897,7 @@ access(all) contract PMStrategiesV1 {
             }
             let entry: auth(Remove) &AnyStruct = &self.metadata["claimOutcomes"]!
             let outcomes = entry as! auth(Remove) &{UInt64: String}
-            outcomes.remove(key: yieldVaultID)
+            let _removedOutcome = outcomes.remove(key: yieldVaultID)
         }
 
         access(contract) view fun getClaimOutcome(yieldVaultID: UInt64): String? {

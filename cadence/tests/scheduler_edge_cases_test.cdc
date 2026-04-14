@@ -28,7 +28,7 @@ fun setup() {
     deployContracts()
     
     // Fund FlowYieldVaults account for scheduling fees
-    mintFlow(to: flowYieldVaultsAccount, amount: 1000.0)
+    let _mintedFlowToVaultsAccount = mintFlow(to: flowYieldVaultsAccount, amount: 1000.0)
 
     // Set mocked token prices
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
@@ -38,7 +38,7 @@ fun setup() {
     let reserveAmount = 100_000_00.0
     setupMoetVault(protocolAccount, beFailed: false)
     setupYieldVault(protocolAccount, beFailed: false)
-    mintFlow(to: protocolAccount, amount: reserveAmount)
+    let _mintedFlowToProtocol = mintFlow(to: protocolAccount, amount: reserveAmount)
     mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
@@ -90,9 +90,9 @@ fun testYieldVaultHasNativeScheduleAfterCreation() {
     log("\n[TEST] YieldVault has native schedule immediately after creation...")
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 200.0)
-    grantBeta(flowYieldVaultsAccount, user)
-    
+    let _mintedFlowToUser = mintFlow(to: user, amount: 200.0)
+    let _grantedBetaToUser = grantBeta(flowYieldVaultsAccount, user)
+
     // Create a YieldVault
     let createRes = executeTransaction(
         "../transactions/flow-yield-vaults/create_yield_vault.cdc",
@@ -100,11 +100,11 @@ fun testYieldVaultHasNativeScheduleAfterCreation() {
         user
     )
     Test.expect(createRes, Test.beSucceeded())
-    
+
     let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
     let yieldVaultID = yieldVaultIDs[0]
     log("YieldVault created: ".concat(yieldVaultID.toString()))
-    
+
     // Verify yield vault is registered and has active schedule (native self-scheduling)
     let hasActive = (executeScript(
         "../scripts/flow-yield-vaults/has_active_schedule.cdc",
@@ -125,19 +125,19 @@ fun testCapabilityReuse() {
     log("\n[TEST] Capability reuse on re-registration...")
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 200.0)
-    grantBeta(flowYieldVaultsAccount, user)
-    
+    let _mintedFlowToUser = mintFlow(to: user, amount: 200.0)
+    let _grantedBetaToUser = grantBeta(flowYieldVaultsAccount, user)
+
     let createRes = executeTransaction(
         "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user
     )
     Test.expect(createRes, Test.beSucceeded())
-    
+
     let yieldVaultIDs = getYieldVaultIDs(address: user.address)!
     let yieldVaultID = yieldVaultIDs[0]
-    
+
     // Check registration
     let regIDsRes = executeScript("../scripts/flow-yield-vaults/get_registered_yield_vault_ids.cdc", [])
     Test.expect(regIDsRes, Test.beSucceeded())
@@ -164,9 +164,9 @@ fun testCloseYieldVaultUnregisters() {
     log("\n[TEST] Close yield vault properly unregisters from registry...")
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 400.0)
-    grantBeta(flowYieldVaultsAccount, user)
-    
+    let _mintedFlowToUser = mintFlow(to: user, amount: 400.0)
+    let _grantedBetaToUser = grantBeta(flowYieldVaultsAccount, user)
+
     // Create a yield vault
     let createRes = executeTransaction(
         "../transactions/flow-yield-vaults/create_yield_vault.cdc",
@@ -212,25 +212,25 @@ fun testMultipleUsersMultipleYieldVaults() {
     
     let user1 = Test.createAccount()
     let user2 = Test.createAccount()
-    mintFlow(to: user1, amount: 500.0)
-    mintFlow(to: user2, amount: 500.0)
-    grantBeta(flowYieldVaultsAccount, user1)
-    grantBeta(flowYieldVaultsAccount, user2)
-    
+    let _mintedFlowToUser1 = mintFlow(to: user1, amount: 500.0)
+    let _mintedFlowToUser2 = mintFlow(to: user2, amount: 500.0)
+    let _grantedBetaToUser1 = grantBeta(flowYieldVaultsAccount, user1)
+    let _grantedBetaToUser2 = grantBeta(flowYieldVaultsAccount, user2)
+
     // User1 creates 2 yield vaults
-    executeTransaction(
+    let _createdVault1User1 = executeTransaction(
         "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user1
     )
-    executeTransaction(
+    let _createdVault2User1 = executeTransaction(
         "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user1
     )
-    
+
     // User2 creates 1 yield vault
-    executeTransaction(
+    let _createdVault1User2 = executeTransaction(
         "../transactions/flow-yield-vaults/create_yield_vault.cdc",
         [strategyIdentifier, flowTokenIdentifier, 100.0],
         user2
@@ -263,9 +263,9 @@ fun testHealthyYieldVaultsSelfSchedule() {
     log("\n[TEST] Healthy yield vaults continue executing without Supervisor...")
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 500.0)
-    grantBeta(flowYieldVaultsAccount, user)
-    
+    let _mintedFlowToUser = mintFlow(to: user, amount: 500.0)
+    let _grantedBetaToUser = grantBeta(flowYieldVaultsAccount, user)
+
     // Create a yield vault
     let createRes = executeTransaction(
         "../transactions/flow-yield-vaults/create_yield_vault.cdc",

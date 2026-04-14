@@ -33,8 +33,8 @@ transaction(
 
         if signer.storage.borrow<&{FungibleToken.Vault}>(from: sharesVaultData.storagePath) == nil {
             signer.storage.save(<-sharesVaultData.createEmptyVault(), to: sharesVaultData.storagePath)
-            signer.capabilities.unpublish(sharesVaultData.receiverPath)
-            signer.capabilities.unpublish(sharesVaultData.metadataPath)
+            let _unpublishedReceiver = signer.capabilities.unpublish(sharesVaultData.receiverPath)
+            let _unpublishedMetadata = signer.capabilities.unpublish(sharesVaultData.metadataPath)
             let receiverCap = signer.capabilities.storage.issue<&{FungibleToken.Vault}>(sharesVaultData.storagePath)
             signer.capabilities.publish(receiverCap, at: sharesVaultData.receiverPath)
             signer.capabilities.publish(receiverCap, at: sharesVaultData.metadataPath)

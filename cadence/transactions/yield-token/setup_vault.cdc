@@ -13,10 +13,10 @@ transaction {
             signer.storage.save(<-YieldToken.createEmptyVault(vaultType: Type<@YieldToken.Vault>()), to: YieldToken.VaultStoragePath)
             // publish a public capability on the Vault
             let cap = signer.capabilities.storage.issue<&{FungibleToken.Vault}>(YieldToken.VaultStoragePath)
-            signer.capabilities.unpublish(YieldToken.ReceiverPublicPath)
+            let _unpublishedReceiver = signer.capabilities.unpublish(YieldToken.ReceiverPublicPath)
             signer.capabilities.publish(cap, at: YieldToken.ReceiverPublicPath)
             // issue an authorized capability to initialize a CapabilityController on the account, but do not publish
-            signer.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(YieldToken.VaultStoragePath)
+            let _withdrawCap = signer.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(YieldToken.VaultStoragePath)
         }
         // ensure proper configuration
         assert(signer.storage.type(at: YieldToken.VaultStoragePath) == Type<@YieldToken.Vault>(),

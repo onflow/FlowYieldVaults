@@ -488,7 +488,7 @@ access(all) contract FlowTransactionScheduler {
         access(all) fun remove(timestamp: UFix64) {
             // Only remove if the timestamp is in the array
             if let index = self.timestamps.firstIndex(of: timestamp) {
-                self.timestamps.remove(at: index)
+                let _removedTimestamp = self.timestamps.remove(at: index)
             }
         }
 
@@ -605,7 +605,7 @@ access(all) contract FlowTransactionScheduler {
         /// txRemovalLimit) require explicit authorization from the contract administrator.
         access(UpdateConfig) fun setConfig(newConfig: {SchedulerConfig}, txRemovalLimit: UInt) {
             self.config = newConfig
-            FlowTransactionScheduler.account.storage.load<UInt>(from: /storage/txRemovalLimit)
+            let _oldLimit = FlowTransactionScheduler.account.storage.load<UInt>(from: /storage/txRemovalLimit)
             FlowTransactionScheduler.account.storage.save(txRemovalLimit, to: /storage/txRemovalLimit)
             emit ConfigUpdated()
         }
@@ -1032,7 +1032,7 @@ access(all) contract FlowTransactionScheduler {
             if let priorityQueue = transactionQueue[transactionPriority] {
                 priorityQueue[transactionID] = nil
                 if priorityQueue.keys.length == 0 {
-                    transactionQueue.remove(key: transactionPriority)
+                    let _removedPriorityQueue = transactionQueue.remove(key: transactionPriority)
                 } else {
                     transactionQueue[transactionPriority] = priorityQueue
                 }
@@ -1041,8 +1041,8 @@ access(all) contract FlowTransactionScheduler {
 
             // if the slot is now empty remove it from the maps
             if transactionQueue.keys.length == 0 {
-                self.slotQueue.remove(key: slot)
-                self.slotUsedEffort.remove(key: slot)
+                let _removedSlotQueue = self.slotQueue.remove(key: slot)
+                let _removedSlotEffort = self.slotUsedEffort.remove(key: slot)
 
                 self.sortedTimestamps.remove(timestamp: slot)
             }
@@ -1154,7 +1154,7 @@ access(all) contract FlowTransactionScheduler {
                         // charge the full fee for transaction execution
                         destroy tx!.payAndRefundFees(refundMultiplier: 0.0)
 
-                        self.removeTransaction(txData: tx!)
+                        let _removedExpiredTx = self.removeTransaction(txData: tx!)
                     }
                 }
             }
@@ -1243,7 +1243,7 @@ access(all) contract FlowTransactionScheduler {
             
             // keep the array under the limit
             if UInt(self.canceledTransactions.length) > self.config.canceledTransactionsLimit {
-                self.canceledTransactions.remove(at: 0)
+                let _removedOldestCanceled = self.canceledTransactions.remove(at: 0)
             }
 
             emit Canceled(
@@ -1255,8 +1255,8 @@ access(all) contract FlowTransactionScheduler {
                 transactionHandlerTypeIdentifier: tx.handlerTypeIdentifier
             )
 
-            self.removeTransaction(txData: tx)
-            
+            let _removedCanceledTx = self.removeTransaction(txData: tx)
+
             return <-refundedFees
         }
 
@@ -1436,7 +1436,7 @@ access(all) contract FlowTransactionScheduler {
         let storageUsedBefore = self.account.storage.used
         self.account.storage.save(data!, to: storagePath)
         let storageUsedAfter = self.account.storage.used
-        self.account.storage.load<AnyStruct>(from: storagePath)
+        let _loadedData = self.account.storage.load<AnyStruct>(from: storagePath)
 
         return FlowStorageFees.convertUInt64StorageBytesToUFix64Megabytes(storageUsedAfter.saturatingSubtract(storageUsedBefore))
     }
