@@ -78,8 +78,12 @@ access(all) struct SimConfig {
     access(all) let initialHFLow: UFix64
     access(all) let initialHFHigh: UFix64
     /// PYUSD0:YT pool TVL in USD (from fixture's pyusd0_yt.size)
+    /// Used to simulate slippage: within a tick, earlier agents get better prices
+    /// than later agents as each trade consumes liquidity.
     access(all) let ytPoolTVL: UFix64
     /// PYUSD0:YT pool concentration (0.95 = 95% of liquidity in concentrated range)
+    /// Used to simulate slippage: within a tick, earlier agents get better prices
+    /// than later agents as each trade consumes liquidity.
     access(all) let ytPoolConcentration: UFix64
 
     init(
@@ -517,9 +521,11 @@ access(all) fun runSimulation(config: SimConfig, label: String): SimResult {
 // TEST: Aggressive_1.01 — Initial HF 1.1–1.2, Target HF 1.01
 // ============================================================================
 
+/// Most aggressive rebalancing target (HF=1.01) with tight initial spread (1.1–1.2).
+/// Validates that even with minimal safety margin, the rebalancer prevents liquidation
+/// during a 23.66% BTC crash over 60 minutes.
 access(all)
 fun test_Aggressive_1_01_ZeroLiquidations() {
-    // Python: rebalancingHF=targetHF=1.01, initialHF=1.1-1.2
     let result = runSimulation(
         config: SimConfig(
             prices: simulation_ht_vs_aave_prices,
@@ -553,9 +559,11 @@ fun test_Aggressive_1_01_ZeroLiquidations() {
 // TEST: Balanced_1.1 — Initial HF 1.25–1.45, Target HF 1.1
 // ============================================================================
 
+/// Highest target HF (1.1) with moderate initial spread (1.25–1.45).
+/// Rebalancer maintains a larger safety buffer, resulting in fewer rebalance events
+/// but more collateral held in reserve.
 access(all)
 fun test_Balanced_1_1_ZeroLiquidations() {
-    // Python: rebalancingHF=targetHF=1.10, initialHF=1.25-1.45
     let result = runSimulation(
         config: SimConfig(
             prices: simulation_ht_vs_aave_prices,
@@ -589,9 +597,11 @@ fun test_Balanced_1_1_ZeroLiquidations() {
 // TEST: Conservative_1.05 — Initial HF 1.3–1.5, Target HF 1.05
 // ============================================================================
 
+/// Conservative target (HF=1.05) with wide initial spread (1.3–1.5).
+/// Tests that positions starting further from liquidation threshold still survive
+/// when rebalanced to a moderate target.
 access(all)
 fun test_Conservative_1_05_ZeroLiquidations() {
-    // Python: rebalancingHF=targetHF=1.05, initialHF=1.3-1.5
     let result = runSimulation(
         config: SimConfig(
             prices: simulation_ht_vs_aave_prices,
@@ -625,9 +635,11 @@ fun test_Conservative_1_05_ZeroLiquidations() {
 // TEST: Mixed_1.075 — Initial HF 1.1–1.5, Target HF 1.075
 // ============================================================================
 
+/// Mid-range target (HF=1.075) with the widest initial spread (1.1–1.5).
+/// Stress-tests the rebalancer across a diverse agent population where some start
+/// near liquidation and others start far above target.
 access(all)
 fun test_Mixed_1_075_ZeroLiquidations() {
-    // Python: rebalancingHF=targetHF=1.075, initialHF=1.1-1.5
     let result = runSimulation(
         config: SimConfig(
             prices: simulation_ht_vs_aave_prices,
@@ -661,9 +673,10 @@ fun test_Mixed_1_075_ZeroLiquidations() {
 // TEST: Moderate_1.025 — Initial HF 1.2–1.4, Target HF 1.025
 // ============================================================================
 
+/// Moderate target (HF=1.025) with medium initial spread (1.2–1.4).
+/// Balances capital efficiency (low target) with a reasonable starting buffer.
 access(all)
 fun test_Moderate_1_025_ZeroLiquidations() {
-    // Python: rebalancingHF=targetHF=1.025, initialHF=1.2-1.4
     let result = runSimulation(
         config: SimConfig(
             prices: simulation_ht_vs_aave_prices,
