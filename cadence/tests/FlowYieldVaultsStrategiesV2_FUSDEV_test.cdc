@@ -778,3 +778,88 @@ access(all) fun testCloseFUSDEVVaultWithExcessYieldTokens_WFLOW() {
 
     log("=== testCloseFUSDEVVaultWithExcessYieldTokens_WFLOW PASSED ===")
 }
+
+/// Reconfiguring the close route after vault creation must cause close to fail rather than burn
+/// non-empty excess yield on a zero quote.
+access(all) fun testCloseFUSDEVVaultWithBrokenCloseRouteFailsInsteadOfBurning() {
+    log("=== testCloseFUSDEVVaultWithBrokenCloseRouteFailsInsteadOfBurning ===")
+
+    // Open a normal FLOW-collateral FUSDEV vault first, so close would succeed under the
+    // original configuration.
+    let createResult = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        [fusdEvStrategyIdentifier, flowVaultIdentifier, 10.0],
+        [flowUser]
+    )
+    Test.expect(createResult, Test.beSucceeded())
+
+    let vaultID = _latestVaultID(flowUser)
+    log("Created vault ID: \(vaultID)")
+
+    // Inject excess FUSDEV into the AutoBalancer so closePosition must process a non-empty
+    // excess-yield branch. This is the value that would have been silently burned before the
+    // revert-on-zero-quote change.
+    let injectResult = _executeTransactionFile(
+        "transactions/inject_pyusd0_as_fusdev_to_autobalancer.cdc",
+        [vaultID, fusdEvEVMAddress, 5.0],
+        [flowUser]
+    )
+    Test.expect(injectResult, Test.beSucceeded())
+
+    // Break the close route after the vault already exists by repointing FLOW collateral to a
+    // WBTC-ending path. This preserves the mutable-config scenario we want to probe: the vault
+    // was opened with a valid route, but close now reconstructs a different one.
+    let misconfigureResult = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc",
+        [
+            fusdEvStrategyIdentifier,
+            flowVaultIdentifier,
+            fusdEvEVMAddress,
+            [fusdEvEVMAddress, pyusd0EVMAddress, wbtcEVMAddress],
+            [100 as UInt32, 3000 as UInt32]
+        ],
+        [adminAccount]
+    )
+    Test.expect(misconfigureResult, Test.beSucceeded())
+
+    // The important assertion: close must fail, not "succeed" by burning the excess FUSDEV or
+    // any returned non-collateral residuals when the rebuilt route cannot quote a conversion.
+    let failedClose = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/close_yield_vault.cdc",
+        [vaultID],
+        [flowUser]
+    )
+    Test.expect(failedClose, Test.beFailed())
+
+    // Restore the original close route and prove the same vault can still be closed afterward.
+    // That shows the failed close did not destroy value or corrupt the vault state irreversibly.
+    let restoreResult = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/admin/upsert_strategy_config.cdc",
+        [
+            fusdEvStrategyIdentifier,
+            flowVaultIdentifier,
+            fusdEvEVMAddress,
+            [fusdEvEVMAddress, pyusd0EVMAddress, wflowEVMAddress],
+            [100 as UInt32, 3000 as UInt32]
+        ],
+        [adminAccount]
+    )
+    Test.expect(restoreResult, Test.beSucceeded())
+
+    let successfulClose = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/close_yield_vault.cdc",
+        [vaultID],
+        [flowUser]
+    )
+    Test.expect(successfulClose, Test.beSucceeded())
+
+    let vaultBalAfterClose = _executeScript(
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        [flowUser.address, vaultID]
+    )
+    Test.expect(vaultBalAfterClose, Test.beSucceeded())
+    // Final proof: the vault disappears only after the valid-route close, not after the broken
+    // close attempt.
+    Test.assert(vaultBalAfterClose.returnValue == nil,
+        message: "Vault \(vaultID) should not exist after restored-route close")
+}

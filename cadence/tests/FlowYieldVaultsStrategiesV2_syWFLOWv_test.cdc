@@ -786,3 +786,91 @@ access(all) fun testCloseSyWFLOWvVaultWithExcessYieldTokens_PYUSD0() {
 
     log("=== testCloseSyWFLOWvVaultWithExcessYieldTokens_PYUSD0 PASSED ===")
 }
+
+/// Reconfiguring the close route after vault creation must cause close to fail rather than burn
+/// non-empty excess yield on a zero quote.
+access(all) fun testCloseSyWFLOWvVaultWithBrokenCloseRouteFailsInsteadOfBurning() {
+    log("=== testCloseSyWFLOWvVaultWithBrokenCloseRouteFailsInsteadOfBurning ===")
+
+    // Open a normal PYUSD0-collateral syWFLOWv vault first, so close would succeed under the
+    // original configuration.
+    let createResult = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/create_yield_vault.cdc",
+        [syWFLOWvStrategyIdentifier, pyusd0VaultIdentifier, 2.0],
+        [pyusd0User]
+    )
+    Test.expect(createResult, Test.beSucceeded())
+
+    let vaultID = _latestVaultID(pyusd0User)
+    log("Created vault ID: \(vaultID)")
+
+    // Inject excess syWFLOWv into the AutoBalancer so closePosition must process a non-empty
+    // excess-yield branch. This is the value that would have been silently burned before the
+    // revert-on-zero-quote change.
+    let injectResult = _executeTransactionFile(
+        "transactions/inject_flow_as_sywflowv_to_autobalancer.cdc",
+        [vaultID, syWFLOWvEVMAddress, 10.0],
+        [pyusd0User]
+    )
+    Test.expect(injectResult, Test.beSucceeded())
+
+    // Break the close route after the vault already exists by repointing PYUSD0 collateral to a
+    // WBTC-ending debtToCollateral path. This exercises the mutable-config scenario directly.
+    let misconfigureResult = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc",
+        [
+            syWFLOWvStrategyIdentifier,
+            pyusd0VaultIdentifier,
+            syWFLOWvEVMAddress,
+            [syWFLOWvEVMAddress, wflowEVMAddress],
+            [100 as UInt32],
+            [wflowEVMAddress, wbtcEVMAddress],
+            [3000 as UInt32]
+        ],
+        [adminAccount]
+    )
+    Test.expect(misconfigureResult, Test.beSucceeded())
+
+    // The important assertion: close must fail, not "succeed" by burning excess syWFLOWv or
+    // returned FLOW residuals when the rebuilt route cannot quote a conversion.
+    let failedClose = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/close_yield_vault.cdc",
+        [vaultID],
+        [pyusd0User]
+    )
+    Test.expect(failedClose, Test.beFailed())
+
+    // Restore the original close route and prove the same vault can still be closed afterward.
+    // That shows the failed close did not destroy value or corrupt the vault state irreversibly.
+    let restoreResult = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/admin/upsert_more_erc4626_config.cdc",
+        [
+            syWFLOWvStrategyIdentifier,
+            pyusd0VaultIdentifier,
+            syWFLOWvEVMAddress,
+            [syWFLOWvEVMAddress, wflowEVMAddress],
+            [100 as UInt32],
+            [wflowEVMAddress, pyusd0EVMAddress],
+            [3000 as UInt32]
+        ],
+        [adminAccount]
+    )
+    Test.expect(restoreResult, Test.beSucceeded())
+
+    let successfulClose = _executeTransactionFile(
+        "../transactions/flow-yield-vaults/close_yield_vault.cdc",
+        [vaultID],
+        [pyusd0User]
+    )
+    Test.expect(successfulClose, Test.beSucceeded())
+
+    let vaultBalAfterClose = _executeScript(
+        "../scripts/flow-yield-vaults/get_yield_vault_balance.cdc",
+        [pyusd0User.address, vaultID]
+    )
+    Test.expect(vaultBalAfterClose, Test.beSucceeded())
+    // Final proof: the vault disappears only after the valid-route close, not after the broken
+    // close attempt.
+    Test.assert(vaultBalAfterClose.returnValue == nil,
+        message: "Vault \(vaultID) should not exist after restored-route close")
+}

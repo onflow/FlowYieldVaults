@@ -407,22 +407,15 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     // destroy empty vault
                     Burner.burn(<-v)
                 } else {
-                    // Quote first — if dust is too small to route, destroy it
+                    // Quote first. A zero quote for a non-empty vault is ambiguous: it may reflect an
+                    // unquotable route or a tiny residual, so it is not safe to assume this value can
+                    // be burned without further justification.
                     let quote = debtToCollateralSwapper.quoteOut(forProvided: v.balance, reverse: false)
                     if quote.outAmount > 0.0 {
                         let swapped <- debtToCollateralSwapper.swap(quote: quote, inVault: <-v)
                         collateralVault.deposit(from: <-swapped)
                     } else {
-                        emit DustBurned(
-                            tokenType: v.getType().identifier,
-                            balance: v.balance,
-                            quoteInType: quote.inType.identifier,
-                            quoteOutType: quote.outType.identifier,
-                            quoteInAmount: quote.inAmount,
-                            quoteOutAmount: quote.outAmount,
-                            swapperType: debtToCollateralSwapper.getType().identifier
-                        )
-                        Burner.burn(<-v)
+                        panic("closePosition: non-empty \(v.getType().identifier) vault returned zero debt→collateral quote")
                     }
                 }
             }
@@ -461,16 +454,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     let extraCollateral <- sharesToCollateral.swap(quote: quote, inVault: <-excessShares)
                     collateralVault.deposit(from: <-extraCollateral)
                 } else {
-                    emit DustBurned(
-                        tokenType: excessShares.getType().identifier,
-                        balance: excessShares.balance,
-                        quoteInType: quote.inType.identifier,
-                        quoteOutType: quote.outType.identifier,
-                        quoteInAmount: quote.inAmount,
-                        quoteOutAmount: quote.outAmount,
-                        swapperType: sharesToCollateral.getType().identifier
-                    )
-                    Burner.burn(<-excessShares)
+                    panic("closePosition: non-empty excess \(excessShares.getType().identifier) vault returned zero shares→collateral quote")
                 }
             } else {
                 Burner.burn(<-excessShares)
@@ -850,22 +834,15 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     // destroy empty vault
                     Burner.burn(<-v)
                 } else {
-                    // FLOW overpayment dust — convert back to collateral if routable
+                    // Quote first. A zero quote for a non-empty vault is ambiguous: it may reflect an
+                    // unquotable route or a tiny residual, so it is not safe to assume this value can
+                    // be burned without further justification.
                     let quote = flowToCollateral.quoteOut(forProvided: v.balance, reverse: false)
                     if quote.outAmount > 0.0 {
                         let swapped <- flowToCollateral.swap(quote: quote, inVault: <-v)
                         collateralVault.deposit(from: <-swapped)
                     } else {
-                        emit DustBurned(
-                            tokenType: v.getType().identifier,
-                            balance: v.balance,
-                            quoteInType: quote.inType.identifier,
-                            quoteOutType: quote.outType.identifier,
-                            quoteInAmount: quote.inAmount,
-                            quoteOutAmount: quote.outAmount,
-                            swapperType: flowToCollateral.getType().identifier
-                        )
-                        Burner.burn(<-v)
+                        panic("closePosition: non-empty \(v.getType().identifier) vault returned zero FLOW→collateral quote")
                     }
                 }
             }
@@ -886,16 +863,7 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
                     let extraCollateral <- sharesToCollateral.swap(quote: quote, inVault: <-excessShares)
                     collateralVault.deposit(from: <-extraCollateral)
                 } else {
-                    emit DustBurned(
-                        tokenType: excessShares.getType().identifier,
-                        balance: excessShares.balance,
-                        quoteInType: quote.inType.identifier,
-                        quoteOutType: quote.outType.identifier,
-                        quoteInAmount: quote.inAmount,
-                        quoteOutAmount: quote.outAmount,
-                        swapperType: sharesToCollateral.getType().identifier
-                    )
-                    Burner.burn(<-excessShares)
+                    panic("closePosition: non-empty excess \(excessShares.getType().identifier) vault returned zero shares→collateral quote")
                 }
             } else {
                 Burner.burn(<-excessShares)
