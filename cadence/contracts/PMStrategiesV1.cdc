@@ -828,11 +828,11 @@ access(all) contract PMStrategiesV1 {
         }
 
         access(all) view fun getViews(): [Type] { return [] }
-        access(all) fun resolveView(_ view: Type): AnyStruct? { return nil }
+        access(all) fun resolveView(_ _view: Type): AnyStruct? { return nil }
 
         /// Called by FlowTransactionScheduler when the timelock expires.
         /// No-ops gracefully if the pending redeem was already cleared.
-        access(FlowTransactionScheduler.Execute) fun executeTransaction(id: UInt64, data: AnyStruct?) {
+        access(FlowTransactionScheduler.Execute) fun executeTransaction(id _: UInt64, data: AnyStruct?) {
             let dataDict = data as? {String: AnyStruct}
                 ?? panic("PendingRedeemHandler: invalid data format")
             let yieldVaultID = dataDict["yieldVaultID"] as? UInt64

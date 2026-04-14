@@ -30,7 +30,8 @@ transaction(
         self.coaCap = signer.capabilities.storage.issue<auth(EVM.Owner, EVM.Bridge) &EVM.CadenceOwnedAccount>(/storage/evm)
 
         let inAddr = EVM.addressFromString(inTokenAddress)
-        let inType = FlowEVMBridgeConfig.getTypeAssociated(with: inAddr)!
+        // TODO: remove?
+        let _inType = FlowEVMBridgeConfig.getTypeAssociated(with: inAddr)!
         let feeVault = signer.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(/storage/flowTokenVault)
         self.tokenSource = FungibleTokenConnectors.VaultSinkAndSource(
             min: nil,

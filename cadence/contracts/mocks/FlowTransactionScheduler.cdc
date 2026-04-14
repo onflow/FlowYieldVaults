@@ -138,7 +138,7 @@ access(all) contract FlowTransactionScheduler {
             return []
         }
 
-        access(all) fun resolveView(_ view: Type): AnyStruct? {
+        access(all) fun resolveView(_ _view: Type): AnyStruct? {
             return nil
         }
 
