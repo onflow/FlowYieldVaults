@@ -29,6 +29,10 @@ run_txn "Transfer Flow tokens" \
   ./cadence/tests/transactions/flow-token/transfer_flow.cdc \
   0x179b6b1cb6755e31 1000.0
 
+run_txn "Set oracle price for YieldToken" \
+  ./cadence/tests/transactions/mocks/oracle/set_price.cdc \
+  "A.045a1763c93006ca.YieldToken.Vault" 1.0
+
 run_txn "Creating YieldVault[0]" \
   ./cadence/transactions/create_yield_vault.cdc \
   A.045a1763c93006ca.MockStrategies.TracerStrategy \

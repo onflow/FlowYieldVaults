@@ -1,0 +1,31 @@
+FROM debian:stable-slim
+
+ENV FLOW_INSTALL_URL=https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh \
+    FOUNDRY_DIR=/root/.foundry \
+    APP_HOME=/app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl ca-certificates jq bash openssl netcat-openbsd git \
+    build-essential pkg-config libssl-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+# Install Foundry
+RUN bash -c 'curl -L https://foundry.paradigm.xyz | bash' \
+ && bash -c '"$FOUNDRY_DIR/bin/foundryup"' \
+ && ln -s "$FOUNDRY_DIR/bin/forge"  /usr/local/bin/forge  \
+ && ln -s "$FOUNDRY_DIR/bin/cast"   /usr/local/bin/cast   \
+ && ln -s "$FOUNDRY_DIR/bin/anvil"  /usr/local/bin/anvil  \
+ && forge --version && cast --version
+
+# Install Flow CLI
+RUN bash -c 'curl -fsSL "$FLOW_INSTALL_URL" | bash' \
+ && mv /root/.local/bin/flow /usr/local/bin/flow \
+ && flow version
+
+WORKDIR ${APP_HOME}
+COPY . ${APP_HOME}
+RUN find ${APP_HOME}/local -name "*.sh" -exec chmod +x {} \;
+
+RUN flow deps install --skip-alias --skip-deployments
+
+ENTRYPOINT ["bash", "local/docker-e2e-entrypoint.sh"]

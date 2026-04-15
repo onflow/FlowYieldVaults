@@ -1,3 +1,16 @@
+# Version control (root + all submodules)
+.git
+**/.git
+
+# Build/runtime artifacts
 db
 cache
 broadcast
+.flow-fork-cache
+
+# IDE & local tooling
+.cursor
+.claude
+.github
+docs
+imports

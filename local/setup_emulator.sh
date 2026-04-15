@@ -15,8 +15,8 @@ flow transactions send ./lib/FlowALP/cadence/transactions/moet/setup_vault.cdc
 flow transactions send ./lib/FlowALP/cadence/transactions/moet/mint_moet.cdc 0x045a1763c93006ca 1000000.0 --signer emulator-flow-yield-vaults
 
 # set mocked prices in the MockOracle contract, initialized with MOET as unitOfAccount
-flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.0ae53cb6e3f42a79.FlowToken.Vault' 0.5 --signer emulator-flow-yield-vaults
-flow transactions send ./cadence/transactions/mocks/oracle/set_price.cdc 'A.045a1763c93006ca.YieldToken.Vault' 1.0 --signer emulator-flow-yield-vaults
+flow transactions send ./cadence/tests/transactions/mocks/oracle/set_price.cdc 'A.0ae53cb6e3f42a79.FlowToken.Vault' 0.5 --signer emulator-flow-yield-vaults
+flow transactions send ./cadence/tests/transactions/mocks/oracle/set_price.cdc 'A.045a1763c93006ca.YieldToken.Vault' 1.0 --signer emulator-flow-yield-vaults
 
 # configure FlowALP
 #
@@ -34,9 +34,9 @@ flow transactions send ./lib/FlowALP/cadence/transactions/flow-alp/pool-governan
 # configure FlowYieldVaults
 #
 # wire up liquidity to MockSwapper, mocking AMM liquidity sources
-flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/flowTokenVault --signer emulator-flow-yield-vaults
-flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/moetTokenVault_0x045a1763c93006ca --signer emulator-flow-yield-vaults
-flow transactions send ./cadence/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/yieldTokenVault_0x045a1763c93006ca --signer emulator-flow-yield-vaults
+flow transactions send ./cadence/tests/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/flowTokenVault --signer emulator-flow-yield-vaults
+flow transactions send ./cadence/tests/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/moetTokenVault_0x045a1763c93006ca --signer emulator-flow-yield-vaults
+flow transactions send ./cadence/tests/transactions/mocks/swapper/set_liquidity_connector.cdc /storage/yieldTokenVault_0x045a1763c93006ca --signer emulator-flow-yield-vaults
 # add TracerStrategy as supported Strategy with the ability to initialize when new YieldVaults are created
 flow transactions send ./cadence/transactions/admin/add_strategy_composer.cdc \
     'A.045a1763c93006ca.MockStrategies.TracerStrategy' \

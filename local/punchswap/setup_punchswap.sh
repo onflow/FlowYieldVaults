@@ -1,3 +1,4 @@
+#!/bin/bash
 set -euo pipefail
 
 cp ./local/punchswap/contracts_local.sh ./solidity/lib/punch-swap-v3-contracts/
@@ -5,7 +6,12 @@ cp ./local/punchswap/flow-emulator.json ./solidity/lib/punch-swap-v3-contracts/s
 
 cp ./local/punchswap/punchswap.env ./solidity/lib/punch-swap-v3-contracts/.env
 
-# Append a local lint config to the PunchSwap submodule without modifying it in git
+# Fix PunchSwapV2Library.sol: pragma says >=0.5.0 but uses custom error syntax
+# which requires >=0.8.4. In a clean Docker env forge assigns it to the 0.7.x
+# batch and the build fails. Patch only this file, leave everything else alone.
+V2LIB=solidity/lib/punch-swap-v3-contracts/src/universal-router/modules/uniswap/v2/PunchSwapV2Library.sol
+sed -i 's/pragma solidity >=0.5.0;/pragma solidity >=0.8.4;/' "$V2LIB"
+
 if ! grep -q "^\[lint\]" solidity/lib/punch-swap-v3-contracts/foundry.toml; then
   cat << 'EOF' >> solidity/lib/punch-swap-v3-contracts/foundry.toml
 
