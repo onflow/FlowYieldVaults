@@ -394,6 +394,45 @@ def cmd_generate(args: argparse.Namespace) -> None:
     print(f"Generated {args.output} ({n_prices} prices, scenario: {scenario})")
 
 
+def cmd_generate_all(args: argparse.Namespace) -> None:
+    """Combine multiple fixture JSONs into one Cadence helper file (structs emitted once)."""
+    datasets = []
+    for path in args.inputs:
+        with open(path) as f:
+            datasets.append(json.load(f))
+
+    # Generate first fixture fully (includes struct definitions)
+    first_cdc = generate_cdc(datasets[0])
+    lines = first_cdc.split("\n")
+
+    # For subsequent fixtures, generate and strip the struct definitions (already emitted)
+    source_names = [os.path.basename(p) for p in args.inputs]
+    # Update header to list all sources
+    lines[2] = f"// AUTO-GENERATED from [{', '.join(source_names)}] — do not edit manually"
+
+    for data in datasets[1:]:
+        scenario_cdc = generate_cdc(data)
+        # Skip everything up to and including the struct definitions (find first price/date/agent line)
+        scenario_lines = scenario_cdc.split("\n")
+        in_structs = True
+        for i, line in enumerate(scenario_lines):
+            if line.startswith(f"access(all) let {data['scenario']}_"):
+                # Found the first data line after structs
+                lines.append("")
+                lines.append(f"// ---- {data['scenario']} ----")
+                lines.append("")
+                lines.extend(scenario_lines[i:])
+                break
+
+    cdc = "\n".join(lines)
+    os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
+    with open(args.output, "w") as f:
+        f.write(cdc)
+
+    total_prices = sum(len(d["btc_prices"]) for d in datasets)
+    print(f"Generated {args.output} ({len(datasets)} scenarios, {total_prices} total price points)")
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -423,12 +462,22 @@ def main() -> None:
     gen_p.add_argument("input", help="Input fixture JSON path")
     gen_p.add_argument("output", help="Output .cdc path")
 
+    # -- generate-all --
+    gen_all_p = sub.add_parser(
+        "generate-all",
+        help="Combine multiple fixture JSONs into one Cadence helper file",
+    )
+    gen_all_p.add_argument("inputs", nargs="+", help="Input fixture JSON paths")
+    gen_all_p.add_argument("--output", required=True, help="Output .cdc path")
+
     args = parser.parse_args()
 
     if args.command == "fetch":
         cmd_fetch(args)
     elif args.command == "generate":
         cmd_generate(args)
+    elif args.command == "generate-all":
+        cmd_generate_all(args)
 
 
 if __name__ == "__main__":
