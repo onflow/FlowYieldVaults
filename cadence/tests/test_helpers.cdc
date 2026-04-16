@@ -679,6 +679,17 @@ fun setPositionHealth(signer: Test.TestAccount, pid: UInt64, minHealth: UFix64, 
     Test.expect(result, Test.beSucceeded())
 }
 
+/// Set position health params with targetHealth-first ordering (used by historical sims).
+access(all)
+fun setPositionHealthParams(signer: Test.TestAccount, pid: UInt64, targetHealth: UFix64, minHealth: UFix64, maxHealth: UFix64) {
+    let result = _executeTransaction(
+        "transactions/set_position_health_params.cdc",
+        [pid, targetHealth, minHealth, maxHealth],
+        signer
+    )
+    Test.expect(result, Test.beSucceeded())
+}
+
 /* --- Transaction Helpers --- */
 
 access(all)
