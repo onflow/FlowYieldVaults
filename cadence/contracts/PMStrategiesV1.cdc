@@ -603,12 +603,12 @@ access(all) contract PMStrategiesV1 {
             }
             // Merge instead of overwrite
             let existingComposerConfig = self.configs[composer] ?? {}
-            var mergedComposerConfig: {Type: {Type: {String: AnyStruct}}} = existingComposerConfig
+            var mergedComposerConfig = existingComposerConfig
 
             for stratType in config {
                 let newPerCollateral = config[stratType]!
                 let existingPerCollateral = mergedComposerConfig[stratType] ?? {}
-                var mergedPerCollateral: {Type: {String: AnyStruct}} = existingPerCollateral
+                var mergedPerCollateral = existingPerCollateral
 
                 for collateralType in newPerCollateral {
                     mergedPerCollateral[collateralType] = newPerCollateral[collateralType]!
@@ -828,11 +828,11 @@ access(all) contract PMStrategiesV1 {
         }
 
         access(all) view fun getViews(): [Type] { return [] }
-        access(all) fun resolveView(_ view: Type): AnyStruct? { return nil }
+        access(all) fun resolveView(_ _view: Type): AnyStruct? { return nil }
 
         /// Called by FlowTransactionScheduler when the timelock expires.
         /// No-ops gracefully if the pending redeem was already cleared.
-        access(FlowTransactionScheduler.Execute) fun executeTransaction(id: UInt64, data: AnyStruct?) {
+        access(FlowTransactionScheduler.Execute) fun executeTransaction(id _: UInt64, data: AnyStruct?) {
             let dataDict = data as? {String: AnyStruct}
                 ?? panic("PendingRedeemHandler: invalid data format")
             let yieldVaultID = dataDict["yieldVaultID"] as? UInt64
@@ -849,7 +849,7 @@ access(all) contract PMStrategiesV1 {
         }
 
         access(contract) fun removePendingRedeem(id: UInt64) {
-            self.pendingRedeems.remove(key: id)
+            let _removedRedeem = self.pendingRedeems.remove(key: id)
         }
 
         access(contract) view fun getPendingRedeem(id: UInt64): PendingRedeemInfo? {
@@ -897,7 +897,7 @@ access(all) contract PMStrategiesV1 {
             }
             let entry: auth(Remove) &AnyStruct = &self.metadata["claimOutcomes"]!
             let outcomes = entry as! auth(Remove) &{UInt64: String}
-            outcomes.remove(key: yieldVaultID)
+            let _removedOutcome = outcomes.remove(key: yieldVaultID)
         }
 
         access(contract) view fun getClaimOutcome(yieldVaultID: UInt64): String? {

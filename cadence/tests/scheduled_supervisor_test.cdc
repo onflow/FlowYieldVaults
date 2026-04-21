@@ -32,7 +32,7 @@ fun setup() {
 
     // Fund FlowYieldVaults account BEFORE any YieldVaults are created, as registerYieldVault
     // now atomically schedules the first execution which requires FLOW for fees
-    mintFlow(to: flowYieldVaultsAccount, amount: 1000.0)
+    let _mintedFlowToVaults = mintFlow(to: flowYieldVaultsAccount, amount: 1000.0)
 
     // Mock Oracle
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
@@ -42,7 +42,7 @@ fun setup() {
     let reserveAmount = 100_000_00.0
     setupMoetVault(protocolAccount, beFailed: false)
     setupYieldVault(protocolAccount, beFailed: false)
-    mintFlow(to: protocolAccount, amount: reserveAmount)
+    let _mintedFlowToProtocol = mintFlow(to: protocolAccount, amount: reserveAmount)
     mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
@@ -95,8 +95,8 @@ fun testAutoRegisterAndSupervisor() {
     log("\n Testing Auto-Register + Native Scheduling...")
 
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 1000.0)
-    grantBeta(flowYieldVaultsAccount, user)
+    let _mintFlowResult = mintFlow(to: user, amount: 1000.0)
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
     // 1. Create YieldVault (Should auto-register and self-schedule via native mechanism)
     log("Step 1: Create YieldVault")
@@ -152,8 +152,8 @@ fun testMultiYieldVaultNativeScheduling() {
     log("\n Testing Multiple YieldVaults Native Scheduling...")
 
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 1000.0)
-    grantBeta(flowYieldVaultsAccount, user)
+    let _mintFlowResult = mintFlow(to: user, amount: 1000.0)
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
     // Create 3 yield vaults (each auto-schedules via native mechanism)
     var i = 0
@@ -206,8 +206,8 @@ fun testMultiYieldVaultIndependentExecution() {
     log("\n Testing multiple yield vaults execute independently...")
 
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 1000.0)
-    grantBeta(flowYieldVaultsAccount, user)
+    let _mintFlowResult = mintFlow(to: user, amount: 1000.0)
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
     // Create 3 yield vaults (each auto-schedules via native mechanism)
     var i = 0
@@ -295,9 +295,9 @@ fun testPaginationStress() {
     log("Expecting at least ".concat(minTotalExecutions.toString()).concat(" total executions (").concat(minExecutionsPerYieldVault.toString()).concat(" per yield vault)"))
 
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 10000.0)  // For 3 rounds of 18 yield vaults
-    grantBeta(flowYieldVaultsAccount, user)
-    mintFlow(to: flowYieldVaultsAccount, amount: 50000.0)  // Increased for scheduling fees
+    let _mintFlowUserResult = mintFlow(to: user, amount: 10000.0)  // For 3 rounds of 18 yield vaults
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
+    let _mintFlowProtocolResult = mintFlow(to: flowYieldVaultsAccount, amount: 50000.0)  // Increased for scheduling fees
 
     // Create yield vaults
     log("Creating ".concat(numYieldVaults.toString()).concat(" yield vaults..."))
@@ -419,9 +419,9 @@ fun testSupervisorDoesNotDisruptHealthyYieldVaults() {
     log("\n Testing Supervisor with healthy yield vaults (nothing to recover)...")
 
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 1000.0)
-    grantBeta(flowYieldVaultsAccount, user)
-    mintFlow(to: flowYieldVaultsAccount, amount: 200.0)
+    let _mintFlowUserResult = mintFlow(to: user, amount: 1000.0)
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
+    let _mintFlowProtocolResult = mintFlow(to: flowYieldVaultsAccount, amount: 200.0)
 
     // 1. Create a healthy yield vault (AutoBalancer schedules itself natively)
     log("Step 1: Creating healthy yield vault...")
@@ -549,8 +549,8 @@ fun testStuckYieldVaultDetectionLogic() {
     log("\n Testing stuck yield vault detection logic...")
 
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 1000.0)
-    grantBeta(flowYieldVaultsAccount, user)
+    let _mintFlowResult = mintFlow(to: user, amount: 1000.0)
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
     // 1. Create a healthy yield vault
     log("Step 1: Creating healthy yield vault...")
@@ -645,8 +645,8 @@ fun testInsufficientFundsAndRecovery() {
     log("========================================")
 
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 5000.0)
-    grantBeta(flowYieldVaultsAccount, user)
+    let _mintFlowResult = mintFlow(to: user, amount: 5000.0)
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
     // Check initial FlowYieldVaults balance
     let initialBalance = (executeScript(
@@ -802,7 +802,7 @@ fun testInsufficientFundsAndRecovery() {
     // STEP 7: REFUND the account
     // ========================================
     log("\n--- STEP 7: Refunding FlowYieldVaults account ---")
-    mintFlow(to: flowYieldVaultsAccount, amount: 200.0)
+    let _mintedFlowRefund = mintFlow(to: flowYieldVaultsAccount, amount: 200.0)
 
     let balanceAfterRefund = (executeScript(
         "../scripts/flow-yield-vaults/get_flow_balance.cdc",
@@ -984,9 +984,9 @@ fun testSupervisorHandlesManyStuckVaults() {
 
     // 1. Setup: user, FLOW, and grant
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 100000.0)
-    grantBeta(flowYieldVaultsAccount, user)
-    mintFlow(to: flowYieldVaultsAccount, amount: 10000.0)
+    let _mintFlowUserResult = mintFlow(to: user, amount: 100000.0)
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
+    let _mintFlowProtocolResult = mintFlow(to: flowYieldVaultsAccount, amount: 10000.0)
 
     // 2. Create n yield vaults in batch (Test.executeTransactions)
     var i = 0
@@ -1042,7 +1042,7 @@ fun testSupervisorHandlesManyStuckVaults() {
     }
 
     // 6. Refund FLOW and schedule supervisor
-    mintFlow(to: flowYieldVaultsAccount, amount: 500.0)
+    let _mintedFlowRefund = mintFlow(to: flowYieldVaultsAccount, amount: 500.0)
     Test.commitBlock()
     Test.moveTime(by: 1.0)
     Test.commitBlock()

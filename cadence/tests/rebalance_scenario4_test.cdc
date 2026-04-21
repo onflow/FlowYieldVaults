@@ -47,7 +47,7 @@ fun setupEnv(flowPrice: UFix64, yieldPrice: UFix64) {
 	let reserveAmount = 100_000_000.0
 	setupMoetVault(protocolAccount, beFailed: false)
 	setupYieldVault(protocolAccount, beFailed: false)
-	mintFlow(to: protocolAccount, amount: reserveAmount)
+	let _mintedFlowReserve = mintFlow(to: protocolAccount, amount: reserveAmount)
 	mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
 	mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
 	setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
@@ -89,7 +89,7 @@ fun setupEnv(flowPrice: UFix64, yieldPrice: UFix64) {
 	)
 
 	// Fund FlowYieldVaults account for scheduling fees (atomic initial scheduling)
-	mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
+	let _mintedFlowFees = mintFlow(to: flowYieldVaultsAccount, amount: 100.0)
 }
 
 access(all)
@@ -104,8 +104,8 @@ fun test_RebalanceLowCollateralHighYieldPrices() {
 	let yieldPriceIncrease = 1500.0 // YT:   $1000.0 → $1500.0
 
 	let user = Test.createAccount()
-	mintFlow(to: user, amount: fundingAmount)
-	grantBeta(flowYieldVaultsAccount, user)
+	let _mintedFlowUser = mintFlow(to: user, amount: fundingAmount)
+	let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
 	createYieldVault(
 		signer: user,
@@ -205,8 +205,8 @@ fun test_RebalanceHighCollateralLowYieldPrices() {
 	let yieldPriceIncrease = 1.5      // YT: $1.0 → $1.5
 
 	let user = Test.createAccount()
-	mintFlow(to: user, amount: fundingAmount)
-	grantBeta(flowYieldVaultsAccount, user)
+	let _mintedFlowUser = mintFlow(to: user, amount: fundingAmount)
+	let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
 	createYieldVault(
 		signer: user,

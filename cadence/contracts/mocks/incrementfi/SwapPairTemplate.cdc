@@ -28,7 +28,7 @@ access(all) contract SwapPair: FungibleToken {
     access(all) var price0CumulativeLastScaled: UInt256
     access(all) var price1CumulativeLastScaled: UInt256
 
-    /// Transaction lock 
+    /// Transaction lock
     access(self) var lock: Bool
 
     /// √(reserve0 * reserve1) for volatile pool, or √√[(r0^3 * r1 + r0 * r1^3) / 2] for stable pool, as of immediately after the most recent liquidity event
@@ -92,7 +92,7 @@ access(all) contract SwapPair: FungibleToken {
         /// SwapPair doesn't support MetadataViews api as this is not just a normal FT, and there could be multiple types of lpTokens
         /// for different SwapPairs, so it is stored in LpTokenCollection instead (not directly associated with a StoragePath).
         access(all) view fun getViews(): [Type] { return [] }
-        access(all) fun resolveView(_ view: Type): AnyStruct? { return nil }
+        access(all) fun resolveView(_ _view: Type): AnyStruct? { return nil }
 
         /// withdraw
         ///
@@ -166,8 +166,8 @@ access(all) contract SwapPair: FungibleToken {
     ///
     /// SwapPair doesn't support MetadataViews api as this is not just a normal FT, and there could be multiple types of lpTokens
     /// for different SwapPairs, so it is stored in LpTokenCollection instead (not directly associated with a StoragePath).
-    access(all) view fun getContractViews(resourceType: Type?): [Type] { return [] }
-    access(all) fun resolveContractView(resourceType: Type?, viewType: Type): AnyStruct? { return nil }
+    access(all) view fun getContractViews(resourceType _: Type?): [Type] { return [] }
+    access(all) fun resolveContractView(resourceType _resourceType: Type?, viewType _viewType: Type): AnyStruct? { return nil }
 
     /// createEmptyVault
     //
@@ -176,7 +176,7 @@ access(all) contract SwapPair: FungibleToken {
     /// and store the returned Vault in their storage in order to allow their
     /// account to be able to receive deposits of this token type.
     ///
-    access(all) fun createEmptyVault(vaultType: Type): @SwapPair.Vault {
+    access(all) fun createEmptyVault(vaultType _: Type): @SwapPair.Vault {
         return <-create Vault(balance: 0.0)
     }
 
@@ -191,7 +191,7 @@ access(all) contract SwapPair: FungibleToken {
         self.totalSupply = self.totalSupply + amount
         emit TokensMinted(amount: amount)
         return <- create Vault(balance: amount)
-    } 
+    }
 
     /// Burn lpTokens
     access(self) fun burnLpToken(from: @SwapPair.Vault) {
@@ -210,7 +210,7 @@ access(all) contract SwapPair: FungibleToken {
                 msg: "SwapPair: added zero liquidity",
                 err: SwapError.ErrorCode.ADD_ZERO_LIQUIDITY
             )
-            (tokenAVault.isInstance(self.token0VaultType) && tokenBVault.isInstance(self.token1VaultType)) || 
+            (tokenAVault.isInstance(self.token0VaultType) && tokenBVault.isInstance(self.token1VaultType)) ||
             (tokenBVault.isInstance(self.token0VaultType) && tokenAVault.isInstance(self.token1VaultType)):
             SwapError.ErrorEncode(
                 msg: "SwapPair: added incompatible liquidity pair vaults",
@@ -407,14 +407,14 @@ access(all) fun swap(vaultIn: @{FungibleToken.Vault}, exactAmountOut: UFix64?): 
         }
     }
     /// Check and swap exact output amount if specified in argument
-    if exactAmountOut != nil {
-        assert(amountOut >= exactAmountOut!, message:
+    if let exactAmountOut = exactAmountOut {
+        assert(amountOut >= exactAmountOut, message:
         SwapError.ErrorEncode(
             msg: "SwapPair: INSUFFICIENT_OUTPUT_AMOUNT",
             err: SwapError.ErrorCode.INSUFFICIENT_OUTPUT_AMOUNT
         )
     )
-    amountOut = exactAmountOut!
+    amountOut = exactAmountOut
 }
 
 if (vaultIn.isInstance(self.token0VaultType)) {
@@ -533,7 +533,7 @@ self.lock = false
             self.price1CumulativeLastScaled = SwapConfig.overflowAddUInt256(
                 self.price1CumulativeLastScaled,
                 SwapConfig.UFix64ToScaledUInt256(price1) * timeElapsedScaled / SwapConfig.scaleFactor
-            )   
+            )
         }
         self.blockTimestampLast = blockTimestamp
     }
@@ -573,12 +573,12 @@ self.lock = false
 }
 
 access(all) view fun _rootK(balance0: UFix64, balance1: UFix64): UFix64 {
-    let e18: UInt256 = SwapConfig.scaleFactor
+    let e18 = SwapConfig.scaleFactor
     let balance0Scaled = SwapConfig.UFix64ToScaledUInt256(balance0)
     let balance1Scaled = SwapConfig.UFix64ToScaledUInt256(balance1)
     if self.isStableSwap() {
-        let _p_scaled: UInt256 = SwapConfig.UFix64ToScaledUInt256(self.getStableCurveP())
-        let _k_scaled: UInt256 = SwapConfig.k_stable_p(balance0Scaled, balance1Scaled, _p_scaled)
+        let _p_scaled = SwapConfig.UFix64ToScaledUInt256(self.getStableCurveP())
+        let _k_scaled = SwapConfig.k_stable_p(balance0Scaled, balance1Scaled, _p_scaled)
         return SwapConfig.ScaledUInt256ToUFix64(SwapConfig.sqrt(SwapConfig.sqrt(_k_scaled / 2)))
     } else {
         return SwapConfig.ScaledUInt256ToUFix64(SwapConfig.sqrt(balance0Scaled * balance1Scaled / e18))

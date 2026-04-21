@@ -147,7 +147,7 @@ access(all) contract FlowYieldVaultsSchedulerRegistry {
     access(account)
     fun setSupervisorCap(cap: Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>) {
         let storedCapPath = /storage/FlowYieldVaultsSupervisorCapability
-        let old = self.account.storage
+        let _old = self.account.storage
             .load<Capability<auth(FlowTransactionScheduler.Execute) &{FlowTransactionScheduler.TransactionHandler}>>(
                 from: storedCapPath
             )

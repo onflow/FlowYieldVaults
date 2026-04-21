@@ -66,8 +66,8 @@ transaction(flowAmount: UFix64) {
             ?? panic("Could not resolve FTVaultData for PYUSD0")
         if signer.storage.borrow<&{FungibleToken.Vault}>(from: vaultData.storagePath) == nil {
             signer.storage.save(<-vaultData.createEmptyVault(), to: vaultData.storagePath)
-            signer.capabilities.unpublish(vaultData.receiverPath)
-            signer.capabilities.unpublish(vaultData.metadataPath)
+            let _unpublishedReceiver = signer.capabilities.unpublish(vaultData.receiverPath)
+            let _unpublishedMetadata = signer.capabilities.unpublish(vaultData.metadataPath)
             let receiverCap = signer.capabilities.storage.issue<&{FungibleToken.Vault}>(vaultData.storagePath)
             let metadataCap = signer.capabilities.storage.issue<&{FungibleToken.Vault}>(vaultData.storagePath)
             signer.capabilities.publish(receiverCap, at: vaultData.receiverPath)

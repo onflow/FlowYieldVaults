@@ -23,7 +23,7 @@ transaction {
         let cap = signer.capabilities.storage.issue<&FlowYieldVaults.YieldVaultManager>(FlowYieldVaults.YieldVaultManagerStoragePath)
         signer.capabilities.publish(cap, at: FlowYieldVaults.YieldVaultManagerPublicPath)
         // issue an authorized capability for later access via Capability controller if needed (e.g. via HybridCustody)
-        signer.capabilities.storage.issue<auth(FungibleToken.Withdraw) &FlowYieldVaults.YieldVaultManager>(FlowYieldVaults.YieldVaultManagerStoragePath)
+        let _withdrawManagerCap = signer.capabilities.storage.issue<auth(FungibleToken.Withdraw) &FlowYieldVaults.YieldVaultManager>(FlowYieldVaults.YieldVaultManagerStoragePath)
 
         // confirm setup of YieldVaultManager at canonical path
         let storedType = signer.storage.type(at: FlowYieldVaults.YieldVaultManagerStoragePath) ?? Type<Never>()

@@ -22,7 +22,7 @@ fun test_CreateYieldVaultManagerValidatesBetaRef() {
 
     let user = Test.createAccount()
     transferFlow(signer: serviceAccount, recipient: user.address, amount: 1.0)
-    grantBeta(flowYieldVaultsAccount, user)
+    let _grantBetaResult = grantBeta(flowYieldVaultsAccount, user)
 
     let txn = Test.Transaction(
         code: Test.readFile("../transactions/test/create_yield_vault_manager_with_beta_cap.cdc"),

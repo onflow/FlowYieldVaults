@@ -37,7 +37,7 @@ fun setup() {
     log("FlowYieldVaultsSchedulerV1 available")
     
     // Fund FlowYieldVaults account for scheduling fees
-    mintFlow(to: flowYieldVaultsAccount, amount: 1000.0)
+    let _mintedFlowToVaultsAccount = mintFlow(to: flowYieldVaultsAccount, amount: 1000.0)
 
     // Set mocked token prices
     setMockOraclePrice(signer: flowYieldVaultsAccount, forTokenIdentifier: yieldTokenIdentifier, price: 1.0)
@@ -48,7 +48,7 @@ fun setup() {
     let reserveAmount = 100_000_00.0
     setupMoetVault(protocolAccount, beFailed: false)
     setupYieldVault(protocolAccount, beFailed: false)
-    mintFlow(to: protocolAccount, amount: reserveAmount)
+    let _mintedFlowToProtocol = mintFlow(to: protocolAccount, amount: reserveAmount)
     mintMoet(signer: protocolAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     mintYield(signer: yieldTokenAccount, to: protocolAccount.address, amount: reserveAmount, beFailed: false)
     setMockSwapperLiquidityConnector(signer: protocolAccount, vaultStoragePath: MOET.VaultStoragePath)
@@ -110,7 +110,7 @@ fun testNativeScheduledRebalancing() {
     
     // Step 1: Create a YieldVault with initial funding
     log("Step 1: Creating YieldVault...")
-    mintFlow(to: user, amount: fundingAmount)
+    let _mintedFlowToUser = mintFlow(to: user, amount: fundingAmount)
     let betaRef = grantBeta(flowYieldVaultsAccount, user)
     Test.expect(betaRef, Test.beSucceeded())
     
@@ -193,9 +193,9 @@ fun testMultipleExecutionsWithPriceChanges() {
     log("========================================")
     
     let user = Test.createAccount()
-    mintFlow(to: user, amount: 500.0)
-    grantBeta(flowYieldVaultsAccount, user)
-    
+    let _mintedFlowToUser = mintFlow(to: user, amount: 500.0)
+    let _grantedBetaToUser = grantBeta(flowYieldVaultsAccount, user)
+
     // Step 1: Create YieldVault
     log("Step 1: Creating YieldVault...")
     let createYieldVaultRes = executeTransaction(
