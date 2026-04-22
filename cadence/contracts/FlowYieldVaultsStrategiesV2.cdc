@@ -1906,9 +1906,9 @@ access(all) contract FlowYieldVaultsStrategiesV2 {
         let txnFunder = self._createTxnFunder(withID: withID)
 
         return AutoBalancers.AutoBalancerRecurringConfig(
-            interval: 60 * 10,  // Rebalance every 10 minutes
+            interval: 60 * 30,  // Rebalance every 30 minutes
             priority: FlowTransactionScheduler.Priority.Medium,
-            executionEffort: 800,
+            executionEffort: 1200,
             forceRebalance: false,
             txnFunder: txnFunder
         )
