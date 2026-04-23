@@ -1,6 +1,6 @@
 # FlowYieldVaults Smart Contracts
 
-FlowYieldVaults is a yield farming platform built on the Flow blockchain using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via FlowALP's Active Lending Platform. FlowYieldVaults aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
+FlowYieldVaults is a yield farming platform built on the Flow network using [Cadence](https://cadence-lang.org). The platform enables users to deposit tokens to supported DeFi strategies such as collateralized borrowing via FlowALP, a DeFi lending protocol on Flow. FlowYieldVaults aims to support yield-generating strategies, automatically optimizing returns through [DeFi Actions](https://developers.flow.com/blockchain-development-tutorials/forte/flow-actions) components and auto-balancing mechanisms.
 
 ## Install
 
@@ -1620,3 +1620,12 @@ The contracts include extensive mock components (MockOracle, MockSwapper, etc.) 
 5. **Close Position**: Use close_yield_vault to exit and reclaim all funds
 
 The platform provides a foundation for sophisticated yield farming strategies while maintaining the security and composability principles of the Cadence programming language.
+
+## About Flow
+
+This repo is part of the [Flow network](https://flow.com), a Layer 1 blockchain built for consumer applications, AI Agents, and DeFi at scale.
+
+- Developer docs: https://developers.flow.com
+- Cadence language: https://cadence-lang.org
+- Community: [Flow Discord](https://discord.gg/flow) · [Flow Forum](https://forum.flow.com)
+- Governance: [Flow Improvement Proposals](https://github.com/onflow/flips)
