@@ -107,7 +107,7 @@ access(all) contract PMStrategiesV1 {
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
         /// Returns the NAV-based balance by calling convertToAssets on the ERC-4626 vault
-        access(all) fun navBalance(ofToken: Type): UFix64 {
+        access(all) fun navBalance(ofToken: Type): UFix64? {
             return PMStrategiesV1._navBalanceFor(
                 strategyType: self.getType(),
                 collateralType: self.sink.getSinkType(),
@@ -196,7 +196,7 @@ access(all) contract PMStrategiesV1 {
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
         /// Returns the NAV-based balance by calling convertToAssets on the ERC-4626 vault
-        access(all) fun navBalance(ofToken: Type): UFix64 {
+        access(all) fun navBalance(ofToken: Type): UFix64? {
             return PMStrategiesV1._navBalanceFor(
                 strategyType: self.getType(),
                 collateralType: self.sink.getSinkType(),
@@ -285,7 +285,7 @@ access(all) contract PMStrategiesV1 {
             return ofToken == self.source.getSourceType() ? self.source.minimumAvailable() : 0.0
         }
         /// Returns the NAV-based balance by calling convertToAssets on the ERC-4626 vault
-        access(all) fun navBalance(ofToken: Type): UFix64 {
+        access(all) fun navBalance(ofToken: Type): UFix64? {
             return PMStrategiesV1._navBalanceFor(
                 strategyType: self.getType(),
                 collateralType: self.sink.getSinkType(),
@@ -639,34 +639,41 @@ access(all) contract PMStrategiesV1 {
     }
 
     /// Shared NAV balance computation: reads Cadence-side share balance from AutoBalancer,
-    /// converts to underlying asset value via ERC-4626 convertToAssets
-    access(contract) fun _navBalanceFor(strategyType: Type, collateralType: Type, ofToken: Type, id: UInt64): UFix64 {
-        if ofToken != collateralType { return 0.0 }
+    /// converts to underlying asset value via ERC-4626 convertToAssets, and includes
+    /// any shares that are currently in the deferred redeem flow.
+    /// Returns nil if either the live balance or pending redeem balance cannot be valued.
+    access(contract) fun _navBalanceFor(strategyType: Type, collateralType: Type, ofToken: Type, id: UInt64): UFix64? {
+        if ofToken != collateralType { return nil }
 
-        var nav = 0.0
+        let pendingNAV = self._tryPendingRedeemNAVBalance(yieldVaultID: id)
+        if pendingNAV == nil { return nil }
 
-        if let ab = FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: id) {
-            let sharesBalance = ab.vaultBalance()
-            if sharesBalance > 0.0 {
-                let vaultAddr = self._getYieldTokenEVMAddress(forStrategy: strategyType, collateralType: collateralType)
-                    ?? panic("No EVM vault address configured for \(strategyType.identifier)")
+        let ab = FlowYieldVaultsAutoBalancers.borrowAutoBalancer(id: id)
+        if ab == nil { return nil }
+        let sharesBalance = ab!.vaultBalance()
+        if sharesBalance == 0.0 { return pendingNAV! }
 
-                let sharesWei = FlowEVMBridgeUtils.ufix64ToUInt256(
-                    value: sharesBalance,
-                    decimals: FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: vaultAddr)
-                )
-
-                let navWei = ERC4626Utils.convertToAssets(vault: vaultAddr, shares: sharesWei)
-                    ?? panic("convertToAssets failed for vault \(vaultAddr.toString())")
-
-                let assetAddr = ERC4626Utils.underlyingAssetEVMAddress(vault: vaultAddr)
-                    ?? panic("No underlying asset EVM address found for vault \(vaultAddr.toString())")
-
-                nav = EVMAmountUtils.toCadenceOutForToken(navWei, erc20Address: assetAddr)
-            }
+        let vaultAddr = self._getYieldTokenEVMAddress(forStrategy: strategyType, collateralType: collateralType)
+        if vaultAddr == nil {
+            return nil
         }
 
-        return nav + self.getPendingRedeemNAVBalance(yieldVaultID: id)
+        let sharesWei = FlowEVMBridgeUtils.ufix64ToUInt256(
+            value: sharesBalance,
+            decimals: FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: vaultAddr!)
+        )
+
+        let navWei = ERC4626Utils.convertToAssets(vault: vaultAddr!, shares: sharesWei)
+        if navWei == nil {
+            return nil
+        }
+
+        let assetAddr = ERC4626Utils.underlyingAssetEVMAddress(vault: vaultAddr!)
+        if assetAddr == nil {
+            return nil
+        }
+
+        return EVMAmountUtils.toCadenceOutForToken(navWei!, erc20Address: assetAddr!) + pendingNAV!
     }
 
     /// Returns the COA capability for this account, issuing once and storing for reuse.
@@ -1313,19 +1320,30 @@ access(all) contract PMStrategiesV1 {
     }
 
     /// Returns the NAV value of pending redeem shares for a yield vault, or 0 if none.
-    /// Converts shares → underlying via ERC-4626 convertToAssets, matching the same
-    /// conversion used by _navBalanceFor (which calls this function).
-    access(all) fun getPendingRedeemNAVBalance(yieldVaultID: UInt64): UFix64 {
+    /// Returns nil when a pending redeem exists but cannot currently be valued.
+    access(self) fun _tryPendingRedeemNAVBalance(yieldVaultID: UInt64): UFix64? {
         if let handler = self._borrowHandler() {
             if let info = handler.getPendingRedeem(id: yieldVaultID) {
                 let navWei = ERC4626Utils.convertToAssets(vault: info.vaultEVMAddress, shares: info.sharesEVM)
-                    ?? panic("convertToAssets failed for pending redeem")
+                if navWei == nil {
+                    return nil
+                }
                 let assetAddr = ERC4626Utils.underlyingAssetEVMAddress(vault: info.vaultEVMAddress)
-                    ?? panic("No underlying asset address for vault")
-                return EVMAmountUtils.toCadenceOutForToken(navWei, erc20Address: assetAddr)
+                if assetAddr == nil {
+                    return nil
+                }
+                return EVMAmountUtils.toCadenceOutForToken(navWei!, erc20Address: assetAddr!)
             }
         }
         return 0.0
+    }
+
+    /// Returns the NAV value of pending redeem shares for a yield vault, or 0 if none.
+    /// Converts shares → underlying via ERC-4626 convertToAssets, matching the same
+    /// conversion used by _navBalanceFor.
+    access(all) fun getPendingRedeemNAVBalance(yieldVaultID: UInt64): UFix64 {
+        return self._tryPendingRedeemNAVBalance(yieldVaultID: yieldVaultID)
+            ?? panic("Pending redeem NAV unavailable for vault \(yieldVaultID)")
     }
 
     /// Returns the full PendingRedeemInfo for a given yield vault, or nil if none.
