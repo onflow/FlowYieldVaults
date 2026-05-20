@@ -1,5 +1,6 @@
 #test_fork(network: "mainnet", height: nil) // latest mainnet block, needs oracle price, which goes stale if not on latest
 
+import "PMStrategiesV1"
 import Test
 
 /// Fork test for PMStrategiesV1 deferred redemption — validates request/query/cancel/recovery
@@ -18,7 +19,8 @@ import Test
 ///  10. Negative: claimRedeem with no pending redeem
 ///  11. claimRedeem before timelock — rejected by timestamp guard
 ///  12. EVM revert recovery: after timelock, redeem() reverts (stale oracle),
-///      _evmRedeem returns nil, shares recovered to AutoBalancer
+///      _evmRedeem returns nil, shares recovered to AutoBalancer, and the
+///      recovery outcome is recorded as "evm_revert"
 ///  13. Re-request after recovery — verifies orphaned EVM request doesn't block a new requestRedeem
 ///
 /// Mainnet addresses:
@@ -587,6 +589,14 @@ access(all) fun testEVMRedeemRevertTriggersRecovery() {
     let outcome = outcomeResult.returnValue! as! String?
     Test.assert(outcome == "failed", message: "Expected claim outcome 'failed' after recovery")
     log("Claim outcome after recovery: \(outcome!)")
+
+    let recoveredEvents = Test.eventsOfType(Type<PMStrategiesV1.RedeemRecovered>())
+    Test.assert(recoveredEvents.length > 0, message: "Expected at least one RedeemRecovered event")
+    let recoveredEvent = recoveredEvents[recoveredEvents.length - 1] as! PMStrategiesV1.RedeemRecovered
+    Test.assert(
+        recoveredEvent.reason == "evm_revert",
+        message: "Expected RedeemRecovered reason 'evm_revert' for EVM revert recovery"
+    )
 }
 
 access(all) fun testRequestRedeemAfterRecovery() {

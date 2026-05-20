@@ -1092,9 +1092,10 @@ access(all) contract PMStrategiesV1 {
     /// anyone to retry if the scheduled execution failed or was missed.
     ///
     /// Attempts to redeem shares via service COA. On success, converts underlying ERC-20
-    /// to Cadence and deposits to user's wallet. On EVM redeem failure (e.g. vault paused),
-    /// automatically recovers shares back to the user's AutoBalancer so funds are never left
-    /// in a stuck state.
+    /// to Cadence and deposits to user's wallet. On EVM redeem revert (e.g. vault paused),
+    /// automatically recovers shares back to the user's AutoBalancer. A successful redeem
+    /// that returns zero assets is terminal on the EVM side, so this function records the
+    /// outcome and clears pending state instead of attempting an impossible share recovery.
     access(all) fun claimRedeem(yieldVaultID: UInt64) {
         let handler = self._borrowHandler()
             ?? panic("PendingRedeemHandler not initialized")
@@ -1120,26 +1121,40 @@ access(all) contract PMStrategiesV1 {
             owner: info.userCOAEVMAddress
         )
 
-        // 2. If redeem failed or returned zero assets, recover shares to AutoBalancer.
-        //    nil  = EVM revert (e.g., stale oracle) — shares untouched, transferFrom recovers them.
-        //    zero = vault burned shares but delivered nothing — transferFrom will also fail,
-        //           causing this function to revert (atomic), preserving pending state for retry.
-        if assetsReceived == nil || assetsReceived! == 0 {
+        // 2. If redeem reverted, recover shares to AutoBalancer.
+        //    nil = EVM revert (e.g., stale oracle) — shares are still held by the user's COA,
+        //          so transferFrom can recover them using the allowance set during requestRedeem.
+        if assetsReceived == nil {
             self._recoverSharesToAutoBalancer(yieldVaultID: yieldVaultID, info: info)
             handler.setClaimOutcome(yieldVaultID: yieldVaultID, outcome: "failed")
             emit RedeemRecovered(
                 yieldVaultID: yieldVaultID,
                 userAddress: info.userFlowAddress,
                 vaultEVMAddressHex: info.vaultEVMAddress.toString(),
-                reason: assetsReceived == nil ? "evm_revert" : "zero_assets"
+                reason: "evm_revert"
             )
             handler.removePendingRedeem(id: yieldVaultID)
             handler.removeScheduledTx(id: yieldVaultID)
             return
         }
 
-        // 3. Convert underlying ERC-20 tokens from EVM to Cadence and deliver to user
+        // 3. A successful zero-asset redeem cannot recover shares because they were already
+        //    burned by the vault before redeem returned. Record the terminal outcome and exit.
         let assets = assetsReceived!
+        if assets == 0 {
+            handler.setClaimOutcome(yieldVaultID: yieldVaultID, outcome: "zero_assets")
+            emit RedeemClaimed(
+                yieldVaultID: yieldVaultID,
+                userAddress: info.userFlowAddress,
+                assetsReceivedEVM: assets,
+                vaultEVMAddressHex: info.vaultEVMAddress.toString()
+            )
+            handler.removePendingRedeem(id: yieldVaultID)
+            handler.removeScheduledTx(id: yieldVaultID)
+            return
+        }
+
+        // 4. Convert underlying ERC-20 tokens from EVM to Cadence and deliver to user
         let underlyingAddress = ERC4626Utils.underlyingAssetEVMAddress(vault: info.vaultEVMAddress)
             ?? panic("Could not get underlying asset address")
 
@@ -1183,7 +1198,7 @@ access(all) contract PMStrategiesV1 {
             receiver.deposit(from: <-tokenVault)
         }
 
-        // 4. Cleanup
+        // 5. Cleanup
         handler.setClaimOutcome(yieldVaultID: yieldVaultID, outcome: "success")
         emit RedeemClaimed(
             yieldVaultID: yieldVaultID,
@@ -1361,9 +1376,11 @@ access(all) contract PMStrategiesV1 {
         return nil
     }
 
-    /// Returns the claim outcome for a yield vault: "success" if tokens were delivered,
-    /// "failed" if shares were recovered to AutoBalancer, or nil if no outcome recorded
-    /// (still pending, cancelled by user, or never requested).
+    /// Returns the claim outcome for a yield vault:
+    /// - "success" when assets were delivered to the user
+    /// - "failed" when an EVM revert triggered share recovery to AutoBalancer
+    /// - "zero_assets" when the EVM redeem succeeded but returned zero assets
+    /// - nil if no outcome is recorded (still pending, cancelled by user, or never requested)
     access(all) view fun getClaimOutcome(yieldVaultID: UInt64): String? {
         if let handler = self._borrowHandler() {
             return handler.getClaimOutcome(yieldVaultID: yieldVaultID)
